@@ -3,19 +3,31 @@
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  */
+
 (() => {
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || !event.data) return;
+    if (event.data.type === 'PVC_TOGGLE_POPUP' || event.data.type === 'PVC_TOGGLE_UI') {
+      togglePvcPopup();
+    }
+  });
+
   if (window.__NOK_VIDEO_CONTROLLER_INJECTED__) {
     togglePvcPopup();
     return;
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
+  console.log('[NOkrep] NOk Video Controller v2.0 aktifleşti.');
+
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
   const HOSTNAME = window.location.hostname;
   const IS_YOUTUBE = HOSTNAME.includes('youtube.com');
   const IS_KICK = HOSTNAME.includes('kick.com');
-  const IS_PUHUTV = HOSTNAME.includes('puhutv.com');
+
+  let idleTimer = null;
+  const IDLE_TIMEOUT_MS = 10000; // 10 saniye hareketsizlik süresi
 
   function findVideoAndPlayer() {
     const video = document.querySelector('video');
@@ -52,7 +64,10 @@
 
   function setSpeed(rate) {
     const { video, player } = findVideoAndPlayer();
-    if (!video) return false;
+    if (!video) {
+      showToast('Video elementi bulunamadı');
+      return false;
+    }
 
     try {
       const validRate = Math.min(3.0, Math.max(0.25, parseFloat(rate.toFixed(2))));
@@ -72,7 +87,7 @@
       showToast(`Hız: ${validRate}x`);
       return true;
     } catch (err) {
-      console.error('[NOkrep] Hız hatası:', err);
+      console.error('[NOkrep] Hız ayarlanamadı:', err);
       reportAnonymousError('SPEED_CHANGE_FAILED', err.message);
       return false;
     }
@@ -83,13 +98,7 @@
     if (!video) return false;
 
     try {
-      let current = 0;
-      if (player && typeof player.currentTime === 'function') {
-        current = player.currentTime();
-      } else {
-        current = video.currentTime || 0;
-      }
-
+      let current = (player && typeof player.currentTime === 'function') ? player.currentTime() : (video.currentTime || 0);
       const target = Math.max(0, current + seconds);
 
       if (player && typeof player.currentTime === 'function') {
@@ -110,7 +119,7 @@
   function changeQuality(targetLevel) {
     const { video, player, playerType } = findVideoAndPlayer();
     if (!video) {
-      reportAnonymousError('NO_VIDEO_FOUND', 'Kalite değiştirilecek video bulunamadı.');
+      reportAnonymousError('NO_VIDEO_FOUND', 'Kalite değiştirilecek video elementi yok.');
       return false;
     }
 
@@ -120,7 +129,8 @@
         const levelIdx = Math.min(parseInt(targetLevel, 10) - 1, hlsInstance.levels.length - 1);
         hlsInstance.currentLevel = Math.max(0, levelIdx);
         const selected = hlsInstance.levels[hlsInstance.currentLevel];
-        showToast(`Kick Kalitesi: ${selected ? selected.height + 'p' : 'Seviye ' + targetLevel}`);
+        const resLabel = selected ? `${selected.height}p` : `Level ${targetLevel}`;
+        showToast(`Kick Kalitesi: ${resLabel}`);
         return true;
       }
     }
@@ -133,8 +143,9 @@
     }
 
     if ((!activeSrc || activeSrc.startsWith('blob:')) && player && player.tech_) {
-      if (player.tech_.src_) activeSrc = player.tech_.src_;
-      else if (player.tech_.el_ && player.tech_.el_.src) activeSrc = player.tech_.el_.src;
+      const tech = player.tech_;
+      if (tech.src_) activeSrc = tech.src_;
+      else if (tech.el_ && tech.el_.src) activeSrc = tech.el_.src;
     }
 
     if (!activeSrc || activeSrc.startsWith('blob:')) {
@@ -142,7 +153,8 @@
       const mediaEntry = [...resources].reverse().find(r => 
         r.name.includes('media-') || 
         r.name.includes('.m3u8') || 
-        r.name.includes('/hls/')
+        r.name.includes('/hls/') || 
+        r.name.includes('master')
       );
       if (mediaEntry) activeSrc = mediaEntry.name;
     }
@@ -164,23 +176,27 @@
           if (!isPaused) video.play();
         }
 
-        const qualityLabels = { '1': '360p', '2': '540p', '3': '720p', '4': '1080p' };
+        const qualityLabels = { '1': '360p (SD)', '2': '540p (MD)', '3': '720p (HD)', '4': '1080p (FHD)' };
         showToast(`Kalite: ${qualityLabels[targetLevel] || targetMediaStr}`);
         return true;
       } catch (err) {
+        console.error('[NOkrep] Akamai değiştirme hatası:', err);
         reportAnonymousError('AKAMAI_SWAP_ERROR', err.message);
         return false;
       }
     }
 
     showToast('Akamai media-X formatı tespit edilemedi');
-    reportAnonymousError('MEDIA_PATTERN_NOT_FOUND', `Kaynak: ${activeSrc || 'BOŞ'}`);
+    reportAnonymousError('MEDIA_PATTERN_NOT_FOUND', `Bulunan kaynak: ${activeSrc || 'BOŞ'}`);
     return false;
   }
 
   async function testCdnPing() {
     const { video, player } = findVideoAndPlayer();
-    if (!video) return null;
+    if (!video) {
+      showToast('Video bulunamadı');
+      return null;
+    }
 
     let targetUrl = '';
     if (player && typeof player.currentSrc === 'function') targetUrl = player.currentSrc();
@@ -192,14 +208,16 @@
         r.name.includes('.ts') || 
         r.name.includes('.m4s') || 
         r.name.includes('.m3u8') || 
-        r.name.includes('media-')
+        r.name.includes('media-') ||
+        r.name.includes('kick') ||
+        r.name.includes('puhutv')
       );
       if (mediaEntry) targetUrl = mediaEntry.name;
     }
 
     if (!targetUrl) {
       showToast('Ping için aktif CDN akışı bulunamadı');
-      reportAnonymousError('PING_NO_STREAM_URL', 'Zaman çizelgesinde CDN isteği yok.');
+      reportAnonymousError('PING_NO_STREAM_URL', 'Performans zaman çizelgesinde video CDN isteği yok.');
       return null;
     }
 
@@ -238,7 +256,6 @@
       screenResolution: `${window.innerWidth}x${window.innerHeight}`
     };
 
-    console.warn('[NOkrep Anonymous Error]:', anonymousPayload);
     showErrorModal(anonymousPayload);
   }
 
@@ -248,7 +265,7 @@
 
     const jsonStr = JSON.stringify(payload, null, 2);
     const issueTitle = encodeURIComponent(`[Hata]: ${payload.domain} - ${payload.errorCode}`);
-    const issueBody = encodeURIComponent(`### Anonim Hata Paketi (NOkrep)\n```json\n${jsonStr}\n```\n\n**Açıklama:** Bu sitede eklenti ile karşılaştığınız durumu ekleyebilirsiniz.`);
+    const issueBody = encodeURIComponent(`### Anonim Hata Paketi (NOkrep)\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n**Açıklama:** Bu sitede eklenti ile karşılaştığınız durumu ekleyebilirsiniz.`);
     
     const githubUrl = `${GITHUB_REPO_URL}/issues/new?template=site_support.md&title=${issueTitle}&body=${issueBody}`;
     const mailtoUrl = `mailto:${DEVELOPER_EMAIL}?subject=${issueTitle}&body=${issueBody}`;
@@ -263,7 +280,7 @@
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
-            Eklenti bu sitede (<strong>${payload.domain}</strong>) oynatıcıya erişirken bir engelle karşılaştı. Sıfır kişisel veri içeren teşhis paketi hazırlandı:
+            Eklenti bu sitede (<strong>${payload.domain}</strong>) oynatıcıya erişirken bir engelle karşılaştı. Sıfır kişisel veri içeren teşhis paketi:
           </p>
           <pre class="pvc-modal-code">${jsonStr}</pre>
         </div>
@@ -281,7 +298,7 @@
     document.getElementById('pvc-close-modal-btn').onclick = () => modal.remove();
     document.getElementById('pvc-copy-payload-btn').onclick = () => {
       navigator.clipboard.writeText(jsonStr);
-      showToast('Hata verisi kopyalandı!');
+      showToast('Anonim hata verisi kopyalandı!');
     };
   }
 
@@ -301,59 +318,69 @@
     }, 2400);
   }
 
-  function injectNativeBarButton() {
-    if (document.getElementById('pvc-inbar-trigger-btn')) return;
+  function resetIdleTimer(popup) {
+    if (!popup) return;
+    popup.classList.remove('pvc-idle-transparent');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      popup.classList.add('pvc-idle-transparent');
+    }, IDLE_TIMEOUT_MS);
+  }
 
-    const candidateSelectors = [
-      '.ytp-right-controls',
-      '.vjs-control-bar',
-      '.vjs-custom-control-spacer',
-      '[data-a-target="player-controls"]',
-      '.player-controls',
-      '.video-js .vjs-control-bar'
-    ];
+  function makeDraggable(popup, header) {
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let initialLeft = 0, initialTop = 0;
 
-    let targetBar = null;
-    for (const selector of candidateSelectors) {
-      const el = document.querySelector(selector);
-      if (el) {
-        targetBar = el;
-        break;
-      }
-    }
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+      
+      isDragging = true;
+      resetIdleTimer(popup);
 
-    const triggerBtn = document.createElement('button');
-    triggerBtn.id = 'pvc-inbar-trigger-btn';
-    triggerBtn.className = 'pvc-bar-icon-btn';
-    triggerBtn.title = 'NOk Video Controller';
-    triggerBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-        <circle cx="19" cy="19" r="3"></circle>
-        <path d="M19 16v6"></path>
-      </svg>
-      <span class="pvc-btn-mini-label">PVC</span>
-    `;
+      const rect = popup.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      initialLeft = rect.left;
+      initialTop = rect.top;
 
-    triggerBtn.onclick = (e) => {
-      e.stopPropagation();
-      togglePvcPopup();
-    };
+      popup.style.bottom = 'auto';
+      popup.style.right = 'auto';
+      popup.style.left = `${initialLeft}px`;
+      popup.style.top = `${initialTop}px`;
 
-    if (targetBar) {
-      if (IS_YOUTUBE) {
-        targetBar.insertBefore(triggerBtn, targetBar.firstChild);
-      } else {
-        targetBar.appendChild(triggerBtn);
-      }
-    } else {
-      const video = document.querySelector('video');
-      if (video && video.parentElement) {
-        video.parentElement.style.position = 'relative';
-        triggerBtn.classList.add('pvc-standalone-btn');
-        video.parentElement.appendChild(triggerBtn);
-      }
-    }
+      document.body.style.userSelect = 'none';
+
+      const onMouseMove = (moveEvent) => {
+        if (!isDragging) return;
+        resetIdleTimer(popup);
+
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+
+        let newLeft = initialLeft + deltaX;
+        let newTop = initialTop + deltaY;
+
+        const maxLeft = window.innerWidth - popup.offsetWidth - 8;
+        const maxTop = window.innerHeight - popup.offsetHeight - 8;
+
+        newLeft = Math.max(8, Math.min(newLeft, maxLeft));
+        newTop = Math.max(8, Math.min(newTop, maxTop));
+
+        popup.style.left = `${newLeft}px`;
+        popup.style.top = `${newTop}px`;
+      };
+
+      const onMouseUp = () => {
+        isDragging = false;
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
   }
 
   function buildPvcPopup() {
@@ -365,12 +392,15 @@
     popup.className = 'pvc-floating-menu';
 
     popup.innerHTML = `
-      <div class="pvc-menu-header">
+      <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun">
         <div class="pvc-menu-brand">
           <span class="pvc-menu-badge">NOkrep v2.0</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
-        <button id="pvc-close-popup-btn" class="pvc-icon-btn">✕</button>
+        <div class="pvc-header-actions">
+          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Küçült / Büyüt">➖</button>
+          <button id="pvc-close-popup-btn" class="pvc-icon-btn pvc-close" title="Kapat">✕</button>
+        </div>
       </div>
 
       <div class="pvc-menu-section">
@@ -430,10 +460,18 @@
     const hostContainer = document.fullscreenElement || document.webkitFullscreenElement || document.body;
     hostContainer.appendChild(popup);
 
+    const dragHeader = popup.querySelector('#pvc-drag-header');
+    makeDraggable(popup, dragHeader);
+
+    popup.addEventListener('mouseenter', () => resetIdleTimer(popup));
+    popup.addEventListener('mousemove', () => resetIdleTimer(popup));
+    popup.addEventListener('mousedown', () => resetIdleTimer(popup));
+
     const slider = popup.querySelector('#pvc-speed-slider');
     const speedVal = popup.querySelector('#pvc-speed-value');
 
     slider.addEventListener('input', (e) => {
+      resetIdleTimer(popup);
       const val = parseFloat(e.target.value);
       speedVal.textContent = `${val}x`;
       setSpeed(val);
@@ -441,16 +479,25 @@
 
     popup.querySelectorAll('.pvc-chip-btn').forEach(btn => {
       btn.onclick = () => {
+        resetIdleTimer(popup);
         const val = parseFloat(btn.getAttribute('data-speed'));
         setSpeed(val);
       };
     });
 
-    popup.querySelector('#pvc-seek-m10').onclick = () => seekBy(-10);
-    popup.querySelector('#pvc-seek-p10').onclick = () => seekBy(10);
+    popup.querySelector('#pvc-seek-m10').onclick = () => {
+      resetIdleTimer(popup);
+      seekBy(-10);
+    };
+
+    popup.querySelector('#pvc-seek-p10').onclick = () => {
+      resetIdleTimer(popup);
+      seekBy(10);
+    };
 
     popup.querySelectorAll('.pvc-quality-btn').forEach(btn => {
       btn.onclick = () => {
+        resetIdleTimer(popup);
         const lvl = btn.getAttribute('data-lvl');
         popup.querySelectorAll('.pvc-quality-btn').forEach(b => b.classList.remove('pvc-active'));
         btn.classList.add('pvc-active');
@@ -459,34 +506,48 @@
     });
 
     popup.querySelector('#pvc-ping-btn').onclick = async function () {
-      this.textContent = '...';
+      resetIdleTimer(popup);
+      this.textContent = 'Ölçülüyor...';
       const ms = await testCdnPing();
       this.textContent = ms !== null ? `📡 ${ms} ms` : '📡 Ping';
     };
 
     popup.querySelector('#pvc-report-err-btn').onclick = () => {
+      resetIdleTimer(popup);
       const { video } = findVideoAndPlayer();
-      reportAnonymousError('USER_MANUAL_REPORT', video ? 'Manuel hata bildirimi' : 'Video bulunamadı.');
+      reportAnonymousError('USER_MANUAL_REPORT', video ? 'Kullanıcı manuel hata bildirimini tetikledi.' : 'Video bulunamadı.');
     };
 
-    popup.querySelector('#pvc-close-popup-btn').onclick = () => {
+    popup.querySelector('#pvc-collapse-btn').onclick = (e) => {
+      e.stopPropagation();
+      resetIdleTimer(popup);
+      popup.classList.toggle('pvc-collapsed');
+      const isCollapsed = popup.classList.contains('pvc-collapsed');
+      e.target.textContent = isCollapsed ? '➕' : '➖';
+    };
+
+    popup.querySelector('#pvc-close-popup-btn').onclick = (e) => {
+      e.stopPropagation();
       popup.style.display = 'none';
     };
 
+    resetIdleTimer(popup);
     return popup;
   }
 
   function togglePvcPopup() {
     const popup = buildPvcPopup();
+    
     const hostContainer = document.fullscreenElement || document.webkitFullscreenElement || document.body;
     if (popup.parentElement !== hostContainer) {
       hostContainer.appendChild(popup);
     }
 
-    const isVisible = popup.style.display === 'block';
+    const isVisible = popup.style.display !== 'none';
     popup.style.display = isVisible ? 'none' : 'block';
 
     if (!isVisible) {
+      resetIdleTimer(popup);
       const { video } = findVideoAndPlayer();
       if (video) {
         const currentSpeed = video.playbackRate || 1.0;
@@ -498,16 +559,21 @@
     }
   }
 
-  document.addEventListener('fullscreenchange', () => {
+  const handleFullscreenChange = () => {
     const popup = document.getElementById('pvc-controller-popup');
+    if (!popup) return;
+
     const hostContainer = document.fullscreenElement || document.webkitFullscreenElement || document.body;
-    if (popup && popup.parentElement !== hostContainer) {
+    if (popup.parentElement !== hostContainer) {
       hostContainer.appendChild(popup);
     }
-    injectNativeBarButton();
-  });
+    resetIdleTimer(popup);
+  };
 
-  injectNativeBarButton();
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
   buildPvcPopup();
   showToast('NOk Video Controller Hazır (NOkrep)');
 })();

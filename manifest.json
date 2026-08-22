@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "NOk Video Controller",
   "version": "2.0.0",
-  "description": "NOkrep tarafından geliştirilen gizlilik odaklı, durumsuz (stateless) Firefox & Chromium HLS/Video.js video oynatıcı hız slider'ı, kalite ve kontrol aracı.",
+  "description": "NOkrep tarafından geliştirilen gizlilik odaklı, gezdirilebilir (draggable), tam ekran uyumlu ve 10sn hareketsizlikte otomatik saydamlaşan video kontrol aracı.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",
@@ -10,7 +10,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Video Kontrollerini Başlat (Aktif Sekme)",
+    "default_title": "NOk Video Controller (Gezdirilebilir HUD)",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

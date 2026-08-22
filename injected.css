@@ -1,75 +1,442 @@
-/* injected.css - NOk Video Controller v2.0 Stilleri */
-.pvc-bar-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: rgba(37, 99, 235, 0.2);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #38bdf8 !important;
-  height: 32px;
-  padding: 0 8px;
-  margin: 0 4px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  z-index: 2147483640;
-  transition: all 0.15s ease;
-  vertical-align: middle;
+/**
+ * injected.css - NOk Video Controller v2.0
+ * Gezdirilebilir (Draggable), Tam Ekran (Fullscreen) Uyumlu & Otomatik Transparan HUD
+ * Geliştirici: NOkrep
+ */
+
+#pvc-controller-popup {
+  position: fixed !important;
+  bottom: 40px !important;
+  right: 40px !important;
+  width: 320px !important;
+  max-width: calc(100vw - 32px) !important;
+  background: rgba(11, 17, 32, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+  color: #f1f5f9 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 20px rgba(37, 99, 235, 0.25) !important;
+  z-index: 2147483647 !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+  opacity: 1 !important;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, border-color 0.3s ease !important;
 }
 
-.pvc-bar-icon-btn:hover {
-  background: rgba(37, 99, 235, 0.45);
-  border-color: #60a5fa;
+#pvc-controller-popup.pvc-idle-transparent {
+  opacity: 0.12 !important;
+  border-color: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+}
+
+#pvc-controller-popup.pvc-idle-transparent:hover {
+  opacity: 1 !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 20px rgba(37, 99, 235, 0.35) !important;
+}
+
+#pvc-controller-popup.pvc-collapsed {
+  width: auto !important;
+  padding: 8px 14px !important;
+  border-radius: 30px !important;
+}
+
+#pvc-controller-popup.pvc-collapsed .pvc-menu-section,
+#pvc-controller-popup.pvc-collapsed .pvc-menu-footer {
+  display: none !important;
+}
+
+#pvc-controller-popup * {
+  box-sizing: border-box !important;
+}
+
+.pvc-menu-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 10px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  cursor: grab !important;
+}
+
+.pvc-menu-header:active {
+  cursor: grabbing !important;
+}
+
+.pvc-menu-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  pointer-events: none !important;
+}
+
+.pvc-menu-badge {
+  background: #2563eb !important;
   color: #ffffff !important;
-  transform: scale(1.04);
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
 }
 
-.pvc-btn-mini-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
+.pvc-menu-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
 }
 
-.pvc-floating-menu {
-  position: fixed;
-  bottom: 75px;
-  right: 25px;
-  width: 320px;
-  background: rgba(11, 15, 25, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  padding: 14px;
-  color: #f1f5f9;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 20px rgba(37, 99, 235, 0.15);
-  z-index: 2147483647;
-  user-select: none;
+.pvc-header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.pvc-icon-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  padding: 4px 6px !important;
+  border-radius: 4px !important;
+  transition: all 0.15s ease !important;
+}
+
+.pvc-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.pvc-icon-btn.pvc-close:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+  color: #f87171 !important;
+}
+
+.pvc-menu-section {
+  margin-bottom: 10px !important;
+}
+
+.pvc-section-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 6px !important;
+}
+
+.pvc-label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #94a3b8 !important;
+}
+
+.pvc-subtext {
+  font-size: 10px !important;
+  color: #64748b !important;
+}
+
+.pvc-val-badge {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+}
+
+.pvc-slider-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.pvc-slider-bound {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
 }
 
 .pvc-range-slider {
-  flex: 1;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  background: #1e293b;
-  outline: none;
-  cursor: pointer;
+  flex: 1 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 6px !important;
+  border-radius: 3px !important;
+  background: #1e293b !important;
+  outline: none !important;
+  cursor: pointer !important;
 }
 
 .pvc-range-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #3b82f6;
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
-  cursor: pointer;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  background: #3b82f6 !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.8) !important;
+  cursor: pointer !important;
+}
+
+.pvc-range-slider::-moz-range-thumb {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  background: #3b82f6 !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.8) !important;
+  cursor: pointer !important;
+}
+
+.pvc-quick-speed-buttons {
+  display: flex !important;
+  gap: 4px !important;
+}
+
+.pvc-chip-btn {
+  flex: 1 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 4px 2px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  transition: all 0.15s ease !important;
+}
+
+.pvc-chip-btn:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.pvc-btn-grid-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+  margin-top: 4px !important;
+}
+
+.pvc-action-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 6px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pvc-action-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.pvc-btn-grid-4 {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 5px !important;
+  margin-top: 4px !important;
+}
+
+.pvc-quality-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 6px 2px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  transition: all 0.15s ease !important;
+}
+
+.pvc-quality-btn:hover {
+  background: rgba(59, 130, 246, 0.25) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.pvc-quality-btn.pvc-active {
+  background: #2563eb !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5) !important;
+}
+
+.pvc-menu-footer {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+  padding-top: 10px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.pvc-footer-btn {
+  padding: 6px 8px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+}
+
+.pvc-btn-emerald {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #34d399 !important;
+}
+
+.pvc-btn-emerald:hover {
+  background: rgba(16, 185, 129, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.pvc-btn-amber {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  color: #fbbf24 !important;
+}
+
+.pvc-btn-amber:hover {
+  background: rgba(245, 158, 11, 0.3) !important;
+  color: #ffffff !important;
+}
+
+#pvc-toast-notice {
+  position: fixed !important;
+  top: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(-20px) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  padding: 8px 18px !important;
+  border-radius: 20px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.6) !important;
+  z-index: 2147483647 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#pvc-toast-notice.pvc-toast-visible {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) !important;
+}
+
+#pvc-error-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.pvc-modal-card {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 12px !important;
+  width: 90% !important;
+  max-width: 520px !important;
+  color: #f8fafc !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.7) !important;
+}
+
+.pvc-modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #1e293b !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+
+.pvc-modal-header button {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+}
+
+.pvc-modal-body {
+  padding: 14px 16px !important;
+}
+
+.pvc-modal-desc {
+  font-size: 12px !important;
+  color: #94a3b8 !important;
+  margin: 0 0 10px 0 !important;
+  line-height: 1.5 !important;
+}
+
+.pvc-modal-code {
+  background: #020617 !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  font-family: ui-monospace, monospace !important;
+  font-size: 11px !important;
+  color: #38bdf8 !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  margin: 0 !important;
+}
+
+.pvc-modal-footer {
+  padding: 10px 16px !important;
+  background: #090d16 !important;
+  border-top: 1px solid #1e293b !important;
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+}
+
+.pvc-modal-btn-secondary {
+  background: #334155 !important;
+  color: white !important;
+  border: none !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+.pvc-modal-btn-primary {
+  color: white !important;
+  text-decoration: none !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
 }

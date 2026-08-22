@@ -25,4 +25,11 @@
   }
 
   injectMainWorldScript();
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || !event.data || !event.data.type) return;
+    if (event.data.type === 'PVC_RE_INJECT_REQUEST') {
+      injectMainWorldScript();
+    }
+  });
 })();
