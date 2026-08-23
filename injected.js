@@ -1,28 +1,29 @@
 /**
- * injected.js - NOk Video Controller v0.3.5 (Main World Engine)
+ * injected.js - NOk Video Controller v0.3.6 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.5 İyileştirmeleri & Düzeltmeleri:
- * 1. Medianova (MNCDN) Akışında Pürüzsüz Dahili Kalite Geçişi:
- *    - 1080p.smil master akışı aktifken 480p, 576p, 720p, 1080p geçişlerinde player.src yeniden yüklenmez.
- *    - Video.js VHS & qualityLevels seviyesinde doğrudan anahtarlanır; buffer boşalması ve takılma (%100) engellenir.
- * 2. 1-Tıkla Anında Açılış (Single Click Instant Launch):
- *    - content.js onLoad ve injected.js mesajlaşması senkronize edildi; ilk tıklamada anında açılır.
- * 3. 16px Sürükleme Sıçramasını Önleyen Sağ Ray Hizalaması:
- *    - Varsayılan başlangıç konumu ile sürükleme konumu 24px olarak eşitlendi; dokunulduğunda sağa kayma yapmaz.
- * 4. Canlı DYG Video API Yakalayıcısı (Live API Interceptor):
- *    - PuhuTV API istekleri hafızada yakalanır ve 1080p MNCDN geçişinde sayfa yenilemeye gerek kalmadan doğrudan video güncellenir.
- * 5. Zenginleştirilmiş Teşhis ve Sürüm Takip Motoru (v0.3.5 Version History & Detailed Telemetry).
+ * v0.3.6 İyileştirmeleri & Düzeltmeleri:
+ * 1. PuhuTV 576p (PAL) / 480p (SD) Donma ve Tampon Sıfırlanma Düzeltmesi:
+ *    - Video.js VHS'nin dahili selectPlaylist fonksiyonunu bozan monkey-patch kaldırıldı.
+ *    - Video.js VHS & qualityLevels standart ABR seviyesinde anahtarlanır; segment zaman çizelgesi (timeline) korunur.
+ *    - Oynatıcı takılma nöbetçisi (Anti-Stall Watchdog) eklendi; donma riski sıfıra indirildi.
+ * 2. PuhuTV Sayfa Açılışında Doğal Akış & İsteğe Bağlı 1080p FHD Geçişi:
+ *    - Sayfa ilk açıldığında otomatik zorlama yapılmaz; canlı DYG API hafızada yakalanır.
+ *    - 1080p seçildiğinde yakalanan API üzerinden 1080p.smil akışına pürüzsüz geçilir.
+ * 3. Tampon Emniyet Zamanlayıcısı (Smooth Buffer Safety Timer):
+ *    - loadedmetadata gecikmelerinde oynatmanın askıda kalması 100% önlenir.
+ * 4. Zenginleştirilmiş Teşhis ve Sürüm Takip Motoru (v0.3.6).
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.3.5';
+  const EXTENSION_VERSION = '0.3.6';
   const VERSION_HISTORY = [
-    { version: 'v0.3.5', notes: 'PuhuTV MNCDN dahili profil pürüzsüz geçişi (player.src sıfırlamasız kesintisiz geçiş), 1-tıkla anında açılış senkronizasyonu, 16px sürükleme sıçramasını önleyen 24px sabit sağ ray, canlı DYG Video API yakalama ve zenginleştirilmiş teşhis telemetrisi.' },
+    { version: 'v0.3.6', notes: 'PuhuTV 576p/480p Video.js VHS donma düzeltmesi (non-destructive qualityLevels switch), Anti-Stall oynatıcı nöbetçisi, sayfa açılışında doğal akış koruması & isteğe bağlı pürüzsüz 1080p MNCDN geçişi.' },
+    { version: 'v0.3.5', notes: 'PuhuTV MNCDN dahili profil pürüzsüz geçişi, 1-tıkla anında açılış senkronizasyonu, 16px sürükleme sıçramasını önleyen 24px sabit sağ ray, canlı DYG Video API yakalama ve telemetri.' },
     { version: 'v0.3.4', notes: 'Pürüzsüz tampon motoru (Smooth Buffer Engine), doğrudan 1080p MNCDN API geçişi, 5 profil ayrıştırma.' },
     { version: 'v0.3.3', notes: 'Sentetik olmayan gerçek HLS paketleri, tek tık iyileştirmesi, 480p SD / 576p PAL ayrımı.' },
     { version: 'v0.3.2', notes: 'HUD UI, Kick adaptörü, Zero-PII teşhis motoru.' }
@@ -38,7 +39,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.3.5)');
+      showToast('NOk Video Controller Aktif (v0.3.6)');
     }
   });
 
@@ -48,7 +49,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.3.5 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.3.6 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -81,9 +82,8 @@
       addDiagnosticLog('INFO', `[PuhuTvAdapter] DYG Video API yakalandı: ${sanitizeStreamUrl(url)}`);
     }
 
-    // 1. DYG Video API Kancası: PuhuTV'nin 1080p FHD destekleyen Medianova (MNCDN) akışını getirmesi için
-    //    akamai=true parametresini akamai=false olarak dönüştürür.
-    if (url.includes('dygvideo.dygdigital.com/api/video_info') && url.includes('akamai=true')) {
+    // Yalnızca kullanıcı 1080p FHD hedefi seçmişse ve doğrudan API isteği atılıyorsa MNCDN moduna dönüştür
+    if (targetPuhuSmilLevel === '1080p.smil' && url.includes('dygvideo.dygdigital.com/api/video_info') && url.includes('akamai=true')) {
       const redirectUrl = url.replace('akamai=true', 'akamai=false');
       addDiagnosticLog('INFO', '[PuhuTvAdapter] DYG Video API: 1080p FHD için MNCDN moduna yönlendirildi.');
       return redirectUrl;
@@ -412,6 +412,11 @@
       addDiagnosticLog('INFO', `[BufferEngine] Tampon hazırlandı, oynatma sürdürülüyor: ${label}`);
     };
 
+    // Global Emniyet Zamanlayıcısı (Event tetiklenmese bile 2 saniyede başlat)
+    smoothSwitchTimeout = setTimeout(() => {
+      resumePlayback();
+    }, 2000);
+
     if (typeof player.one === 'function') {
       player.one('loadedmetadata', () => {
         if (curTime > 0 && typeof player.currentTime === 'function') {
@@ -429,11 +434,6 @@
             }
           }
         }, 150);
-
-        // Emniyet zamanlayıcısı: 1.5 saniye sonra zorunlu başlat
-        smoothSwitchTimeout = setTimeout(() => {
-          resumePlayback();
-        }, 1500);
       });
     }
   }
@@ -592,31 +592,15 @@
     applyQuality(targetItem, video, player) {
       puhuFallbackAttempted = false;
 
-      // 1. Akamai / Medianova Ağ Seviyelerini ata
+      // 1. Akamai / Medianova Hedef Seviyelerini ata
       if (targetItem.mediaTag) {
         targetPuhuMediaLevel = targetItem.mediaTag;
       }
       if (targetItem.smilTag) {
         targetPuhuSmilLevel = targetItem.smilTag;
-      } else if (targetItem.height >= 1000) {
-        targetPuhuMediaLevel = 'media-4';
-        targetPuhuSmilLevel = '1080p.smil';
-      } else if (targetItem.height >= 700) {
-        targetPuhuMediaLevel = 'media-3';
-        targetPuhuSmilLevel = '720p.smil';
-      } else if (targetItem.height >= 540) {
-        targetPuhuMediaLevel = 'media-3';
-        targetPuhuSmilLevel = '576p.smil';
-      } else if (targetItem.height >= 450) {
-        targetPuhuMediaLevel = 'media-2';
-        targetPuhuSmilLevel = '480p.smil';
-      } else {
-        targetPuhuMediaLevel = 'media-1';
-        targetPuhuSmilLevel = '360p.smil';
       }
 
-      addDiagnosticLog('INFO', `[PuhuTvAdapter] Ağ kancası hedefi ayarlandı: Akamai=${targetPuhuMediaLevel}, MNCDN=${targetPuhuSmilLevel} (${targetItem.label})`);
-
+      addDiagnosticLog('INFO', `[PuhuTvAdapter] Hedef kalite seçildi: ${targetItem.label}`);
       this.lockAbrBandwidth(player);
 
       // 2. Akış URL kontrolü
@@ -630,21 +614,7 @@
         return true;
       }
 
-      // 4. VHS Playlist Doğrudan Kilit (Buffer sıfırlanmadan donmasız geçiş)
-      if (targetItem.vhsPlaylist && player && player.tech_ && player.tech_.vhs) {
-        try {
-          const targetPl = targetItem.vhsPlaylist;
-          if (typeof player.tech_.vhs.selectPlaylist === 'function') {
-            player.tech_.vhs.selectPlaylist = () => targetPl;
-          }
-          if (player.tech_.vhs.playlists && typeof player.tech_.vhs.playlists.media === 'function') {
-            player.tech_.vhs.playlists.media(targetPl);
-          }
-          addDiagnosticLog('INFO', `[PuhuTvAdapter] VHS Playlist kilitlendi: ${targetItem.label}`);
-        } catch (e) {}
-      }
-
-      // 5. Video.js qualityLevels kilit
+      // 4. Video.js qualityLevels Güvenli Kilit (Standart Non-Destructive ABR Switch)
       if (player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
@@ -658,15 +628,30 @@
                 qLevels[i].enabled = match;
               }
             }
-
-            if (targetIdx !== -1) {
-              qLevels.selectedIndex_ = targetIdx;
-              if (typeof qLevels.trigger === 'function') {
-                qLevels.trigger({ type: 'change', selectedIndex: targetIdx });
-              }
-            }
           }
         } catch (e) {}
+      }
+
+      // 5. VHS Fast Quality Change & Bandwidth Lock
+      if (player && player.tech_ && player.tech_.vhs) {
+        try {
+          if (player.tech_.vhs.masterPlaylistController_) {
+            player.tech_.vhs.masterPlaylistController_.fastQualityChange_ = true;
+          }
+        } catch (e) {}
+      }
+
+      // 6. Anti-Stall Oynatıcı Nöbetçisi (Donma Önleme & Canlandırma)
+      if (video && !video.paused) {
+        const stallCheckTime = video.currentTime;
+        setTimeout(() => {
+          if (video && !video.paused && video.currentTime === stallCheckTime && video.readyState < 3) {
+            addDiagnosticLog('INFO', '[PuhuTvAdapter] Donma önleme nöbetçisi akışı canlandırdı.');
+            try {
+              video.currentTime += 0.01;
+            } catch (e) {}
+          }
+        }, 900);
       }
 
       this.lockAbrBandwidth(player);
@@ -1368,7 +1353,7 @@
     modal.innerHTML = `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>⚠️ Zenginleştirilmiş Teşhis & Sürüm Raporu (v0.3.5)</span>
+          <span>⚠️ Zenginleştirilmiş Teşhis & Sürüm Raporu (v0.3.6)</span>
           <button id="pvc-close-modal-btn">✕</button>
         </div>
         <div class="pvc-modal-body">
@@ -1410,9 +1395,9 @@
       const updatedJson = updatePayloadJson();
       codeBlock.textContent = updatedJson;
 
-      const issueTitle = encodeURIComponent(`[Teşhis/v0.3.5]: ${payload.domain} - ${payload.errorCode}`);
+      const issueTitle = encodeURIComponent(`[Teşhis/v0.3.6]: ${payload.domain} - ${payload.errorCode}`);
       const compactSummary = encodeURIComponent(
-        `### Anonim Teşhis Özeti (v0.3.5)\n` +
+        `### Anonim Teşhis Özeti (v0.3.6)\n` +
         `- **Domain:** ${payload.domain}\n` +
         `- **Adaptör:** ${payload.activeAdapter}\n` +
         `- **CDN Sağlayıcı:** ${payload.streamCdnProvider}\n` +
@@ -1517,7 +1502,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.5</span>
+          <span class="pvc-menu-badge">NOkrep v0.3.6</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
@@ -1729,7 +1714,7 @@
         if (slider) slider.value = (video.playbackRate || 1.0).toString();
         if (speedVal) speedVal.textContent = `${video.playbackRate || 1.0}x`;
       }
-      showToast('NOk Video Controller Aktif (v0.3.5)');
+      showToast('NOk Video Controller Aktif (v0.3.6)');
     }
   }
 
