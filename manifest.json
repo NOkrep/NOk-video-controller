@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.2.9",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, GPU hızlandırmalı sürükleme, PuhuTV 1080p, Kick.com Canlı/VOD dinamik paketler ve ABR kilitli video denetleyicisi.",
+  "version": "0.3.0",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, aktif çalan video odaklı, PuhuTV 1080p-360p VHS master ve Kick.com çok katmanlı kalite kilitli video denetleyicisi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",
