@@ -1,24 +1,22 @@
 /**
- * injected.js - NOk Video Controller v0.3.1 (Main World Engine)
+ * injected.js - NOk Video Controller v0.3.2 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.1 Güncellemeleri & Mimari Yenilikler:
- * 1. PuhuTV Akamai Ağ İsteği Yönlendiricisi (XHR / Fetch Interceptor):
- *    - PuhuTV Akamai akışlarında media-1 (360p), media-2 (480p/576p), media-3 (720p), media-4 (1080p) istekleri dinamik olarak hedeflenen kaliteye yönlendirilir.
- * 2. Takılmasız / Donmasız Kalite Değişimi:
- *    - Oynatıcıyı donduran agresif mikro atlamalar kaldırıldı; akıcı VHS/HLS seviye değişimi sağlandı.
- * 3. Tam Ekran Uyumluluğu (Fullscreen Dynamic Stacking):
- *    - Tam ekrana geçildiğinde HUD penceresi ve bildirimler otomatik olarak document.fullscreenElement içine taşınır, görünmez olma sorunu giderildi.
- * 4. Ergonomik Raylı Sürükleme (Docked Right-Rail Vertical Slide):
- *    - Normal modda sağ kenara sabitli, sadece yukarı-aşağı dikey kaydırılabilir (sayfa içeriğini engellemez, sıfır lag).
- *    - Tam ekran modunda ise ekranın her yerine 2D serbest sürüklenebilir.
- *    - İlk tıklamada sol kenara atlama / çift görünüm kusuru tamamen yok edildi.
- * 5. Kick.com Canlı & VOD Çok Katmanlı IVS + Dahili UI Seçici.
- * 6. Zenginleştirilmiş Anonim Teşhis Raporu & JSON İçi Kullanıcı Yorumu.
+ * v0.3.2 Güncellemeleri & Mimari Yenilikler:
+ * 1. PuhuTV Akamai Stream & URL M3U8 Master Kanca:
+ *    - PuhuTV Akamai m3u8 playlist isteklerinde (media-1/2/3/4) ve segment isteklerinde dinamik kanca.
+ *    - 1080p olmayan eski içeriklerde 404/hata oluşursa otomatik olarak en yüksek geçerli kaliteye (576p / media-2) yumuşak geçiş.
+ * 2. 576p PAL / 480p SD En-Boy Oranı & Çözünürlük Doğrulaması:
+ *    - 786x576 ve 654x480 video akışları doğru PAL (576p) ve SD (480p) etiketleriyle eşleştirilir.
+ * 3. Kick.com Canlı ve Kayıt (VOD) Çözünürlük Kancası:
+ *    - Amazon IVS Player API, HTML5 video src ve DOM kontrol çubuğu eşzamanlı kilitlenir.
+ * 4. Ağ İsteği ve Bağlantı Teşhis Detayları (Network Telemetry Buffer):
+ *    - Performans / Resource API üzerinden son medya paketleri (CDN, HTTP yanıt kodları, süre) gizlilik ihlali olmadan toplanır.
+ * 5. Kesintisiz İlk Tıklama / Açılış Desteği.
  */
 
 (() => {
@@ -35,7 +33,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.3.1 (PuhuTV Media Interceptor + Fullscreen Stacking + Right-Rail Drag) aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.3.2 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -52,6 +50,7 @@
   let cachedDiscoveredQualities = [];
   let currentActiveAdapterName = 'GenericAdapter';
   let targetPuhuMediaLevel = null; // 'media-4', 'media-3', 'media-2', 'media-1'
+  let puhuFallbackAttempted = false;
 
   // =========================================================================
   // 🌐 PUHUTV AKAMAI XHR / FETCH İSTEK YÖNLENDİRİCİSİ (1080p - 360p MEDIA HOOK)
@@ -94,7 +93,7 @@
   // 📝 SIFIR KİŞİSEL VERİ (ZERO-PII) BELLEK İÇİ TEŞHİS GÜNLÜĞÜ
   // =========================================================================
   const DIAGNOSTIC_LOG_BUFFER = [];
-  const MAX_LOG_BUFFER_SIZE = 35;
+  const MAX_LOG_BUFFER_SIZE = 40;
 
   function addDiagnosticLog(level, message, details = null) {
     const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
@@ -149,6 +148,16 @@
         if (msg.includes('video') || msg.includes('hls') || msg.includes('ivs') || msg.includes('puhu') || msg.includes('kick')) {
           addDiagnosticLog('WARN', msg);
         }
+
+        // PuhuTV 1080p (media-4) 404 aldığında otomatik 576p/480p (media-2) fallback
+        if (msg.includes('puhu.akamaized.net') && msg.includes('media-4') && (msg.includes('errored') || msg.includes('Problem encountered'))) {
+          if (!puhuFallbackAttempted && targetPuhuMediaLevel === 'media-4') {
+            puhuFallbackAttempted = true;
+            targetPuhuMediaLevel = 'media-2';
+            addDiagnosticLog('WARN', '[PuhuTvAdapter] Bu eski içerikte 1080p master bulunamadı; en yüksek mevcut kaliteye (576p/media-2) uyarlandı.');
+            showToast('PuhuTV: Bu içerik maks 576p destekliyor (576p kilitlendi)');
+          }
+        }
       } catch (e) {}
       originalWarn.apply(console, args);
     };
@@ -171,6 +180,7 @@
       .replace(/([?&]token=)[^&]+/gi, '$1[REDACTED]')
       .replace(/([?&]auth=)[^&]+/gi, '$1[REDACTED]')
       .replace(/([?&]hdnts=)[^&]+/gi, '$1[REDACTED]')
+      .replace(/([?&]hdntl=)[^&]+/gi, '$1[REDACTED]')
       .replace(/([?&]sig=)[^&]+/gi, '$1[REDACTED]')
       .replace(/([?&]expires=)[^&]+/gi, '$1[REDACTED]')
       .replace(/([?&]e=)[^&]+/gi, '$1[REDACTED]')
@@ -375,7 +385,7 @@
               let mediaTag = 'media-2';
               if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; }
               else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; }
-              else if (h === 576 || (w === 786 && h === 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
+              else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
               else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; }
               else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; }
               else if (h > 0) { label = `${h}p`; }
@@ -413,7 +423,7 @@
               let mediaTag = 'media-2';
               if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; }
               else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; }
-              else if (h === 576 || (w === 786 && h === 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
+              else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
               else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; }
               else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; }
 
@@ -435,7 +445,7 @@
         } catch (e) {}
       }
 
-      // 3. Fallback: Standart PuhuTV paketleri (Daima 1080p dahil)
+      // 3. Fallback: Standart PuhuTV paketleri (1080p, 720p, 576p, 480p, 360p)
       if (results.length === 0) {
         return [
           { id: 'puhu_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4' },
@@ -446,7 +456,7 @@
         ];
       }
 
-      // Eğer 1080p eksikse en başa ekleyelim
+      // Eğer 1080p listede yoksa manuel deneme seçeneği olarak ekle
       if (!seenHeights.has(1080)) {
         results.unshift({ id: 'puhu_1080_forced', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4' });
       }
@@ -455,6 +465,8 @@
     },
 
     applyQuality(targetItem, video, player) {
+      puhuFallbackAttempted = false;
+
       // 1. Akamai Network Hook seviyesini ata (XHR/Fetch media-X yönlendirmesi)
       if (targetItem.mediaTag) {
         targetPuhuMediaLevel = targetItem.mediaTag;
@@ -510,7 +522,7 @@
         } catch (e) {}
       }
 
-      // 4. Doğrudan Akamai media-X URL Enjeksiyonu (Eğer oynatıcı kaynak URL'si erişilebilir ise)
+      // 4. Doğrudan Akamai media-X URL Enjeksiyonu
       if (player && typeof player.src === 'function' && targetItem.mediaTag) {
         try {
           const curSrc = player.src();
@@ -529,13 +541,13 @@
 
       this.lockAbrBandwidth(player);
       showToast(`PuhuTV: ${targetItem.label} (Kilitlendi)`);
-      addDiagnosticLog('INFO', `[PuhuTvAdapter] Kalite başarıyla uygulandı: ${targetItem.label}`);
+      addDiagnosticLog('INFO', `[PuhuTvAdapter] Kalite uygulandı: ${targetItem.label}`);
       return true;
     }
   };
 
   /**
-   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + UI Fallback)
+   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + DOM Fallback)
    */
   const KickAdapter = {
     name: 'KickAdapter',
@@ -791,7 +803,7 @@
   }
 
   /**
-   * Canlı Video Çözünürlük Takipçisi & Durum Rozeti
+   * Canlı Video Çözünürlük Takipçisi & Durum Rozeti (PAL 576p / SD 480p ve En-Boy Doğrulamalı)
    */
   function updateRealtimeResolutionBadge() {
     const { video } = findVideoAndPlayer();
@@ -802,12 +814,13 @@
       const w = video.videoWidth;
       const h = video.videoHeight;
       let label = `${h}p`;
+
       if (h >= 1080) label = '1080p FHD';
       else if (h >= 720) label = '720p HD';
-      else if (h === 576 || (w === 786 && h === 576)) label = '576p PAL';
-      else if (h >= 540) label = '540p MD';
-      else if (h >= 480 || w === 654) label = '480p SD';
-      else if (h >= 360) label = '360p SD';
+      else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) label = '576p PAL';
+      else if (h >= 480 || w === 654 || (w === 852 && h === 480)) label = '480p SD';
+      else if (h >= 360 || w === 640) label = '360p SD';
+      else if (h >= 160) label = `${h}p`;
 
       lastObservedResolution = `${w}x${h} (${label})`;
 
@@ -819,7 +832,7 @@
           badge.textContent = `🎬 Gerçek: ${lastObservedResolution}`;
           badge.style.color = '#38bdf8';
         } else {
-          badge.textContent = `⏳ ${pendingQualityLabel} İsteniyor... (${label})`;
+          badge.textContent = `⏳ ${pendingQualityLabel} Uygulanıyor (${label})`;
           badge.style.color = '#f59e0b';
         }
       } else {
@@ -949,7 +962,7 @@
         
         const badge = document.getElementById('pvc-realtime-res-badge');
         if (badge) {
-          badge.textContent = `⏳ ${q.label} Uygulandı (Arabellek Yenileniyor)`;
+          badge.textContent = `⏳ ${q.label} Uygulandı`;
           badge.style.color = '#f59e0b';
         }
       };
@@ -1022,6 +1035,38 @@
   }
 
   /**
+   * Zenginleştirilmiş Ağ ve Video Telemetrisi Toplayıcı
+   */
+  function collectNetworkTelemetry() {
+    try {
+      const resources = performance.getEntriesByType('resource');
+      const mediaEntries = resources.filter(r => 
+        r.name.includes('.m3u8') ||
+        r.name.includes('.ts') ||
+        r.name.includes('.m4s') ||
+        r.name.includes('media-') ||
+        r.name.includes('ivs') ||
+        r.name.includes('akamaized') ||
+        r.name.includes('kick.com')
+      ).slice(-8);
+
+      return mediaEntries.map(e => {
+        let domain = 'Bilinmeyen';
+        try { domain = new URL(e.name).hostname; } catch (_) {}
+        return {
+          host: domain,
+          type: e.initiatorType || 'media',
+          durationMs: Math.round(e.duration),
+          transferSize: e.transferSize || 0,
+          sampleUrl: sanitizeStreamUrl(e.name)
+        };
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /**
    * Zenginleştirilmiş Anonim Hata & Teşhis Paketi
    */
   function reportAnonymousError(errorCode, message) {
@@ -1070,7 +1115,8 @@
       screenResolution: `${window.innerWidth}x${window.innerHeight}`,
       videoState: videoStats,
       userComments: '',
-      recentLogs: DIAGNOSTIC_LOG_BUFFER.slice(-15)
+      networkTelemetry: collectNetworkTelemetry(),
+      recentLogs: DIAGNOSTIC_LOG_BUFFER.slice(-20)
     };
 
     addDiagnosticLog('WARN', `[Teşhis Paketi Üretildi]: ${errorCode}`);
@@ -1092,12 +1138,12 @@
     modal.innerHTML = `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>⚠️ Zenginleştirilmiş Teşhis & Geri Bildirim (v0.3.1)</span>
+          <span>⚠️ Zenginleştirilmiş Teşhis & Geri Bildirim (v0.3.2)</span>
           <button id="pvc-close-modal-btn">✕</button>
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
-            Sitede (<strong>${payload.domain}</strong>) oynatıcı durumu, konsol tamponu ve render ölçümleri anonimleştirilerek toplandı (<strong>Sıfır Kişisel Veri</strong>):
+            Sitede (<strong>${payload.domain}</strong>) oynatıcı durumu, son medya telemetrisi ve hata günlüğü anonimleştirilerek toplandı (<strong>Sıfır Kişisel Veri</strong>):
           </p>
 
           <!-- Kullanıcı Görüşleri ve Notu Bölümü -->
@@ -1240,7 +1286,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.1</span>
+          <span class="pvc-menu-badge">NOkrep v0.3.2</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
@@ -1448,7 +1494,7 @@
         if (slider) slider.value = (video.playbackRate || 1.0).toString();
         if (speedVal) speedVal.textContent = `${video.playbackRate || 1.0}x`;
       }
-      showToast('NOk Video Controller Aktif (v0.3.1)');
+      showToast('NOk Video Controller Aktif (v0.3.2)');
     }
   }
 

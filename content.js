@@ -3,13 +3,6 @@
  * Geliştirici: NOkrep
  */
 (() => {
-  // Eğer daha önce çalıştıysa çift enjeksiyonu önle, arayüzü aç/kapa yap
-  if (window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__) {
-    window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');
-    return;
-  }
-  window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__ = true;
-
   const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
 
   /**
@@ -31,7 +24,14 @@
     }
   }
 
-  injectMainWorldScript();
+  // Eğer sayfa ilk defa yükleniyorsa script'i enjekte et
+  if (!window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__) {
+    window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__ = true;
+    injectMainWorldScript();
+  } else {
+    // Zaten enjekte edilmiş, toggle mesajını doğrudan ilet
+    window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');
+  }
 
   // Main World ile mesajlaşma dinleyicisi
   window.addEventListener('message', (event) => {
