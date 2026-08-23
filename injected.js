@@ -474,27 +474,24 @@
         } catch (e) {}
       }
 
-      // 3. PuhuTV Her Zaman Tüm Kaliteleri Gösterir (Kullanıcı İstediği Seviyeyi Zorlayabilir)
-      const standardLevels = [
-        { id: 'puhu_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4', smilTag: '1080p.smil' },
-        { id: 'puhu_720', label: '720p (HD)', height: 720, mediaTag: 'media-3', smilTag: '720p.smil' },
-        { id: 'puhu_576', label: '576p (PAL)', height: 576, mediaTag: 'media-2', smilTag: '576p.smil' },
-        { id: 'puhu_480', label: '480p (SD)', height: 480, mediaTag: 'media-2', smilTag: '480p.smil' },
-        { id: 'puhu_360', label: '360p (Düşük)', height: 360, mediaTag: 'media-1', smilTag: '360p.smil' }
-      ];
+      // 3. Fallback: Standart PuhuTV paketleri
+      if (results.length === 0) {
+        return [
+          { id: 'puhu_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4' },
+          { id: 'puhu_720', label: '720p (HD)', height: 720, mediaTag: 'media-3' },
+          { id: 'puhu_576', label: '576p (PAL)', height: 576, mediaTag: 'media-2' },
+          { id: 'puhu_480', label: '480p (SD)', height: 480, mediaTag: 'media-2' },
+          { id: 'puhu_360', label: '360p (Düşük)', height: 360, mediaTag: 'media-1' }
+        ];
+      }
 
-      // Eğer manifestten gelenler varsa onları eşleştir, yoksa standart listeyi kullan
-      standardLevels.forEach(lvl => {
-        const foundInManifest = results.find(r => r.height === lvl.height || Math.abs((r.height || 0) - lvl.height) < 30);
-        if (foundInManifest) {
-          lvl.vhsPlaylist = foundInManifest.vhsPlaylist;
-          lvl.raw = foundInManifest.raw;
-          lvl.index = foundInManifest.index;
-          lvl.verifiedInManifest = true;
-        }
-      });
+      // En yüksek kaliteyi etiketle (örn: Eğer maks 576p ise kullanıcıya belirt)
+      results.sort((a, b) => (b.height || 0) - (a.height || 0));
+      if (results[0] && results[0].height < 1080) {
+        results[0].label = `${results[0].label} (Maks)`;
+      }
 
-      return standardLevels;
+      return results;
     },
 
     applyQuality(targetItem, video, player) {
@@ -504,9 +501,8 @@
       if (targetItem.mediaTag) {
         targetPuhuMediaLevel = targetItem.mediaTag;
       }
-      if (targetItem.smilTag) {
-        targetPuhuSmilLevel = targetItem.smilTag;
-      } else if (targetItem.height >= 1080) {
+
+      if (targetItem.height >= 1080) {
         targetPuhuMediaLevel = 'media-4';
         targetPuhuSmilLevel = '1080p.smil';
       } else if (targetItem.height >= 720) {
@@ -528,7 +524,6 @@
       this.lockAbrBandwidth(player);
 
       // 2. Canlı Oynatma Kaynağını (MNCDN SMIL / Akamai) Dinamik Olarak Güncelle
-      // NOT: Donmayı ve seek kilitlenmesini önlemek için player.src() yerine tech_ kancalarını ve network hook'u kullanıyoruz
       try {
         let currentSrcUrl = '';
         if (player && typeof player.currentSrc === 'function') currentSrcUrl = player.currentSrc();
@@ -539,25 +534,14 @@
           if (transformed && transformed !== currentSrcUrl && player && typeof player.src === 'function') {
             const curTime = video ? video.currentTime : 0;
             const isPaused = video ? video.paused : false;
-            
-            // Eğer videojs Tech varsa doğrudan yeni src'yi nazikçe ilet
-            if (player.tech_ && typeof player.tech_.setSrc === 'function') {
-              player.tech_.setSrc(transformed);
-            } else {
-              player.src({ src: transformed, type: 'application/x-mpegURL' });
+            player.src({ src: transformed, type: 'application/x-mpegURL' });
+            if (typeof player.one === 'function') {
+              player.one('loadedmetadata', () => {
+                if (curTime > 0) player.currentTime(curTime);
+                if (!isPaused && typeof player.play === 'function') player.play();
+              });
             }
-
-            // Süreyi geri yükle
-            setTimeout(() => {
-              if (video && curTime > 0 && Math.abs(video.currentTime - curTime) > 3) {
-                video.currentTime = curTime;
-              }
-              if (!isPaused && video && video.paused) {
-                video.play().catch(() => {});
-              }
-            }, 300);
-
-            addDiagnosticLog('INFO', `[PuhuTvAdapter] Oynatıcı kaynağı canlı güncellendi: ${transformed}`);
+            addDiagnosticLog('INFO', `[PuhuTvAdapter] Oynatıcı kaynağı canlı değiştirildi: ${transformed}`);
           }
         }
       } catch (srcErr) {
