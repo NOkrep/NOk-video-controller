@@ -1,36 +1,33 @@
 /**
- * background.js - Service Worker (Chromium) / Background Script (Firefox)
+ * background.js - NOk Video Controller v0.2.2
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
+ * 
+ * Sıfır Depolama: Arka planda hiçbir durum saklamaz.
  */
 
 const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
 
 browserAPI.action.onClicked.addListener(async (tab) => {
-  if (!tab || !tab.id) return;
-  
-  if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('about:') || tab.url.startsWith('edge://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://'))) {
-    console.warn('[NOkrep] Sistem sayfalarında çalıştırılamaz.');
+  if (!tab || !tab.id || !tab.url) return;
+
+  if (tab.url.startsWith('chrome://') || tab.url.startsWith('about:') || tab.url.startsWith('edge://')) {
     return;
   }
 
   try {
-    // 1. injected.css dosyasını sekmeye aktar
+    // 1. CSS Enjeksiyonu
     await browserAPI.scripting.insertCSS({
       target: { tabId: tab.id },
       files: ['injected.css']
-    }).catch(err => {
-      console.log('[NOkrep] CSS insert notice:', err.message);
-    });
+    }).catch(() => {});
 
-    // 2. content.js dosyasını sekmeye enjekte et
+    // 2. Content Script Enjeksiyonu
     await browserAPI.scripting.executeScript({
       target: { tabId: tab.id },
       files: ['content.js']
     });
-
-    console.log('[NOkrep] NOk Video Controller sekmeye başarıyla bağlandı.');
-  } catch (error) {
-    console.error('[NOkrep] Enjeksiyon hatası:', error);
+  } catch (err) {
+    console.error('[NOkrep:Background] Enjeksiyon hatası:', err);
   }
 });
