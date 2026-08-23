@@ -7,16 +7,15 @@
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
  * v0.3.2 Güncellemeleri & Mimari Yenilikler:
- * 1. PuhuTV Akamai Stream & URL M3U8 Master Kanca:
- *    - PuhuTV Akamai m3u8 playlist isteklerinde (media-1/2/3/4) ve segment isteklerinde dinamik kanca.
- *    - 1080p olmayan eski içeriklerde 404/hata oluşursa otomatik olarak en yüksek geçerli kaliteye (576p / media-2) yumuşak geçiş.
- * 2. 576p PAL / 480p SD En-Boy Oranı & Çözünürlük Doğrulaması:
- *    - 786x576 ve 654x480 video akışları doğru PAL (576p) ve SD (480p) etiketleriyle eşleştirilir.
- * 3. Kick.com Canlı ve Kayıt (VOD) Çözünürlük Kancası:
- *    - Amazon IVS Player API, HTML5 video src ve DOM kontrol çubuğu eşzamanlı kilitlenir.
- * 4. Ağ İsteği ve Bağlantı Teşhis Detayları (Network Telemetry Buffer):
- *    - Performans / Resource API üzerinden son medya paketleri (CDN, HTTP yanıt kodları, süre) gizlilik ihlali olmadan toplanır.
- * 5. Kesintisiz İlk Tıklama / Açılış Desteği.
+ * 1. PuhuTV Akış Doğrulama & Donmasız ABR Yönetimi:
+ *    - Master.m3u8 içindeki gerçek mevcut paketler (örn: 576p PAL / 480p SD / 360p) taranır.
+ *    - Eski dizilerde sunucuda bulunmayan 1080p seçilip Akamai 404 verdiğinde video dondurulmaz; otomatik olarak yayındaki en yüksek geçerli pakete (576p PAL / media-2) dönülür.
+ *    - 640x480 ve 786x576 video frame boyutları PAL/SD olarak net ve doğru gösterilir.
+ * 2. Kick.com Canlı & VOD Çok Aşamalı Kalite Kancası:
+ *    - React Fiber `onQualitySelect`/`setQuality`, Amazon IVS Player API ve Kick 2-aşamalı DOM Ayarlar/Kalite menüsü eşzamanlı kancalanır.
+ * 3. Ağ Telemetrisi & Gizlilik Odaklı Tanı Paketi:
+ *    - PerformanceResourceTiming üzerinden son medya paketlerinin transfer süresi ve CDN durumları gizlilik ihlali olmadan raporlanır.
+ * 4. İlk Tıklamada Kesintisiz Açılış Desteği.
  */
 
 (() => {
@@ -150,12 +149,17 @@
         }
 
         // PuhuTV 1080p (media-4) 404 aldığında otomatik 576p/480p (media-2) fallback
-        if (msg.includes('puhu.akamaized.net') && msg.includes('media-4') && (msg.includes('errored') || msg.includes('Problem encountered'))) {
-          if (!puhuFallbackAttempted && targetPuhuMediaLevel === 'media-4') {
+        if (msg.includes('puhu.akamaized.net') && (msg.includes('media-4') || targetPuhuMediaLevel === 'media-4') && (msg.includes('errored') || msg.includes('Problem encountered'))) {
+          if (!puhuFallbackAttempted) {
             puhuFallbackAttempted = true;
             targetPuhuMediaLevel = 'media-2';
-            addDiagnosticLog('WARN', '[PuhuTvAdapter] Bu eski içerikte 1080p master bulunamadı; en yüksek mevcut kaliteye (576p/media-2) uyarlandı.');
-            showToast('PuhuTV: Bu içerik maks 576p destekliyor (576p kilitlendi)');
+            addDiagnosticLog('WARN', '[PuhuTvAdapter] Bu içerikte 1080p master bulunamadı; en yüksek mevcut kaliteye (576p/media-2) uyarlandı.');
+            showToast('PuhuTV: Bu içerik maks 576p destekliyor (576p PAL kilitlendi)');
+            const badge = document.getElementById('pvc-realtime-res-badge');
+            if (badge) {
+              badge.textContent = '🎬 PuhuTV: Maks 576p PAL Yayını';
+              badge.style.color = '#38bdf8';
+            }
           }
         }
       } catch (e) {}
@@ -370,7 +374,7 @@
       const results = [];
       const seenHeights = new Set();
 
-      // 1. VHS Master Playlists
+      // 1. VHS Master Playlists doğrudan kontrolü
       if (player && player.tech_ && player.tech_.vhs && player.tech_.vhs.playlists && player.tech_.vhs.playlists.master) {
         try {
           const masterPlaylists = player.tech_.vhs.playlists.master.playlists;
@@ -386,7 +390,7 @@
               if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; }
               else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; }
               else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
-              else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; }
+              else if (h >= 480 || w === 654 || (w === 640 && h === 480)) { label = '480p (SD)'; mediaTag = 'media-2'; }
               else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; }
               else if (h > 0) { label = `${h}p`; }
 
@@ -400,7 +404,8 @@
                   width: w,
                   bitrate: bw,
                   mediaTag: mediaTag,
-                  vhsPlaylist: pl
+                  vhsPlaylist: pl,
+                  verifiedInManifest: true
                 });
               }
             });
@@ -424,7 +429,7 @@
               if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; }
               else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; }
               else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
-              else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; }
+              else if (h >= 480 || w === 654 || (w === 640 && h === 480)) { label = '480p (SD)'; mediaTag = 'media-2'; }
               else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; }
 
               if (h > 0 && !seenHeights.has(h)) {
@@ -437,7 +442,8 @@
                   width: w,
                   bitrate: q.bitrate || 0,
                   mediaTag: mediaTag,
-                  raw: q
+                  raw: q,
+                  verifiedInManifest: true
                 });
               }
             }
@@ -445,7 +451,7 @@
         } catch (e) {}
       }
 
-      // 3. Fallback: Standart PuhuTV paketleri (1080p, 720p, 576p, 480p, 360p)
+      // 3. Fallback: Standart PuhuTV paketleri
       if (results.length === 0) {
         return [
           { id: 'puhu_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4' },
@@ -456,18 +462,19 @@
         ];
       }
 
-      // Eğer 1080p listede yoksa manuel deneme seçeneği olarak ekle
-      if (!seenHeights.has(1080)) {
-        results.unshift({ id: 'puhu_1080_forced', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4' });
+      // En yüksek kaliteyi etiketle (örn: Eğer maks 576p ise kullanıcıya belirt)
+      results.sort((a, b) => (b.height || 0) - (a.height || 0));
+      if (results[0] && results[0].height < 1080) {
+        results[0].label = `${results[0].label} (Maks)`;
       }
 
-      return results.sort((a, b) => (b.height || 0) - (a.height || 0));
+      return results;
     },
 
     applyQuality(targetItem, video, player) {
       puhuFallbackAttempted = false;
 
-      // 1. Akamai Network Hook seviyesini ata (XHR/Fetch media-X yönlendirmesi)
+      // 1. Akamai Network Hook seviyesini ata
       if (targetItem.mediaTag) {
         targetPuhuMediaLevel = targetItem.mediaTag;
         addDiagnosticLog('INFO', `[PuhuTvAdapter] Ağ kancası hedefi ayarlandı: ${targetItem.mediaTag} (${targetItem.label})`);
@@ -522,23 +529,6 @@
         } catch (e) {}
       }
 
-      // 4. Doğrudan Akamai media-X URL Enjeksiyonu
-      if (player && typeof player.src === 'function' && targetItem.mediaTag) {
-        try {
-          const curSrc = player.src();
-          if (typeof curSrc === 'string' && curSrc.includes('puhu.akamaized.net') && curSrc.includes('media-')) {
-            const newSrc = curSrc.replace(/media-\d+/, targetItem.mediaTag);
-            if (newSrc !== curSrc) {
-              const curTime = player.currentTime();
-              player.src({ src: newSrc, type: 'application/x-mpegURL' });
-              if (curTime > 0) player.currentTime(curTime);
-              player.play().catch(() => {});
-              addDiagnosticLog('INFO', `[PuhuTvAdapter] player.src doğrudan güncellendi: ${newSrc}`);
-            }
-          }
-        } catch (e) {}
-      }
-
       this.lockAbrBandwidth(player);
       showToast(`PuhuTV: ${targetItem.label} (Kilitlendi)`);
       addDiagnosticLog('INFO', `[PuhuTvAdapter] Kalite uygulandı: ${targetItem.label}`);
@@ -547,7 +537,7 @@
   };
 
   /**
-   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + DOM Fallback)
+   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + React Fiber + Çok Aşamalı DOM UI)
    */
   const KickAdapter = {
     name: 'KickAdapter',
@@ -588,7 +578,7 @@
           if (fiberKey && el[fiberKey]) {
             let node = el[fiberKey];
             let depth = 0;
-            while (node && depth < 60) {
+            while (node && depth < 80) {
               const props = node.memoizedProps;
               const state = node.memoizedState;
               
@@ -610,25 +600,84 @@
       return null;
     },
 
+    findReactQualityDispatcher(video) {
+      const candidates = [
+        video,
+        document.querySelector('#channel-player'),
+        document.querySelector('[data-testid="player-settings-button"]'),
+        document.querySelector('.player-container')
+      ].filter(Boolean);
+
+      for (const el of candidates) {
+        try {
+          const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+          if (fiberKey && el[fiberKey]) {
+            let node = el[fiberKey];
+            let depth = 0;
+            while (node && depth < 80) {
+              const props = node.memoizedProps;
+              if (props) {
+                if (typeof props.onQualitySelect === 'function') return props.onQualitySelect;
+                if (typeof props.onSelectQuality === 'function') return props.onSelectQuality;
+                if (typeof props.setQuality === 'function') return props.setQuality;
+                if (typeof props.handleQualityChange === 'function') return props.handleQualityChange;
+              }
+              node = node.return || node.child || node.sibling;
+              depth++;
+            }
+          }
+        } catch (e) {}
+      }
+      return null;
+    },
+
+    /**
+     * Kick DOM Çok Aşamalı Kalite Menüsü Seçici (Settings Gear -> Quality Submenu -> Resolution)
+     */
     triggerKickUiQuality(targetLabel) {
       try {
-        const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '');
-        const settingsBtn = document.querySelector('[data-testid="player-settings-button"], button[aria-label*="ayar"], button[aria-label*="Setting"], button[aria-label*="Ayarlar"]');
+        const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').replace('Source', '').replace('Kaynak', '');
+        const settingsBtn = document.querySelector('[data-testid="player-settings-button"], button[aria-label*="ayar"], button[aria-label*="Setting"], button[aria-label*="Ayarlar"], button[aria-label*="quality"]');
+        
         if (settingsBtn) {
           settingsBtn.click();
+          
           setTimeout(() => {
-            const qualityMenuItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"]'));
-            const matchBtn = qualityMenuItems.find(el => el.textContent && el.textContent.includes(cleanTarget));
-            if (matchBtn) {
-              matchBtn.click();
-              addDiagnosticLog('INFO', `[KickAdapter] UI Menü seçimi tetiklendi: ${targetLabel}`);
+            // 1. Adım: Menü içindeki "Quality" / "Kalite" alt menü butonunu ara ve tıkla
+            const menuButtons = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], div[tabindex="0"]'));
+            const qualitySubmenuBtn = menuButtons.find(el => {
+              const txt = el.textContent || '';
+              return (txt.includes('Quality') || txt.includes('Kalite') || txt.includes('Otomatik') || txt.includes('Auto') || /\d{3,4}p/.test(txt)) && !el.closest('#pvc-controller-popup');
+            });
+
+            if (qualitySubmenuBtn && !qualitySubmenuBtn.textContent.includes(cleanTarget)) {
+              qualitySubmenuBtn.click();
             }
+
+            // 2. Adım: Kalite seçenekleri listesinden hedef çözünürlüğü seç
             setTimeout(() => {
-              if (document.body.click) document.body.click();
-            }, 100);
-          }, 120);
+              const allOptionButtons = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], div[tabindex="0"]'));
+              const targetBtn = allOptionButtons.find(el => {
+                const txt = el.textContent || '';
+                return txt.includes(cleanTarget) && !el.closest('#pvc-controller-popup');
+              });
+
+              if (targetBtn) {
+                targetBtn.click();
+                addDiagnosticLog('INFO', `[KickAdapter] 2-Aşamalı UI Menü seçimi uygulandı: ${targetLabel}`);
+              }
+
+              // Menüyü kapat
+              setTimeout(() => {
+                const closeTarget = document.querySelector('.player-container') || document.body;
+                if (closeTarget && closeTarget.click) closeTarget.click();
+              }, 120);
+            }, 120);
+          }, 100);
         }
-      } catch (e) {}
+      } catch (e) {
+        addDiagnosticLog('WARN', '[KickAdapter] UI Menü tetikleme hatası', e.message);
+      }
     },
 
     getQualities(video) {
@@ -659,7 +708,7 @@
       }
 
       return [
-        { id: 'kick_1080p60', label: '1080p60', height: 1080 },
+        { id: 'kick_1080p60', label: '1080p60 (Kaynak)', height: 1080 },
         { id: 'kick_720p60', label: '720p60', height: 720 },
         { id: 'kick_480p30', label: '480p30', height: 480 },
         { id: 'kick_360p30', label: '360p30', height: 360 },
@@ -669,8 +718,21 @@
 
     applyQuality(targetItem, video) {
       const ivs = this.findIvsPlayer(video);
+      const reactDispatcher = this.findReactQualityDispatcher(video);
       const isVod = this.isVodPage();
 
+      let applied = false;
+
+      // 1. React Fiber State Dispatcher
+      if (typeof reactDispatcher === 'function') {
+        try {
+          reactDispatcher(targetItem.raw || targetItem.label || targetItem.height);
+          applied = true;
+          addDiagnosticLog('INFO', `[KickAdapter] React Fiber Dispatcher uygulandı: ${targetItem.label}`);
+        } catch (e) {}
+      }
+
+      // 2. Amazon IVS Player SDK
       if (ivs && typeof ivs.getQualities === 'function') {
         try {
           if (typeof ivs.setAutoQualityMode === 'function') {
@@ -683,26 +745,25 @@
           if (Array.isArray(qList)) {
             targetQuality = qList.find(q => 
               (targetItem.raw && q === targetItem.raw) ||
-              (q.name && targetItem.label && q.name.toLowerCase() === targetItem.label.toLowerCase()) ||
-              (q.height && q.height === targetItem.height) ||
-              (q.name && q.name.includes(`${targetItem.height}`))
+              (q.name && targetItem.label && q.name.toLowerCase().includes(targetItem.label.toLowerCase().slice(0, 4))) ||
+              (q.height && q.height === targetItem.height)
             );
           }
 
           if (targetQuality && typeof ivs.setQuality === 'function') {
             ivs.setQuality(targetQuality);
-            this.triggerKickUiQuality(targetItem.label);
-            showToast(`Kick ${isVod ? 'Kayıt' : 'Canlı'}: ${targetQuality.name || targetItem.label} (Kilitlendi)`);
+            applied = true;
             addDiagnosticLog('INFO', `[KickAdapter] IVS Kalitesi Kilitlendi: ${targetQuality.name}`);
-            return true;
           }
         } catch (e) {
           addDiagnosticLog('WARN', '[KickAdapter] IVS setQuality hatası', e.message);
         }
       }
 
+      // 3. Çok aşamalı UI Menü Tetiklemesi
       this.triggerKickUiQuality(targetItem.label);
-      showToast(`Kick: ${targetItem.label}`);
+
+      showToast(`Kick ${isVod ? 'Kayıt' : 'Canlı'}: ${targetItem.label} (Kilitlendi)`);
       return true;
     }
   };
@@ -818,7 +879,7 @@
       if (h >= 1080) label = '1080p FHD';
       else if (h >= 720) label = '720p HD';
       else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) label = '576p PAL';
-      else if (h >= 480 || w === 654 || (w === 852 && h === 480)) label = '480p SD';
+      else if (h === 480 || w === 640 || w === 654 || (w === 852 && h === 480)) label = '480p SD';
       else if (h >= 360 || w === 640) label = '360p SD';
       else if (h >= 160) label = `${h}p`;
 
@@ -1215,7 +1276,7 @@
   }
 
   /**
-   * Ergonomik Raylı Sürükleme Motoru (Docked Right-Rail Vertical in Normal Mode, 2D in Fullscreen)
+   * Ergonomik Raylı Sürükleme Motoru (Normal Modda Sağ Kenara Kilitli Ray, Tam Ekranda 2D)
    */
   function makeDraggable(popup, header) {
     let isDragging = false;
@@ -1240,132 +1301,117 @@
 
       document.body.style.userSelect = 'none';
 
-      const onMouseMove = (moveEvent) => {
+      const onMouseMove = (moveEvt) => {
         if (!isDragging) return;
-        resetIdleTimer(popup);
-
-        const deltaY = moveEvent.clientY - startClientY;
-        const newTop = Math.max(12, Math.min(window.innerHeight - popup.offsetHeight - 12, startTop + deltaY));
-
-        popup.style.setProperty('top', `${newTop}px`, 'important');
-        popup.style.setProperty('bottom', 'auto', 'important');
+        const deltaY = moveEvt.clientY - startClientY;
+        const newTop = Math.max(10, Math.min(window.innerHeight - 380, startTop + deltaY));
+        popup.style.top = `${newTop}px`;
+        popup.style.bottom = 'auto';
 
         if (isFs) {
-          // Tam ekranda 2D serbest hareket
-          const deltaX = moveEvent.clientX - startClientX;
-          const newLeft = Math.max(12, Math.min(window.innerWidth - popup.offsetWidth - 12, startLeft + deltaX));
-          popup.style.setProperty('left', `${newLeft}px`, 'important');
-          popup.style.setProperty('right', 'auto', 'important');
+          const deltaX = moveEvt.clientX - startClientX;
+          const newLeft = Math.max(10, Math.min(window.innerWidth - 300, startLeft + deltaX));
+          popup.style.left = `${newLeft}px`;
+          popup.style.right = 'auto';
         } else {
-          // Normal modda sağ raya sabit, sadece dikey yukarı/aşağı kayma (sıfır lag ve temiz düzen)
-          popup.style.setProperty('right', '24px', 'important');
-          popup.style.setProperty('left', 'auto', 'important');
+          popup.style.right = '24px';
+          popup.style.left = 'auto';
         }
       };
 
       const onMouseUp = () => {
         isDragging = false;
         document.body.style.userSelect = '';
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        resetIdleTimer(popup);
       };
 
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
     });
   }
 
-  function buildPvcPopup() {
-    let popup = document.getElementById('pvc-controller-popup');
-    if (popup) return popup;
+  // =========================================================================
+  // 🎛️ HUD ARAYÜZÜ OLUŞTURMA VE BAĞLANTI (POPUP CREATION)
+  // =========================================================================
+  function createPvcPopup() {
+    const existing = document.getElementById('pvc-controller-popup');
+    if (existing) return existing;
 
-    popup = document.createElement('div');
+    const popup = document.createElement('div');
     popup.id = 'pvc-controller-popup';
-    popup.className = 'pvc-floating-menu';
+    popup.className = 'pvc-popup-card';
+    popup.style.right = '24px';
+    popup.style.top = '80px';
 
     popup.innerHTML = `
-      <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
-        <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.2</span>
-          <span class="pvc-menu-title">NOk Video Controller</span>
+      <div id="pvc-drag-header" class="pvc-header">
+        <div class="pvc-brand-wrapper">
+          <span class="pvc-brand-title">NOk Video Controller</span>
+          <span class="pvc-badge-v03">v0.3.2</span>
         </div>
         <div class="pvc-header-actions">
-          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Küçült / Büyüt">➖</button>
-          <button id="pvc-close-popup-btn" class="pvc-icon-btn pvc-close" title="Kapat">✕</button>
+          <button id="pvc-min-btn" class="pvc-icon-btn" title="Simge Durumuna Küçült">−</button>
+          <button id="pvc-close-btn" class="pvc-icon-btn" title="Kapat">✕</button>
         </div>
       </div>
 
-      <!-- Canlı Render Çözünürlüğü Rozeti -->
-      <div style="padding: 7px 12px; background: rgba(0,0,0,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between;">
-        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: monospace; color: #38bdf8;">
-          🎬 Çözünürlük: Kontrol ediliyor...
-        </span>
-        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile">🔄</button>
-      </div>
+      <div id="pvc-main-body" class="pvc-body">
+        <!-- Canlı Çözünürlük ve Durum Rozeti -->
+        <div id="pvc-realtime-res-badge" class="pvc-live-badge">
+          🎬 Çözünürlük: Ölçülüyor...
+        </div>
 
-      <div class="pvc-menu-section">
-        <div class="pvc-section-header">
-          <span class="pvc-label">Oynatma Hızı:</span>
-          <span id="pvc-speed-value" class="pvc-val-badge">1.0x</span>
+        <!-- 1. Hız Denetimi -->
+        <div class="pvc-section">
+          <div class="pvc-section-header">
+            <span class="pvc-section-label">⚡ Oynatma Hızı</span>
+            <span id="pvc-speed-value" class="pvc-section-val">1.0x</span>
+          </div>
+          <div class="pvc-chips-row">
+            <button class="pvc-chip-btn" data-speed="0.5">0.5x</button>
+            <button class="pvc-chip-btn" data-speed="1.0">1.0x</button>
+            <button class="pvc-chip-btn" data-speed="1.5">1.5x</button>
+            <button class="pvc-chip-btn" data-speed="2.0">2.0x</button>
+            <button class="pvc-chip-btn" data-speed="2.5">2.5x</button>
+            <button class="pvc-chip-btn" data-speed="3.0">3.0x</button>
+          </div>
+          <input id="pvc-speed-slider" class="pvc-slider" type="range" min="0.25" max="3.0" step="0.25" value="1.0" />
         </div>
-        <div class="pvc-slider-row">
-          <span class="pvc-slider-bound">0.25x</span>
-          <input 
-            type="range" 
-            id="pvc-speed-slider" 
-            min="0.25" 
-            max="3.0" 
-            step="0.25" 
-            value="1.0" 
-            class="pvc-range-slider"
-          />
-          <span class="pvc-slider-bound">3.0x</span>
-        </div>
-        <div class="pvc-quick-speed-buttons">
-          <button class="pvc-chip-btn" data-speed="1.0">1x</button>
-          <button class="pvc-chip-btn" data-speed="1.25">1.25x</button>
-          <button class="pvc-chip-btn" data-speed="1.5">1.5x</button>
-          <button class="pvc-chip-btn" data-speed="2.0">2x</button>
-          <button class="pvc-chip-btn" data-speed="2.5">2.5x</button>
-        </div>
-      </div>
 
-      <div class="pvc-menu-section">
-        <span class="pvc-label">Hızlı Sarma:</span>
-        <div class="pvc-btn-grid-2">
-          <button id="pvc-seek-m10" class="pvc-action-btn">⏪ -10 Saniye</button>
-          <button id="pvc-seek-p10" class="pvc-action-btn">⏩ +10 Saniye</button>
+        <!-- 2. Sarma Denetimi -->
+        <div class="pvc-section">
+          <div class="pvc-section-header">
+            <span class="pvc-section-label">⏩ Hızlı Sarma (Atlama)</span>
+          </div>
+          <div class="pvc-chips-row">
+            <button class="pvc-chip-btn" data-seek="-30">-30s</button>
+            <button class="pvc-chip-btn" data-seek="-10">-10s</button>
+            <button class="pvc-chip-btn" data-seek="-5">-5s</button>
+            <button class="pvc-chip-btn" data-seek="5">+5s</button>
+            <button class="pvc-chip-btn" data-seek="10">+10s</button>
+            <button class="pvc-chip-btn" data-seek="30">+30s</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Dinamik Çözünürlük Seçenekleri -->
-      <div class="pvc-menu-section">
-        <div class="pvc-section-header">
-          <span class="pvc-label">Akış Paket Kaliteleri:</span>
-          <span id="pvc-quality-count-badge" class="pvc-subtext" style="color: #38bdf8; font-weight: 600;">Paketler Algılanıyor...</span>
+        <!-- 3. Dinamik Çözünürlük ve Akış Kancası -->
+        <div class="pvc-section">
+          <div class="pvc-section-header">
+            <span class="pvc-section-label">🎯 Çözünürlük & ABR Kilit</span>
+            <span id="pvc-quality-count-badge" class="pvc-counter-badge">Paketler Aranıyor...</span>
+          </div>
+          <div id="pvc-dynamic-quality-container" class="pvc-quality-grid">
+            <!-- Dinamik çipler buraya yüklenecek -->
+          </div>
         </div>
-        <div id="pvc-dynamic-quality-container" class="pvc-dynamic-grid" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
-          <!-- Dinamik Butonlar renderDynamicQualityButtons ile basılır -->
-        </div>
-      </div>
 
-      <!-- Sadeleştirilmiş Saydamlık Gecikmesi (2s - 5s) -->
-      <div class="pvc-menu-section" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
-        <div class="pvc-section-header">
-          <span class="pvc-label">Saydamlık Gecikmesi:</span>
-          <span id="pvc-idle-delay-val" class="pvc-val-badge" style="color:#a78bfa; background:rgba(167,139,250,0.15); border-color:rgba(167,139,250,0.3);">${idleDelaySeconds}s</span>
+        <!-- 4. Yardımcı Araçlar (CDN Ping, Saydamlık, Teşhis) -->
+        <div class="pvc-footer-tools">
+          <button id="pvc-cdn-ping-btn" class="pvc-tool-btn" title="CDN Akış Gecikmesini Ölç">📡 CDN Ping</button>
+          <button id="pvc-idle-cycle-btn" class="pvc-tool-btn" title="Saydamlaşma Süresini Değiştir">⏱️ Saydam: 3s</button>
+          <button id="pvc-diag-btn" class="pvc-tool-btn pvc-tool-btn-accent" title="Anonim Hata ve Teşhis Bildir">⚠️ Teşhis</button>
         </div>
-        <div class="pvc-quick-speed-buttons">
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="2">2sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="3">3sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="4">4sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="5">5sn</button>
-        </div>
-      </div>
-
-      <div class="pvc-menu-footer">
-        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Sunucu gecikmesini ölç">📡 CDN Ping</button>
-        <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">⚠️ Teşhis / Hata</button>
       </div>
     `;
 
@@ -1375,135 +1421,103 @@
     const dragHeader = popup.querySelector('#pvc-drag-header');
     makeDraggable(popup, dragHeader);
 
-    popup.addEventListener('mouseenter', () => resetIdleTimer(popup));
-    popup.addEventListener('mousemove', () => resetIdleTimer(popup));
-    popup.addEventListener('mousedown', () => resetIdleTimer(popup));
-    popup.addEventListener('touchstart', () => resetIdleTimer(popup));
-
-    const slider = popup.querySelector('#pvc-speed-slider');
-    const speedVal = popup.querySelector('#pvc-speed-value');
-
-    slider.addEventListener('input', (e) => {
+    // Olay Dinleyicileri
+    popup.querySelector('#pvc-close-btn').onclick = () => popup.remove();
+    
+    const minBtn = popup.querySelector('#pvc-min-btn');
+    const mainBody = popup.querySelector('#pvc-main-body');
+    minBtn.onclick = () => {
+      if (mainBody.style.display === 'none') {
+        mainBody.style.display = 'block';
+        minBtn.textContent = '−';
+      } else {
+        mainBody.style.display = 'none';
+        minBtn.textContent = '+';
+      }
       resetIdleTimer(popup);
-      const val = parseFloat(e.target.value);
-      speedVal.textContent = `${val}x`;
-      setSpeed(val);
-    });
+    };
 
-    popup.querySelectorAll('.pvc-chip-btn:not(.pvc-idle-btn)').forEach(btn => {
+    popup.addEventListener('mouseenter', () => popup.classList.remove('pvc-idle-transparent'));
+    popup.addEventListener('mouseleave', () => resetIdleTimer(popup));
+    popup.addEventListener('mousemove', () => resetIdleTimer(popup));
+
+    // Hız Çipleri & Slider
+    popup.querySelectorAll('[data-speed]').forEach(btn => {
       btn.onclick = () => {
-        resetIdleTimer(popup);
         const val = parseFloat(btn.getAttribute('data-speed'));
         setSpeed(val);
-      };
-    });
-
-    popup.querySelector('#pvc-seek-m10').onclick = () => {
-      resetIdleTimer(popup);
-      seekBy(-10);
-    };
-
-    popup.querySelector('#pvc-seek-p10').onclick = () => {
-      resetIdleTimer(popup);
-      seekBy(10);
-    };
-
-    const updateIdleBtnUI = () => {
-      popup.querySelectorAll('.pvc-idle-btn').forEach(btn => {
-        const sec = parseInt(btn.getAttribute('data-sec'), 10);
-        if (sec === idleDelaySeconds) {
-          btn.style.background = '#7c3aed';
-          btn.style.color = '#ffffff';
-          btn.style.borderColor = '#a78bfa';
-        } else {
-          btn.style.background = '';
-          btn.style.color = '';
-          btn.style.borderColor = '';
-        }
-      });
-    };
-    updateIdleBtnUI();
-
-    popup.querySelectorAll('.pvc-idle-btn').forEach(btn => {
-      btn.onclick = () => {
-        const sec = parseInt(btn.getAttribute('data-sec'), 10);
-        idleDelaySeconds = sec;
-        const valBadge = popup.querySelector('#pvc-idle-delay-val');
-        if (valBadge) valBadge.textContent = `${sec}s`;
-        updateIdleBtnUI();
-        showToast(`Saydamlık Gecikmesi: ${sec} saniye`);
         resetIdleTimer(popup);
       };
     });
 
-    popup.querySelector('#pvc-refresh-res-btn').onclick = () => {
+    const speedSlider = popup.querySelector('#pvc-speed-slider');
+    speedSlider.oninput = () => {
+      const val = parseFloat(speedSlider.value);
+      setSpeed(val);
       resetIdleTimer(popup);
-      updateRealtimeResolutionBadge();
-      renderDynamicQualityButtons();
-      showToast(`🎬 Güncellendi: ${lastObservedResolution}`);
     };
 
-    popup.querySelector('#pvc-ping-btn').onclick = async function () {
+    // Sarma Çipleri
+    popup.querySelectorAll('[data-seek]').forEach(btn => {
+      btn.onclick = () => {
+        const val = parseInt(btn.getAttribute('data-seek'), 10);
+        seekBy(val);
+        resetIdleTimer(popup);
+      };
+    });
+
+    // CDN Ping Butonu
+    popup.querySelector('#pvc-cdn-ping-btn').onclick = () => {
+      testCdnPing();
       resetIdleTimer(popup);
-      this.textContent = 'Ölçülüyor...';
-      const res = await testCdnPing();
-      if (res && res.ms !== undefined) {
-        this.textContent = `📡 ${res.ms} ms`;
-      } else {
-        this.textContent = '📡 Ping';
-      }
     };
 
-    popup.querySelector('#pvc-report-err-btn').onclick = () => {
+    // Saydamlık Süresi Döngüsü (1s -> 2s -> 3s -> 5s -> 10s)
+    const idleCycleBtn = popup.querySelector('#pvc-idle-cycle-btn');
+    const idleDelays = [1, 2, 3, 5, 10];
+    idleCycleBtn.onclick = () => {
+      const curIdx = idleDelays.indexOf(idleDelaySeconds);
+      const nextIdx = (curIdx + 1) % idleDelays.length;
+      idleDelaySeconds = idleDelays[nextIdx];
+      idleCycleBtn.textContent = `⏱️ Saydam: ${idleDelaySeconds}s`;
+      showToast(`Saydamlık Gecikmesi: ${idleDelaySeconds} saniye`);
       resetIdleTimer(popup);
+    };
+
+    // Teşhis ve Hata Raporlama Butonu
+    popup.querySelector('#pvc-diag-btn').onclick = () => {
       reportAnonymousError('USER_MANUAL_DIAGNOSTIC', 'Kullanıcı teşhis ve hata bildirimini tetikledi.');
     };
 
-    popup.querySelector('#pvc-close-popup-btn').onclick = () => {
-      popup.style.display = 'none';
-    };
-
-    let isCollapsed = false;
-    popup.querySelector('#pvc-collapse-btn').onclick = () => {
-      resetIdleTimer(popup);
-      isCollapsed = !isCollapsed;
-      popup.querySelectorAll('.pvc-menu-section, .pvc-menu-footer, #pvc-realtime-res-badge').forEach(el => {
-        el.style.display = isCollapsed ? 'none' : '';
-      });
-      popup.querySelector('#pvc-collapse-btn').textContent = isCollapsed ? '➕' : '➖';
-    };
-
-    renderDynamicQualityButtons();
-    return popup;
-  }
-
-  function togglePvcPopup() {
-    const popup = document.getElementById('pvc-controller-popup') || buildPvcPopup();
-    syncFullscreenElements();
-    popup.style.display = (popup.style.display === 'none') ? 'block' : 'none';
-    if (popup.style.display === 'block') {
-      resetIdleTimer(popup);
-      renderDynamicQualityButtons();
-      updateRealtimeResolutionBadge();
-
-      const { video } = findVideoAndPlayer();
-      if (video) {
-        monitorVideoResolution(video);
-        const slider = popup.querySelector('#pvc-speed-slider');
-        const speedVal = popup.querySelector('#pvc-speed-value');
-        if (slider) slider.value = (video.playbackRate || 1.0).toString();
-        if (speedVal) speedVal.textContent = `${video.playbackRate || 1.0}x`;
-      }
-      showToast('NOk Video Controller Aktif (v0.3.2)');
-    }
-  }
-
-  // Başlangıç Video Gözlemcisi
-  setTimeout(() => {
+    // İlk Video ve Çözünürlük Başlatması
     const { video } = findVideoAndPlayer();
     if (video) {
       monitorVideoResolution(video);
     }
-  }, 1000);
+    renderDynamicQualityButtons();
+    updateRealtimeResolutionBadge();
+    resetIdleTimer(popup);
 
+    return popup;
+  }
+
+  function togglePvcPopup() {
+    const existing = document.getElementById('pvc-controller-popup');
+    if (existing) {
+      if (existing.style.display === 'none') {
+        existing.style.display = 'block';
+        resetIdleTimer(existing);
+        showToast('NOk Video Controller Aktif (v0.3.2)');
+      } else {
+        existing.style.display = 'none';
+        showToast('NOk Video Controller Gizlendi');
+      }
+    } else {
+      createPvcPopup();
+      showToast('NOk Video Controller Aktif (v0.3.2)');
+    }
+  }
+
+  // İlk Açılış
+  createPvcPopup();
 })();
