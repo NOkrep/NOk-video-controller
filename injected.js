@@ -6,17 +6,15 @@
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.2 Güncellemeleri & Mimari Yenilikler:
- * 1. PuhuTV Akamai Stream & URL M3U8 Master Kanca:
- *    - PuhuTV Akamai m3u8 playlist isteklerinde (media-1/2/3/4) ve segment isteklerinde dinamik kanca.
- *    - 1080p olmayan eski içeriklerde 404/hata oluşursa otomatik olarak en yüksek geçerli kaliteye (576p / media-2) yumuşak geçiş.
- * 2. 576p PAL / 480p SD En-Boy Oranı & Çözünürlük Doğrulaması:
- *    - 786x576 ve 654x480 video akışları doğru PAL (576p) ve SD (480p) etiketleriyle eşleştirilir.
- * 3. Kick.com Canlı ve Kayıt (VOD) Çözünürlük Kancası:
- *    - Amazon IVS Player API, HTML5 video src ve DOM kontrol çubuğu eşzamanlı kilitlenir.
- * 4. Ağ İsteği ve Bağlantı Teşhis Detayları (Network Telemetry Buffer):
- *    - Performans / Resource API üzerinden son medya paketleri (CDN, HTTP yanıt kodları, süre) gizlilik ihlali olmadan toplanır.
- * 5. Kesintisiz İlk Tıklama / Açılış Desteği.
+ * v0.3.2 Entegrasyon & Mimarisi:
+ * 1. Kusursuz Klasik HUD Düzeni (Sade, Taşmayan, Sağ Kenara Raylı ve Şık Arayüz).
+ * 2. PuhuTV Çift Seviyeli Paket Algılayıcı (VHS Playlists + Video.js qualityLevels + Akamai/Medianova Ağ Kancası).
+ *    - 1080p fiziksel olarak varsa yakalar ve kilitler.
+ *    - Sadece var olan paketleri listeler, 1080p'yi her zaman seçenek olarak sunar.
+ * 3. Donmasız Sarma (Seek) & Hız Ayarı:
+ *    - player.src sıfırlaması olmadan arka plan istek kancası ile tampon çökmesi önlenir.
+ * 4. Kick.com Çok Aşamalı ve IVS Tabanlı Kalite Kancası.
+ * 5. Zenginleştirilmiş Anonim Teşhis & Hata Modalı.
  */
 
 (() => {
@@ -50,20 +48,44 @@
   let cachedDiscoveredQualities = [];
   let currentActiveAdapterName = 'GenericAdapter';
   let targetPuhuMediaLevel = null; // 'media-4', 'media-3', 'media-2', 'media-1'
+  let targetPuhuSmilLevel = null;  // '1080p.smil', '720p.smil', etc.
   let puhuFallbackAttempted = false;
 
   // =========================================================================
-  // 🌐 PUHUTV AKAMAI XHR / FETCH İSTEK YÖNLENDİRİCİSİ (1080p - 360p MEDIA HOOK)
+  // 🌐 PUHUTV ÇİFT CDN (AKAMAI & MEDIANOVA MNCDN) AĞ KANCASI (XHR / FETCH)
   // =========================================================================
+  function transformPuhuStreamUrl(url) {
+    if (typeof url !== 'string') return url;
+
+    // 1. Akamai CDN İstek Kancası (media-X -> media-4/3/2/1)
+    if (url.includes('puhu.akamaized.net') && url.includes('media-') && targetPuhuMediaLevel) {
+      const redirectUrl = url.replace(/media-\d+/, targetPuhuMediaLevel);
+      if (redirectUrl !== url) {
+        addDiagnosticLog('INFO', `[Network Hook] Akamai Yönlendirildi: ${targetPuhuMediaLevel}`);
+        return redirectUrl;
+      }
+    }
+
+    // 2. Medianova (MNCDN) SMIL Kancası (xxxp.smil -> 1080p.smil / 720p.smil vb.)
+    if (url.includes('mncdn.com') && url.includes('.smil') && targetPuhuSmilLevel) {
+      const redirectUrl = url.replace(/\d+p\.smil/i, targetPuhuSmilLevel);
+      if (redirectUrl !== url) {
+        addDiagnosticLog('INFO', `[Network Hook] MNCDN SMIL Yönlendirildi: ${targetPuhuSmilLevel}`);
+        return redirectUrl;
+      }
+    }
+
+    return url;
+  }
+
   (function hookNetworkRequestsForPuhu() {
     // 1. XMLHttpRequest Hook
     const originalOpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function (method, url, ...rest) {
       try {
-        if (targetPuhuMediaLevel && typeof url === 'string' && url.includes('puhu.akamaized.net') && url.includes('media-')) {
-          const redirectUrl = url.replace(/media-\d+/, targetPuhuMediaLevel);
-          addDiagnosticLog('INFO', `[Network Hook] XHR Akamai Yönlendirildi: ${targetPuhuMediaLevel}`);
-          return originalOpen.call(this, method, redirectUrl, ...rest);
+        if (typeof url === 'string') {
+          const transformedUrl = transformPuhuStreamUrl(url);
+          return originalOpen.call(this, method, transformedUrl, ...rest);
         }
       } catch (e) {}
       return originalOpen.call(this, method, url, ...rest);
@@ -73,14 +95,13 @@
     const originalFetch = window.fetch;
     window.fetch = function (input, init) {
       try {
-        if (targetPuhuMediaLevel) {
-          if (typeof input === 'string' && input.includes('puhu.akamaized.net') && input.includes('media-')) {
-            const redirectUrl = input.replace(/media-\d+/, targetPuhuMediaLevel);
-            addDiagnosticLog('INFO', `[Network Hook] Fetch Akamai Yönlendirildi: ${targetPuhuMediaLevel}`);
-            return originalFetch.call(this, redirectUrl, init);
-          } else if (input instanceof Request && input.url && input.url.includes('puhu.akamaized.net') && input.url.includes('media-')) {
-            const redirectUrl = input.url.replace(/media-\d+/, targetPuhuMediaLevel);
-            const newRequest = new Request(redirectUrl, input);
+        if (typeof input === 'string') {
+          const transformedUrl = transformPuhuStreamUrl(input);
+          return originalFetch.call(this, transformedUrl, init);
+        } else if (input instanceof Request && input.url) {
+          const transformedUrl = transformPuhuStreamUrl(input.url);
+          if (transformedUrl !== input.url) {
+            const newRequest = new Request(transformedUrl, input);
             return originalFetch.call(this, newRequest, init);
           }
         }
@@ -150,12 +171,18 @@
         }
 
         // PuhuTV 1080p (media-4) 404 aldığında otomatik 576p/480p (media-2) fallback
-        if (msg.includes('puhu.akamaized.net') && msg.includes('media-4') && (msg.includes('errored') || msg.includes('Problem encountered'))) {
+        if (msg.includes('puhu.akamaized.net') && (msg.includes('media-4') || targetPuhuMediaLevel === 'media-4') && (msg.includes('errored') || msg.includes('Problem encountered'))) {
           if (!puhuFallbackAttempted && targetPuhuMediaLevel === 'media-4') {
             puhuFallbackAttempted = true;
             targetPuhuMediaLevel = 'media-2';
-            addDiagnosticLog('WARN', '[PuhuTvAdapter] Bu eski içerikte 1080p master bulunamadı; en yüksek mevcut kaliteye (576p/media-2) uyarlandı.');
+            targetPuhuSmilLevel = '576p.smil';
+            addDiagnosticLog('WARN', '[PuhuTvAdapter] Bu içerikte 1080p master bulunamadı; en yüksek mevcut kaliteye (576p/media-2) uyarlandı.');
             showToast('PuhuTV: Bu içerik maks 576p destekliyor (576p kilitlendi)');
+            const badge = document.getElementById('pvc-realtime-res-badge');
+            if (badge) {
+              badge.textContent = '🎬 PuhuTV: Maks 576p PAL Yayını';
+              badge.style.color = '#38bdf8';
+            }
           }
         }
       } catch (e) {}
@@ -383,11 +410,12 @@
 
               let label = `${h}p`;
               let mediaTag = 'media-2';
-              if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; }
-              else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; }
-              else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
-              else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; }
-              else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; }
+              let smilTag = '576p.smil';
+              if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; smilTag = '1080p.smil'; }
+              else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; smilTag = '720p.smil'; }
+              else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; smilTag = '576p.smil'; }
+              else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; smilTag = '480p.smil'; }
+              else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; smilTag = '360p.smil'; }
               else if (h > 0) { label = `${h}p`; }
 
               if (h > 0 && !seenHeights.has(h)) {
@@ -400,6 +428,7 @@
                   width: w,
                   bitrate: bw,
                   mediaTag: mediaTag,
+                  smilTag: smilTag,
                   vhsPlaylist: pl
                 });
               }
@@ -421,11 +450,12 @@
               const w = q.width || 0;
               let label = q.label || `${h}p`;
               let mediaTag = 'media-2';
-              if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; }
-              else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; }
-              else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; }
-              else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; }
-              else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; }
+              let smilTag = '576p.smil';
+              if (h >= 1080) { label = '1080p (FHD)'; mediaTag = 'media-4'; smilTag = '1080p.smil'; }
+              else if (h >= 720) { label = '720p (HD)'; mediaTag = 'media-3'; smilTag = '720p.smil'; }
+              else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-2'; smilTag = '576p.smil'; }
+              else if (h >= 480 || w === 654) { label = '480p (SD)'; mediaTag = 'media-2'; smilTag = '480p.smil'; }
+              else if (h >= 360 || w === 640) { label = '360p (Düşük)'; mediaTag = 'media-1'; smilTag = '360p.smil'; }
 
               if (h > 0 && !seenHeights.has(h)) {
                 seenHeights.add(h);
@@ -437,6 +467,7 @@
                   width: w,
                   bitrate: q.bitrate || 0,
                   mediaTag: mediaTag,
+                  smilTag: smilTag,
                   raw: q
                 });
               }
@@ -448,17 +479,17 @@
       // 3. Fallback: Standart PuhuTV paketleri (1080p, 720p, 576p, 480p, 360p)
       if (results.length === 0) {
         return [
-          { id: 'puhu_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4' },
-          { id: 'puhu_720', label: '720p (HD)', height: 720, mediaTag: 'media-3' },
-          { id: 'puhu_576', label: '576p (PAL)', height: 576, mediaTag: 'media-2' },
-          { id: 'puhu_480', label: '480p (SD)', height: 480, mediaTag: 'media-2' },
-          { id: 'puhu_360', label: '360p (Düşük)', height: 360, mediaTag: 'media-1' }
+          { id: 'puhu_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4', smilTag: '1080p.smil' },
+          { id: 'puhu_720', label: '720p (HD)', height: 720, mediaTag: 'media-3', smilTag: '720p.smil' },
+          { id: 'puhu_576', label: '576p (PAL)', height: 576, mediaTag: 'media-2', smilTag: '576p.smil' },
+          { id: 'puhu_480', label: '480p (SD)', height: 480, mediaTag: 'media-2', smilTag: '480p.smil' },
+          { id: 'puhu_360', label: '360p (Düşük)', height: 360, mediaTag: 'media-1', smilTag: '360p.smil' }
         ];
       }
 
       // Eğer 1080p listede yoksa manuel deneme seçeneği olarak ekle
       if (!seenHeights.has(1080)) {
-        results.unshift({ id: 'puhu_1080_forced', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4' });
+        results.unshift({ id: 'puhu_1080_forced', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4', smilTag: '1080p.smil' });
       }
 
       return results.sort((a, b) => (b.height || 0) - (a.height || 0));
@@ -470,20 +501,31 @@
       // 1. Akamai Network Hook seviyesini ata (XHR/Fetch media-X yönlendirmesi)
       if (targetItem.mediaTag) {
         targetPuhuMediaLevel = targetItem.mediaTag;
-        addDiagnosticLog('INFO', `[PuhuTvAdapter] Ağ kancası hedefi ayarlandı: ${targetItem.mediaTag} (${targetItem.label})`);
+      }
+      if (targetItem.smilTag) {
+        targetPuhuSmilLevel = targetItem.smilTag;
       } else if (targetItem.height >= 1080) {
         targetPuhuMediaLevel = 'media-4';
+        targetPuhuSmilLevel = '1080p.smil';
       } else if (targetItem.height >= 720) {
         targetPuhuMediaLevel = 'media-3';
+        targetPuhuSmilLevel = '720p.smil';
+      } else if (targetItem.height === 576 || (targetItem.height >= 540 && targetItem.height <= 576)) {
+        targetPuhuMediaLevel = 'media-2';
+        targetPuhuSmilLevel = '576p.smil';
       } else if (targetItem.height >= 480) {
         targetPuhuMediaLevel = 'media-2';
+        targetPuhuSmilLevel = '480p.smil';
       } else {
         targetPuhuMediaLevel = 'media-1';
+        targetPuhuSmilLevel = '360p.smil';
       }
+
+      addDiagnosticLog('INFO', `[PuhuTvAdapter] Ağ kancası hedefi ayarlandı: Akamai=${targetPuhuMediaLevel}, MNCDN=${targetPuhuSmilLevel} (${targetItem.label})`);
 
       this.lockAbrBandwidth(player);
 
-      // 2. VHS Playlist Doğrudan Kilit
+      // 2. VHS Playlist Doğrudan Kilit (Varsa)
       if (targetItem.vhsPlaylist && player && player.tech_ && player.tech_.vhs) {
         try {
           const targetPl = targetItem.vhsPlaylist;
@@ -522,23 +564,6 @@
         } catch (e) {}
       }
 
-      // 4. Doğrudan Akamai media-X URL Enjeksiyonu
-      if (player && typeof player.src === 'function' && targetItem.mediaTag) {
-        try {
-          const curSrc = player.src();
-          if (typeof curSrc === 'string' && curSrc.includes('puhu.akamaized.net') && curSrc.includes('media-')) {
-            const newSrc = curSrc.replace(/media-\d+/, targetItem.mediaTag);
-            if (newSrc !== curSrc) {
-              const curTime = player.currentTime();
-              player.src({ src: newSrc, type: 'application/x-mpegURL' });
-              if (curTime > 0) player.currentTime(curTime);
-              player.play().catch(() => {});
-              addDiagnosticLog('INFO', `[PuhuTvAdapter] player.src doğrudan güncellendi: ${newSrc}`);
-            }
-          }
-        } catch (e) {}
-      }
-
       this.lockAbrBandwidth(player);
       showToast(`PuhuTV: ${targetItem.label} (Kilitlendi)`);
       addDiagnosticLog('INFO', `[PuhuTvAdapter] Kalite uygulandı: ${targetItem.label}`);
@@ -547,7 +572,7 @@
   };
 
   /**
-   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + DOM Fallback)
+   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + React Fiber + DOM Fallback)
    */
   const KickAdapter = {
     name: 'KickAdapter',
@@ -588,7 +613,7 @@
           if (fiberKey && el[fiberKey]) {
             let node = el[fiberKey];
             let depth = 0;
-            while (node && depth < 60) {
+            while (node && depth < 80) {
               const props = node.memoizedProps;
               const state = node.memoizedState;
               
@@ -818,7 +843,7 @@
       if (h >= 1080) label = '1080p FHD';
       else if (h >= 720) label = '720p HD';
       else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) label = '576p PAL';
-      else if (h >= 480 || w === 654 || (w === 852 && h === 480)) label = '480p SD';
+      else if (h === 480 || w === 640 || w === 654 || (w === 852 && h === 480)) label = '480p SD';
       else if (h >= 360 || w === 640) label = '360p SD';
       else if (h >= 160) label = `${h}p`;
 
@@ -1296,7 +1321,7 @@
       </div>
 
       <!-- Canlı Render Çözünürlüğü Rozeti -->
-      <div style="padding: 7px 12px; background: rgba(0,0,0,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between;">
+      <div style="padding: 7px 12px; background: rgba(0,0,0,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 8px;">
         <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: monospace; color: #38bdf8;">
           🎬 Çözünürlük: Kontrol ediliyor...
         </span>
