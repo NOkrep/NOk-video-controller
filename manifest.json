@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, PuhuTV Akamai akış adaptif kanca (1080p/576p PAL), Kick.com ve tam ekran uyumlu video denetleyicisi.",
   "author": "NOkrep",
   "icons": {
