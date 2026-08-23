@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.2.5",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, zenginleştirilmiş teşhis tamponlu, canlı çözünürlük monitörlü, PuhuTV (Akamai Akıllı Fallback + UI Senk) ve Kick.com (Canlı + VOD Kayıtları) uyumlu video denetleyicisi.",
+  "version": "0.2.6",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, ABR Bandwidth kilitli, akıllı buffer flush özellikli, PuhuTV (Akamai Master + UI Senk) ve Kick.com (Canlı + VOD Kayıtları) uyumlu akıllı video denetleyicisi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",

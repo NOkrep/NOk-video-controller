@@ -1,6 +1,5 @@
 /**
- * background.js - NOk Video Controller v0.2.5
- * Service Worker (Chromium) / Background Script (Firefox)
+ * background.js - Service Worker (Chromium) / Background Script (Firefox)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
