@@ -293,6 +293,35 @@
   box-shadow: 0 0 10px rgba(37, 99, 235, 0.5) !important;
 }
 
+.pvc-quality-chip-btn {
+  flex: 1 1 calc(50% - 6px) !important;
+  min-width: 70px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 6px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+}
+
+.pvc-quality-chip-btn:hover {
+  background: rgba(59, 130, 246, 0.25) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.pvc-quality-chip-btn.pvc-active {
+  background: #2563eb !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5) !important;
+}
+
 /* 5. Footer & Ping / Hata Butonları */
 .pvc-menu-footer {
   display: grid !important;

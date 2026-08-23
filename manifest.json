@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.2.6",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, ABR Bandwidth kilitli, akıllı buffer flush özellikli, PuhuTV (Akamai Master + UI Senk) ve Kick.com (Canlı + VOD Kayıtları) uyumlu akıllı video denetleyicisi.",
+  "version": "0.2.7",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, dinamik akış paket kaliteleri algılayan, ABR Bandwidth kilitli, PuhuTV ve Kick.com (Canlı + VOD) tam uyumlu video denetleyicisi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",
