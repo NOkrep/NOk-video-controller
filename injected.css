@@ -493,3 +493,17 @@
   align-items: center !important;
   gap: 4px !important;
 }
+
+/* 8. Erişilebilirlik (A11y) & Klavye Odak Belirteçleri (Focus-Visible) */
+#pvc-controller-popup :focus-visible,
+#pvc-error-modal :focus-visible {
+  outline: 2px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35) !important;
+}
+
+#pvc-controller-popup:focus-visible {
+  outline: 2px solid #38bdf8 !important;
+  outline-offset: 3px !important;
+}
+

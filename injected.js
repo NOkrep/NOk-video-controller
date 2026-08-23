@@ -1,27 +1,26 @@
 /**
- * injected.js - NOk Video Controller v0.3.6 (Main World Engine)
+ * injected.js - NOk Video Controller v0.3.7 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.6 İyileştirmeleri & Düzeltmeleri:
- * 1. PuhuTV 576p (PAL) / 480p (SD) Donma ve Tampon Sıfırlanma Düzeltmesi:
- *    - Video.js VHS'nin dahili selectPlaylist fonksiyonunu bozan monkey-patch kaldırıldı.
- *    - Video.js VHS & qualityLevels standart ABR seviyesinde anahtarlanır; segment zaman çizelgesi (timeline) korunur.
- *    - Oynatıcı takılma nöbetçisi (Anti-Stall Watchdog) eklendi; donma riski sıfıra indirildi.
- * 2. PuhuTV Sayfa Açılışında Doğal Akış & İsteğe Bağlı 1080p FHD Geçişi:
- *    - Sayfa ilk açıldığında otomatik zorlama yapılmaz; canlı DYG API hafızada yakalanır.
- *    - 1080p seçildiğinde yakalanan API üzerinden 1080p.smil akışına pürüzsüz geçilir.
- * 3. Tampon Emniyet Zamanlayıcısı (Smooth Buffer Safety Timer):
- *    - loadedmetadata gecikmelerinde oynatmanın askıda kalması 100% önlenir.
- * 4. Zenginleştirilmiş Teşhis ve Sürüm Takip Motoru (v0.3.6).
+ * v0.3.7 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Otomatik Reklam Algılayıcı & Hızlandırıcı (Ad Fast-Forward & Auto-Mute):
+ *    - Kick yayınında reklam çıktığında otomatik algılanır, oynatma 16x hızına çıkarılır ve ses kapatılır.
+ *    - Reklam bittiğinde kullanıcı önceki oynatma hızı ve ses durumuna kesintisiz döner.
+ * 2. Erişilebilirlik (A11y) İyileştirmeleri:
+ *    - HUD menüsü, diyaloglar ve toast bildirimleri için ARIA (role, aria-label, aria-live) ve yüksek kontrastlı focus-visible desteği.
+ *    - Klavye Tab navigasyonu ile tam erişilebilir kontrol masası.
+ * 3. PuhuTV 576p (PAL) / 480p (SD) ve 1080p Doğal Akış & İsteğe Bağlı MNCDN Koruması.
+ * 4. Zenginleştirilmiş Teşhis ve Sürüm Takip Motoru (v0.3.7).
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.3.6';
+  const EXTENSION_VERSION = '0.3.7';
   const VERSION_HISTORY = [
+    { version: 'v0.3.7', notes: 'Kick.com otomatik reklam algılayıcı ve 16x hızlandırıcı (Ad Fast-Forward & Mute), HUD ve bildirimler için ARIA/A11y erişilebilirlik geliştirmeleri, klavye Tab navigasyon desteği.' },
     { version: 'v0.3.6', notes: 'PuhuTV 576p/480p Video.js VHS donma düzeltmesi (non-destructive qualityLevels switch), Anti-Stall oynatıcı nöbetçisi, sayfa açılışında doğal akış koruması & isteğe bağlı pürüzsüz 1080p MNCDN geçişi.' },
     { version: 'v0.3.5', notes: 'PuhuTV MNCDN dahili profil pürüzsüz geçişi, 1-tıkla anında açılış senkronizasyonu, 16px sürükleme sıçramasını önleyen 24px sabit sağ ray, canlı DYG Video API yakalama ve telemetri.' },
     { version: 'v0.3.4', notes: 'Pürüzsüz tampon motoru (Smooth Buffer Engine), doğrudan 1080p MNCDN API geçişi, 5 profil ayrıştırma.' },
@@ -39,7 +38,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.3.6)');
+      showToast('NOk Video Controller Aktif (v0.3.7)');
     }
   });
 
@@ -49,7 +48,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.3.6 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.3.7 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -261,6 +260,9 @@
       const toast = document.createElement('div');
       toast.id = 'pvc-quick-toast';
       toast.className = 'pvc-toast pvc-toast-visible';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      toast.setAttribute('aria-atomic', 'true');
       toast.textContent = msg;
       
       toast.style.cssText = `
@@ -746,6 +748,62 @@
       } catch (e) {}
     },
 
+    checkAdFastForward(video) {
+      if (!video || !window.location.hostname.includes('kick.com')) return;
+
+      const adSelectors = [
+        '[data-testid="ad-badge"]',
+        '[class*="ad-overlay"]',
+        '[class*="ad-badge"]',
+        '[class*="ad-banner"]',
+        '[class*="advertisement"]',
+        '[class*="ad-indicator"]',
+        '[id*="ad-player"]',
+        '.video-ad-overlay',
+        '[aria-label*="Ad "]',
+        '[aria-label*="Reklam"]'
+      ];
+
+      let hasAd = adSelectors.some(sel => !!document.querySelector(sel));
+
+      if (!hasAd) {
+        const candidates = Array.from(document.querySelectorAll('#channel-player div, .player-container div, .relative.flex-1 div'));
+        for (const el of candidates) {
+          if (el.children.length === 0 && el.textContent) {
+            const txt = el.textContent.trim().toLowerCase();
+            if (txt.startsWith('ad ') || txt.includes('commercial in progress') || txt === 'reklam' || txt.startsWith('reklam:')) {
+              hasAd = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (hasAd && !this.isKickAdActive) {
+        this.isKickAdActive = true;
+        this.preKickAdSpeed = video.playbackRate || 1.0;
+        this.preKickAdMuted = video.muted;
+        try {
+          video.playbackRate = 16.0;
+          video.muted = true;
+        } catch (e) {}
+        showToast('⚡ Kick Reklamı Algılandı: 16x Hızlandırıldı & Sessize Alındı');
+        addDiagnosticLog('INFO', '[KickAdapter] Canlı reklam tespit edildi: 16x hızlandırma ve ses kapalı devrede.');
+      } else if (!hasAd && this.isKickAdActive) {
+        this.isKickAdActive = false;
+        try {
+          video.playbackRate = this.preKickAdSpeed || 1.0;
+          video.muted = this.preKickAdMuted;
+        } catch (e) {}
+        showToast('✅ Reklam Bitti: Normal Canlı Yayına Dönüldü');
+        addDiagnosticLog('INFO', `[KickAdapter] Reklam sona erdi: Oynatma hızı (${this.preKickAdSpeed}x) ve ses seviyesi geri yüklendi.`);
+      }
+    },
+
+    isKickAdActive: false,
+    preKickAdSpeed: 1.0,
+    preKickAdMuted: false,
+
     getQualities(video) {
       const results = [];
       const ivs = this.findIvsPlayer(video);
@@ -976,8 +1034,18 @@
       if (pendingQualityLabel || lastObservedResolution.includes('Bekleniyor')) {
         updateRealtimeResolutionBadge();
       }
+      if (HOSTNAME.includes('kick.com')) {
+        KickAdapter.checkAdFastForward(video);
+      }
     });
     handleResize();
+
+    // Kick.com için periyodik reklam izleyici
+    if (HOSTNAME.includes('kick.com')) {
+      setInterval(() => {
+        KickAdapter.checkAdFastForward(video);
+      }, 750);
+    }
   }
 
   function setSpeed(rate) {
@@ -1350,11 +1418,14 @@
 
     const modal = document.createElement('div');
     modal.id = 'pvc-error-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Zenginleştirilmiş Teşhis ve Sürüm Raporu');
     modal.innerHTML = `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>⚠️ Zenginleştirilmiş Teşhis & Sürüm Raporu (v0.3.6)</span>
-          <button id="pvc-close-modal-btn">✕</button>
+          <span>⚠️ Zenginleştirilmiş Teşhis & Sürüm Raporu (v0.3.7)</span>
+          <button id="pvc-close-modal-btn" aria-label="Raporu Kapat">✕</button>
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
@@ -1376,9 +1447,9 @@
           <pre id="pvc-modal-code-block" class="pvc-modal-code">${JSON.stringify(payload, null, 2)}</pre>
         </div>
         <div class="pvc-modal-footer">
-          <button id="pvc-copy-payload-btn" class="pvc-modal-btn-secondary">📋 JSON Kopyala</button>
-          <a id="pvc-send-mail-link" href="#" target="_blank" class="pvc-modal-btn-primary" style="background:#2563eb;">✉️ E-posta İle Gönder</a>
-          <a id="pvc-open-github-link" href="#" target="_blank" class="pvc-modal-btn-primary" style="background:#4f46e5;">🐙 GitHub Issue Aç</a>
+          <button id="pvc-copy-payload-btn" class="pvc-modal-btn-secondary" aria-label="JSON Kodunu Panoya Kopyala">📋 JSON Kopyala</button>
+          <a id="pvc-send-mail-link" href="#" target="_blank" class="pvc-modal-btn-primary" style="background:#2563eb;" aria-label="E-posta İle Gönder">✉️ E-posta İle Gönder</a>
+          <a id="pvc-open-github-link" href="#" target="_blank" class="pvc-modal-btn-primary" style="background:#4f46e5;" aria-label="GitHub Issue Aç">🐙 GitHub Issue Aç</a>
         </div>
       </div>
     `;
@@ -1395,9 +1466,9 @@
       const updatedJson = updatePayloadJson();
       codeBlock.textContent = updatedJson;
 
-      const issueTitle = encodeURIComponent(`[Teşhis/v0.3.6]: ${payload.domain} - ${payload.errorCode}`);
+      const issueTitle = encodeURIComponent(`[Teşhis/v0.3.7]: ${payload.domain} - ${payload.errorCode}`);
       const compactSummary = encodeURIComponent(
-        `### Anonim Teşhis Özeti (v0.3.6)\n` +
+        `### Anonim Teşhis Özeti (v0.3.7)\n` +
         `- **Domain:** ${payload.domain}\n` +
         `- **Adaptör:** ${payload.activeAdapter}\n` +
         `- **CDN Sağlayıcı:** ${payload.streamCdnProvider}\n` +
@@ -1498,25 +1569,28 @@
     popup = document.createElement('div');
     popup.id = 'pvc-controller-popup';
     popup.className = 'pvc-floating-menu';
+    popup.setAttribute('role', 'region');
+    popup.setAttribute('aria-label', 'NOk Video Controller Denetim Masası');
+    popup.setAttribute('tabindex', '0');
 
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.6</span>
+          <span class="pvc-menu-badge">NOkrep v0.3.7</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
-          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Küçült / Büyüt">➖</button>
-          <button id="pvc-close-popup-btn" class="pvc-icon-btn pvc-close" title="Kapat">✕</button>
+          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Küçült / Büyüt" aria-label="Paneli Küçült veya Büyüt">➖</button>
+          <button id="pvc-close-popup-btn" class="pvc-icon-btn pvc-close" title="Kapat" aria-label="Denetim Masasını Kapat">✕</button>
         </div>
       </div>
 
       <!-- Canlı Render Çözünürlüğü Rozeti -->
       <div style="padding: 7px 12px; background: rgba(0,0,0,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 8px;">
-        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: monospace; color: #38bdf8;">
+        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: monospace; color: #38bdf8;" aria-live="polite">
           🎬 Çözünürlük: Kontrol ediliyor...
         </span>
-        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile">🔄</button>
+        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile" aria-label="Çözünürlük ve Paketleri Yenile">🔄</button>
       </div>
 
       <div class="pvc-menu-section">
@@ -1534,23 +1608,24 @@
             step="0.25" 
             value="1.0" 
             class="pvc-range-slider"
+            aria-label="Oynatma Hızı Kaydırıcı"
           />
           <span class="pvc-slider-bound">3.0x</span>
         </div>
         <div class="pvc-quick-speed-buttons">
-          <button class="pvc-chip-btn" data-speed="1.0">1x</button>
-          <button class="pvc-chip-btn" data-speed="1.25">1.25x</button>
-          <button class="pvc-chip-btn" data-speed="1.5">1.5x</button>
-          <button class="pvc-chip-btn" data-speed="2.0">2x</button>
-          <button class="pvc-chip-btn" data-speed="2.5">2.5x</button>
+          <button class="pvc-chip-btn" data-speed="1.0" aria-label="1x Hız">1x</button>
+          <button class="pvc-chip-btn" data-speed="1.25" aria-label="1.25x Hız">1.25x</button>
+          <button class="pvc-chip-btn" data-speed="1.5" aria-label="1.5x Hız">1.5x</button>
+          <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız">2x</button>
+          <button class="pvc-chip-btn" data-speed="2.5" aria-label="2.5x Hız">2.5x</button>
         </div>
       </div>
 
       <div class="pvc-menu-section">
         <span class="pvc-label">Hızlı Sarma:</span>
         <div class="pvc-btn-grid-2">
-          <button id="pvc-seek-m10" class="pvc-action-btn">⏪ -10 Saniye</button>
-          <button id="pvc-seek-p10" class="pvc-action-btn">⏩ +10 Saniye</button>
+          <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar">⏪ -10 Saniye</button>
+          <button id="pvc-seek-p10" class="pvc-action-btn" aria-label="10 Saniye İleri Sar">⏩ +10 Saniye</button>
         </div>
       </div>
 
@@ -1558,9 +1633,9 @@
       <div class="pvc-menu-section">
         <div class="pvc-section-header">
           <span class="pvc-label">Akış Paket Kaliteleri:</span>
-          <span id="pvc-quality-count-badge" class="pvc-subtext" style="color: #38bdf8; font-weight: 600;">Paketler Algılanıyor...</span>
+          <span id="pvc-quality-count-badge" class="pvc-subtext" style="color: #38bdf8; font-weight: 600;" aria-live="polite">Paketler Algılanıyor...</span>
         </div>
-        <div id="pvc-dynamic-quality-container" class="pvc-dynamic-grid" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+        <div id="pvc-dynamic-quality-container" class="pvc-dynamic-grid" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;" role="group" aria-label="Kalite Seçenekleri">
           <!-- Dinamik Butonlar renderDynamicQualityButtons ile basılır -->
         </div>
       </div>
@@ -1572,16 +1647,16 @@
           <span id="pvc-idle-delay-val" class="pvc-val-badge" style="color:#a78bfa; background:rgba(167,139,250,0.15); border-color:rgba(167,139,250,0.3);">${idleDelaySeconds}s</span>
         </div>
         <div class="pvc-quick-speed-buttons">
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="2">2sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="3">3sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="4">4sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="5">5sn</button>
+          <button class="pvc-chip-btn pvc-idle-btn" data-sec="2" aria-label="2 Saniye Saydamlık Gecikmesi">2sn</button>
+          <button class="pvc-chip-btn pvc-idle-btn" data-sec="3" aria-label="3 Saniye Saydamlık Gecikmesi">3sn</button>
+          <button class="pvc-chip-btn pvc-idle-btn" data-sec="4" aria-label="4 Saniye Saydamlık Gecikmesi">4sn</button>
+          <button class="pvc-chip-btn pvc-idle-btn" data-sec="5" aria-label="5 Saniye Saydamlık Gecikmesi">5sn</button>
         </div>
       </div>
 
       <div class="pvc-menu-footer">
-        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Sunucu gecikmesini ölç">📡 CDN Ping</button>
-        <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">⚠️ Teşhis / Hata</button>
+        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Sunucu gecikmesini ölç" aria-label="Sunucu CDN Gecikmesini Ölç">📡 CDN Ping</button>
+        <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç" aria-label="Anonim Teşhis ve Hata Raporunu Aç">⚠️ Teşhis / Hata</button>
       </div>
     `;
 
@@ -1714,7 +1789,7 @@
         if (slider) slider.value = (video.playbackRate || 1.0).toString();
         if (speedVal) speedVal.textContent = `${video.playbackRate || 1.0}x`;
       }
-      showToast('NOk Video Controller Aktif (v0.3.6)');
+      showToast('NOk Video Controller Aktif (v0.3.7)');
     }
   }
 

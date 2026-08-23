@@ -1,6 +1,6 @@
 {
   "name": "nok-video-controller",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "NOk Video Controller browser extension & live interactive testbed",
   "main": "server.js",
   "type": "module",
