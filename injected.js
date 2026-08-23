@@ -48,21 +48,45 @@
   let lastObservedResolution = 'Ölçülüyor...';
   let cachedDiscoveredQualities = [];
   let currentActiveAdapterName = 'GenericAdapter';
-  let targetPuhuMediaLevel = null; // 'media-4', 'media-3', 'media-2', 'media-1'
+  let targetPuhuMediaLevel = 'media-4'; // 'media-4' (1080p), 'media-3' (720p), 'media-2' (576p/480p), 'media-1' (360p)
+  let targetPuhuSmilLevel = '1080p.smil'; // '1080p.smil', '720p.smil', '576p.smil', '480p.smil', '360p.smil'
   let puhuFallbackAttempted = false;
 
   // =========================================================================
-  // 🌐 PUHUTV AKAMAI XHR / FETCH İSTEK YÖNLENDİRİCİSİ (1080p - 360p MEDIA HOOK)
+  // 🌐 PUHUTV ÇİFT CDN (AKAMAI & MEDIANOVA MNCDN) AĞ KANCASI (XHR / FETCH)
   // =========================================================================
+  function transformPuhuStreamUrl(url) {
+    if (typeof url !== 'string') return url;
+
+    // 1. Akamai CDN İstek Kancası (media-X -> media-4/3/2/1)
+    if (url.includes('puhu.akamaized.net') && url.includes('media-') && targetPuhuMediaLevel) {
+      const redirectUrl = url.replace(/media-\d+/, targetPuhuMediaLevel);
+      if (redirectUrl !== url) {
+        addDiagnosticLog('INFO', `[Network Hook] Akamai Yönlendirildi: ${targetPuhuMediaLevel}`);
+        return redirectUrl;
+      }
+    }
+
+    // 2. Medianova (MNCDN) SMIL Kancası (xxxp.smil -> 1080p.smil / 720p.smil vb.)
+    if (url.includes('mncdn.com') && url.includes('.smil') && targetPuhuSmilLevel) {
+      const redirectUrl = url.replace(/\d+p\.smil/i, targetPuhuSmilLevel);
+      if (redirectUrl !== url) {
+        addDiagnosticLog('INFO', `[Network Hook] MNCDN SMIL Yönlendirildi: ${targetPuhuSmilLevel}`);
+        return redirectUrl;
+      }
+    }
+
+    return url;
+  }
+
   (function hookNetworkRequestsForPuhu() {
     // 1. XMLHttpRequest Hook
     const originalOpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function (method, url, ...rest) {
       try {
-        if (targetPuhuMediaLevel && typeof url === 'string' && url.includes('puhu.akamaized.net') && url.includes('media-')) {
-          const redirectUrl = url.replace(/media-\d+/, targetPuhuMediaLevel);
-          addDiagnosticLog('INFO', `[Network Hook] XHR Akamai Yönlendirildi: ${targetPuhuMediaLevel}`);
-          return originalOpen.call(this, method, redirectUrl, ...rest);
+        if (typeof url === 'string') {
+          const transformedUrl = transformPuhuStreamUrl(url);
+          return originalOpen.call(this, method, transformedUrl, ...rest);
         }
       } catch (e) {}
       return originalOpen.call(this, method, url, ...rest);
@@ -72,14 +96,13 @@
     const originalFetch = window.fetch;
     window.fetch = function (input, init) {
       try {
-        if (targetPuhuMediaLevel) {
-          if (typeof input === 'string' && input.includes('puhu.akamaized.net') && input.includes('media-')) {
-            const redirectUrl = input.replace(/media-\d+/, targetPuhuMediaLevel);
-            addDiagnosticLog('INFO', `[Network Hook] Fetch Akamai Yönlendirildi: ${targetPuhuMediaLevel}`);
-            return originalFetch.call(this, redirectUrl, init);
-          } else if (input instanceof Request && input.url && input.url.includes('puhu.akamaized.net') && input.url.includes('media-')) {
-            const redirectUrl = input.url.replace(/media-\d+/, targetPuhuMediaLevel);
-            const newRequest = new Request(redirectUrl, input);
+        if (typeof input === 'string') {
+          const transformedUrl = transformPuhuStreamUrl(input);
+          return originalFetch.call(this, transformedUrl, init);
+        } else if (input instanceof Request && input.url) {
+          const transformedUrl = transformPuhuStreamUrl(input.url);
+          if (transformedUrl !== input.url) {
+            const newRequest = new Request(transformedUrl, input);
             return originalFetch.call(this, newRequest, init);
           }
         }
@@ -474,23 +497,58 @@
     applyQuality(targetItem, video, player) {
       puhuFallbackAttempted = false;
 
-      // 1. Akamai Network Hook seviyesini ata
+      // 1. Akamai Network Hook & MNCDN SMIL seviyelerini ata
       if (targetItem.mediaTag) {
         targetPuhuMediaLevel = targetItem.mediaTag;
-        addDiagnosticLog('INFO', `[PuhuTvAdapter] Ağ kancası hedefi ayarlandı: ${targetItem.mediaTag} (${targetItem.label})`);
-      } else if (targetItem.height >= 1080) {
+      }
+
+      if (targetItem.height >= 1080) {
         targetPuhuMediaLevel = 'media-4';
+        targetPuhuSmilLevel = '1080p.smil';
       } else if (targetItem.height >= 720) {
         targetPuhuMediaLevel = 'media-3';
+        targetPuhuSmilLevel = '720p.smil';
+      } else if (targetItem.height === 576 || (targetItem.height >= 540 && targetItem.height <= 576)) {
+        targetPuhuMediaLevel = 'media-2';
+        targetPuhuSmilLevel = '576p.smil';
       } else if (targetItem.height >= 480) {
         targetPuhuMediaLevel = 'media-2';
+        targetPuhuSmilLevel = '480p.smil';
       } else {
         targetPuhuMediaLevel = 'media-1';
+        targetPuhuSmilLevel = '360p.smil';
       }
+
+      addDiagnosticLog('INFO', `[PuhuTvAdapter] Ağ kancası hedefi: Akamai=${targetPuhuMediaLevel}, MNCDN=${targetPuhuSmilLevel} (${targetItem.label})`);
 
       this.lockAbrBandwidth(player);
 
-      // 2. VHS Playlist Doğrudan Kilit
+      // 2. Canlı Oynatma Kaynağını (MNCDN SMIL / Akamai) Dinamik Olarak Güncelle
+      try {
+        let currentSrcUrl = '';
+        if (player && typeof player.currentSrc === 'function') currentSrcUrl = player.currentSrc();
+        if (!currentSrcUrl && video) currentSrcUrl = video.currentSrc || video.src || '';
+
+        if (currentSrcUrl && (currentSrcUrl.includes('mncdn.com') || currentSrcUrl.includes('puhu.akamaized.net'))) {
+          const transformed = transformPuhuStreamUrl(currentSrcUrl);
+          if (transformed && transformed !== currentSrcUrl && player && typeof player.src === 'function') {
+            const curTime = video ? video.currentTime : 0;
+            const isPaused = video ? video.paused : false;
+            player.src({ src: transformed, type: 'application/x-mpegURL' });
+            if (typeof player.one === 'function') {
+              player.one('loadedmetadata', () => {
+                if (curTime > 0) player.currentTime(curTime);
+                if (!isPaused && typeof player.play === 'function') player.play();
+              });
+            }
+            addDiagnosticLog('INFO', `[PuhuTvAdapter] Oynatıcı kaynağı canlı değiştirildi: ${transformed}`);
+          }
+        }
+      } catch (srcErr) {
+        addDiagnosticLog('WARN', '[PuhuTvAdapter] Canlı kaynak değiştirme uyarısı', srcErr.message);
+      }
+
+      // 3. VHS Playlist Doğrudan Kilit
       if (targetItem.vhsPlaylist && player && player.tech_ && player.tech_.vhs) {
         try {
           const targetPl = targetItem.vhsPlaylist;
@@ -504,7 +562,7 @@
         } catch (e) {}
       }
 
-      // 3. Video.js qualityLevels kilit
+      // 4. Video.js qualityLevels kilit
       if (player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
