@@ -57,13 +57,12 @@
   function transformPuhuStreamUrl(url) {
     if (typeof url !== 'string') return url;
 
-    // 1. Akamai CDN İstek Kancası (media-X -> media-4/3/2/1)
-    if (url.includes('puhu.akamaized.net') && url.includes('media-') && targetPuhuMediaLevel) {
-      const redirectUrl = url.replace(/media-\d+/, targetPuhuMediaLevel);
-      if (redirectUrl !== url) {
-        addDiagnosticLog('INFO', `[Network Hook] Akamai Yönlendirildi: ${targetPuhuMediaLevel}`);
-        return redirectUrl;
-      }
+    // 1. DYG Video API Kancası: PuhuTV'nin 1080p FHD destekleyen Medianova (MNCDN) akışını getirmesi için
+    //    akamai=true parametresini akamai=false olarak dönüştürür.
+    if (url.includes('dygvideo.dygdigital.com/api/video_info') && url.includes('akamai=true')) {
+      const redirectUrl = url.replace('akamai=true', 'akamai=false');
+      addDiagnosticLog('INFO', '[PuhuTvAdapter] DYG Video API: 1080p FHD için MNCDN moduna yönlendirildi.');
+      return redirectUrl;
     }
 
     // 2. Medianova (MNCDN) SMIL Kancası (xxxp.smil -> 1080p.smil / 720p.smil vb.)
@@ -1008,6 +1007,27 @@
 
       container.appendChild(btn);
     });
+
+    if (HOSTNAME.includes('puhutv.com')) {
+      const has1080 = qualities.some(q => (q.height || 0) >= 1000);
+      if (!has1080) {
+        const mncdnBtn = document.createElement('button');
+        mncdnBtn.className = 'pvc-quality-chip-btn';
+        mncdnBtn.style.background = 'rgba(56, 189, 248, 0.15)';
+        mncdnBtn.style.color = '#38bdf8';
+        mncdnBtn.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        mncdnBtn.style.fontSize = '11px';
+        mncdnBtn.textContent = '🚀 1080p FHD (MNCDN) Moduna Geç';
+        mncdnBtn.title = 'PuhuTV Medianova sunucusundan 1080p FHD akışını almak için sayfayı ağ kancasıyla yeniler';
+        mncdnBtn.onclick = () => {
+          showToast('1080p FHD MNCDN akışı için sayfa yenileniyor...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 400);
+        };
+        container.appendChild(mncdnBtn);
+      }
+    }
   }
 
   async function testCdnPing() {
@@ -1517,9 +1537,13 @@
   }
 
   function togglePvcPopup() {
-    const popup = document.getElementById('pvc-controller-popup') || buildPvcPopup();
+    let popup = document.getElementById('pvc-controller-popup');
+    const wasClosed = !popup || popup.style.display === 'none';
+    if (!popup) {
+      popup = buildPvcPopup();
+    }
     syncFullscreenElements();
-    popup.style.display = (popup.style.display === 'none') ? 'block' : 'none';
+    popup.style.display = wasClosed ? 'block' : 'none';
     if (popup.style.display === 'block') {
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
@@ -1533,7 +1557,7 @@
         if (slider) slider.value = (video.playbackRate || 1.0).toString();
         if (speedVal) speedVal.textContent = `${video.playbackRate || 1.0}x`;
       }
-      showToast('NOk Video Controller Aktif (v0.3.2)');
+      showToast('NOk Video Controller Aktif (v0.3.3)');
     }
   }
 
