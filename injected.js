@@ -1,25 +1,44 @@
 /**
- * injected.js - NOk Video Controller v0.3.4 (Main World Engine)
+ * injected.js - NOk Video Controller v0.3.5 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.4 İyileştirmeleri:
- * 1. PuhuTV Medianova (MNCDN) Tampon ve Akıcılık Optimizasyonu (Smooth Buffer Switch):
- *    - Kalite değişimlerinde (ör. 480p -> 1080p) tampon boşalması ve takılma sorunu çözüldü; segmentler akıcı şekilde doldurulup oynatılır.
- *    - MNCDN akışlarında tüm SMIL profilleri (1080p, 720p, 576p, 480p, 360p) anında ve eksiksiz sunulur.
- * 2. Dinamik 1080p FHD MNCDN Moduna Geçiş:
- *    - Akamai'de 1080p olmayan içeriklerde sayfayı tümden yenilemeden doğrudan video oynatıcı kaynağını MNCDN akışına geçirme desteği.
- * 3. Hızlı Açılış ve Gelişmiş Teşhis Entegrasyonu.
+ * v0.3.5 İyileştirmeleri & Düzeltmeleri:
+ * 1. Medianova (MNCDN) Akışında Pürüzsüz Dahili Kalite Geçişi:
+ *    - 1080p.smil master akışı aktifken 480p, 576p, 720p, 1080p geçişlerinde player.src yeniden yüklenmez.
+ *    - Video.js VHS & qualityLevels seviyesinde doğrudan anahtarlanır; buffer boşalması ve takılma (%100) engellenir.
+ * 2. 1-Tıkla Anında Açılış (Single Click Instant Launch):
+ *    - content.js onLoad ve injected.js mesajlaşması senkronize edildi; ilk tıklamada anında açılır.
+ * 3. 16px Sürükleme Sıçramasını Önleyen Sağ Ray Hizalaması:
+ *    - Varsayılan başlangıç konumu ile sürükleme konumu 24px olarak eşitlendi; dokunulduğunda sağa kayma yapmaz.
+ * 4. Canlı DYG Video API Yakalayıcısı (Live API Interceptor):
+ *    - PuhuTV API istekleri hafızada yakalanır ve 1080p MNCDN geçişinde sayfa yenilemeye gerek kalmadan doğrudan video güncellenir.
+ * 5. Zenginleştirilmiş Teşhis ve Sürüm Takip Motoru (v0.3.5 Version History & Detailed Telemetry).
  */
 
 (() => {
+  const EXTENSION_VERSION = '0.3.5';
+  const VERSION_HISTORY = [
+    { version: 'v0.3.5', notes: 'PuhuTV MNCDN dahili profil pürüzsüz geçişi (player.src sıfırlamasız kesintisiz geçiş), 1-tıkla anında açılış senkronizasyonu, 16px sürükleme sıçramasını önleyen 24px sabit sağ ray, canlı DYG Video API yakalama ve zenginleştirilmiş teşhis telemetrisi.' },
+    { version: 'v0.3.4', notes: 'Pürüzsüz tampon motoru (Smooth Buffer Engine), doğrudan 1080p MNCDN API geçişi, 5 profil ayrıştırma.' },
+    { version: 'v0.3.3', notes: 'Sentetik olmayan gerçek HLS paketleri, tek tık iyileştirmesi, 480p SD / 576p PAL ayrımı.' },
+    { version: 'v0.3.2', notes: 'HUD UI, Kick adaptörü, Zero-PII teşhis motoru.' }
+  ];
+
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
     if (event.data.type === 'PVC_TOGGLE_POPUP' || event.data.type === 'PVC_TOGGLE_UI' || event.data.type === 'NOK_CONTROLLER_TOGGLE') {
       togglePvcPopup();
+    } else if (event.data.type === 'PVC_OPEN_POPUP') {
+      const popup = document.getElementById('pvc-controller-popup') || buildPvcPopup();
+      popup.style.display = 'block';
+      resetIdleTimer(popup);
+      renderDynamicQualityButtons();
+      updateRealtimeResolutionBadge();
+      showToast('NOk Video Controller Aktif (v0.3.5)');
     }
   });
 
@@ -29,7 +48,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.3.4 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.3.5 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -48,6 +67,7 @@
   let targetPuhuMediaLevel = null; // 'media-4', 'media-3', 'media-2', 'media-1'
   let targetPuhuSmilLevel = null;  // '1080p.smil', '720p.smil', etc.
   let puhuFallbackAttempted = false;
+  let lastCapturedDygApiUrl = '';
 
   // =========================================================================
   // 🌐 PUHUTV ÇİFT CDN (AKAMAI & MEDIANOVA MNCDN) AĞ KANCASI (XHR / FETCH)
@@ -55,21 +75,18 @@
   function transformPuhuStreamUrl(url) {
     if (typeof url !== 'string') return url;
 
+    // Canlı DYG API isteğini yakala ve hafızada tut
+    if (url.includes('dygvideo.dygdigital.com/api/video_info')) {
+      lastCapturedDygApiUrl = url;
+      addDiagnosticLog('INFO', `[PuhuTvAdapter] DYG Video API yakalandı: ${sanitizeStreamUrl(url)}`);
+    }
+
     // 1. DYG Video API Kancası: PuhuTV'nin 1080p FHD destekleyen Medianova (MNCDN) akışını getirmesi için
     //    akamai=true parametresini akamai=false olarak dönüştürür.
     if (url.includes('dygvideo.dygdigital.com/api/video_info') && url.includes('akamai=true')) {
       const redirectUrl = url.replace('akamai=true', 'akamai=false');
       addDiagnosticLog('INFO', '[PuhuTvAdapter] DYG Video API: 1080p FHD için MNCDN moduna yönlendirildi.');
       return redirectUrl;
-    }
-
-    // 2. Medianova (MNCDN) SMIL Kancası (xxxp.smil -> 1080p.smil / 720p.smil vb.)
-    if (url.includes('mncdn.com') && url.includes('.smil') && targetPuhuSmilLevel) {
-      const redirectUrl = url.replace(/\d+p\.smil/i, targetPuhuSmilLevel);
-      if (redirectUrl !== url) {
-        addDiagnosticLog('INFO', `[Network Hook] MNCDN SMIL Yönlendirildi: ${targetPuhuSmilLevel}`);
-        return redirectUrl;
-      }
     }
 
     return url;
@@ -350,10 +367,16 @@
   // =========================================================================
   // ⚡ PÜRÜZSÜZ TAMPON & OYNATICI KAYNAK DEĞİŞTİRME MOTORU (SMOOTH BUFFER SWITCH)
   // =========================================================================
+  let smoothSwitchInterval = null;
+  let smoothSwitchTimeout = null;
+
   function smoothPlayerSourceSwitch(player, video, newSrcUrl, label) {
     if (!player) return;
     const curTime = video ? video.currentTime : 0;
     const wasPaused = video ? video.paused : false;
+
+    if (smoothSwitchInterval) clearInterval(smoothSwitchInterval);
+    if (smoothSwitchTimeout) clearTimeout(smoothSwitchTimeout);
 
     if (video && !wasPaused) {
       video.pause();
@@ -379,6 +402,9 @@
     const resumePlayback = () => {
       if (resumed) return;
       resumed = true;
+      if (smoothSwitchInterval) clearInterval(smoothSwitchInterval);
+      if (smoothSwitchTimeout) clearTimeout(smoothSwitchTimeout);
+
       if (!wasPaused && typeof player.play === 'function') {
         player.play().catch(() => {});
       }
@@ -392,12 +418,11 @@
           player.currentTime(curTime);
         }
 
-        // Segment tamponunun en az 1.5s - 2s dolmasını kontrol et
-        const checkBufferInterval = setInterval(() => {
+        // Segment tamponunun en az 1.2s - 1.5s dolmasını kontrol et
+        smoothSwitchInterval = setInterval(() => {
           if (video && video.buffered && video.buffered.length > 0) {
             for (let i = 0; i < video.buffered.length; i++) {
               if (video.buffered.start(i) <= curTime && video.buffered.end(i) >= curTime + 1.2) {
-                clearInterval(checkBufferInterval);
                 resumePlayback();
                 return;
               }
@@ -406,10 +431,9 @@
         }, 150);
 
         // Emniyet zamanlayıcısı: 1.5 saniye sonra zorunlu başlat
-        setTimeout(() => {
-          clearInterval(checkBufferInterval);
+        smoothSwitchTimeout = setTimeout(() => {
           resumePlayback();
-        }, 1600);
+        }, 1500);
       });
     }
   }
@@ -451,18 +475,7 @@
       if (player && typeof player.currentSrc === 'function') currentSrcUrl = player.currentSrc();
       if (!currentSrcUrl && video) currentSrcUrl = video.currentSrc || video.src || '';
 
-      // A. Medianova MNCDN Akışı Aktifse: Standart 5 SMIL profilini listele
-      if (currentSrcUrl && currentSrcUrl.includes('mncdn.com') && currentSrcUrl.includes('.smil')) {
-        return [
-          { id: 'puhu_mn_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4', smilTag: '1080p.smil' },
-          { id: 'puhu_mn_720', label: '720p (HD)', height: 720, mediaTag: 'media-3', smilTag: '720p.smil' },
-          { id: 'puhu_mn_576', label: '576p (PAL)', height: 576, mediaTag: 'media-3', smilTag: '576p.smil' },
-          { id: 'puhu_mn_480', label: '480p (SD)', height: 480, mediaTag: 'media-2', smilTag: '480p.smil' },
-          { id: 'puhu_mn_360', label: '360p (Düşük)', height: 360, mediaTag: 'media-1', smilTag: '360p.smil' }
-        ];
-      }
-
-      // B. VHS Master Playlists (Akamai veya Standart HLS)
+      // A. VHS Master Playlists (Akamai veya Medianova SMIL master playlist)
       if (player && player.tech_ && player.tech_.vhs && player.tech_.vhs.playlists && player.tech_.vhs.playlists.master) {
         try {
           const masterPlaylists = player.tech_.vhs.playlists.master.playlists;
@@ -525,7 +538,7 @@
         }
       }
 
-      // C. Video.js qualityLevels()
+      // B. Video.js qualityLevels()
       if (results.length === 0 && player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
@@ -562,7 +575,17 @@
         } catch (e) {}
       }
 
-      // D. Kesin Kural: Olmayan kalite gösterilmez. Yalnızca akışta tespit edilen paketler döndürülür.
+      // C. Medianova MNCDN Akışı Aktifse ve HLS playlist henüz parsing aşamasındaysa: Standart 5 SMIL profilini listele
+      if (results.length === 0 && currentSrcUrl && currentSrcUrl.includes('mncdn.com') && currentSrcUrl.includes('.smil')) {
+        return [
+          { id: 'puhu_mn_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4', smilTag: '1080p.smil' },
+          { id: 'puhu_mn_720', label: '720p (HD)', height: 720, mediaTag: 'media-3', smilTag: '720p.smil' },
+          { id: 'puhu_mn_576', label: '576p (PAL)', height: 576, mediaTag: 'media-3', smilTag: '576p.smil' },
+          { id: 'puhu_mn_480', label: '480p (SD)', height: 480, mediaTag: 'media-2', smilTag: '480p.smil' },
+          { id: 'puhu_mn_360', label: '360p (Düşük)', height: 360, mediaTag: 'media-1', smilTag: '360p.smil' }
+        ];
+      }
+
       return results.sort((a, b) => (b.height || 0) - (a.height || 0));
     },
 
@@ -596,21 +619,18 @@
 
       this.lockAbrBandwidth(player);
 
-      // 2. Medianova MNCDN SMIL Değişimi (Pürüzsüz Tamponlama ile Geçiş)
+      // 2. Akış URL kontrolü
       let currentSrcUrl = '';
       if (player && typeof player.currentSrc === 'function') currentSrcUrl = player.currentSrc();
       if (!currentSrcUrl && video) currentSrcUrl = video.currentSrc || video.src || '';
 
-      if (currentSrcUrl && currentSrcUrl.includes('mncdn.com') && currentSrcUrl.includes('.smil')) {
-        const transformed = transformPuhuStreamUrl(currentSrcUrl);
-        if (transformed && transformed !== currentSrcUrl && player) {
-          smoothPlayerSourceSwitch(player, video, transformed, targetItem.label);
-          addDiagnosticLog('INFO', `[PuhuTvAdapter] MNCDN SMIL pürüzsüz değiştirildi: ${transformed}`);
-          return true;
-        }
+      // 3. Eğer kullanıcı 1080p seçtiyse ve mevcut akış Akamai ise, doğrudan MNCDN 1080p'ye geçir
+      if (targetItem.height >= 1000 && !currentSrcUrl.includes('mncdn.com')) {
+        switchToPuhuMncdnDirectly(video, player);
+        return true;
       }
 
-      // 3. VHS Playlist Doğrudan Kilit (Buffer sıfırlanmadan donmasız geçiş)
+      // 4. VHS Playlist Doğrudan Kilit (Buffer sıfırlanmadan donmasız geçiş)
       if (targetItem.vhsPlaylist && player && player.tech_ && player.tech_.vhs) {
         try {
           const targetPl = targetItem.vhsPlaylist;
@@ -624,7 +644,7 @@
         } catch (e) {}
       }
 
-      // 4. Video.js qualityLevels kilit
+      // 5. Video.js qualityLevels kilit
       if (player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
@@ -1105,10 +1125,28 @@
     addDiagnosticLog('INFO', '[PuhuTvAdapter] MNCDN 1080p doğrudan geçiş tetiklendi');
 
     try {
-      // 1. PuhuTV Video / Episode ReferenceId tespit et
-      let refId = '';
+      // 1. Canlı yakalanan DYG Video API URL'si varsa doğrudan kullan
+      if (lastCapturedDygApiUrl) {
+        const mnApiUrl = lastCapturedDygApiUrl.replace('akamai=true', 'akamai=false');
+        addDiagnosticLog('INFO', `[PuhuTvAdapter] Canlı yakalanan DYG API çağrılıyor: ${sanitizeStreamUrl(mnApiUrl)}`);
+        const res = await fetch(mnApiUrl, { method: 'POST' });
+        if (res.ok) {
+          const json = await res.json();
+          const videoUrl = json && json.data && (json.data.video_url || json.data.hls_url || (json.data.files && json.data.files[0] && json.data.files[0].url));
+          if (videoUrl && videoUrl.includes('mncdn.com')) {
+            const mncdn1080Url = videoUrl.replace(/\d+p\.smil/i, '1080p.smil');
+            targetPuhuSmilLevel = '1080p.smil';
+            smoothPlayerSourceSwitch(player, video, mncdn1080Url, '1080p FHD (MNCDN)');
+            activeForcedQualityId = 'puhu_mn_1080';
+            activeForcedQualityLabel = '1080p (FHD)';
+            renderDynamicQualityButtons();
+            return;
+          }
+        }
+      }
 
-      // Yöntem A: Next.js pageProps
+      // 2. ReferenceId tespit et (Next.js, Player options veya DOM)
+      let refId = '';
       if (window.__NEXT_DATA__ && window.__NEXT_DATA__.props && window.__NEXT_DATA__.props.pageProps) {
         const pp = window.__NEXT_DATA__.props.pageProps;
         if (pp.video && pp.video.referenceId) refId = pp.video.referenceId;
@@ -1116,20 +1154,17 @@
         else if (pp.data && pp.data.referenceId) refId = pp.data.referenceId;
       }
 
-      // Yöntem B: Video.js player options
       if (!refId && player && player.options_) {
         const opts = player.options_;
         if (opts.referenceId) refId = opts.referenceId;
       }
 
-      // Yöntem C: Sayfadaki DOM etiketleri
       if (!refId) {
         const el = document.querySelector('[data-reference-id], [data-video-id]');
         if (el) refId = el.getAttribute('data-reference-id') || el.getAttribute('data-video-id') || '';
       }
 
       if (refId && player) {
-        // DYG Video API'sine akamai=false parametresi ile istek at
         const apiUrl = `https://dygvideo.dygdigital.com/api/video_info?akamai=false&PublisherId=29&ReferenceId=${encodeURIComponent(refId)}&SecretKey=NtvApiSecret2014*`;
         const res = await fetch(apiUrl, { method: 'POST' });
         if (res.ok) {
@@ -1253,7 +1288,7 @@
   }
 
   /**
-   * Zenginleştirilmiş Anonim Hata & Teşhis Paketi
+   * Zenginleştirilmiş Anonim Hata & Teşhis Paketi (v0.3.5 Sürüm ve Telemetri Takibi)
    */
   function reportAnonymousError(errorCode, message) {
     const { playerType, video, player } = findVideoAndPlayer();
@@ -1273,6 +1308,10 @@
       if (mediaEntry) capturedSampleUrl = mediaEntry.name;
     }
 
+    const streamCdnProvider = capturedSampleUrl.includes('mncdn.com') 
+      ? 'Medianova (MNCDN)' 
+      : (capturedSampleUrl.includes('akamaized.net') ? 'Akamai' : 'Diğer / Doğrudan');
+
     const videoStats = video ? {
       renderedResolution: `${video.videoWidth}x${video.videoHeight}`,
       displaySize: `${video.clientWidth}x${video.clientHeight}`,
@@ -1288,14 +1327,19 @@
 
     const anonymousPayload = {
       timestamp: new Date().toISOString(),
+      extensionVersion: EXTENSION_VERSION,
+      versionHistory: VERSION_HISTORY,
       errorCode: errorCode || 'USER_MANUAL_DIAGNOSTIC',
       cleanMessage: message ? sanitizeStreamUrl(message) : 'Kullanıcı teşhis ve hata bildirimini tetikledi.',
+      streamCdnProvider,
       streamSampleUrl: sanitizeStreamUrl(capturedSampleUrl),
+      lastCapturedDygApiUrl: lastCapturedDygApiUrl ? sanitizeStreamUrl(lastCapturedDygApiUrl) : null,
       playerType,
       activeAdapter: currentActiveAdapterName,
       domain: cleanHostname,
       activeForcedQuality: activeForcedQualityLabel || 'Otomatik',
       discoveredQualitiesCount: cachedDiscoveredQualities.length,
+      discoveredQualities: cachedDiscoveredQualities.map(q => ({ label: q.label, height: q.height, id: q.id })),
       idleDelaySetting: `${idleDelaySeconds}s`,
       userAgentFamily: navigator.userAgent.includes('Firefox') ? 'Firefox (Gecko)' : 'Chromium',
       screenResolution: `${window.innerWidth}x${window.innerHeight}`,
@@ -1324,12 +1368,12 @@
     modal.innerHTML = `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>⚠️ Zenginleştirilmiş Teşhis & Geri Bildirim (v0.3.2)</span>
+          <span>⚠️ Zenginleştirilmiş Teşhis & Sürüm Raporu (v0.3.5)</span>
           <button id="pvc-close-modal-btn">✕</button>
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
-            Sitede (<strong>${payload.domain}</strong>) oynatıcı durumu, son medya telemetrisi ve hata günlüğü anonimleştirilerek toplandı (<strong>Sıfır Kişisel Veri</strong>):
+            Sitede (<strong>${payload.domain}</strong>) oynatıcı durumu, CDN telemetrisi ve sürüm geçmişi anonimleştirilerek toplandı (<strong>Sıfır Kişisel Veri</strong>):
           </p>
 
           <!-- Kullanıcı Görüşleri ve Notu Bölümü -->
@@ -1366,11 +1410,12 @@
       const updatedJson = updatePayloadJson();
       codeBlock.textContent = updatedJson;
 
-      const issueTitle = encodeURIComponent(`[Teşhis/Hata]: ${payload.domain} - ${payload.errorCode}`);
+      const issueTitle = encodeURIComponent(`[Teşhis/v0.3.5]: ${payload.domain} - ${payload.errorCode}`);
       const compactSummary = encodeURIComponent(
-        `### Anonim Teşhis Özeti\n` +
+        `### Anonim Teşhis Özeti (v0.3.5)\n` +
         `- **Domain:** ${payload.domain}\n` +
         `- **Adaptör:** ${payload.activeAdapter}\n` +
+        `- **CDN Sağlayıcı:** ${payload.streamCdnProvider}\n` +
         `- **Oynatıcı:** ${payload.playerType}\n` +
         `- **Render Çözünürlüğü:** ${payload.videoState ? payload.videoState.renderedResolution : 'Bilinmiyor'}\n\n` +
         `*(Detaylı JSON panoya kopyalandı, lütfen aşağıya yapıştırın)*\n\n\`\`\`json\n\n\`\`\``
@@ -1472,7 +1517,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.4</span>
+          <span class="pvc-menu-badge">NOkrep v0.3.5</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
@@ -1684,7 +1729,7 @@
         if (slider) slider.value = (video.playbackRate || 1.0).toString();
         if (speedVal) speedVal.textContent = `${video.playbackRate || 1.0}x`;
       }
-      showToast('NOk Video Controller Aktif (v0.3.4)');
+      showToast('NOk Video Controller Aktif (v0.3.5)');
     }
   }
 

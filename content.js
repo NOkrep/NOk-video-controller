@@ -17,6 +17,8 @@
       script.src = browserAPI.runtime.getURL('injected.js');
       script.onload = function () {
         this.remove();
+        // İlk enjeksiyon bittiğinde pop-up'ı anında aç
+        window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
       };
       (document.head || document.documentElement).appendChild(script);
     } catch (e) {
