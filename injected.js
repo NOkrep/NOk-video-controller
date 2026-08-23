@@ -166,24 +166,9 @@
     console.warn = function (...args) {
       try {
         const msg = args.map(a => (typeof a === 'string' ? a : (a && a.message ? a.message : ''))).join(' ');
+        // Kayıt günlüğü
         if (msg.includes('video') || msg.includes('hls') || msg.includes('ivs') || msg.includes('puhu') || msg.includes('kick')) {
           addDiagnosticLog('WARN', msg);
-        }
-
-        // PuhuTV 1080p (media-4) 404 aldığında otomatik 576p/480p (media-2) fallback
-        if (msg.includes('puhu.akamaized.net') && (msg.includes('media-4') || targetPuhuMediaLevel === 'media-4') && (msg.includes('errored') || msg.includes('Problem encountered'))) {
-          if (!puhuFallbackAttempted && targetPuhuMediaLevel === 'media-4') {
-            puhuFallbackAttempted = true;
-            targetPuhuMediaLevel = 'media-2';
-            targetPuhuSmilLevel = '576p.smil';
-            addDiagnosticLog('WARN', '[PuhuTvAdapter] Bu içerikte 1080p master bulunamadı; en yüksek mevcut kaliteye (576p/media-2) uyarlandı.');
-            showToast('PuhuTV: Bu içerik maks 576p destekliyor (576p kilitlendi)');
-            const badge = document.getElementById('pvc-realtime-res-badge');
-            if (badge) {
-              badge.textContent = '🎬 PuhuTV: Maks 576p PAL Yayını';
-              badge.style.color = '#38bdf8';
-            }
-          }
         }
       } catch (e) {}
       originalWarn.apply(console, args);
@@ -525,7 +510,32 @@
 
       this.lockAbrBandwidth(player);
 
-      // 2. VHS Playlist Doğrudan Kilit (Varsa)
+      // 2. Canlı Oynatma Kaynağını (MNCDN SMIL / Akamai) Dinamik Olarak Güncelle
+      try {
+        let currentSrcUrl = '';
+        if (player && typeof player.currentSrc === 'function') currentSrcUrl = player.currentSrc();
+        if (!currentSrcUrl && video) currentSrcUrl = video.currentSrc || video.src || '';
+
+        if (currentSrcUrl && (currentSrcUrl.includes('mncdn.com') || currentSrcUrl.includes('puhu.akamaized.net'))) {
+          const transformed = transformPuhuStreamUrl(currentSrcUrl);
+          if (transformed && transformed !== currentSrcUrl && player && typeof player.src === 'function') {
+            const curTime = video ? video.currentTime : 0;
+            const isPaused = video ? video.paused : false;
+            player.src({ src: transformed, type: 'application/x-mpegURL' });
+            if (typeof player.one === 'function') {
+              player.one('loadedmetadata', () => {
+                if (curTime > 0) player.currentTime(curTime);
+                if (!isPaused && typeof player.play === 'function') player.play();
+              });
+            }
+            addDiagnosticLog('INFO', `[PuhuTvAdapter] Oynatıcı kaynağı canlı değiştirildi: ${transformed}`);
+          }
+        }
+      } catch (srcErr) {
+        addDiagnosticLog('WARN', '[PuhuTvAdapter] Canlı kaynak değiştirme uyarısı', srcErr.message);
+      }
+
+      // 3. VHS Playlist Doğrudan Kilit (Varsa)
       if (targetItem.vhsPlaylist && player && player.tech_ && player.tech_.vhs) {
         try {
           const targetPl = targetItem.vhsPlaylist;
@@ -539,7 +549,7 @@
         } catch (e) {}
       }
 
-      // 3. Video.js qualityLevels kilit
+      // 4. Video.js qualityLevels kilit
       if (player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
@@ -840,10 +850,10 @@
       const h = video.videoHeight;
       let label = `${h}p`;
 
-      if (h >= 1080) label = '1080p FHD';
-      else if (h >= 720) label = '720p HD';
-      else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) label = '576p PAL';
-      else if (h === 480 || w === 640 || w === 654 || (w === 852 && h === 480)) label = '480p SD';
+      if (h >= 1080 || w >= 1900) label = '1080p FHD';
+      else if (h >= 720 || w >= 1280) label = '720p HD';
+      else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576) || (w === 654 && h === 480)) label = '576p PAL';
+      else if (h === 480 || w === 640 || (w === 852 && h === 480)) label = '480p SD';
       else if (h >= 360 || w === 640) label = '360p SD';
       else if (h >= 160) label = `${h}p`;
 
