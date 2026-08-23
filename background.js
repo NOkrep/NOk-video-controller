@@ -1,5 +1,5 @@
 /**
- * background.js - NOk Video Controller v0.2.2
+ * background.js - NOk Video Controller v0.2.3
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 

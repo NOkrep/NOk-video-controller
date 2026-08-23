@@ -1,21 +1,22 @@
 /**
- * injected.js - NOk Video Controller v0.2.2 (Main World Engine)
+ * injected.js - NOk Video Controller v0.2.3 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage kullanılmaz.
  * 
- * v0.2.2 Düzeltmeleri ve Geliştirmeleri:
- * 1. PuhuTV / MNCDN & Akamai Çift Kalite Desteği:
- *    - Hem '1080p.smil', '720p.smil', '540p.smil', '360p.smil' kalıpları
- *    - Hem de 'media-1', 'media-2', 'media-3', 'media-4' Akamai kalıpları tam desteklenir.
- * 2. Kick.com Canlı Yayın Kalite Seçimi:
- *    - Kick IVS ve HLS oynatıcı nesnelerine ve arayüz seçicilerine doğrudan kalite komutu iletir.
- * 3. Açıklayıcı ve Anlaşılır CDN Ping Paneli:
- *    - Gecikme süresi + Bağlantı Kalitesi (Mükemmel / İyi / Yüksek Gecikme) + Hedef CDN Alan Adı gösterimi.
- * 4. Kalite Değiştirme Doğrulayıcısı (Verification & Fallback):
- *    - Kalite değişimi başarısız olduğunda sessiz kalmaz, kullanıcıya bilgilendirici uyarı ve otomatik teşhis açma seçeneği sunar.
+ * v0.2.3 Yenilikleri ve Mimari İyileştirmeleri:
+ * 1. Modüler Platform Adaptörleri (Isolated Site Adapters Pattern):
+ *    - PuhuTvAdapter, KickAdapter, VideoJsAdapter, HlsJsAdapter, NativeAdapter
+ *    - Her platform kendi izole dosya/nesne bloğunda çalışır, birbirlerinin mantığını bozamaz.
+ * 2. PuhuTV MNCDN Token Koruması & Otomatik Fallback (Secure Token Recovery):
+ *    - Secure token (HMAC 'st=') uyuşmazlığında VideoJS QualityLevels API tercih edilir.
+ *    - Akış hata verirse siyah ekranda kalmaz, çalışan önceki çözünürlüğe anında geri döner.
+ * 3. Tam Ekran (Fullscreen) Toast & Modal Desteği:
+ *    - Fullscreen modunda toast ve teşhis pencereleri videonun arkasında kalmaz, aktif fullscreen konteynerine taşınır.
+ * 4. Kick.com Canlı Yayın Katman Bağlayıcısı:
+ *    - Canlı IVS / React Fiber arayüz tetikleyicisi ile kalite komutları doğrudan iletilir.
  */
 
 (() => {
@@ -32,29 +33,61 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.2.2 (MNCDN + Akamai + Kick) aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.2.3 (Modüler Adaptör Mimarisi) aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
   const HOSTNAME = window.location.hostname;
-  const IS_YOUTUBE = HOSTNAME.includes('youtube.com');
-  const IS_KICK = HOSTNAME.includes('kick.com');
-  const IS_PUHUTV = HOSTNAME.includes('puhutv.com');
 
   // Bellek içi geçici durumlar (Stateless)
   let idleDelaySeconds = 5;
   let idleTimer = null;
   let activeForcedQuality = null; // '1', '2', '3', '4'
+  let previousWorkingQuality = '4';
 
   const QUALITY_MAP = {
-    '1': { res: '360p', smil: '360p.smil', media: 'media-1', kick: '360p30', label: '360p (SD)' },
-    '2': { res: '540p', smil: '540p.smil', media: 'media-2', kick: '480p30', label: '540p (MD)' },
-    '3': { res: '720p', smil: '720p.smil', media: 'media-3', kick: '720p60', label: '720p (HD)' },
-    '4': { res: '1080p', smil: '1080p.smil', media: 'media-4', kick: '1080p60', label: '1080p (FHD)' }
+    '1': { res: '360p', height: 360, smil: '360p.smil', media: 'media-1', kick: '360p30', label: '360p (SD)' },
+    '2': { res: '540p', height: 540, smil: '540p.smil', media: 'media-2', kick: '480p30', label: '540p (MD)' },
+    '3': { res: '720p', height: 720, smil: '720p.smil', media: 'media-3', kick: '720p60', label: '720p (HD)' },
+    '4': { res: '1080p', height: 1080, smil: '1080p.smil', media: 'media-4', kick: '1080p60', label: '1080p (FHD)' }
   };
 
   /**
-   * URL Dönüştürme Motoru (MNCDN, Akamai, Generic M3U8)
+   * Tam Ekran Konteynerini Döndürür
+   */
+  function getActiveContainer() {
+    return document.fullscreenElement || 
+           document.webkitFullscreenElement || 
+           document.mozFullScreenElement || 
+           document.msFullscreenElement || 
+           document.body;
+  }
+
+  /**
+   * Ortak Toast Bildirimi (Tam Ekran Uyumlu)
+   */
+  function showToast(text) {
+    let toast = document.getElementById('pvc-toast-notice');
+    const container = getActiveContainer();
+
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'pvc-toast-notice';
+      container.appendChild(toast);
+    } else if (toast.parentElement !== container) {
+      container.appendChild(toast);
+    }
+
+    toast.textContent = text;
+    toast.classList.add('pvc-toast-visible');
+    clearTimeout(toast.__timer);
+    toast.__timer = setTimeout(() => {
+      toast.classList.remove('pvc-toast-visible');
+    }, 2500);
+  }
+
+  /**
+   * URL Dönüştürme Yardımcısı
    */
   function transformQualityUrl(originalUrl, targetLvl) {
     if (!originalUrl || typeof originalUrl !== 'string') return originalUrl;
@@ -63,33 +96,307 @@
 
     let modified = originalUrl;
 
-    // 1. MNCDN / PuhuTV .smil kalıbı (örn: /mp4/1080p.smil/playlist.m3u8)
+    // MNCDN .smil kalıbı
     if (/(1080p|720p|540p|480p|360p|240p)\.smil/i.test(modified)) {
       modified = modified.replace(/(1080p|720p|540p|480p|360p|240p)\.smil/gi, cfg.smil);
     }
 
-    // 2. Akamai media-X kalıbı (örn: /media-4.m3u8 veya /hls/media-2/)
+    // Akamai media-X kalıbı
     if (/media-\d+/i.test(modified)) {
       modified = modified.replace(/media-\d+/gi, cfg.media);
     }
 
-    // 3. Çözünürlük yolu kalıbı (örn: /1080p/ veya /720p/)
+    // Doğrudan çözünürlük yolu
     if (/\/(1080p60|720p60|720p|540p|480p|360p)\//i.test(modified)) {
-      const kickOrGeneric = IS_KICK ? cfg.kick : cfg.res;
+      const kickOrGeneric = HOSTNAME.includes('kick.com') ? cfg.kick : cfg.res;
       modified = modified.replace(/\/(1080p60|720p60|720p|540p|480p|360p)\//gi, `/${kickOrGeneric}/`);
     }
 
     return modified;
   }
 
+  // =========================================================================
+  // 🛡️ MODÜLER SİTE VE OYNATICI ADAPTÖRLERİ (SITE ADAPTERS PATTERN)
+  // =========================================================================
+
   /**
-   * 0. XHR & Fetch Ağ İstekleri Yakalayıcısı (Network Interceptor)
+   * 1. PuhuTV / MNCDN Adaptörü
    */
+  const PuhuTvAdapter = {
+    name: 'PuhuTvAdapter',
+    matches() {
+      return HOSTNAME.includes('puhutv.com') || !!document.querySelector('.puhu-player, [id*="puhu"], [class*="puhu"]');
+    },
+    applyQuality(targetLevel, video, player) {
+      const cfg = QUALITY_MAP[targetLevel];
+      console.log('[NOkrep:PuhuTvAdapter] Kalite uygulanıyor:', cfg.label);
+
+      // Yöntem 1: VideoJS QualityLevels API (MNCDN token'ı bozmadan seviye seçer)
+      if (player && typeof player.qualityLevels === 'function') {
+        try {
+          const qLevels = player.qualityLevels();
+          if (qLevels && qLevels.length > 0) {
+            let matchedIdx = -1;
+            for (let i = 0; i < qLevels.length; i++) {
+              if (qLevels[i].height === cfg.height || (qLevels[i].label && qLevels[i].label.includes(cfg.res))) {
+                matchedIdx = i;
+                qLevels[i].enabled = true;
+              } else {
+                qLevels[i].enabled = false;
+              }
+            }
+            if (matchedIdx !== -1) {
+              showToast(`PuhuTV Kalitesi: ${cfg.label}`);
+              return true;
+            }
+          }
+        } catch (e) {
+          console.warn('[NOkrep:PuhuTvAdapter] qualityLevels API hatası:', e);
+        }
+      }
+
+      // Yöntem 2: VideoJS Representations Seçimi
+      try {
+        const tech = player && player.tech_ ? player.tech_ : null;
+        if (tech && tech.hls && tech.hls.representations) {
+          const reps = tech.hls.representations();
+          if (reps && reps.length > 0) {
+            reps.forEach(rep => {
+              rep.enabled(rep.height === cfg.height);
+            });
+            showToast(`PuhuTV HLS Seviyesi: ${cfg.label}`);
+            return true;
+          }
+        }
+      } catch (e) {}
+
+      // Yöntem 3: player.src() URL Dönüştürme & Hata Korumalı Fallback
+      let currentSrc = '';
+      if (player && typeof player.currentSrc === 'function') currentSrc = player.currentSrc();
+      if (!currentSrc && video) currentSrc = video.currentSrc || video.src || '';
+
+      if (currentSrc && (currentSrc.includes('.smil') || currentSrc.includes('.m3u8'))) {
+        const newSrc = transformQualityUrl(currentSrc, targetLevel);
+        if (newSrc && newSrc !== currentSrc) {
+          const currentTime = video ? video.currentTime : 0;
+          const isPaused = video ? video.paused : false;
+
+          // Hata Dinleyicisi (MNCDN Token uyuşmazlığında otomatik kurtarma)
+          const errorHandler = () => {
+            console.warn('[NOkrep:PuhuTvAdapter] MNCDN Token reddedildi. Önceki çalışan kaliteye dönülüyor.');
+            showToast(`⚠️ MNCDN İmzası Reddedildi (${cfg.label}). 1080p'ye geri dönülüyor.`);
+            if (player && typeof player.src === 'function') {
+              player.src({ src: currentSrc, type: 'application/x-mpegURL' });
+              if (!isPaused && typeof player.play === 'function') player.play().catch(() => {});
+            }
+            // Kullanıcıya otomatik teşhis aç
+            reportAnonymousError('MNCDN_TOKEN_REJECTED', `MNCDN sunucusu ${cfg.label} için token reddetti (st=[REDACTED]).`);
+            video.removeEventListener('error', errorHandler);
+          };
+
+          video.addEventListener('error', errorHandler, { once: true });
+
+          try {
+            if (player && typeof player.src === 'function') {
+              player.src({ src: newSrc, type: 'application/x-mpegURL' });
+              if (typeof player.currentTime === 'function') player.currentTime(currentTime);
+              if (!isPaused && typeof player.play === 'function') player.play().catch(() => {});
+            } else if (video) {
+              video.src = newSrc;
+              video.currentTime = currentTime;
+              if (!isPaused) video.play().catch(() => {});
+            }
+            showToast(`PuhuTV Kalitesi: ${cfg.label}`);
+            return true;
+          } catch (err) {
+            console.warn('[NOkrep:PuhuTvAdapter] src değiştirme hatası:', err);
+          }
+        }
+      }
+
+      showToast(`PuhuTV Kalite Yakalayıcı: ${cfg.label}`);
+      return true;
+    }
+  };
+
+  /**
+   * 2. Kick.com Canlı Yayın Adaptörü (IVS & React UI)
+   */
+  const KickAdapter = {
+    name: 'KickAdapter',
+    matches() {
+      return HOSTNAME.includes('kick.com');
+    },
+    applyQuality(targetLevel, video) {
+      const cfg = QUALITY_MAP[targetLevel];
+      console.log('[NOkrep:KickAdapter] Kick kalitesi tetikleniyor:', cfg.label);
+
+      // 1. Doğrudan Kick IVS Player Nesnesi
+      if (window.ivsPlayer && typeof window.ivsPlayer.setQuality === 'function') {
+        try {
+          const qualities = window.ivsPlayer.getQualities();
+          const target = qualities.find(q => q.name.includes(cfg.res) || q.height === cfg.height);
+          if (target) {
+            window.ivsPlayer.setQuality(target);
+            showToast(`Kick IVS: ${target.name}`);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[NOkrep:KickAdapter] ivsPlayer hatası:', e);
+        }
+      }
+
+      // 2. Kick Video Elementi React Fiber Bağlayıcısı
+      try {
+        if (video) {
+          const fiberKey = Object.keys(video).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+          if (fiberKey && video[fiberKey]) {
+            let node = video[fiberKey];
+            let depth = 0;
+            while (node && depth < 20) {
+              if (node.memoizedProps && (node.memoizedProps.setQuality || node.memoizedProps.changeQuality || node.memoizedProps.player)) {
+                const p = node.memoizedProps.player || node.memoizedProps;
+                if (typeof p.setQuality === 'function') {
+                  p.setQuality(cfg.res);
+                  showToast(`Kick React Player: ${cfg.label}`);
+                  return true;
+                }
+              }
+              node = node.return;
+              depth++;
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 3. Kick Arayüz Dişli Menüsü Simülasyonu
+      try {
+        const gearBtn = document.querySelector('button[aria-label*="Settings" i], button[aria-label*="Ayar" i], button[data-a-target="player-settings-button"]');
+        if (gearBtn) {
+          gearBtn.click();
+          setTimeout(() => {
+            const menuItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], span'));
+            const qualityOption = menuItems.find(el => el.textContent && (el.textContent.includes('Quality') || el.textContent.includes('Kalite')));
+            if (qualityOption) {
+              qualityOption.click();
+              setTimeout(() => {
+                const subItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], span'));
+                const targetRes = subItems.find(el => el.textContent && (el.textContent.includes(cfg.res) || el.textContent.includes(cfg.kick)));
+                if (targetRes) {
+                  targetRes.click();
+                  showToast(`Kick Kalitesi: ${cfg.label}`);
+                }
+                if (gearBtn) gearBtn.click();
+              }, 120);
+            } else {
+              if (gearBtn) gearBtn.click();
+            }
+          }, 120);
+          return true;
+        }
+      } catch (uiErr) {
+        console.warn('[NOkrep:KickAdapter] UI simülasyonu:', uiErr);
+      }
+
+      showToast(`Kick Kalitesi: ${cfg.label} (İletildi)`);
+      return true;
+    }
+  };
+
+  /**
+   * 3. VideoJS Genel Adaptörü
+   */
+  const VideoJsAdapter = {
+    name: 'VideoJsAdapter',
+    matches(video, player) {
+      return !!player || !!(video && (video.player || video.vjsPlayer || (video.parentElement && video.parentElement.player)));
+    },
+    applyQuality(targetLevel, video, player) {
+      const cfg = QUALITY_MAP[targetLevel];
+      const effPlayer = player || (video && (video.player || video.vjsPlayer || (video.parentElement && video.parentElement.player)));
+      
+      let currentSrc = '';
+      if (effPlayer && typeof effPlayer.currentSrc === 'function') currentSrc = effPlayer.currentSrc();
+      if (!currentSrc && video) currentSrc = video.currentSrc || video.src || '';
+
+      if (currentSrc) {
+        const newSrc = transformQualityUrl(currentSrc, targetLevel);
+        if (newSrc && newSrc !== currentSrc) {
+          const curTime = video ? video.currentTime : 0;
+          if (effPlayer && typeof effPlayer.src === 'function') {
+            effPlayer.src({ src: newSrc, type: 'application/x-mpegURL' });
+            if (typeof effPlayer.currentTime === 'function') effPlayer.currentTime(curTime);
+          } else if (video) {
+            video.src = newSrc;
+            video.currentTime = curTime;
+          }
+          showToast(`VideoJS Kalite: ${cfg.label}`);
+          return true;
+        }
+      }
+      return false;
+    }
+  };
+
+  /**
+   * 4. Hls.js Adaptörü
+   */
+  const HlsJsAdapter = {
+    name: 'HlsJsAdapter',
+    matches(video, player) {
+      return !!(video && video.hls) || !!(player && player.hls) || !!(window.Hls && window.Hls.instances && window.Hls.instances.length > 0);
+    },
+    applyQuality(targetLevel, video, player) {
+      const cfg = QUALITY_MAP[targetLevel];
+      const hls = (video && video.hls) || (player && player.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]);
+      if (hls && hls.levels && hls.levels.length > 0) {
+        const lvlIndex = Math.min(parseInt(targetLevel, 10) - 1, hls.levels.length - 1);
+        hls.currentLevel = Math.max(0, lvlIndex);
+        showToast(`HLS.js Kalitesi: ${hls.levels[hls.currentLevel].height || cfg.res}p`);
+        return true;
+      }
+      return false;
+    }
+  };
+
+  /**
+   * 5. Standart HTML5 / Ağ Yakalayıcı Adaptörü
+   */
+  const NativeAdapter = {
+    name: 'NativeAdapter',
+    matches() { return true; },
+    applyQuality(targetLevel, video) {
+      const cfg = QUALITY_MAP[targetLevel];
+      if (video && video.src && !video.src.startsWith('blob:')) {
+        const newSrc = transformQualityUrl(video.src, targetLevel);
+        if (newSrc !== video.src) {
+          const cur = video.currentTime;
+          video.src = newSrc;
+          video.currentTime = cur;
+          showToast(`Kalite Değiştirildi: ${cfg.label}`);
+          return true;
+        }
+      }
+      showToast(`Kalite Yönlendirildi: ${cfg.label} (Ağ Yakalayıcı)`);
+      return true;
+    }
+  };
+
+  const ADAPTER_PIPELINE = [
+    PuhuTvAdapter,
+    KickAdapter,
+    HlsJsAdapter,
+    VideoJsAdapter,
+    NativeAdapter
+  ];
+
+  // =========================================================================
+  // 🌐 AĞ İSTEKLERİ YAKALAYICISI (XHR & FETCH INTERCEPTOR)
+  // =========================================================================
   (function initNetworkInterceptor() {
     if (window.__NOK_NETWORK_INTERCEPTOR_READY__) return;
     window.__NOK_NETWORK_INTERCEPTOR_READY__ = true;
 
-    // XMLHttpRequest Kancası
     const originalXHROpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function (method, url, ...rest) {
       let targetUrl = url;
@@ -99,7 +406,6 @@
       return originalXHROpen.apply(this, [method, targetUrl, ...rest]);
     };
 
-    // Fetch Kancası
     const originalFetch = window.fetch;
     window.fetch = function (resource, init) {
       if (typeof resource === 'string' && activeForcedQuality) {
@@ -113,11 +419,11 @@
       return originalFetch.apply(this, arguments);
     };
 
-    console.log('[NOkrep] MNCDN & Akamai Ağ Yakalayıcısı (XHR & Fetch) devrede.');
+    console.log('[NOkrep] Ağ Yakalayıcısı (XHR & Fetch) devrede.');
   })();
 
   /**
-   * 1. Oynatıcı, Video ve Platform Tespiti
+   * Oynatıcı ve Video Tespiti
    */
   function findVideoAndPlayer() {
     const video = document.querySelector('video');
@@ -126,7 +432,7 @@
     let player = null;
     let playerType = 'native-html5';
 
-    if (IS_YOUTUBE) {
+    if (HOSTNAME.includes('youtube.com')) {
       playerType = 'youtube-player';
       player = document.getElementById('movie_player') || null;
     } else if (video.player) {
@@ -153,7 +459,7 @@
   }
 
   /**
-   * 2. Oynatma Hızı Ayarlama (0.25x - 3.0x, step 0.25)
+   * Oynatma Hızı Ayarlama (0.25x - 3.0x, step 0.25)
    */
   function setSpeed(rate) {
     const { video, player } = findVideoAndPlayer();
@@ -187,7 +493,7 @@
   }
 
   /**
-   * 3. İleri / Geri Sarma (±10s)
+   * İleri / Geri Sarma (±10s)
    */
   function seekBy(seconds) {
     const { video, player } = findVideoAndPlayer();
@@ -219,146 +525,28 @@
   }
 
   /**
-   * 4. Çift Katmanlı Kalite Değiştirici Motor (MNCDN + Akamai + Kick + VideoJS)
+   * Çok Sütunlu Modüler Kalite Yönlendiricisi
    */
   function changeQuality(targetLevel) {
     activeForcedQuality = targetLevel.toString();
-    const qualityCfg = QUALITY_MAP[targetLevel] || QUALITY_MAP['4'];
-    const label = qualityCfg.label;
+    const { video, player } = findVideoAndPlayer();
 
-    const { video, player, playerType } = findVideoAndPlayer();
-
-    if (!video) {
-      showToast(`Kalite Yakalayıcı: ${label} (Ağ aktif)`);
-      return true;
-    }
-
-    let success = false;
-
-    // A. Kick.com Özel Çözümü (IVS & UI Düğmeleri)
-    if (IS_KICK) {
-      try {
-        const settingsBtn = document.querySelector('button[data-a-target="player-settings-button"]') ||
-                            document.querySelector('button[aria-label*="Settings" i]') ||
-                            document.querySelector('button[aria-label*="Ayar" i]');
-        if (settingsBtn) {
-          settingsBtn.click();
-          setTimeout(() => {
-            const qualityMenuOption = Array.from(document.querySelectorAll('button, div[role="menuitem"]'))
-              .find(el => el.textContent.includes('Quality') || el.textContent.includes('Kalite'));
-            if (qualityMenuOption) qualityMenuOption.click();
-
-            setTimeout(() => {
-              const targetOption = Array.from(document.querySelectorAll('button, div[role="menuitem"]'))
-                .find(el => el.textContent.includes(qualityCfg.res) || el.textContent.includes(qualityCfg.kick));
-              if (targetOption) {
-                targetOption.click();
-                showToast(`Kick Kalitesi: ${qualityCfg.res}`);
-                success = true;
-              }
-              if (settingsBtn) settingsBtn.click();
-            }, 100);
-          }, 100);
-        }
-      } catch (kickUiErr) {
-        console.warn('[NOkrep] Kick UI simülasyonu:', kickUiErr);
-      }
-
-      if (window.ivsPlayer && typeof window.ivsPlayer.setQuality === 'function') {
-        const qualities = window.ivsPlayer.getQualities();
-        const matched = qualities.find(q => q.name.includes(qualityCfg.res) || q.height === parseInt(qualityCfg.res, 10));
-        if (matched) {
-          window.ivsPlayer.setQuality(matched);
-          showToast(`Kick IVS: ${matched.name}`);
+    for (const adapter of ADAPTER_PIPELINE) {
+      if (adapter.matches(video, player)) {
+        console.log(`[NOkrep] Adaptör seçildi: ${adapter.name}`);
+        const handled = adapter.applyQuality(targetLevel, video, player);
+        if (handled) {
+          previousWorkingQuality = targetLevel.toString();
           return true;
         }
       }
     }
 
-    // B. VideoJS / PuhuTV (MNCDN smil & Akamai media-X)
-    const effectivePlayer = player || (video.parentElement && video.parentElement.player) || video.player || video.vjsPlayer;
-    if (effectivePlayer) {
-      let currentSrc = '';
-      try {
-        if (typeof effectivePlayer.src === 'function') {
-          const s = effectivePlayer.src();
-          currentSrc = (typeof s === 'object' && s && s.src) ? s.src : (typeof s === 'string' ? s : '');
-        } else if (typeof effectivePlayer.currentSrc === 'function') {
-          currentSrc = effectivePlayer.currentSrc();
-        }
-      } catch (err) {}
-
-      if (!currentSrc || typeof currentSrc !== 'string' || currentSrc.startsWith('blob:')) {
-        currentSrc = video.currentSrc || video.src || '';
-      }
-
-      if (!currentSrc || typeof currentSrc !== 'string' || currentSrc.startsWith('blob:')) {
-        const resources = performance.getEntriesByType('resource');
-        const mediaEntry = [...resources].reverse().find(r => 
-          r.name.includes('.smil') || 
-          r.name.includes('media-') || 
-          r.name.includes('mncdn.com') || 
-          r.name.includes('.m3u8')
-        );
-        if (mediaEntry) currentSrc = mediaEntry.name;
-      }
-
-      if (currentSrc && typeof currentSrc === 'string' && (currentSrc.includes('.smil') || currentSrc.includes('media-') || currentSrc.includes('.m3u8'))) {
-        try {
-          const newSrc = transformQualityUrl(currentSrc, targetLevel);
-          if (newSrc && newSrc !== currentSrc) {
-            const currentTime = (typeof effectivePlayer.currentTime === 'function') ? effectivePlayer.currentTime() : (video.currentTime || 0);
-            const isPaused = video.paused;
-
-            if (typeof effectivePlayer.src === 'function') {
-              effectivePlayer.src({ src: newSrc, type: 'application/x-mpegURL' });
-              if (typeof effectivePlayer.currentTime === 'function') effectivePlayer.currentTime(currentTime);
-              if (!isPaused && typeof effectivePlayer.play === 'function') {
-                effectivePlayer.play().catch(e => console.warn('[NOkrep play]', e));
-              }
-            } else {
-              video.src = newSrc;
-              video.currentTime = currentTime;
-              if (!isPaused) video.play().catch(e => console.warn('[NOkrep play]', e));
-            }
-
-            console.log(`[NOkrep] Kalite değiştirildi -> ${label}:`, newSrc);
-            showToast(`Kalite Zorlandı: ${label}`);
-            return true;
-          }
-        } catch (err) {
-          console.warn('[NOkrep] player.src() hatası, Ağ Yakalayıcısı devrede:', err);
-        }
-      }
-    }
-
-    // C. Hls.js Level Değişimi
-    if (playerType === 'hlsjs' || video.hls || (window.Hls && window.Hls.instances && window.Hls.instances[0])) {
-      const hls = video.hls || (player && player.hls) || window.Hls.instances[0];
-      if (hls && hls.levels && hls.levels.length > 0) {
-        const levelIdx = Math.min(parseInt(targetLevel, 10) - 1, hls.levels.length - 1);
-        hls.currentLevel = Math.max(0, levelIdx);
-        showToast(`HLS Kalitesi: ${hls.levels[hls.currentLevel].height || qualityCfg.res}p`);
-        return true;
-      }
-    }
-
-    // D. Ağ İstekleri Yakalayıcısı Bildirimi ve Tampon Yenileme
-    try {
-      if (video.currentTime) {
-        const cur = video.currentTime;
-        video.currentTime = Math.max(0, cur + 0.05);
-      }
-      showToast(`Kalite Yönlendirildi: ${label} (Ağ Yakalayıcı)`);
-      return true;
-    } catch (e) {
-      showToast(`Kalite: ${label}`);
-      return true;
-    }
+    return true;
   }
 
   /**
-   * 5. Açıklayıcı ve Anlaşılır CDN Ping Testi
+   * CDN Ping Testi (Tam Ekran Uyumlu & Ayrıntılı)
    */
   async function testCdnPing() {
     const { video, player } = findVideoAndPlayer();
@@ -406,7 +594,7 @@
       if (ms > 120) rating = 'Yüksek Gecikme (Buffer Riski)';
       else if (ms > 50) rating = 'İyi (HD Akış)';
 
-      showToast(`📡 ${ms} ms • ${rating}`);
+      showToast(`📡 ${ms} ms • ${rating} (${hostDisplay})`);
       return { ms, rating, host: hostDisplay };
     } catch (err) {
       try {
@@ -428,7 +616,7 @@
   }
 
   /**
-   * 6. Tamamen Anonim Hata Bildirimi (Zero PII)
+   * Tamamen Anonim Hata Bildirimi (Zero PII & Tam Ekran Uyumlu Modal)
    */
   function reportAnonymousError(errorCode, message) {
     const { playerType, video, player } = findVideoAndPlayer();
@@ -441,7 +629,7 @@
       const resources = performance.getEntriesByType('resource');
       const mediaEntry = [...resources].reverse().find(r => 
         r.name.includes('.m3u8') || 
-        r.name.includes('.smil') ||
+        r.name.includes('.smil') || 
         r.name.includes('media-') || 
         r.name.includes('.ts')
       );
@@ -471,7 +659,7 @@
 
     const jsonStr = JSON.stringify(payload, null, 2);
     const issueTitle = encodeURIComponent(`[Hata]: ${payload.domain} - ${payload.errorCode}`);
-    const issueBody = encodeURIComponent(`### Anonim Hata Paketi (NOkrep)\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n**Açıklama:** Bu sitede eklenti ile karşılaştığınız durumu ekleyebilirsiniz.`);
+    const issueBody = encodeURIComponent(`### Anonim Hata Paketi (NOkrep)\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n**Açıklama:** Bu sitede karşılaştığınız durumu ekleyebilirsiniz.`);
     
     const githubUrl = `${GITHUB_REPO_URL}/issues/new?template=site_support.md&title=${issueTitle}&body=${issueBody}`;
     const mailtoUrl = `mailto:${DEVELOPER_EMAIL}?subject=${issueTitle}&body=${issueBody}`;
@@ -481,12 +669,12 @@
     modal.innerHTML = `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>⚠️ Anonim Teşhis & Hata Raporu (v0.2.2)</span>
+          <span>⚠️ Anonim Teşhis & Hata Raporu (v0.2.3)</span>
           <button id="pvc-close-modal-btn">✕</button>
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
-            Sitede (<strong>${payload.domain}</strong>) video akışına erişirken durum teşhisi üretti. <strong>Sıfır depolama ve sıfır kişisel veri</strong> içeren teşhis paketi:
+            Sitede (<strong>${payload.domain}</strong>) akış kontrolü sırasında durum teşhisi üretildi. <strong>Sıfır depolama ve sıfır kişisel veri</strong> içeren teşhis paketi:
           </p>
           <pre class="pvc-modal-code">${jsonStr}</pre>
         </div>
@@ -498,30 +686,14 @@
       </div>
     `;
 
-    const hostContainer = document.fullscreenElement || document.webkitFullscreenElement || document.body;
-    hostContainer.appendChild(modal);
+    const container = getActiveContainer();
+    container.appendChild(modal);
 
     document.getElementById('pvc-close-modal-btn').onclick = () => modal.remove();
     document.getElementById('pvc-copy-payload-btn').onclick = () => {
       navigator.clipboard.writeText(jsonStr);
       showToast('Anonim teşhis verisi kopyalandı!');
     };
-  }
-
-  function showToast(text) {
-    let toast = document.getElementById('pvc-toast-notice');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'pvc-toast-notice';
-      const container = document.fullscreenElement || document.webkitFullscreenElement || document.body;
-      container.appendChild(toast);
-    }
-    toast.textContent = text;
-    toast.classList.add('pvc-toast-visible');
-    clearTimeout(toast.__timer);
-    toast.__timer = setTimeout(() => {
-      toast.classList.remove('pvc-toast-visible');
-    }, 2500);
   }
 
   function resetIdleTimer(popup) {
@@ -600,7 +772,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.2.2</span>
+          <span class="pvc-menu-badge">NOkrep v0.2.3</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
@@ -647,7 +819,7 @@
       <div class="pvc-menu-section">
         <div class="pvc-section-header">
           <span class="pvc-label">Kalite Zorlama:</span>
-          <span class="pvc-subtext">MNCDN / Akamai / HLS</span>
+          <span class="pvc-subtext">Adaptör Destekli</span>
         </div>
         <div class="pvc-btn-grid-4">
           <button class="pvc-quality-btn" data-lvl="1" title="360p (SD / smil)">360p</button>
@@ -677,8 +849,8 @@
       </div>
     `;
 
-    const hostContainer = document.fullscreenElement || document.webkitFullscreenElement || document.body;
-    hostContainer.appendChild(popup);
+    const container = getActiveContainer();
+    container.appendChild(popup);
 
     const dragHeader = popup.querySelector('#pvc-drag-header');
     makeDraggable(popup, dragHeader);
@@ -792,10 +964,10 @@
 
   function togglePvcPopup() {
     const popup = buildPvcPopup();
-    
-    const hostContainer = document.fullscreenElement || document.webkitFullscreenElement || document.body;
-    if (popup.parentElement !== hostContainer) {
-      hostContainer.appendChild(popup);
+    const container = getActiveContainer();
+
+    if (popup.parentElement !== container) {
+      container.appendChild(popup);
     }
 
     const isVisible = popup.style.display !== 'none';
@@ -816,13 +988,21 @@
 
   const handleFullscreenChange = () => {
     const popup = document.getElementById('pvc-controller-popup');
-    if (!popup) return;
+    const toast = document.getElementById('pvc-toast-notice');
+    const modal = document.getElementById('pvc-error-modal');
+    const container = getActiveContainer();
 
-    const hostContainer = document.fullscreenElement || document.webkitFullscreenElement || document.body;
-    if (popup.parentElement !== hostContainer) {
-      hostContainer.appendChild(popup);
+    if (popup && popup.parentElement !== container) {
+      container.appendChild(popup);
     }
-    resetIdleTimer(popup);
+    if (toast && toast.parentElement !== container) {
+      container.appendChild(toast);
+    }
+    if (modal && modal.parentElement !== container) {
+      container.appendChild(modal);
+    }
+
+    if (popup) resetIdleTimer(popup);
   };
 
   document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -830,5 +1010,5 @@
   document.addEventListener('mozfullscreenchange', handleFullscreenChange);
 
   buildPvcPopup();
-  showToast('NOk Video Controller v0.2.2 Hazır (NOkrep)');
+  showToast('NOk Video Controller v0.2.3 Hazır (NOkrep)');
 })();

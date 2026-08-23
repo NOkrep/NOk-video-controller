@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.2.2",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, MNCDN & Akamai & Kick & VideoJS uyumlu, durumsuz akıllı video ve kalite kontrol eklentisi.",
+  "version": "0.2.3",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, modüler adaptör mimarili, MNCDN & Akamai & Kick & VideoJS uyumlu, durumsuz akıllı video ve kalite kontrol eklentisi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",
