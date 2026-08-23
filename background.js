@@ -1,6 +1,7 @@
 /**
  * background.js - Service Worker (Chromium) / Background Script (Firefox)
  * Geliştirici: NOkrep
+ * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Felsefe:
  * 1. Tamamen "Stateless": storage API'si veya persistent arka plan dinlemesi kullanılmaz.
