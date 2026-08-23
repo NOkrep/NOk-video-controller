@@ -1,19 +1,24 @@
 /**
- * injected.css - NOk Video Controller v2.0
+ * injected.css - NOk Video Controller v0.2.1
  * Gezdirilebilir (Draggable), Tam Ekran (Fullscreen) Uyumlu & Otomatik Transparan HUD
  * Geliştirici: NOkrep
  */
 
 #pvc-controller-popup {
   position: fixed !important;
-  bottom: 40px !important;
+  top: 60px !important;
   right: 40px !important;
+  bottom: auto !important;
+  left: auto !important;
   width: 320px !important;
   max-width: calc(100vw - 32px) !important;
+  height: auto !important;
+  max-height: calc(100vh - 30px) !important;
+  overflow-y: auto !important;
   background: rgba(11, 17, 32, 0.95) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
   border-radius: 14px !important;
   padding: 14px !important;
   color: #f1f5f9 !important;
@@ -23,7 +28,7 @@
   user-select: none !important;
   box-sizing: border-box !important;
   opacity: 1 !important;
-  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, border-color 0.3s ease !important;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, border-color 0.3s ease !important;
 }
 
 #pvc-controller-popup.pvc-idle-transparent {
