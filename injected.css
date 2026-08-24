@@ -132,52 +132,20 @@
 
 /* 3. Bölüm ve Slider Stilleri */
 .pvc-menu-section {
-  margin-bottom: 8px !important;
-  background: rgba(255, 255, 255, 0.02) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  border-radius: 8px !important;
-  padding: 6px 8px !important;
-  transition: all 0.2s ease !important;
+  margin-bottom: 10px !important;
 }
 
 .pvc-section-header {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  cursor: pointer !important;
-  user-select: none !important;
-}
-
-.pvc-section-title-wrap {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
-
-.pvc-section-arrow {
-  font-size: 9px !important;
-  color: #64748b !important;
-  transition: transform 0.2s ease !important;
-  display: inline-block !important;
-}
-
-.pvc-section-collapsed .pvc-section-arrow {
-  transform: rotate(-90deg) !important;
-}
-
-.pvc-section-content {
-  margin-top: 8px !important;
-  transition: max-height 0.25s ease, opacity 0.2s ease !important;
-}
-
-.pvc-section-collapsed .pvc-section-content {
-  display: none !important;
+  margin-bottom: 6px !important;
 }
 
 .pvc-label {
   font-size: 11px !important;
   font-weight: 600 !important;
-  color: #cbd5e1 !important;
+  color: #94a3b8 !important;
 }
 
 .pvc-subtext {
@@ -193,24 +161,6 @@
   padding: 2px 6px !important;
   border-radius: 4px !important;
   border: 1px solid rgba(56, 189, 248, 0.25) !important;
-}
-
-.pvc-audio-mode-btn {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #94a3b8 !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  padding: 3px 8px !important;
-  border-radius: 4px !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-}
-
-.pvc-audio-mode-btn.pvc-audio-active {
-  background: rgba(56, 189, 248, 0.2) !important;
-  border-color: #38bdf8 !important;
-  color: #38bdf8 !important;
 }
 
 .pvc-slider-row {

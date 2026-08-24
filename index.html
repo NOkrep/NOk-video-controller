@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOk Video Controller v0.3.8 | Proje Durum Paneli & İndirme</title>
+  <title>NOk Video Controller v0.3.7 | Proje Durum Paneli & İndirme</title>
   
   <style>
     :root {
@@ -322,7 +322,7 @@
         <div>
           <div style="display:flex;align-items:center;gap:8px;">
             <h1 class="brand-title">NOk Video Controller</h1>
-            <span class="badge-tag">v0.3.8</span>
+            <span class="badge-tag">v0.3.7</span>
           </div>
           <p style="font-size:12px;color:var(--text-muted);">PuhuTV & Kick.com Stateless HLS/HTML5 Geliştirme ve Durum Paneli</p>
         </div>
@@ -366,7 +366,7 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">
-            <span>🛠️ 1. Yapılan Değişiklikler (v0.3.8)</span>
+            <span>🛠️ 1. Yapılan Değişiklikler</span>
           </div>
           <span class="pill-count pill-blue">Son Revizyonlar</span>
         </div>
@@ -374,37 +374,28 @@
           <ul class="info-list">
             <li class="info-item">
               <div class="info-item-title">
-                <span>Kick 16x Reklam Hızlandırma & 360p Tampon Koruması</span>
+                <span>PuhuTV Akamai & Medianova Yönlendirme Kancaları</span>
               </div>
               <div class="info-item-desc">
-                Kick.com'da çıkan reklamlar algılandığında 16x hıza alınıp ses kapatılırken, takılmayı önlemek için akış kalitesi geçici olarak 360p/en düşük pakete indirilir; reklam bittiğinde kullanıcının seçili HD profiline kesintisiz geri dönülür.
+                <span class="tag-accent">XMLHttpRequest.prototype.open</span> ve <span class="tag-accent">fetch</span> API kancaları ile <span class="tag-accent">puhu.akamaized.net</span> (<span class="tag-accent">/media-1/</span>.. <span class="tag-accent">/media-4/</span>) ve <span class="tag-accent">*.mncdn.com</span> (<span class="tag-accent">*.smil</span>) istekleri seçilen çözünürlüğe anında yönlendirilecek şekilde yapılandırıldı.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>%0 - %200 Gelişmiş Ses Denetimi & Gain Booster</span>
+                <span>Kick.com Çok Aşamalı Seçici & React Fiber Kancası</span>
               </div>
               <div class="info-item-desc">
-                Web Audio API GainNode entegrasyonuyla tüm videolarda %0-%200 kaydırmalı ses ayarı ve 2 katına kadar yükseltme sağlandı.
+                Amazon IVS Player instance'ı ve React Fiber dahili ağacından kalite listesi tespiti ile DOM ayarlar menüsünü simüle eden ikili tetikleyici entegre edildi.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>Stereo & Mono Ses Kanalı Seçicisi</span>
+                <span>Stateless HUD & Teşhis Raporlayıcı</span>
               </div>
               <div class="info-item-desc">
-                ChannelMerger ve ChannelSplitter köprüsüyle tek kulaklık veya tek kanallı videolarda anında Mono/Stereo geçiş desteği eklendi.
-              </div>
-            </li>
-
-            <li class="info-item">
-              <div class="info-item-title">
-                <span>Akıllı Akordeon HUD & Çözünürlük Rozet Düzeltmesi</span>
-              </div>
-              <div class="info-item-desc">
-                HUD içindeki bölümler (Hız, Ses, Kalite, Saydamlık) daraltılabilir hale getirildi ve başlıklarında anlık değerler gösterildi. Genel küçültme modunda canlı çözünürlük rozeti tam metinle görünür kılındı.
+                Kullanıcı verisi ve çerez tutmayan, video tam ekranında kaybolmayan, fare hareketsizliğinde 3s sonra saydamlaşan ve teşhis amaçlı logları kopyalayan HUD arayüzü kuruldu.
               </div>
             </li>
           </ul>
