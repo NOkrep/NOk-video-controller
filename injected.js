@@ -1,25 +1,30 @@
 /**
- * injected.js - NOk Video Controller v0.3.7 (Main World Engine)
+ * injected.js - NOk Video Controller v0.3.8 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.7 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Otomatik Reklam Algılayıcı & Hızlandırıcı (Ad Fast-Forward & Auto-Mute):
- *    - Kick yayınında reklam çıktığında otomatik algılanır, oynatma 16x hızına çıkarılır ve ses kapatılır.
- *    - Reklam bittiğinde kullanıcı önceki oynatma hızı ve ses durumuna kesintisiz döner.
- * 2. Erişilebilirlik (A11y) İyileştirmeleri:
- *    - HUD menüsü, diyaloglar ve toast bildirimleri için ARIA (role, aria-label, aria-live) ve yüksek kontrastlı focus-visible desteği.
- *    - Klavye Tab navigasyonu ile tam erişilebilir kontrol masası.
- * 3. PuhuTV 576p (PAL) / 480p (SD) ve 1080p Doğal Akış & İsteğe Bağlı MNCDN Koruması.
- * 4. Zenginleştirilmiş Teşhis ve Sürüm Takip Motoru (v0.3.7).
+ * v0.3.8 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Reklam Takılmasız Hızlandırma (16x Hız + Mute + Otomatik 360p/160p Düşürme & Geri Alma):
+ *    - Kick reklamlarında yüksek çözünürlükten kaynaklanan takılmaları önlemek için reklam anında kalite 360p/en düşük seviyeye çekilir.
+ *    - Reklam bitiminde kullanıcının orijinal kaliteli akış profiline otomatik geri dönülür.
+ * 2. Gelişmiş Ses Denetimi (%0 - %200 Kaydırmalı Ses & Ses Yükseltici / Gain Booster):
+ *    - Standart HTML5 video ses sınırlarını aşan Web Audio API GainNode köprüsü.
+ *    - Düşük sesli videoları 2 katına (%200) kadar yükseltme imkanı.
+ * 3. Stereo / Mono Ses Kanalı Anahtarlayıcısı:
+ *    - Tek kulaklık kullanımında veya tek taraflı ses dosyalarında ChannelMerger / ChannelSplitter ile anında Mono/Stereo geçişi.
+ * 4. Akıllı Akordeon (Daraltılabilir / Genişletilebilir) HUD Bölümleri:
+ *    - Her bölüm başlığında anlık seçili değer (Hız, Ses, Kalite, Saydamlık vb.) gösterilir ve tıklandığında daraltılabilir.
+ * 5. Genel Küçültme (➖/➕) Düzeltmesi:
+ *    - Genel küçültme modunda canlı çözünürlük rozeti, ping ve hata butonları gizlenmez, gerçek çözünürlük metni eksiksiz görüntülenir.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.3.7';
+  const EXTENSION_VERSION = '0.3.8';
   const VERSION_HISTORY = [
+    { version: 'v0.3.8', notes: 'Kick.com reklamlarında 360p akıllı kalite düşürme & geri alma, %0-%200 ses seviyesi ve Gain booster, Mono/Stereo ses anahtarı, akıllı akordeon HUD bölümleri ve genel küçültme çözünürlük düzeltmesi.' },
     { version: 'v0.3.7', notes: 'Kick.com otomatik reklam algılayıcı ve 16x hızlandırıcı (Ad Fast-Forward & Mute), HUD ve bildirimler için ARIA/A11y erişilebilirlik geliştirmeleri, klavye Tab navigasyon desteği.' },
     { version: 'v0.3.6', notes: 'PuhuTV 576p/480p Video.js VHS donma düzeltmesi (non-destructive qualityLevels switch), Anti-Stall oynatıcı nöbetçisi, sayfa açılışında doğal akış koruması & isteğe bağlı pürüzsüz 1080p MNCDN geçişi.' },
     { version: 'v0.3.5', notes: 'PuhuTV MNCDN dahili profil pürüzsüz geçişi, 1-tıkla anında açılış senkronizasyonu, 16px sürükleme sıçramasını önleyen 24px sabit sağ ray, canlı DYG Video API yakalama ve telemetri.' },
@@ -38,7 +43,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.3.7)');
+      showToast('NOk Video Controller Aktif (v0.3.8)');
     }
   });
 
@@ -48,7 +53,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.3.7 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.3.8 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -64,10 +69,19 @@
   let lastObservedResolution = 'Ölçülüyor...';
   let cachedDiscoveredQualities = [];
   let currentActiveAdapterName = 'GenericAdapter';
-  let targetPuhuMediaLevel = null; // 'media-4', 'media-3', 'media-2', 'media-1'
-  let targetPuhuSmilLevel = null;  // '1080p.smil', '720p.smil', etc.
+  let targetPuhuMediaLevel = null;
+  let targetPuhuSmilLevel = null;
   let puhuFallbackAttempted = false;
   let lastCapturedDygApiUrl = '';
+
+  // Web Audio API State (Ses Yükseltme & Mono/Stereo)
+  let currentAudioVolumePercent = 100;
+  let currentAudioMode = 'stereo'; // 'stereo' | 'mono'
+  let audioContextInstance = null;
+  let audioGainNodeInstance = null;
+  let audioSplitterNodeInstance = null;
+  let audioMergerNodeInstance = null;
+  let audioSourceElementMap = new WeakMap();
 
   // =========================================================================
   // 🌐 PUHUTV ÇİFT CDN (AKAMAI & MEDIANOVA MNCDN) AĞ KANCASI (XHR / FETCH)
@@ -783,26 +797,70 @@
         this.isKickAdActive = true;
         this.preKickAdSpeed = video.playbackRate || 1.0;
         this.preKickAdMuted = video.muted;
+        
+        // Mevcut IVS kalitesini hatırla
+        const ivs = this.findIvsPlayer(video);
+        if (ivs && typeof ivs.getQuality === 'function') {
+          try {
+            this.preKickAdQuality = ivs.getQuality();
+          } catch (e) {}
+        }
+
         try {
           video.playbackRate = 16.0;
           video.muted = true;
         } catch (e) {}
-        showToast('⚡ Kick Reklamı Algılandı: 16x Hızlandırıldı & Sessize Alındı');
-        addDiagnosticLog('INFO', '[KickAdapter] Canlı reklam tespit edildi: 16x hızlandırma ve ses kapalı devrede.');
+
+        // Takılmayı önlemek için reklam kalitesini 360p / 160p seviyesine düşür
+        if (ivs && typeof ivs.getQualities === 'function') {
+          try {
+            if (typeof ivs.setAutoQualityMode === 'function') {
+              ivs.setAutoQualityMode(false);
+            }
+            const qList = ivs.getQualities();
+            if (Array.isArray(qList) && qList.length > 0) {
+              const lowQ = qList.find(q => (q.height && q.height <= 360) || (q.name && (q.name.includes('360') || q.name.includes('160')))) || qList[qList.length - 1];
+              if (lowQ && typeof ivs.setQuality === 'function') {
+                ivs.setQuality(lowQ);
+                addDiagnosticLog('INFO', `[KickAdapter] Reklam hızlandırmada tampon koruması: Kalite ${lowQ.name || lowQ.height + 'p'} seviyesine çekildi.`);
+              }
+            }
+          } catch (e) {
+            this.triggerKickUiQuality('360p');
+          }
+        } else {
+          this.triggerKickUiQuality('360p');
+        }
+
+        showToast('⚡ Kick Reklamı Algılandı: 16x Hız + 360p Tampon Koruması & Mute Devrede');
+        addDiagnosticLog('INFO', '[KickAdapter] Canlı reklam tespit edildi: 16x hızlandırma, 360p düşük profil ve ses kapalı devrede.');
       } else if (!hasAd && this.isKickAdActive) {
         this.isKickAdActive = false;
         try {
           video.playbackRate = this.preKickAdSpeed || 1.0;
           video.muted = this.preKickAdMuted;
         } catch (e) {}
-        showToast('✅ Reklam Bitti: Normal Canlı Yayına Dönüldü');
-        addDiagnosticLog('INFO', `[KickAdapter] Reklam sona erdi: Oynatma hızı (${this.preKickAdSpeed}x) ve ses seviyesi geri yüklendi.`);
+
+        // Orijinal yayına dönünce önceki kaliteyi geri yükle
+        const ivs = this.findIvsPlayer(video);
+        if (ivs && this.preKickAdQuality && typeof ivs.setQuality === 'function') {
+          try {
+            ivs.setQuality(this.preKickAdQuality);
+            addDiagnosticLog('INFO', `[KickAdapter] Reklam bitti: Orijinal IVS kalitesi (${this.preKickAdQuality.name || 'HD'}) geri yüklendi.`);
+          } catch (e) {}
+        } else if (activeForcedQualityLabel) {
+          this.triggerKickUiQuality(activeForcedQualityLabel);
+        }
+
+        showToast('✅ Reklam Bitti: Normal Canlı Yayına ve Orijinal Kaliteye Dönüldü');
+        addDiagnosticLog('INFO', `[KickAdapter] Reklam sona erdi: Oynatma hızı (${this.preKickAdSpeed}x), ses seviyesi ve kalite geri yüklendi.`);
       }
     },
 
     isKickAdActive: false,
     preKickAdSpeed: 1.0,
     preKickAdMuted: false,
+    preKickAdQuality: null,
 
     getQualities(video) {
       const results = [];
@@ -1067,8 +1125,10 @@
 
       const slider = document.getElementById('pvc-speed-slider');
       const label = document.getElementById('pvc-speed-value');
+      const hdrBadge = document.getElementById('pvc-hdr-speed-badge');
       if (slider) slider.value = validRate.toString();
       if (label) label.textContent = `${validRate}x`;
+      if (hdrBadge) hdrBadge.textContent = `${validRate}x`;
 
       showToast(`Hız: ${validRate}x`);
       addDiagnosticLog('INFO', `[Speed] Oynatma hızı ayarlandı: ${validRate}x`);
@@ -1077,6 +1137,143 @@
       addDiagnosticLog('ERROR', '[Speed] Hız ayarlanamadı', err.message);
       return false;
     }
+  }
+
+  /**
+   * Web Audio API Ses Yükseltici (%0 - %200) ve Mono/Stereo Yönlendiricisi
+   */
+  function initAudioGraphForVideo(video) {
+    if (!video) return null;
+    try {
+      if (!audioContextInstance) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+        audioContextInstance = new AudioCtx();
+      }
+
+      if (audioContextInstance.state === 'suspended') {
+        audioContextInstance.resume().catch(() => {});
+      }
+
+      let source = audioSourceElementMap.get(video);
+      if (!source) {
+        try {
+          source = audioContextInstance.createMediaElementSource(video);
+          audioSourceElementMap.set(video, source);
+        } catch (e) {
+          // Zaten bağlanmış olabilir
+          return { ctx: audioContextInstance, gainNode: audioGainNodeInstance };
+        }
+      }
+
+      if (!audioGainNodeInstance) {
+        audioGainNodeInstance = audioContextInstance.createGain();
+      }
+      if (!audioSplitterNodeInstance) {
+        audioSplitterNodeInstance = audioContextInstance.createChannelSplitter(2);
+      }
+      if (!audioMergerNodeInstance) {
+        audioMergerNodeInstance = audioContextInstance.createChannelMerger(2);
+      }
+
+      // Bağlantıyı yeniden yapılandır
+      applyAudioGraphRouting(source);
+      return { ctx: audioContextInstance, gainNode: audioGainNodeInstance };
+    } catch (err) {
+      addDiagnosticLog('WARN', '[WebAudio] Audio graph başlatılamadı', err.message);
+      return null;
+    }
+  }
+
+  function applyAudioGraphRouting(sourceNode) {
+    if (!audioContextInstance || !audioGainNodeInstance) return;
+    const { video } = findVideoAndPlayer();
+    const source = sourceNode || (video ? audioSourceElementMap.get(video) : null);
+    if (!source) return;
+
+    try {
+      source.disconnect();
+      audioGainNodeInstance.disconnect();
+      if (audioSplitterNodeInstance) audioSplitterNodeInstance.disconnect();
+      if (audioMergerNodeInstance) audioMergerNodeInstance.disconnect();
+
+      if (currentAudioMode === 'mono' && audioSplitterNodeInstance && audioMergerNodeInstance) {
+        // Mono Modu: Sol ve Sağ kanalları birleştirip her iki kulağa eşit dağıt
+        source.connect(audioSplitterNodeInstance);
+        audioSplitterNodeInstance.connect(audioMergerNodeInstance, 0, 0); // Sol -> Sol
+        audioSplitterNodeInstance.connect(audioMergerNodeInstance, 0, 1); // Sol -> Sağ
+        audioSplitterNodeInstance.connect(audioMergerNodeInstance, 1, 0); // Sağ -> Sol
+        audioSplitterNodeInstance.connect(audioMergerNodeInstance, 1, 1); // Sağ -> Sağ
+        audioMergerNodeInstance.connect(audioGainNodeInstance);
+      } else {
+        // Stereo Modu: Doğal 2 kanallı geçiş
+        source.connect(audioGainNodeInstance);
+      }
+
+      audioGainNodeInstance.connect(audioContextInstance.destination);
+    } catch (e) {
+      addDiagnosticLog('WARN', '[WebAudio] Routing hatası', e.message);
+    }
+  }
+
+  function setAudioVolume(percent) {
+    const { video } = findVideoAndPlayer();
+    const validPercent = Math.max(0, Math.min(200, Math.round(percent)));
+    currentAudioVolumePercent = validPercent;
+
+    // Normal %0 - %100 arası video.volume ve muted kontrolü
+    if (video) {
+      if (validPercent === 0) {
+        video.muted = true;
+        video.volume = 0;
+      } else {
+        video.muted = false;
+        video.volume = Math.min(1.0, validPercent / 100);
+      }
+    }
+
+    // %100 - %200 arası Web Audio API GainNode yükseltmesi (Booster)
+    const graph = video ? initAudioGraphForVideo(video) : null;
+    if (audioGainNodeInstance && audioContextInstance) {
+      if (audioContextInstance.state === 'suspended') {
+        audioContextInstance.resume().catch(() => {});
+      }
+      const gainMultiplier = validPercent > 100 ? (validPercent / 100) : 1.0;
+      audioGainNodeInstance.gain.setValueAtTime(gainMultiplier, audioContextInstance.currentTime);
+    }
+
+    // UI Güncelle
+    const slider = document.getElementById('pvc-volume-slider');
+    const valBadge = document.getElementById('pvc-volume-value');
+    const hdrBadge = document.getElementById('pvc-hdr-volume-badge');
+    if (slider) slider.value = validPercent.toString();
+    if (valBadge) valBadge.textContent = `${validPercent}%`;
+    if (hdrBadge) hdrBadge.textContent = `${validPercent}%`;
+
+    const boostMsg = validPercent > 100 ? ` (🚀 +${validPercent - 100}% Güçlendirici)` : '';
+    showToast(`Ses: %${validPercent}${boostMsg}`);
+    addDiagnosticLog('INFO', `[Audio] Ses ayarlandı: %${validPercent} (Mode: ${currentAudioMode})`);
+  }
+
+  function setAudioMode(mode) {
+    if (mode !== 'stereo' && mode !== 'mono') return;
+    currentAudioMode = mode;
+    const { video } = findVideoAndPlayer();
+    if (video) {
+      initAudioGraphForVideo(video);
+      applyAudioGraphRouting();
+    }
+
+    const stereoBtn = document.getElementById('pvc-audio-stereo-btn');
+    const monoBtn = document.getElementById('pvc-audio-mono-btn');
+    const hdrBadge = document.getElementById('pvc-hdr-audio-badge');
+
+    if (stereoBtn) stereoBtn.className = `pvc-audio-mode-btn ${mode === 'stereo' ? 'pvc-audio-active' : ''}`;
+    if (monoBtn) monoBtn.className = `pvc-audio-mode-btn ${mode === 'mono' ? 'pvc-audio-active' : ''}`;
+    if (hdrBadge) hdrBadge.textContent = mode.toUpperCase();
+
+    showToast(`Ses Modu: ${mode === 'mono' ? '🎛️ Mono (Tek Kanal Birleşik)' : '🎧 Stereo (Çift Kanal)'}`);
+    addDiagnosticLog('INFO', `[Audio] Kanal modu ayarlandı: ${mode}`);
   }
 
   function seekBy(seconds) {
@@ -1576,85 +1773,141 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.7</span>
+          <span class="pvc-menu-badge">NOkrep v0.3.8</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
-          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Küçült / Büyüt" aria-label="Paneli Küçült veya Büyüt">➖</button>
+          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Paneli Küçült / Büyüt" aria-label="Paneli Küçült veya Büyüt">➖</button>
           <button id="pvc-close-popup-btn" class="pvc-icon-btn pvc-close" title="Kapat" aria-label="Denetim Masasını Kapat">✕</button>
         </div>
       </div>
 
-      <!-- Canlı Render Çözünürlüğü Rozeti -->
-      <div style="padding: 7px 12px; background: rgba(0,0,0,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 8px;">
-        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: monospace; color: #38bdf8;" aria-live="polite">
-          🎬 Çözünürlük: Kontrol ediliyor...
+      <!-- Canlı Render Çözünürlüğü Rozeti (Küçültme modunda da her zaman tam metinle korunur) -->
+      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 8px; box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);">
+        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: #38bdf8; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite">
+          🎬 Gerçek: Ölçülüyor...
         </span>
-        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile" aria-label="Çözünürlük ve Paketleri Yenile">🔄</button>
+        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 0.15s ease;" title="Çözünürlük ve Paketleri Yenile" aria-label="Çözünürlük ve Paketleri Yenile">🔄</button>
       </div>
 
-      <div class="pvc-menu-section">
-        <div class="pvc-section-header">
-          <span class="pvc-label">Oynatma Hızı:</span>
-          <span id="pvc-speed-value" class="pvc-val-badge">1.0x</span>
+      <!-- 1. BÖLÜM: Oynatma Hızı & Sarma (Akordeon) -->
+      <div class="pvc-menu-section" id="pvc-section-speed">
+        <div class="pvc-section-header" data-target="pvc-content-speed" title="Daraltmak veya genişletmek için tıklayın">
+          <div class="pvc-section-title-wrap">
+            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-label">⚡ Oynatma Hızı & Sarma</span>
+          </div>
+          <span id="pvc-hdr-speed-badge" class="pvc-val-badge">1.0x</span>
         </div>
-        <div class="pvc-slider-row">
-          <span class="pvc-slider-bound">0.25x</span>
-          <input 
-            type="range" 
-            id="pvc-speed-slider" 
-            min="0.25" 
-            max="3.0" 
-            step="0.25" 
-            value="1.0" 
-            class="pvc-range-slider"
-            aria-label="Oynatma Hızı Kaydırıcı"
-          />
-          <span class="pvc-slider-bound">3.0x</span>
-        </div>
-        <div class="pvc-quick-speed-buttons">
-          <button class="pvc-chip-btn" data-speed="1.0" aria-label="1x Hız">1x</button>
-          <button class="pvc-chip-btn" data-speed="1.25" aria-label="1.25x Hız">1.25x</button>
-          <button class="pvc-chip-btn" data-speed="1.5" aria-label="1.5x Hız">1.5x</button>
-          <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız">2x</button>
-          <button class="pvc-chip-btn" data-speed="2.5" aria-label="2.5x Hız">2.5x</button>
-        </div>
-      </div>
-
-      <div class="pvc-menu-section">
-        <span class="pvc-label">Hızlı Sarma:</span>
-        <div class="pvc-btn-grid-2">
-          <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar">⏪ -10 Saniye</button>
-          <button id="pvc-seek-p10" class="pvc-action-btn" aria-label="10 Saniye İleri Sar">⏩ +10 Saniye</button>
-        </div>
-      </div>
-
-      <!-- Dinamik Çözünürlük Seçenekleri -->
-      <div class="pvc-menu-section">
-        <div class="pvc-section-header">
-          <span class="pvc-label">Akış Paket Kaliteleri:</span>
-          <span id="pvc-quality-count-badge" class="pvc-subtext" style="color: #38bdf8; font-weight: 600;" aria-live="polite">Paketler Algılanıyor...</span>
-        </div>
-        <div id="pvc-dynamic-quality-container" class="pvc-dynamic-grid" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;" role="group" aria-label="Kalite Seçenekleri">
-          <!-- Dinamik Butonlar renderDynamicQualityButtons ile basılır -->
+        <div id="pvc-content-speed" class="pvc-section-content">
+          <div class="pvc-slider-row">
+            <span class="pvc-slider-bound">0.25x</span>
+            <input 
+              type="range" 
+              id="pvc-speed-slider" 
+              min="0.25" 
+              max="3.0" 
+              step="0.25" 
+              value="1.0" 
+              class="pvc-range-slider"
+              aria-label="Oynatma Hızı Kaydırıcı"
+            />
+            <span class="pvc-slider-bound">3.0x</span>
+          </div>
+          <div class="pvc-quick-speed-buttons">
+            <button class="pvc-chip-btn" data-speed="1.0" aria-label="1x Hız">1x</button>
+            <button class="pvc-chip-btn" data-speed="1.25" aria-label="1.25x Hız">1.25x</button>
+            <button class="pvc-chip-btn" data-speed="1.5" aria-label="1.5x Hız">1.5x</button>
+            <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız">2x</button>
+            <button class="pvc-chip-btn" data-speed="2.5" aria-label="2.5x Hız">2.5x</button>
+          </div>
+          <div class="pvc-btn-grid-2" style="margin-top: 6px;">
+            <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar">⏪ -10 Saniye</button>
+            <button id="pvc-seek-p10" class="pvc-action-btn" aria-label="10 Saniye İleri Sar">⏩ +10 Saniye</button>
+          </div>
         </div>
       </div>
 
-      <!-- Sadeleştirilmiş Saydamlık Gecikmesi (2s - 5s) -->
-      <div class="pvc-menu-section" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
-        <div class="pvc-section-header">
-          <span class="pvc-label">Saydamlık Gecikmesi:</span>
+      <!-- 2. BÖLÜM: Ses Düzeyi & Stereo/Mono (Akordeon) -->
+      <div class="pvc-menu-section" id="pvc-section-audio">
+        <div class="pvc-section-header" data-target="pvc-content-audio" title="Daraltmak veya genişletmek için tıklayın">
+          <div class="pvc-section-title-wrap">
+            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-label">🔊 Ses Seviyesi & Kanallar</span>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: #a78bfa; background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3);">STEREO</span>
+            <span id="pvc-hdr-volume-badge" class="pvc-val-badge">100%</span>
+          </div>
+        </div>
+        <div id="pvc-content-audio" class="pvc-section-content">
+          <div class="pvc-slider-row">
+            <span class="pvc-slider-bound">%0</span>
+            <input 
+              type="range" 
+              id="pvc-volume-slider" 
+              min="0" 
+              max="200" 
+              step="5" 
+              value="100" 
+              class="pvc-range-slider"
+              aria-label="Ses Seviyesi ve Yükseltici Kaydırıcı"
+            />
+            <span class="pvc-slider-bound" style="color: #38bdf8;">%200 🚀</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <div class="pvc-quick-speed-buttons" style="flex: 1; margin-right: 8px;">
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="0" aria-label="Sessiz (%0)">%0</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="50" aria-label="Yarım Ses (%50)">%50</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="100" aria-label="Normal Ses (%100)">%100</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="150" aria-label="Yükseltilmiş Ses (%150)">%150</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="200" aria-label="Maksimum Ses (%200)">%200</button>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button id="pvc-audio-stereo-btn" class="pvc-audio-mode-btn pvc-audio-active" title="Stereo (Doğal Çift Kanal)" aria-label="Stereo Ses Modu">🎧 Stereo</button>
+              <button id="pvc-audio-mono-btn" class="pvc-audio-mode-btn" title="Mono (Tek Kulaklık / Birleşik Kanal)" aria-label="Mono Ses Modu">🎛️ Mono</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. BÖLÜM: Akış Paket Kaliteleri (Akordeon) -->
+      <div class="pvc-menu-section" id="pvc-section-quality">
+        <div class="pvc-section-header" data-target="pvc-content-quality" title="Daraltmak veya genişletmek için tıklayın">
+          <div class="pvc-section-title-wrap">
+            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-label">🎬 Akış Paket Kaliteleri</span>
+          </div>
+          <span id="pvc-quality-count-badge" class="pvc-val-badge" style="color: #38bdf8;" aria-live="polite">Paketler...</span>
+        </div>
+        <div id="pvc-content-quality" class="pvc-section-content">
+          <div id="pvc-dynamic-quality-container" class="pvc-dynamic-grid" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;" role="group" aria-label="Kalite Seçenekleri">
+            <!-- Dinamik Butonlar renderDynamicQualityButtons ile basılır -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. BÖLÜM: Saydamlık Gecikmesi (Akordeon) -->
+      <div class="pvc-menu-section" id="pvc-section-idle">
+        <div class="pvc-section-header" data-target="pvc-content-idle" title="Daraltmak veya genişletmek için tıklayın">
+          <div class="pvc-section-title-wrap">
+            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-label">⏱️ Saydamlık Gecikmesi</span>
+          </div>
           <span id="pvc-idle-delay-val" class="pvc-val-badge" style="color:#a78bfa; background:rgba(167,139,250,0.15); border-color:rgba(167,139,250,0.3);">${idleDelaySeconds}s</span>
         </div>
-        <div class="pvc-quick-speed-buttons">
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="2" aria-label="2 Saniye Saydamlık Gecikmesi">2sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="3" aria-label="3 Saniye Saydamlık Gecikmesi">3sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="4" aria-label="4 Saniye Saydamlık Gecikmesi">4sn</button>
-          <button class="pvc-chip-btn pvc-idle-btn" data-sec="5" aria-label="5 Saniye Saydamlık Gecikmesi">5sn</button>
+        <div id="pvc-content-idle" class="pvc-section-content">
+          <div class="pvc-quick-speed-buttons">
+            <button class="pvc-chip-btn pvc-idle-btn" data-sec="2" aria-label="2 Saniye Saydamlık Gecikmesi">2sn</button>
+            <button class="pvc-chip-btn pvc-idle-btn" data-sec="3" aria-label="3 Saniye Saydamlık Gecikmesi">3sn</button>
+            <button class="pvc-chip-btn pvc-idle-btn" data-sec="4" aria-label="4 Saniye Saydamlık Gecikmesi">4sn</button>
+            <button class="pvc-chip-btn pvc-idle-btn" data-sec="5" aria-label="5 Saniye Saydamlık Gecikmesi">5sn</button>
+          </div>
         </div>
       </div>
 
-      <div class="pvc-menu-footer">
+      <!-- Footer: Ping ve Hata Raporu (Küçültme modunda da her zaman görünür) -->
+      <div class="pvc-menu-footer" id="pvc-menu-footer">
         <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Sunucu gecikmesini ölç" aria-label="Sunucu CDN Gecikmesini Ölç">📡 CDN Ping</button>
         <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç" aria-label="Anonim Teşhis ve Hata Raporunu Aç">⚠️ Teşhis / Hata</button>
       </div>
@@ -1671,17 +1924,29 @@
     popup.addEventListener('mousedown', () => resetIdleTimer(popup));
     popup.addEventListener('touchstart', () => resetIdleTimer(popup));
 
-    const slider = popup.querySelector('#pvc-speed-slider');
+    // Akordeon Başlık Tıklama Olayları
+    popup.querySelectorAll('.pvc-section-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        resetIdleTimer(popup);
+        const section = header.closest('.pvc-menu-section');
+        if (section) {
+          section.classList.toggle('pvc-section-collapsed');
+        }
+      });
+    });
+
+    // Hız Slider ve Preset Butonları
+    const speedSlider = popup.querySelector('#pvc-speed-slider');
     const speedVal = popup.querySelector('#pvc-speed-value');
 
-    slider.addEventListener('input', (e) => {
+    speedSlider.addEventListener('input', (e) => {
       resetIdleTimer(popup);
       const val = parseFloat(e.target.value);
-      speedVal.textContent = `${val}x`;
+      if (speedVal) speedVal.textContent = `${val}x`;
       setSpeed(val);
     });
 
-    popup.querySelectorAll('.pvc-chip-btn:not(.pvc-idle-btn)').forEach(btn => {
+    popup.querySelectorAll('.pvc-chip-btn:not(.pvc-idle-btn):not(.pvc-vol-preset-btn)').forEach(btn => {
       btn.onclick = () => {
         resetIdleTimer(popup);
         const val = parseFloat(btn.getAttribute('data-speed'));
@@ -1689,6 +1954,35 @@
       };
     });
 
+    // Ses Slider ve Preset Butonları
+    const volumeSlider = popup.querySelector('#pvc-volume-slider');
+    volumeSlider.addEventListener('input', (e) => {
+      resetIdleTimer(popup);
+      const val = parseInt(e.target.value, 10);
+      setAudioVolume(val);
+    });
+
+    popup.querySelectorAll('.pvc-vol-preset-btn').forEach(btn => {
+      btn.onclick = () => {
+        resetIdleTimer(popup);
+        const val = parseInt(btn.getAttribute('data-vol'), 10);
+        setAudioVolume(val);
+      };
+    });
+
+    // Stereo / Mono Butonları
+    const stereoBtn = popup.querySelector('#pvc-audio-stereo-btn');
+    const monoBtn = popup.querySelector('#pvc-audio-mono-btn');
+    stereoBtn.onclick = () => {
+      resetIdleTimer(popup);
+      setAudioMode('stereo');
+    };
+    monoBtn.onclick = () => {
+      resetIdleTimer(popup);
+      setAudioMode('mono');
+    };
+
+    // Sarma Butonları
     popup.querySelector('#pvc-seek-m10').onclick = () => {
       resetIdleTimer(popup);
       seekBy(-10);
@@ -1699,6 +1993,7 @@
       seekBy(10);
     };
 
+    // Saydamlık Gecikmesi Butonları
     const updateIdleBtnUI = () => {
       popup.querySelectorAll('.pvc-idle-btn').forEach(btn => {
         const sec = parseInt(btn.getAttribute('data-sec'), 10);
@@ -1727,6 +2022,7 @@
       };
     });
 
+    // Çözünürlük Yenileme
     popup.querySelector('#pvc-refresh-res-btn').onclick = () => {
       resetIdleTimer(popup);
       updateRealtimeResolutionBadge();
@@ -1734,6 +2030,7 @@
       showToast(`🎬 Güncellendi: ${lastObservedResolution}`);
     };
 
+    // Ping ve Teşhis
     popup.querySelector('#pvc-ping-btn').onclick = async function () {
       resetIdleTimer(popup);
       this.textContent = 'Ölçülüyor...';
@@ -1754,14 +2051,22 @@
       popup.style.display = 'none';
     };
 
+    // Genel Küçültme (➖ / ➕):
+    // Kullanıcı talebi doğrultusunda: Küçültüldüğünde akordeon bölümleri gizlenir;
+    // Çözünürlük rozeti (metin eksiksiz görünür), Ping ve Hata bölümleri görünmeye devam eder.
     let isCollapsed = false;
     popup.querySelector('#pvc-collapse-btn').onclick = () => {
       resetIdleTimer(popup);
       isCollapsed = !isCollapsed;
-      popup.querySelectorAll('.pvc-menu-section, .pvc-menu-footer, #pvc-realtime-res-badge').forEach(el => {
+      popup.classList.toggle('pvc-collapsed', isCollapsed);
+      
+      // Sadece 4 ana ayar bölümünü gizle, çözünürlük rozeti ve footer'ı açık tut
+      popup.querySelectorAll('.pvc-menu-section').forEach(el => {
         el.style.display = isCollapsed ? 'none' : '';
       });
+
       popup.querySelector('#pvc-collapse-btn').textContent = isCollapsed ? '➕' : '➖';
+      updateRealtimeResolutionBadge();
     };
 
     renderDynamicQualityButtons();
@@ -1786,10 +2091,15 @@
         monitorVideoResolution(video);
         const slider = popup.querySelector('#pvc-speed-slider');
         const speedVal = popup.querySelector('#pvc-speed-value');
+        const hdrSpeed = popup.querySelector('#pvc-hdr-speed-badge');
         if (slider) slider.value = (video.playbackRate || 1.0).toString();
         if (speedVal) speedVal.textContent = `${video.playbackRate || 1.0}x`;
+        if (hdrSpeed) hdrSpeed.textContent = `${video.playbackRate || 1.0}x`;
+
+        // Ses grafiğini ve başlangıç ses seviyesini bağla
+        initAudioGraphForVideo(video);
       }
-      showToast('NOk Video Controller Aktif (v0.3.7)');
+      showToast('NOk Video Controller Aktif (v0.3.8)');
     }
   }
 
