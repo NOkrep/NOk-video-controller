@@ -1126,7 +1126,7 @@
 
       // 3. Now TV ErCDN SMIL Akış Seviyeleri (ErBVR Bitrate Routing & SMIL profilleri)
       return [
-        { id: 'now_1080', label: '1080p (FHD)', height: 1080, bitrate: 4500000 },
+        { id: 'now_1080', label: '1080p (FHD)', height: 1080, bitrate: 5500000 },
         { id: 'now_720', label: '720p (HD)', height: 720, bitrate: 2500000 },
         { id: 'now_576', label: '576p (PAL)', height: 576, bitrate: 1500000 },
         { id: 'now_480', label: '480p (SD)', height: 480, bitrate: 1000000 },
@@ -1138,9 +1138,9 @@
       addDiagnosticLog('INFO', `[NowTvAdapter] Kalite uygulanıyor: ${targetItem.label}`);
 
       const targetHeight = targetItem.height || 1080;
-      const targetBitrate = targetItem.bitrate || (targetHeight >= 1000 ? 5000000 : targetHeight >= 700 ? 2500000 : targetHeight >= 576 ? 1500000 : 800000);
+      const targetBitrate = targetItem.bitrate || (targetHeight >= 1000 ? 5500000 : targetHeight >= 700 ? 2500000 : targetHeight >= 576 ? 1500000 : 800000);
 
-      // 1. Video.js qualityLevels kilit & tetikleme
+      // 1. Video.js qualityLevels Güvenli Kilit (Non-destructive)
       if (player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
@@ -1154,24 +1154,24 @@
               if (isTarget) matched = true;
             }
 
-            // Eğer listede henüz 1080p paketi tanımlı değilse en yüksek seviyeyi zorla aç
-            if (!matched && targetHeight >= 1000) {
-              let highestIdx = 0;
-              let maxH = 0;
+            // Eğer hedef yükseklik için tam eşleşme yoksa en yüksek çözünürlüğü aç
+            if (!matched && targetHeight >= 700) {
+              let maxH = -1;
+              let maxIdx = -1;
               for (let i = 0; i < qLevels.length; i++) {
-                if ((qLevels[i].height || 0) > maxH) {
-                  maxH = qLevels[i].height;
-                  highestIdx = i;
+                const h = qLevels[i].height || 0;
+                if (h > maxH) {
+                  maxH = h;
+                  maxIdx = i;
                 }
               }
-              for (let i = 0; i < qLevels.length; i++) {
-                qLevels[i].enabled = (i === highestIdx);
+              if (maxIdx >= 0) {
+                for (let i = 0; i < qLevels.length; i++) {
+                  qLevels[i].enabled = (i === maxIdx);
+                }
               }
             }
 
-            if (typeof qLevels.trigger === 'function') {
-              qLevels.trigger({ type: 'change', selectedIndex: targetItem.index ?? 0 });
-            }
             addDiagnosticLog('INFO', `[NowTvAdapter] qualityLevels başarıyla kilitlendi: ${targetItem.label}`);
           }
         } catch (e) {
@@ -1179,87 +1179,47 @@
         }
       }
 
-      // 2. VHS Representations, SelectPlaylist & Fast Quality Change Override
+      // 2. VHS Representations API (Standart Video.js VHS API)
+      if (player && player.tech_ && player.tech_.vhs && typeof player.tech_.vhs.representations === 'function') {
+        try {
+          const reps = player.tech_.vhs.representations();
+          if (Array.isArray(reps) && reps.length > 0) {
+            reps.forEach(rep => {
+              const match = rep.height ? Math.abs(rep.height - targetHeight) < 40 : false;
+              if (typeof rep.enabled === 'function') {
+                rep.enabled(match);
+              }
+            });
+          }
+        } catch (e) {}
+      }
+
+      // 3. VHS Bandwidth ve Fast Quality Change Kancası (BVR Bitrate Routing için)
       if (player && player.tech_ && player.tech_.vhs) {
         try {
           const vhs = player.tech_.vhs;
           vhs.systemBandwidth_ = targetBitrate;
           vhs.bandwidth = targetBitrate;
-
-          // Representations API
-          if (typeof vhs.representations === 'function') {
-            const reps = vhs.representations();
-            if (Array.isArray(reps) && reps.length > 0) {
-              reps.forEach(rep => {
-                const match = rep.height ? Math.abs(rep.height - targetHeight) < 40 : false;
-                if (typeof rep.enabled === 'function') {
-                  rep.enabled(match);
-                }
-              });
-            }
+          if (vhs.masterPlaylistController_) {
+            vhs.masterPlaylistController_.fastQualityChange_ = true;
           }
-
-          // Master Playlist Seçici Kancası
-          if (vhs.playlists && vhs.playlists.master && Array.isArray(vhs.playlists.master.playlists)) {
-            const plList = vhs.playlists.master.playlists;
-            let targetPl = plList.find(p => {
-              const h = (p.attributes?.RESOLUTION?.height) || 0;
-              return Math.abs(h - targetHeight) < 40;
-            });
-            if (!targetPl && targetHeight >= 1000) {
-              targetPl = plList.slice().sort((a, b) => {
-                const hA = a.attributes?.RESOLUTION?.height || a.attributes?.BANDWIDTH || 0;
-                const hB = b.attributes?.RESOLUTION?.height || b.attributes?.BANDWIDTH || 0;
-                return hB - hA;
-              })[0];
-            }
-
-            if (targetPl) {
-              vhs.selectPlaylist = () => targetPl;
-              if (vhs.playlists) {
-                vhs.playlists.media = targetPl;
-              }
-              if (vhs.masterPlaylistController_) {
-                vhs.masterPlaylistController_.fastQualityChange_ = true;
-                if (typeof vhs.masterPlaylistController_.setMedia === 'function') {
-                  vhs.masterPlaylistController_.setMedia(targetPl);
-                }
-                if (vhs.masterPlaylistController_.mainSegmentLoader_) {
-                  const loader = vhs.masterPlaylistController_.mainSegmentLoader_;
-                  loader.playlist_ = targetPl;
-                }
-              }
-              addDiagnosticLog('INFO', `[NowTvAdapter] VHS selectPlaylist doğrudan ${targetItem.label} profiline kilitlendi.`);
-            }
-          }
+          addDiagnosticLog('INFO', `[NowTvAdapter] VHS bant genişliği kilitlendi: ${targetBitrate} bps`);
         } catch (e) {
-          addDiagnosticLog('WARN', '[NowTvAdapter] VHS kilit hatası', e.message);
+          addDiagnosticLog('WARN', '[NowTvAdapter] VHS bandwidth kilit hatası', e.message);
         }
       }
 
-      // 3. Now TV DOM UI Kalite Menüsü Simülasyonu
-      try {
-        const cleanTarget = targetItem.label.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
-        const settingsButtons = document.querySelectorAll('.vjs-resolution-button, .vjs-quality-menu, button[aria-label*="ayar" i], [class*="settings"]');
-        for (const btn of settingsButtons) {
-          btn.click();
-          setTimeout(() => {
-            const menuItems = Array.from(document.querySelectorAll('.vjs-menu-item, [role="menuitem"]'));
-            const match = menuItems.find(el => (el.textContent || '').toLowerCase().includes(cleanTarget));
-            if (match) match.click();
-          }, 80);
-        }
-      } catch (e) {}
-
-      // 4. Tampon Atlatma & Hızlı Çözünürlük Yenileme (Micro-Seek)
+      // 4. Anti-Stall Oynatıcı Nöbetçisi (Donma Önleme & Kesintisiz Oynatma)
       if (video && !video.paused) {
+        const stallCheckTime = video.currentTime;
         setTimeout(() => {
-          try {
-            // Tamponda kalmış eski 360p karelerini atlatıp yeni stream'i hemen decode ettirmek için 0.05s mikro-sarma
-            video.currentTime = Math.max(0, video.currentTime + 0.02);
-            updateRealtimeResolutionBadge();
-          } catch (e) {}
-        }, 500);
+          if (video && !video.paused && video.currentTime === stallCheckTime && video.readyState < 3) {
+            addDiagnosticLog('INFO', '[NowTvAdapter] Donma önleme nöbetçisi akışı canlandırdı.');
+            try {
+              video.currentTime += 0.01;
+            } catch (e) {}
+          }
+        }, 900);
       }
 
       showToast(`Now TV: ${targetItem.label} (Kilitlendi)`);
@@ -2120,7 +2080,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.9</span>
+          <span class="pvc-menu-badge">NOkrep v0.4.0</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
