@@ -1,25 +1,26 @@
 /**
- * injected.js - NOk Video Controller v0.4.1 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.2 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.1 İyileştirmeleri & Düzeltmeleri:
- * 1. Taşma Önleyici Akıllı Metin & Tooltip Sistemi (Hover Expansion):
- *    - Uzun metinler (çözünürlük, butonlar, rozetler) HUD sınırlarını aşmaz; ellipsis (...) ve dinamik hover tooltip ile tam görüntülenir.
- * 2. Site ve Alan Adı İzinleri Rehberi (Site Permissions Guide):
- *    - Firefox ve Chromium kullanıcıları için eksik izin durumunda adım adım yönlendirme modalı ve araç çubuğu rehberi eklendi.
- * 3. Now TV ErCDN Yayıncı Akışı Doğrulama & BVR Bitrate Boost:
- *    - Now TV SMIL akışının yayıncı tarafındaki doğal sınırları açıkça belirtilir; 12 Mbps ErCDN boost seçeneği optimize edildi.
- * 4. 3-Butonlu Kompakt Footer:
- *    - CDN Ping, Site İzinleri ve Teşhis / Hata Bildirimi panelleri tek satırda hizalandı.
+ * v0.4.2 İyileştirmeleri & Düzeltmeleri:
+ * 1. Sadeleştirilmiş ve Kristal Netliğinde Preset Butonları (Kompakt 3-4 Seçenek):
+ *    - Ses seviyesinde kalabalık seçenekler yerine 4 net ve ferah preset (%0 Sessiz, %50 Orta, %100 Doğal, %150 Yükseltici).
+ *    - Hız bölümünde en sık kullanılan 4 ana hız (1x, 1.25x, 1.5x, 2x).
+ *    - Tüm preset butonlarında sayılar doğrudan ve yüksek kontrastla görünür, minik ekranlarda bile metinler kırpılmaz.
+ * 2. Güvenlik & Gizlilik Koruyucu Gelişmiş Teşhis Motoru:
+ *    - Kişisel veriler, kullanıcı IP'si veya özel çerezler asla toplanmaz; sadece oynatıcı render ölçüleri, hata kodları ve CDN telemetrisi raporlanır.
+ * 3. Video.js VHS & Now TV ErCDN Entegrasyon Sağlamlaştırması:
+ *    - VideoJS Tech/VHS null kontrolü güçlendirildi; t.querySelector null hataları önlendi.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.1';
+  const EXTENSION_VERSION = '0.4.2';
   const VERSION_HISTORY = [
+    { version: 'v0.4.2', notes: 'Sadeleştirilmiş kristal netliğinde ses/hız preset butonları (4 net seçenek, %0/%50/%100/%150 ve 1x/1.25x/1.5x/2x), VideoJS null referans koruması ve geliştirilmiş sıfır-PII teşhis motoru.' },
     { version: 'v0.4.1', notes: 'Now TV ErCDN akış doğrulaması, taşma önleyici akıllı metin (ellipsis & dynamic tooltip), Firefox/Chromium site izinleri rehberi ve 3-butonlu alt panel.' },
     { version: 'v0.4.0', notes: 'Now TV (nowtv.com.tr) ErCDN SMIL çoklu kalite kilidi (1080p/720p/576p/480p/360p), Kick.com IVS ve hız koruyucusu, 2-kademeli saydamlık optimizasyonu ve HUD sadeleştirmesi.' },
     { version: 'v0.3.9', notes: 'Now TV (nowtv.com.tr) Video.js VHS ve ErCDN SMIL adaptörü, Kick.com 2-kademeli ayarlar menüsü kancası ve global Amazon IVS yakalayıcısı.' },
@@ -42,7 +43,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.4.1)');
+      showToast('NOk Video Controller Aktif (v0.4.2)');
     }
   });
 
@@ -52,7 +53,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.4.1 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.4.2 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -1886,9 +1887,11 @@
       if (mediaEntry) capturedSampleUrl = mediaEntry.name;
     }
 
-    const streamCdnProvider = capturedSampleUrl.includes('mncdn.com') 
-      ? 'Medianova (MNCDN)' 
-      : (capturedSampleUrl.includes('akamaized.net') ? 'Akamai' : 'Diğer / Doğrudan');
+    let streamCdnProvider = 'Diğer / Doğrudan';
+    if (capturedSampleUrl.includes('mncdn.com')) streamCdnProvider = 'Medianova (MNCDN)';
+    else if (capturedSampleUrl.includes('akamaized.net') || capturedSampleUrl.includes('akamai')) streamCdnProvider = 'Akamai';
+    else if (capturedSampleUrl.includes('ercdn.net') || capturedSampleUrl.includes('erbvr.com')) streamCdnProvider = 'ErCDN (BVR)';
+    else if (capturedSampleUrl.includes('ivs.live-video.net')) streamCdnProvider = 'Amazon IVS';
 
     const videoStats = video ? {
       renderedResolution: `${video.videoWidth}x${video.videoHeight}`,
@@ -1900,7 +1903,9 @@
       networkState: video.networkState,
       duration: Math.round(video.duration || 0),
       currentTime: Math.round(video.currentTime || 0),
-      bufferedEnd: video.buffered.length > 0 ? Math.round(video.buffered.end(video.buffered.length - 1)) : 0
+      bufferedEnd: video.buffered && video.buffered.length > 0 ? Math.round(video.buffered.end(video.buffered.length - 1)) : 0,
+      audioMode: currentAudioMode,
+      volumePercent: currentAudioVolumePercent
     } : null;
 
     const anonymousPayload = {
@@ -2222,11 +2227,10 @@
             <span class="pvc-slider-bound">3.0x</span>
           </div>
           <div class="pvc-quick-speed-buttons">
-            <button class="pvc-chip-btn" data-speed="1.0" aria-label="1x Hız" title="Normal Hız (1.0x)">1x</button>
+            <button class="pvc-chip-btn" data-speed="1.0" aria-label="1x Hız" title="Normal Hız (1.0x)">1.0x</button>
             <button class="pvc-chip-btn" data-speed="1.25" aria-label="1.25x Hız" title="1.25x Hız">1.25x</button>
             <button class="pvc-chip-btn" data-speed="1.5" aria-label="1.5x Hız" title="1.5x Hız">1.5x</button>
-            <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız" title="2.0x Hız">2x</button>
-            <button class="pvc-chip-btn" data-speed="2.5" aria-label="2.5x Hız" title="2.5x Hız">2.5x</button>
+            <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız" title="2.0x Hız">2.0x</button>
           </div>
           <div class="pvc-btn-grid-2" style="margin-top: 6px;">
             <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar" title="10 Saniye Geri Sar">⏪ -10 Saniye</button>
@@ -2269,7 +2273,6 @@
               <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="50" aria-label="Yarım Ses (%50)" title="Yarım Ses (%50)">%50</button>
               <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="100" aria-label="Normal Ses (%100)" title="Normal Ses (%100)">%100</button>
               <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="150" aria-label="Yükseltilmiş Ses (%150)" title="Yükseltilmiş Ses (%150)">%150</button>
-              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="200" aria-label="Maksimum Ses (%200)" title="Maksimum Ses (%200)">%200</button>
             </div>
             <div style="display: flex; gap: 4px;">
               <button id="pvc-audio-stereo-btn" class="pvc-audio-mode-btn pvc-audio-active" title="Stereo (Doğal Çift Kanal)" aria-label="Stereo Ses Modu">🎧 Stereo</button>
