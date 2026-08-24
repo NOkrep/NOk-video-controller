@@ -1022,32 +1022,85 @@
         const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
 
         // 1. Önce Player Container üzerinde fare hareketi simüle et ki kontrol çubuğu uyanıp DOM'da görünsün
-        const playerContainer = document.querySelector('#channel-player, .player-container, .relative.flex-1');
+        const playerContainer = document.querySelector('#channel-player, .player-container, .relative.flex-1, div[data-clip-player], div[class*="player"]');
         if (playerContainer) {
           playerContainer.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 100, clientY: 100 }));
           playerContainer.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
         }
 
-        // 2. Kick Ayarlar Çark/Dişli Butonunu Bul
+        // 2. Kick Ayarlar Çark/Dişli Butonunu Kapsamlı Seçiciler ve SVG/Aria Analizi ile Bul
         const buttonSelectors = [
           '[data-testid="player-settings-button"]',
+          '[data-testid="settings-button"]',
           'button[aria-label*="ayar" i]',
-          'button[aria-label*="Setting" i]',
-          'button[aria-label*="Ayarlar" i]',
+          'button[aria-label*="setting" i]',
+          'button[aria-label*="option" i]',
+          'button[aria-label*="quality" i]',
+          'button[aria-label*="kalite" i]',
+          'button[data-state][aria-haspopup="menu"]',
+          'button[data-state][aria-haspopup="dialog"]',
+          'button[id*="settings"]',
+          'button[class*="settings"]',
           '.vjs-control-bar button.vjs-cog-menu-button',
-          'div[data-testid="player-controls"] button:has(svg)',
-          '#channel-player button:has(svg)'
+          'div[data-testid="player-controls"] button',
+          '#channel-player button',
+          '.player-container button',
+          '.relative.flex-1 button',
+          'button'
         ];
 
         let settingsBtn = null;
         for (const sel of buttonSelectors) {
           const list = Array.from(document.querySelectorAll(sel));
           settingsBtn = list.find(b => {
-            const txt = (b.getAttribute('aria-label') || b.textContent || '').toLowerCase();
-            const hasGearSvg = !!b.querySelector('svg');
-            return txt.includes('ayar') || txt.includes('setting') || b.getAttribute('data-testid') === 'player-settings-button' || hasGearSvg;
-          }) || list[list.length - 1];
+            const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+            const title = (b.getAttribute('title') || '').toLowerCase();
+            const txt = (b.textContent || '').toLowerCase();
+            const testId = (b.getAttribute('data-testid') || '').toLowerCase();
+            const id = (b.id || '').toLowerCase();
+            const className = (typeof b.className === 'string' ? b.className : '').toLowerCase();
+
+            // Metin veya attribute bazlı kontrol
+            if (aria.includes('ayar') || aria.includes('setting') || aria.includes('option') ||
+                title.includes('ayar') || title.includes('setting') ||
+                testId.includes('setting') || id.includes('setting') ||
+                txt.includes('setting') || txt.includes('ayar')) {
+              return true;
+            }
+
+            // SVG İkon Analizi (Dişli çark / gear icon path)
+            const svgs = b.querySelectorAll('svg');
+            for (const svg of svgs) {
+              const svgHtml = svg.innerHTML.toLowerCase();
+              if (svgHtml.includes('path') && (
+                svgHtml.includes('gear') || svgHtml.includes('cog') || svgHtml.includes('setting') ||
+                svg.getAttribute('data-icon') === 'gear' || svg.getAttribute('data-icon') === 'settings'
+              )) {
+                return true;
+              }
+              // Oynatıcı kontrolleri içindeki sağ tarafta kalan butonlar
+              if (b.closest('#channel-player, .player-container, div[data-testid="player-controls"]')) {
+                const parent = b.parentElement;
+                if (parent && (parent.className.includes('right') || parent.className.includes('end') || parent.className.includes('justify-end'))) {
+                  if (aria.includes('setting') || title.includes('setting') || testId.includes('setting')) return true;
+                }
+              }
+            }
+            return false;
+          });
           if (settingsBtn) break;
+        }
+
+        // Yedek Kontrol Buton Seçimi
+        if (!settingsBtn) {
+          const controlsButtons = Array.from(document.querySelectorAll('div[data-testid="player-controls"] button, #channel-player button, .player-controls button'));
+          settingsBtn = controlsButtons.find(b => {
+            const hasSvg = !!b.querySelector('svg');
+            const isPlayOrPause = (b.getAttribute('aria-label') || '').toLowerCase().includes('play') || (b.getAttribute('aria-label') || '').toLowerCase().includes('pause');
+            const isFullscreen = (b.getAttribute('aria-label') || '').toLowerCase().includes('fullscreen');
+            const isVolume = (b.getAttribute('aria-label') || '').toLowerCase().includes('volume') || (b.getAttribute('aria-label') || '').toLowerCase().includes('ses') || (b.getAttribute('aria-label') || '').toLowerCase().includes('mute');
+            return hasSvg && !isPlayOrPause && !isFullscreen && !isVolume;
+          });
         }
 
         if (!settingsBtn) {
@@ -2467,7 +2520,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge" title="NOk Video Controller Sürüm v0.4.1">NOkrep v0.4.1</span>
+          <span class="pvc-menu-badge" title="NOk Video Controller Sürüm v0.4.3">NOkrep v0.4.3</span>
           <span class="pvc-menu-title" title="NOk Video Controller">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
@@ -2765,7 +2818,7 @@
         // Ses grafiğini ve başlangıç ses seviyesini bağla
         initAudioGraphForVideo(video);
       }
-      showToast('NOk Video Controller Aktif (v0.4.1)');
+      showToast('NOk Video Controller Aktif (v0.4.3)');
     }
   }
 
