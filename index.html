@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOk Video Controller v0.3.8 | Proje Durum Paneli & İndirme</title>
+  <title>NOk Video Controller v0.3.9 | Proje Durum Paneli & İndirme</title>
   
   <style>
     :root {
@@ -322,9 +322,9 @@
         <div>
           <div style="display:flex;align-items:center;gap:8px;">
             <h1 class="brand-title">NOk Video Controller</h1>
-            <span class="badge-tag">v0.3.8</span>
+            <span class="badge-tag">v0.3.9</span>
           </div>
-          <p style="font-size:12px;color:var(--text-muted);">PuhuTV & Kick.com Stateless HLS/HTML5 Geliştirme ve Durum Paneli</p>
+          <p style="font-size:12px;color:var(--text-muted);">PuhuTV, Now TV & Kick.com Stateless HLS/HTML5 Geliştirme ve Durum Paneli</p>
         </div>
       </div>
 
@@ -349,7 +349,7 @@
       <div class="hero-text">
         <h2>⚡ Proje Durumu & Teknik Entegrasyon Özeti</h2>
         <p>
-          NOk Video Controller; sıfır depolama (stateless), minimal izin ilkeleriyle çalışan, PuhuTV (Akamai/Medianova) ve Kick.com (IVS/React Fiber) üzerinde doğrudan ağ ve DOM kancalarıyla kalite/hız kontrolü sağlayan açık kaynaklı bir tarayıcı uzantısıdır.
+          NOk Video Controller; sıfır depolama (stateless), minimal izin ilkeleriyle çalışan, PuhuTV, Now TV (nowtv.com.tr) ve Kick.com üzerinde doğrudan ağ ve DOM kancalarıyla kalite, ses (%0-%200) ve hız kontrolü sağlayan açık kaynaklı bir tarayıcı uzantısıdır.
         </p>
       </div>
       <div>
@@ -366,7 +366,7 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">
-            <span>🛠️ 1. Yapılan Değişiklikler (v0.3.8)</span>
+            <span>🛠️ 1. Yapılan Değişiklikler (v0.3.9)</span>
           </div>
           <span class="pill-count pill-blue">Son Revizyonlar</span>
         </div>
@@ -374,16 +374,25 @@
           <ul class="info-list">
             <li class="info-item">
               <div class="info-item-title">
-                <span>Kick 16x Reklam Hızlandırma & 360p Tampon Koruması</span>
+                <span>Now TV (nowtv.com.tr) Video.js VHS & ErCDN Adaptörü</span>
               </div>
               <div class="info-item-desc">
-                Kick.com'da çıkan reklamlar algılandığında 16x hıza alınıp ses kapatılırken, takılmayı önlemek için akış kalitesi geçici olarak 360p/en düşük pakete indirilir; reklam bittiğinde kullanıcının seçili HD profiline kesintisiz geri dönülür.
+                Now TV'nin Video.js oynatıcısı, VHS kalite seviyeleri (<span class="tag-accent">qualityLevels</span>) ve Medianova/ErCDN SMIL akış profilleri tespit edilerek kilitlenebilir hale getirildi.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>%0 - %200 Gelişmiş Ses Denetimi & Gain Booster</span>
+                <span>Kick.com 2-Kademeli Ayarlar Menüsü & Global IVS Kancası</span>
+              </div>
+              <div class="info-item-desc">
+                Amazon IVS SDK kurucu metotları kancalanarak oynatıcı doğrudan yakalandı; React 18 ayarlar menüsündeki "Kalite" alt menüsü simülasyonu ile reklam tamponu (360p) ve normal HD kalite geçişleri tam kontrol altına alındı.
+              </div>
+            </li>
+
+            <li class="info-item">
+              <div class="info-item-title">
+                <span>%0 - %200 Kaydırmalı Ses Denetimi & Gain Booster</span>
               </div>
               <div class="info-item-desc">
                 Web Audio API GainNode entegrasyonuyla tüm videolarda %0-%200 kaydırmalı ses ayarı ve 2 katına kadar yükseltme sağlandı.
@@ -396,15 +405,6 @@
               </div>
               <div class="info-item-desc">
                 ChannelMerger ve ChannelSplitter köprüsüyle tek kulaklık veya tek kanallı videolarda anında Mono/Stereo geçiş desteği eklendi.
-              </div>
-            </li>
-
-            <li class="info-item">
-              <div class="info-item-title">
-                <span>Akıllı Akordeon HUD & Çözünürlük Rozet Düzeltmesi</span>
-              </div>
-              <div class="info-item-desc">
-                HUD içindeki bölümler (Hız, Ses, Kalite, Saydamlık) daraltılabilir hale getirildi ve başlıklarında anlık değerler gösterildi. Genel küçültme modunda canlı çözünürlük rozeti tam metinle görünür kılındı.
               </div>
             </li>
           </ul>

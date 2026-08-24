@@ -1,29 +1,25 @@
 /**
- * injected.js - NOk Video Controller v0.3.8 (Main World Engine)
+ * injected.js - NOk Video Controller v0.3.9 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.8 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Reklam Takılmasız Hızlandırma (16x Hız + Mute + Otomatik 360p/160p Düşürme & Geri Alma):
- *    - Kick reklamlarında yüksek çözünürlükten kaynaklanan takılmaları önlemek için reklam anında kalite 360p/en düşük seviyeye çekilir.
- *    - Reklam bitiminde kullanıcının orijinal kaliteli akış profiline otomatik geri dönülür.
- * 2. Gelişmiş Ses Denetimi (%0 - %200 Kaydırmalı Ses & Ses Yükseltici / Gain Booster):
- *    - Standart HTML5 video ses sınırlarını aşan Web Audio API GainNode köprüsü.
- *    - Düşük sesli videoları 2 katına (%200) kadar yükseltme imkanı.
- * 3. Stereo / Mono Ses Kanalı Anahtarlayıcısı:
- *    - Tek kulaklık kullanımında veya tek taraflı ses dosyalarında ChannelMerger / ChannelSplitter ile anında Mono/Stereo geçişi.
- * 4. Akıllı Akordeon (Daraltılabilir / Genişletilebilir) HUD Bölümleri:
- *    - Her bölüm başlığında anlık seçili değer (Hız, Ses, Kalite, Saydamlık vb.) gösterilir ve tıklandığında daraltılabilir.
- * 5. Genel Küçültme (➖/➕) Düzeltmesi:
- *    - Genel küçültme modunda canlı çözünürlük rozeti, ping ve hata butonları gizlenmez, gerçek çözünürlük metni eksiksiz görüntülenir.
+ * v0.3.9 İyileştirmeleri & Düzeltmeleri:
+ * 1. Now TV (nowtv.com.tr / fox.com.tr) Özel Adaptörü (NowTvAdapter):
+ *    - Video.js VHS & Medianova ErCDN SMIL akış profilleri (1080p FHD, 720p, 576p PAL, 480p SD, 360p) anında tespit edilir ve kilitlenir.
+ * 2. Kick.com 2-Kademeli Menü Navigasyonu & Global IVS Kancası:
+ *    - Amazon IVS SDK createMediaPlayer kancası ile doğrudan oynatıcı yakalama.
+ *    - Ayarlar menüsü altındaki "Kalite / Quality" alt menüsü taranarak hem reklam anında 360p düşürme hem de normal kalite seçimleri kesin olarak tetiklenir.
+ * 3. Arayüz Saydamlık ve Görünmezlik Optimizasyonu:
+ *    - Fare hareketsizliğinde saydamlaşan HUD, fare hareketinde veya üzerine gelindiğinde anında yumuşak geçişle netleşir.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.3.8';
+  const EXTENSION_VERSION = '0.3.9';
   const VERSION_HISTORY = [
+    { version: 'v0.3.9', notes: 'Now TV (nowtv.com.tr) Video.js VHS ve ErCDN SMIL adaptörü, Kick.com 2-kademeli ayarlar menüsü kancası ve global Amazon IVS yakalayıcısı.' },
     { version: 'v0.3.8', notes: 'Kick.com reklamlarında 360p akıllı kalite düşürme & geri alma, %0-%200 ses seviyesi ve Gain booster, Mono/Stereo ses anahtarı, akıllı akordeon HUD bölümleri ve genel küçültme çözünürlük düzeltmesi.' },
     { version: 'v0.3.7', notes: 'Kick.com otomatik reklam algılayıcı ve 16x hızlandırıcı (Ad Fast-Forward & Mute), HUD ve bildirimler için ARIA/A11y erişilebilirlik geliştirmeleri, klavye Tab navigasyon desteği.' },
     { version: 'v0.3.6', notes: 'PuhuTV 576p/480p Video.js VHS donma düzeltmesi (non-destructive qualityLevels switch), Anti-Stall oynatıcı nöbetçisi, sayfa açılışında doğal akış koruması & isteğe bağlı pürüzsüz 1080p MNCDN geçişi.' },
@@ -82,6 +78,35 @@
   let audioSplitterNodeInstance = null;
   let audioMergerNodeInstance = null;
   let audioSourceElementMap = new WeakMap();
+
+  // Amazon IVS Player Global Kanca (Kick.com Oynatıcı Referansını Yakalama)
+  let globalCapturedIvsPlayer = null;
+  try {
+    const hookIvsSdk = () => {
+      if (window.IVSPlayer && typeof window.IVSPlayer.create === 'function' && !window.IVSPlayer.__nokHooked) {
+        window.IVSPlayer.__nokHooked = true;
+        const origCreate = window.IVSPlayer.create;
+        window.IVSPlayer.create = function (...args) {
+          const p = origCreate.apply(this, args);
+          globalCapturedIvsPlayer = p;
+          addDiagnosticLog('INFO', '[KickAdapter] IVSPlayer.create yakalandı.');
+          return p;
+        };
+      }
+      if (window.AmazonIVS && typeof window.AmazonIVS.createMediaPlayer === 'function' && !window.AmazonIVS.__nokHooked) {
+        window.AmazonIVS.__nokHooked = true;
+        const origCreate2 = window.AmazonIVS.createMediaPlayer;
+        window.AmazonIVS.createMediaPlayer = function (...args) {
+          const p = origCreate2.apply(this, args);
+          globalCapturedIvsPlayer = p;
+          addDiagnosticLog('INFO', '[KickAdapter] AmazonIVS.createMediaPlayer yakalandı.');
+          return p;
+        };
+      }
+    };
+    hookIvsSdk();
+    setInterval(hookIvsSdk, 2000);
+  } catch (e) {}
 
   // =========================================================================
   // 🌐 PUHUTV ÇİFT CDN (AKAMAI & MEDIANOVA MNCDN) AĞ KANCASI (XHR / FETCH)
@@ -691,6 +716,7 @@
     },
 
     findIvsPlayer(video) {
+      if (globalCapturedIvsPlayer && typeof globalCapturedIvsPlayer.getQualities === 'function') return globalCapturedIvsPlayer;
       if (window.ivsPlayer && typeof window.ivsPlayer.getQualities === 'function') return window.ivsPlayer;
       if (window.__ivsPlayer && typeof window.__ivsPlayer.getQualities === 'function') return window.__ivsPlayer;
       if (window.player && typeof window.player.getQualities === 'function') return window.player;
@@ -699,6 +725,7 @@
 
       const candidates = [
         video,
+        video ? video.parentElement : null,
         document.querySelector('#channel-player'),
         document.querySelector('.relative.flex-1'),
         document.querySelector('.player-container'),
@@ -713,6 +740,8 @@
         if (el._ivsPlayer && typeof el._ivsPlayer.getQualities === 'function') return el._ivsPlayer;
         if (el._ivs && typeof el._ivs.getQualities === 'function') return el._ivs;
         if (el.player && typeof el.player.getQualities === 'function') return el.player;
+        if (el._player && typeof el._player.getQualities === 'function') return el._player;
+        if (el._mediaPlayer && typeof el._mediaPlayer.getQualities === 'function') return el._mediaPlayer;
 
         try {
           const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
@@ -743,23 +772,49 @@
 
     triggerKickUiQuality(targetLabel) {
       try {
-        const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '');
-        const settingsBtn = document.querySelector('[data-testid="player-settings-button"], button[aria-label*="ayar"], button[aria-label*="Setting"], button[aria-label*="Ayarlar"]');
-        if (settingsBtn) {
-          settingsBtn.click();
+        const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
+        const settingsBtn = document.querySelector('[data-testid="player-settings-button"], button[aria-label*="ayar" i], button[aria-label*="Setting" i], button[aria-label*="Ayarlar" i]');
+        if (!settingsBtn) return;
+
+        // 1. Ayarlar butonuna tıkla
+        settingsBtn.click();
+
+        setTimeout(() => {
+          // 2. Açılan menüde "Quality" / "Kalite" sekmesini ara ve tıkla
+          const menuItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], div[class*="popover"] button'));
+          const qualitySubMenuTrigger = menuItems.find(el => {
+            const txt = (el.textContent || '').trim().toLowerCase();
+            return txt.includes('quality') || txt.includes('kalite') || txt.includes('1080p') || txt.includes('720p') || txt.includes('auto') || txt.includes('otomatik');
+          });
+
+          if (qualitySubMenuTrigger && !qualitySubMenuTrigger.textContent.toLowerCase().includes(cleanTarget)) {
+            qualitySubMenuTrigger.click();
+          }
+
           setTimeout(() => {
-            const qualityMenuItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"]'));
-            const matchBtn = qualityMenuItems.find(el => el.textContent && el.textContent.includes(cleanTarget));
+            // 3. Kalite listesinden hedef çözünürlüğü seç
+            const targetMenuItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span'));
+            const matchBtn = targetMenuItems.find(el => {
+              const txt = (el.textContent || '').trim().toLowerCase();
+              return txt.includes(cleanTarget) || (targetLabel && txt === targetLabel.toLowerCase());
+            });
+
             if (matchBtn) {
               matchBtn.click();
-              addDiagnosticLog('INFO', `[KickAdapter] UI Menü seçimi tetiklendi: ${targetLabel}`);
+              addDiagnosticLog('INFO', `[KickAdapter] 2-Kademeli UI menü seçimi başarıyla tıklandı: ${targetLabel}`);
             }
+
+            // 4. Menüyü kapat
             setTimeout(() => {
-              if (document.body.click) document.body.click();
-            }, 100);
+              const backdrop = document.querySelector('[class*="backdrop"], [class*="overlay"]');
+              if (backdrop) backdrop.click();
+              else if (document.body.click) document.body.click();
+            }, 80);
           }, 120);
-        }
-      } catch (e) {}
+        }, 120);
+      } catch (e) {
+        addDiagnosticLog('WARN', '[KickAdapter] UI tetikleyici hatası', e.message);
+      }
     },
 
     checkAdFastForward(video) {
@@ -939,7 +994,176 @@
   };
 
   /**
-   * 3. HLS.js Adaptörü
+   * 3. Now TV (NOW / FOX Türkiye) VideoJS & ErCDN SMIL Adaptörü
+   */
+  const NowTvAdapter = {
+    name: 'NowTvAdapter',
+    matches(video, player) {
+      return (
+        HOSTNAME.includes('nowtv.com.tr') ||
+        HOSTNAME.includes('fox.com.tr') ||
+        (video && (video.src?.includes('erbvr.com') || video.src?.includes('ercdn.net') || video.currentSrc?.includes('erbvr.com') || video.currentSrc?.includes('ercdn.net'))) ||
+        !!document.querySelector('.nowtv-player, [id*="nowtv"], .fox-player')
+      );
+    },
+
+    getQualities(video, player) {
+      const results = [];
+      const seenHeights = new Set();
+
+      // 1. Video.js qualityLevels()
+      if (player && typeof player.qualityLevels === 'function') {
+        try {
+          const qLevels = player.qualityLevels();
+          if (qLevels && qLevels.length > 0) {
+            for (let i = 0; i < qLevels.length; i++) {
+              const q = qLevels[i];
+              const h = q.height || 0;
+              const w = q.width || 0;
+              let label = q.label || `${h}p`;
+              if (h >= 1000 || w >= 1900) label = '1080p (FHD)';
+              else if (h >= 700 || w >= 1200) label = '720p (HD)';
+              else if (h >= 540 && h <= 576) label = '576p (PAL)';
+              else if (h >= 450 && h < 540) label = '480p (SD)';
+              else if (h >= 320 && h < 450) label = '360p (Düşük)';
+              else if (h >= 160 && h < 320) label = '240p (Mobil)';
+
+              if (h > 0 && !seenHeights.has(h)) {
+                seenHeights.add(h);
+                results.push({
+                  id: `now_vjs_${i}`,
+                  index: i,
+                  label: label,
+                  height: h,
+                  width: w,
+                  bitrate: q.bitrate || 0,
+                  raw: q
+                });
+              }
+            }
+            if (results.length > 0) {
+              addDiagnosticLog('INFO', `[NowTvAdapter] Video.js qualityLevels paketleri bulundu: ${results.map(r => r.label).join(', ')}`);
+              return results.sort((a, b) => (b.height || 0) - (a.height || 0));
+            }
+          }
+        } catch (e) {
+          addDiagnosticLog('WARN', '[NowTvAdapter] qualityLevels okuma hatası', e.message);
+        }
+      }
+
+      // 2. Video.js VHS Master Playlist
+      if (player && player.tech_ && player.tech_.vhs && player.tech_.vhs.playlists && player.tech_.vhs.playlists.master) {
+        try {
+          const masterPlaylists = player.tech_.vhs.playlists.master.playlists;
+          if (Array.isArray(masterPlaylists) && masterPlaylists.length > 0) {
+            masterPlaylists.forEach((pl, idx) => {
+              const attr = pl.attributes || {};
+              const res = attr.RESOLUTION || {};
+              const h = res.height || 0;
+              const w = res.width || 0;
+              let label = `${h}p`;
+              if (h >= 1000 || w >= 1900) label = '1080p (FHD)';
+              else if (h >= 700 || w >= 1200) label = '720p (HD)';
+              else if (h >= 540 && h <= 576) label = '576p (PAL)';
+              else if (h >= 450 && h < 540) label = '480p (SD)';
+              else if (h >= 320 && h < 450) label = '360p (Düşük)';
+
+              if (h > 0 && !seenHeights.has(h)) {
+                seenHeights.add(h);
+                results.push({
+                  id: `now_vhs_${idx}`,
+                  index: idx,
+                  label: label,
+                  height: h,
+                  width: w,
+                  bitrate: attr.BANDWIDTH || 0,
+                  raw: pl
+                });
+              }
+            });
+            if (results.length > 0) {
+              return results.sort((a, b) => (b.height || 0) - (a.height || 0));
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 3. Varsayılan Now TV / ErCDN SMIL Akış Seviyeleri
+      return [
+        { id: 'now_1080', label: '1080p (FHD)', height: 1080, bitrate: 4500000 },
+        { id: 'now_720', label: '720p (HD)', height: 720, bitrate: 2500000 },
+        { id: 'now_576', label: '576p (PAL)', height: 576, bitrate: 1500000 },
+        { id: 'now_480', label: '480p (SD)', height: 480, bitrate: 1000000 },
+        { id: 'now_360', label: '360p (Düşük)', height: 360, bitrate: 600000 }
+      ];
+    },
+
+    applyQuality(targetItem, video, player) {
+      addDiagnosticLog('INFO', `[NowTvAdapter] Kalite uygulanıyor: ${targetItem.label}`);
+
+      // 1. Video.js qualityLevels kilit
+      if (player && typeof player.qualityLevels === 'function') {
+        try {
+          const qLevels = player.qualityLevels();
+          if (qLevels && qLevels.length > 0) {
+            const targetIdx = targetItem.index !== undefined ? targetItem.index : -1;
+            for (let i = 0; i < qLevels.length; i++) {
+              if (targetIdx !== -1) {
+                qLevels[i].enabled = (i === targetIdx);
+              } else if (targetItem.height) {
+                const match = qLevels[i].height === targetItem.height || Math.abs((qLevels[i].height || 0) - targetItem.height) < 40;
+                qLevels[i].enabled = match;
+              }
+            }
+            addDiagnosticLog('INFO', `[NowTvAdapter] qualityLevels başarıyla kilitlendi: ${targetItem.label}`);
+          }
+        } catch (e) {}
+      }
+
+      // 2. VHS Fast Quality Change & Bandwidth Lock
+      if (player && player.tech_ && player.tech_.vhs) {
+        try {
+          if (player.tech_.vhs.masterPlaylistController_) {
+            player.tech_.vhs.masterPlaylistController_.fastQualityChange_ = true;
+          }
+          if (targetItem.bitrate) {
+            player.tech_.vhs.systemBandwidth_ = targetItem.bitrate;
+          }
+        } catch (e) {}
+      }
+
+      // 3. Now TV DOM UI Kalite Seçici simülasyonu
+      try {
+        const cleanTarget = targetItem.label.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
+        const settingsButtons = document.querySelectorAll('.vjs-resolution-button, .vjs-quality-menu, button[aria-label*="ayar" i], [class*="settings"]');
+        for (const btn of settingsButtons) {
+          btn.click();
+          setTimeout(() => {
+            const menuItems = Array.from(document.querySelectorAll('.vjs-menu-item, [role="menuitem"]'));
+            const match = menuItems.find(el => (el.textContent || '').toLowerCase().includes(cleanTarget));
+            if (match) match.click();
+          }, 80);
+        }
+      } catch (e) {}
+
+      // 4. Anti-stall kontrolü
+      if (video && !video.paused) {
+        const checkTime = video.currentTime;
+        setTimeout(() => {
+          if (video && !video.paused && video.currentTime === checkTime && video.readyState < 3) {
+            try { video.currentTime += 0.01; } catch (e) {}
+          }
+        }, 800);
+      }
+
+      showToast(`Now TV: ${targetItem.label} (Kilitlendi)`);
+      addDiagnosticLog('INFO', `[NowTvAdapter] Kalite uygulandı: ${targetItem.label}`);
+      return true;
+    }
+  };
+
+  /**
+   * 4. HLS.js Adaptörü
    */
   const HlsJsAdapter = {
     name: 'HlsJsAdapter',
@@ -977,7 +1201,7 @@
   };
 
   /**
-   * 4. Genel Standart VideoJS / HTML5 Adaptörü
+   * 5. Genel Standart VideoJS / HTML5 Adaptörü
    */
   const GenericAdapter = {
     name: 'GenericAdapter',
@@ -1000,6 +1224,7 @@
   const ADAPTER_PIPELINE = [
     PuhuTvAdapter,
     KickAdapter,
+    NowTvAdapter,
     HlsJsAdapter,
     GenericAdapter
   ];
@@ -1621,7 +1846,7 @@
     modal.innerHTML = `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>⚠️ Zenginleştirilmiş Teşhis & Sürüm Raporu (v0.3.7)</span>
+          <span>⚠️ Zenginleştirilmiş Teşhis & Sürüm Raporu (v${payload.extensionVersion || EXTENSION_VERSION})</span>
           <button id="pvc-close-modal-btn" aria-label="Raporu Kapat">✕</button>
         </div>
         <div class="pvc-modal-body">
@@ -1663,9 +1888,10 @@
       const updatedJson = updatePayloadJson();
       codeBlock.textContent = updatedJson;
 
-      const issueTitle = encodeURIComponent(`[Teşhis/v0.3.7]: ${payload.domain} - ${payload.errorCode}`);
+      const curVer = payload.extensionVersion || EXTENSION_VERSION;
+      const issueTitle = encodeURIComponent(`[Teşhis/v${curVer}]: ${payload.domain} - ${payload.errorCode}`);
       const compactSummary = encodeURIComponent(
-        `### Anonim Teşhis Özeti (v0.3.7)\n` +
+        `### Anonim Teşhis Özeti (v${curVer})\n` +
         `- **Domain:** ${payload.domain}\n` +
         `- **Adaptör:** ${payload.activeAdapter}\n` +
         `- **CDN Sağlayıcı:** ${payload.streamCdnProvider}\n` +
@@ -1773,7 +1999,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.3.8</span>
+          <span class="pvc-menu-badge">NOkrep v0.3.9</span>
           <span class="pvc-menu-title">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
