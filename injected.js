@@ -1055,12 +1055,44 @@
         }
       }
 
-      // 2. Video.js VHS Master Playlist
-      if (player && player.tech_ && player.tech_.vhs && player.tech_.vhs.playlists && player.tech_.vhs.playlists.master) {
+      // 2. Video.js VHS Master Playlist & Representations
+      if (player && player.tech_ && player.tech_.vhs) {
         try {
-          const masterPlaylists = player.tech_.vhs.playlists.master.playlists;
-          if (Array.isArray(masterPlaylists) && masterPlaylists.length > 0) {
-            masterPlaylists.forEach((pl, idx) => {
+          const vhs = player.tech_.vhs;
+          if (typeof vhs.representations === 'function') {
+            const reps = vhs.representations();
+            if (Array.isArray(reps) && reps.length > 0) {
+              reps.forEach((rep, idx) => {
+                const h = rep.height || 0;
+                const w = rep.width || 0;
+                let label = `${h}p`;
+                if (h >= 1000 || w >= 1900) label = '1080p (FHD)';
+                else if (h >= 700 || w >= 1200) label = '720p (HD)';
+                else if (h >= 540 && h <= 576) label = '576p (PAL)';
+                else if (h >= 450 && h < 540) label = '480p (SD)';
+                else if (h >= 320 && h < 450) label = '360p (Düşük)';
+
+                if (h > 0 && !seenHeights.has(h)) {
+                  seenHeights.add(h);
+                  results.push({
+                    id: `now_rep_${idx}`,
+                    index: idx,
+                    label: label,
+                    height: h,
+                    width: w,
+                    bitrate: rep.bandwidth || 0,
+                    rep: rep
+                  });
+                }
+              });
+              if (results.length > 1) {
+                return results.sort((a, b) => (b.height || 0) - (a.height || 0));
+              }
+            }
+          }
+
+          if (vhs.playlists && vhs.playlists.master && Array.isArray(vhs.playlists.master.playlists)) {
+            vhs.playlists.master.playlists.forEach((pl, idx) => {
               const attr = pl.attributes || {};
               const res = attr.RESOLUTION || {};
               const h = res.height || 0;
@@ -1069,7 +1101,7 @@
               if (h >= 1000 || w >= 1900) label = '1080p (FHD)';
               else if (h >= 700 || w >= 1200) label = '720p (HD)';
               else if (h >= 540 && h <= 576) label = '576p (PAL)';
-              else if (h >= 450 && h < 450) label = '480p (SD)';
+              else if (h >= 450 && h < 540) label = '480p (SD)';
               else if (h >= 320 && h < 450) label = '360p (Düşük)';
 
               if (h > 0 && !seenHeights.has(h)) {
@@ -1105,40 +1137,107 @@
     applyQuality(targetItem, video, player) {
       addDiagnosticLog('INFO', `[NowTvAdapter] Kalite uygulanıyor: ${targetItem.label}`);
 
-      // 1. Video.js qualityLevels kilit
+      const targetHeight = targetItem.height || 1080;
+      const targetBitrate = targetItem.bitrate || (targetHeight >= 1000 ? 5000000 : targetHeight >= 700 ? 2500000 : targetHeight >= 576 ? 1500000 : 800000);
+
+      // 1. Video.js qualityLevels kilit & tetikleme
       if (player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
           if (qLevels && qLevels.length > 0) {
-            const targetIdx = targetItem.index !== undefined ? targetItem.index : -1;
+            let matched = false;
             for (let i = 0; i < qLevels.length; i++) {
-              if (targetIdx !== -1) {
-                qLevels[i].enabled = (i === targetIdx);
-              } else if (targetItem.height) {
-                const match = qLevels[i].height === targetItem.height || Math.abs((qLevels[i].height || 0) - targetItem.height) < 40;
-                qLevels[i].enabled = match;
+              const q = qLevels[i];
+              const isTarget = (targetItem.index !== undefined && targetItem.index === i) ||
+                               (q.height && Math.abs(q.height - targetHeight) < 40);
+              q.enabled = isTarget;
+              if (isTarget) matched = true;
+            }
+
+            // Eğer listede henüz 1080p paketi tanımlı değilse en yüksek seviyeyi zorla aç
+            if (!matched && targetHeight >= 1000) {
+              let highestIdx = 0;
+              let maxH = 0;
+              for (let i = 0; i < qLevels.length; i++) {
+                if ((qLevels[i].height || 0) > maxH) {
+                  maxH = qLevels[i].height;
+                  highestIdx = i;
+                }
+              }
+              for (let i = 0; i < qLevels.length; i++) {
+                qLevels[i].enabled = (i === highestIdx);
               }
             }
-            addDiagnosticLog('INFO', `[NowTvAdapter] qualityLevels kilitlendi: ${targetItem.label}`);
+
+            if (typeof qLevels.trigger === 'function') {
+              qLevels.trigger({ type: 'change', selectedIndex: targetItem.index ?? 0 });
+            }
+            addDiagnosticLog('INFO', `[NowTvAdapter] qualityLevels başarıyla kilitlendi: ${targetItem.label}`);
           }
-        } catch (e) {}
+        } catch (e) {
+          addDiagnosticLog('WARN', '[NowTvAdapter] qualityLevels kilit hatası', e.message);
+        }
       }
 
-      // 2. VHS Fast Quality Change & Bandwidth Lock (4.5 Mbps / 2.5 Mbps vb.)
+      // 2. VHS Representations, SelectPlaylist & Fast Quality Change Override
       if (player && player.tech_ && player.tech_.vhs) {
         try {
-          if (player.tech_.vhs.masterPlaylistController_) {
-            player.tech_.vhs.masterPlaylistController_.fastQualityChange_ = true;
+          const vhs = player.tech_.vhs;
+          vhs.systemBandwidth_ = targetBitrate;
+          vhs.bandwidth = targetBitrate;
+
+          // Representations API
+          if (typeof vhs.representations === 'function') {
+            const reps = vhs.representations();
+            if (Array.isArray(reps) && reps.length > 0) {
+              reps.forEach(rep => {
+                const match = rep.height ? Math.abs(rep.height - targetHeight) < 40 : false;
+                if (typeof rep.enabled === 'function') {
+                  rep.enabled(match);
+                }
+              });
+            }
           }
-          const targetBw = targetItem.bitrate || (targetItem.height === 1080 ? 4500000 : targetItem.height === 720 ? 2500000 : targetItem.height === 576 ? 1500000 : 800000);
-          player.tech_.vhs.systemBandwidth_ = targetBw;
-          if (player.tech_.vhs.bandwidth) {
-            player.tech_.vhs.bandwidth = targetBw;
+
+          // Master Playlist Seçici Kancası
+          if (vhs.playlists && vhs.playlists.master && Array.isArray(vhs.playlists.master.playlists)) {
+            const plList = vhs.playlists.master.playlists;
+            let targetPl = plList.find(p => {
+              const h = (p.attributes?.RESOLUTION?.height) || 0;
+              return Math.abs(h - targetHeight) < 40;
+            });
+            if (!targetPl && targetHeight >= 1000) {
+              targetPl = plList.slice().sort((a, b) => {
+                const hA = a.attributes?.RESOLUTION?.height || a.attributes?.BANDWIDTH || 0;
+                const hB = b.attributes?.RESOLUTION?.height || b.attributes?.BANDWIDTH || 0;
+                return hB - hA;
+              })[0];
+            }
+
+            if (targetPl) {
+              vhs.selectPlaylist = () => targetPl;
+              if (vhs.playlists) {
+                vhs.playlists.media = targetPl;
+              }
+              if (vhs.masterPlaylistController_) {
+                vhs.masterPlaylistController_.fastQualityChange_ = true;
+                if (typeof vhs.masterPlaylistController_.setMedia === 'function') {
+                  vhs.masterPlaylistController_.setMedia(targetPl);
+                }
+                if (vhs.masterPlaylistController_.mainSegmentLoader_) {
+                  const loader = vhs.masterPlaylistController_.mainSegmentLoader_;
+                  loader.playlist_ = targetPl;
+                }
+              }
+              addDiagnosticLog('INFO', `[NowTvAdapter] VHS selectPlaylist doğrudan ${targetItem.label} profiline kilitlendi.`);
+            }
           }
-        } catch (e) {}
+        } catch (e) {
+          addDiagnosticLog('WARN', '[NowTvAdapter] VHS kilit hatası', e.message);
+        }
       }
 
-      // 3. Now TV DOM UI Kalite Seçici simülasyonu
+      // 3. Now TV DOM UI Kalite Menüsü Simülasyonu
       try {
         const cleanTarget = targetItem.label.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
         const settingsButtons = document.querySelectorAll('.vjs-resolution-button, .vjs-quality-menu, button[aria-label*="ayar" i], [class*="settings"]');
@@ -1152,14 +1251,15 @@
         }
       } catch (e) {}
 
-      // 4. Anti-stall ve segment geçiş tetikleyici
+      // 4. Tampon Atlatma & Hızlı Çözünürlük Yenileme (Micro-Seek)
       if (video && !video.paused) {
-        const checkTime = video.currentTime;
         setTimeout(() => {
-          if (video && !video.paused && video.currentTime === checkTime && video.readyState < 3) {
-            try { video.currentTime += 0.01; } catch (e) {}
-          }
-        }, 800);
+          try {
+            // Tamponda kalmış eski 360p karelerini atlatıp yeni stream'i hemen decode ettirmek için 0.05s mikro-sarma
+            video.currentTime = Math.max(0, video.currentTime + 0.02);
+            updateRealtimeResolutionBadge();
+          } catch (e) {}
+        }, 500);
       }
 
       showToast(`Now TV: ${targetItem.label} (Kilitlendi)`);
