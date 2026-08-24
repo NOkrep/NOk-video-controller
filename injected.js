@@ -1,24 +1,25 @@
 /**
- * injected.js - NOk Video Controller v0.4.3 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.4 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.3 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Tam UI & IVS Oynatıcı Senkronizasyonu (Full Player Sync):
- *    - Ses seviyesi değiştirildiğinde Kick'in kendi kontrol çubuğu ses kaydırıcısı ve IVS ses motoru eşzamanlı güncellenir.
- *    - Oynatma hızı değiştirildiğinde IVS setPlaybackRate ve video ratechange olayları tetiklenir.
- *    - Kalite seçildiğinde derin React Fiber kancası + 2-kademeli Popover UI simülasyonu ile Kick oynatıcısındaki kalite rozeti ve akış anında kilitlenir.
- * 2. Kick.com Canlı Reklam Tampon Koruması (Ad Low-Buffer Quality Lock):
- *    - Reklam anında 16x hız ve sessize almanın yanı sıra, kalite hem IVS API'den hem de UI'dan 360p/160p'ye düşürülerek donmalar engellenir; reklam bitince orijinal kaliteye dönülür.
- * 3. Sadeleştirilmiş 4-Preset Ses/Hız Denetimi ve Gelişmiş Sıfır-PII Teşhis Motoru.
+ * v0.4.4 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Çift Yönlü React Fiber Ağaç Tarayıcısı (Bidirectional BFS & Ancestor Crawler):
+ *    - Hem ata zincirini (return) hem de alt bileşen ağacını (child/sibling) tarayarak Amazon IVS Player ve kalite/hız fonksiyonlarını kesin olarak yakalar.
+ * 2. Amazon IVS Player Erken SDK Yakalama & Prototip Kancası:
+ *    - IVSPlayer.create, AmazonIVS.createMediaPlayer ve attachHTMLVideoElement prototip kancasıyla oynatıcı nesnesini ve video bağlamını ilk saniyede yakalar.
+ * 3. 2-Kademeli Kick UI & Kalite Rozeti Senkronizasyonu:
+ *    - Fare/pointer hareketiyle kontrol çubuğunu uyandırır, dişli/ayarlar butonunu ve Radix kalite menü öğesini doğrudan tetikler.
+ * 4. Canlı Reklam Tampon Koruması (Ad Low-Buffer Quality Lock) ve VideoJS/ErCDN optimizasyonları.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.3';
+  const EXTENSION_VERSION = '0.4.4';
   const VERSION_HISTORY = [
+    { version: 'v0.4.4', notes: 'Kick.com çift yönlü React Fiber BFS crawler & Amazon IVS erken SDK prototip kancası, 2-kademeli Radix UI kalite/hız senkronizasyonu, gelişmiş sıfır-PII telemetri.' },
     { version: 'v0.4.3', notes: 'Kick.com Amazon IVS & React tam UI senkronizasyonu (ses seviyesi kaydırıcısı, oynatma hızı, 2-kademeli kalite seçimi kilidi), reklam tampon koruması (360p/160p zorlama), VideoJS ve ErCDN adaptör optimizasyonları.' },
     { version: 'v0.4.2', notes: 'Sadeleştirilmiş kristal netliğinde ses/hız preset butonları (4 net seçenek, %0/%50/%100/%150 ve 1x/1.25x/1.5x/2x), VideoJS null referans koruması ve geliştirilmiş sıfır-PII teşhis motoru.' },
     { version: 'v0.4.1', notes: 'Now TV ErCDN akış doğrulaması, taşma önleyici akıllı metin (ellipsis & dynamic tooltip), Firefox/Chromium site izinleri rehberi ve 3-butonlu alt panel.' },
@@ -84,8 +85,25 @@
   let audioMergerNodeInstance = null;
   let audioSourceElementMap = new WeakMap();
 
-  // Amazon IVS Player Global Kanca (Kick.com Oynatıcı Referansını Yakalama)
+  // Amazon IVS Player Global Kanca (Kick.com Oynatıcı Referansını Erken ve Kapsamlı Yakalama)
   let globalCapturedIvsPlayer = null;
+
+  function hookIvsInstance(player) {
+    if (!player || typeof player !== 'object') return player;
+    globalCapturedIvsPlayer = player;
+    if (typeof player.attachHTMLVideoElement === 'function' && !player.__nokHookedAttach) {
+      player.__nokHookedAttach = true;
+      const origAttach = player.attachHTMLVideoElement;
+      player.attachHTMLVideoElement = function (videoEl, ...args) {
+        if (videoEl) videoEl.__ivsPlayer = this;
+        globalCapturedIvsPlayer = this;
+        addDiagnosticLog('INFO', '[KickAdapter] IVS player.attachHTMLVideoElement yakalandı.');
+        return origAttach.apply(this, [videoEl, ...args]);
+      };
+    }
+    return player;
+  }
+
   try {
     const hookIvsSdk = () => {
       if (window.IVSPlayer && typeof window.IVSPlayer.create === 'function' && !window.IVSPlayer.__nokHooked) {
@@ -93,24 +111,46 @@
         const origCreate = window.IVSPlayer.create;
         window.IVSPlayer.create = function (...args) {
           const p = origCreate.apply(this, args);
-          globalCapturedIvsPlayer = p;
           addDiagnosticLog('INFO', '[KickAdapter] IVSPlayer.create yakalandı.');
-          return p;
+          return hookIvsInstance(p);
         };
+        if (window.IVSPlayer.prototype && typeof window.IVSPlayer.prototype.attachHTMLVideoElement === 'function' && !window.IVSPlayer.prototype.__nokHooked) {
+          window.IVSPlayer.prototype.__nokHooked = true;
+          const origProtoAttach = window.IVSPlayer.prototype.attachHTMLVideoElement;
+          window.IVSPlayer.prototype.attachHTMLVideoElement = function (videoEl, ...args) {
+            if (videoEl) videoEl.__ivsPlayer = this;
+            globalCapturedIvsPlayer = this;
+            addDiagnosticLog('INFO', '[KickAdapter] IVSPlayer.prototype.attachHTMLVideoElement yakalandı.');
+            return origProtoAttach.apply(this, [videoEl, ...args]);
+          };
+        }
       }
       if (window.AmazonIVS && typeof window.AmazonIVS.createMediaPlayer === 'function' && !window.AmazonIVS.__nokHooked) {
         window.AmazonIVS.__nokHooked = true;
         const origCreate2 = window.AmazonIVS.createMediaPlayer;
         window.AmazonIVS.createMediaPlayer = function (...args) {
           const p = origCreate2.apply(this, args);
-          globalCapturedIvsPlayer = p;
           addDiagnosticLog('INFO', '[KickAdapter] AmazonIVS.createMediaPlayer yakalandı.');
-          return p;
+          return hookIvsInstance(p);
         };
       }
     };
     hookIvsSdk();
-    setInterval(hookIvsSdk, 2000);
+    setInterval(hookIvsSdk, 1500);
+
+    // Global setter kancası
+    let _rawIVS = window.IVSPlayer;
+    try {
+      Object.defineProperty(window, 'IVSPlayer', {
+        configurable: true,
+        enumerable: true,
+        get() { return _rawIVS; },
+        set(val) {
+          _rawIVS = val;
+          hookIvsSdk();
+        }
+      });
+    } catch (e) {}
   } catch (e) {}
 
   // =========================================================================
@@ -785,10 +825,45 @@
     }
   }
 
+  // =========================================================================
+  // 🌲 EVRENSEL REACT FIBER AĞACI TARAYICISI (ATALAR & TORUNLAR / BFS)
+  // =========================================================================
+  function searchFiberTree(startFiber, visitor, maxNodes = 600) {
+    if (!startFiber) return false;
+
+    // 1. Önce Yukarı (Parent / Ancestor) doğru kontrol et
+    let curr = startFiber;
+    let upDepth = 0;
+    while (curr && upDepth < 35) {
+      if (visitor(curr)) return true;
+      curr = curr.return;
+      upDepth++;
+    }
+
+    // 2. Ardından Aşağı (Children / Descendants) BFS Kuyruğu ile tüm alt ağacı tara
+    const queue = [startFiber];
+    const visited = new Set();
+    let count = 0;
+
+    while (queue.length > 0 && count < maxNodes) {
+      const node = queue.shift();
+      if (!node || visited.has(node)) continue;
+      visited.add(node);
+      count++;
+
+      if (visitor(node)) return true;
+
+      if (node.child) queue.push(node.child);
+      if (node.sibling) queue.push(node.sibling);
+    }
+
+    return false;
+  }
+
   const KickAdapter = {
     name: 'KickAdapter',
     matches() {
-      return HOSTNAME.includes('kick.com') || !!document.querySelector('#channel-player, [data-testid="player-settings-button"], [class*="kick-player"]');
+      return HOSTNAME.includes('kick.com') || !!document.querySelector('#channel-player, [data-testid="player-settings-button"], [data-testid="settings-button"], [class*="kick-player"]');
     },
 
     isVodPage() {
@@ -799,11 +874,11 @@
       if (globalCapturedIvsPlayer && typeof globalCapturedIvsPlayer.getQualities === 'function') return globalCapturedIvsPlayer;
       if (video && video.__ivsPlayer && typeof video.__ivsPlayer.getQualities === 'function') return video.__ivsPlayer;
       if (video && video._ivsPlayer && typeof video._ivsPlayer.getQualities === 'function') return video._ivsPlayer;
-      if (window.ivsPlayer && typeof window.ivsPlayer.getQualities === 'function') return window.ivsPlayer;
-      if (window.__ivsPlayer && typeof window.__ivsPlayer.getQualities === 'function') return window.__ivsPlayer;
-      if (window.player && typeof window.player.getQualities === 'function') return window.player;
-      if (window.kickPlayer && typeof window.kickPlayer.getQualities === 'function') return window.kickPlayer;
-      if (window.__kick_player && typeof window.__kick_player.getQualities === 'function') return window.__kick_player;
+      if (window.ivsPlayer && typeof window.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = window.ivsPlayer);
+      if (window.__ivsPlayer && typeof window.__ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = window.__ivsPlayer);
+      if (window.player && typeof window.player.getQualities === 'function') return (globalCapturedIvsPlayer = window.player);
+      if (window.kickPlayer && typeof window.kickPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = window.kickPlayer);
+      if (window.__kick_player && typeof window.__kick_player.getQualities === 'function') return (globalCapturedIvsPlayer = window.__kick_player);
 
       const candidates = [
         video,
@@ -815,10 +890,11 @@
         document.querySelector('.relative.flex-1'),
         document.querySelector('.player-container'),
         document.querySelector('div[data-clip-player]'),
-        document.querySelector('.vjs-control-bar'),
-        document.querySelector('[data-testid="player-settings-button"]'),
+        document.querySelector('div[data-testid="player-controls"]'),
+        document.querySelector('div[data-testid="video-player"]'),
         document.querySelector('div[class*="player"]'),
-        document.querySelector('main')
+        document.getElementById('__next'),
+        document.body
       ].filter(Boolean);
 
       for (const el of candidates) {
@@ -832,45 +908,50 @@
         try {
           const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
           if (fiberKey && el[fiberKey]) {
-            let node = el[fiberKey];
-            let depth = 0;
-            while (node && depth < 100) {
+            let foundPlayer = null;
+            searchFiberTree(el[fiberKey], (node) => {
               const props = node.memoizedProps;
               const state = node.memoizedState;
               const stateNode = node.stateNode;
-              
-              if (props) {
-                if (props.player && typeof props.player.getQualities === 'function') return (globalCapturedIvsPlayer = props.player);
-                if (props.ivsPlayer && typeof props.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = props.ivsPlayer);
-                if (props.mediaPlayer && typeof props.mediaPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = props.mediaPlayer);
-                if (props.stream && props.stream.player && typeof props.stream.player.getQualities === 'function') return (globalCapturedIvsPlayer = props.stream.player);
-                if (props.ivs && typeof props.ivs.getQualities === 'function') return (globalCapturedIvsPlayer = props.ivs);
+
+              if (props && typeof props === 'object') {
+                const p = props.player || props.ivsPlayer || props.mediaPlayer || (props.stream && props.stream.player) || props.ivs || props.videoPlayer;
+                if (p && typeof p.getQualities === 'function') {
+                  foundPlayer = p;
+                  return true;
+                }
               }
-              if (stateNode) {
-                if (stateNode.player && typeof stateNode.player.getQualities === 'function') return (globalCapturedIvsPlayer = stateNode.player);
-                if (stateNode.ivsPlayer && typeof stateNode.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = stateNode.ivsPlayer);
+              if (stateNode && typeof stateNode === 'object') {
+                const p = stateNode.player || stateNode.ivsPlayer || stateNode.mediaPlayer;
+                if (p && typeof p.getQualities === 'function') {
+                  foundPlayer = p;
+                  return true;
+                }
               }
               if (state) {
-                if (state.player && typeof state.player.getQualities === 'function') return (globalCapturedIvsPlayer = state.player);
-                // React Function Component Hook Linked List (useRef / useState)
                 let hook = state;
                 let hookDepth = 0;
-                while (hook && typeof hook === 'object' && hookDepth < 30) {
+                while (hook && typeof hook === 'object' && hookDepth < 35) {
                   const m = hook.memoizedState;
-                  if (m) {
-                    if (typeof m.getQualities === 'function') return (globalCapturedIvsPlayer = m);
-                    if (m.current && typeof m.current.getQualities === 'function') return (globalCapturedIvsPlayer = m.current);
-                    if (m.player && typeof m.player.getQualities === 'function') return (globalCapturedIvsPlayer = m.player);
-                    if (m.ivsPlayer && typeof m.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = m.ivsPlayer);
-                    if (m.mediaPlayer && typeof m.mediaPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = m.mediaPlayer);
+                  if (m && typeof m === 'object') {
+                    if (typeof m.getQualities === 'function') { foundPlayer = m; return true; }
+                    if (m.current && typeof m.current.getQualities === 'function') { foundPlayer = m.current; return true; }
+                    if (m.player && typeof m.player.getQualities === 'function') { foundPlayer = m.player; return true; }
+                    if (m.ivsPlayer && typeof m.ivsPlayer.getQualities === 'function') { foundPlayer = m.ivsPlayer; return true; }
+                    if (m.mediaPlayer && typeof m.mediaPlayer.getQualities === 'function') { foundPlayer = m.mediaPlayer; return true; }
                   }
                   hook = hook.next;
                   hookDepth++;
                 }
               }
-              
-              node = node.return || node.child || node.sibling;
-              depth++;
+              return false;
+            }, 400);
+
+            if (foundPlayer) {
+              globalCapturedIvsPlayer = foundPlayer;
+              if (video) video.__ivsPlayer = foundPlayer;
+              addDiagnosticLog('INFO', '[KickAdapter] IVS Player React Fiber ağacında bulundu ve bağlandı.');
+              return foundPlayer;
             }
           }
         } catch (e) {}
@@ -889,6 +970,7 @@
         document.querySelector('video') ? document.querySelector('video').parentElement : null,
         document.querySelector('video'),
         document.querySelector('div[data-testid="player-controls"]'),
+        document.querySelector('div[data-testid="video-player"]'),
         document.getElementById('__next'),
         document.body
       ].filter(Boolean);
@@ -897,17 +979,21 @@
         const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
         if (!fiberKey || !root[fiberKey]) continue;
 
-        let node = root[fiberKey];
-        let depth = 0;
-        while (node && depth < 150) {
+        let success = false;
+        searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
-            const setterNames = ['setQuality', 'onQualityChange', 'changeQuality', 'handleQualitySelect', 'setSelectedQuality', 'setPlayerQuality', 'onSelectQuality', 'selectQuality'];
+            const setterNames = [
+              'setQuality', 'onQualityChange', 'changeQuality', 'handleQualitySelect',
+              'setSelectedQuality', 'setPlayerQuality', 'onSelectQuality', 'selectQuality',
+              'setVideoQuality', 'onResolutionChange', 'handleQualityChange'
+            ];
             for (const name of setterNames) {
               if (typeof props[name] === 'function') {
                 try {
                   props[name](targetLabel);
                   addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} çağrıldı: ${targetLabel}`);
+                  success = true;
                   return true;
                 } catch (e) {}
               }
@@ -923,6 +1009,7 @@
                 if (match && typeof p.setQuality === 'function') {
                   p.setQuality(match);
                   addDiagnosticLog('INFO', `[KickAdapter] React Fiber props.player.setQuality kilitlendi: ${match.name}`);
+                  success = true;
                   return true;
                 }
               }
@@ -931,7 +1018,7 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 30) {
+          while (hook && typeof hook === 'object' && hookDepth < 35) {
             const m = hook.memoizedState;
             if (m && typeof m === 'object') {
               const p = m.current || m.player || m.ivsPlayer || (typeof m.getQualities === 'function' ? m : null);
@@ -944,6 +1031,7 @@
                   if (match && typeof p.setQuality === 'function') {
                     p.setQuality(match);
                     addDiagnosticLog('INFO', `[KickAdapter] React Hook Player.setQuality kilitlendi: ${match.name}`);
+                    success = true;
                     return true;
                   }
                 }
@@ -954,16 +1042,56 @@
                 try {
                   hook.queue.dispatch(targetLabel);
                   addDiagnosticLog('INFO', `[KickAdapter] React Hook State dispatch tetiklendi: ${targetLabel}`);
+                  success = true;
+                  return true;
                 } catch (e) {}
               }
             }
             hook = hook.next;
             hookDepth++;
           }
+          return false;
+        }, 500);
 
-          node = node.return || node.child || node.sibling;
-          depth++;
-        }
+        if (success) return true;
+      }
+      return false;
+    },
+
+    findAndInvokeReactSpeed(rate) {
+      const rootCandidates = [
+        document.querySelector('#channel-player'),
+        document.querySelector('.player-container'),
+        document.querySelector('.relative.flex-1'),
+        document.querySelector('video'),
+        document.querySelector('div[data-testid="player-controls"]'),
+        document.getElementById('__next')
+      ].filter(Boolean);
+
+      for (const root of rootCandidates) {
+        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+        if (!fiberKey || !root[fiberKey]) continue;
+
+        let success = false;
+        searchFiberTree(root[fiberKey], (node) => {
+          const props = node.memoizedProps;
+          if (props && typeof props === 'object') {
+            const speedSetters = ['setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate', 'setRate'];
+            for (const name of speedSetters) {
+              if (typeof props[name] === 'function') {
+                try {
+                  props[name](rate);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${rate}x) çağrıldı.`);
+                  success = true;
+                  return true;
+                } catch (e) {}
+              }
+            }
+          }
+          return false;
+        }, 350);
+
+        if (success) return true;
       }
       return false;
     },
@@ -1007,6 +1135,7 @@
         if (ivs && typeof ivs.setPlaybackRate === 'function') {
           ivs.setPlaybackRate(rate);
         }
+        this.findAndInvokeReactSpeed(rate);
         if (video) {
           video.playbackRate = rate;
           video.defaultPlaybackRate = rate;
@@ -1021,15 +1150,29 @@
         const digits = (targetLabel.match(/\d+/) || [''])[0];
         const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
 
-        // 1. Önce Player Container üzerinde fare hareketi simüle et ki kontrol çubuğu uyanıp DOM'da görünsün
-        const playerContainer = document.querySelector('#channel-player, .player-container, .relative.flex-1, div[data-clip-player], div[class*="player"]');
-        if (playerContainer) {
-          playerContainer.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 100, clientY: 100 }));
-          playerContainer.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        }
+        // 1. Önce Player Container üzerinde fare ve pointer hareketi simüle et ki kontrol çubuğu React tarafından render edilsin
+        const wakeElements = [
+          document.querySelector('#channel-player'),
+          document.querySelector('.player-container'),
+          document.querySelector('video'),
+          document.querySelector('.relative.flex-1'),
+          document.querySelector('div[data-testid="player-controls"]'),
+          document.querySelector('div[data-clip-player]'),
+          document.querySelector('div[class*="player"]')
+        ].filter(Boolean);
 
-        // 2. Kick Ayarlar Çark/Dişli Butonunu Kapsamlı Seçiciler ve SVG/Aria Analizi ile Bul
-        const buttonSelectors = [
+        wakeElements.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          const cx = rect.left + (rect.width ? rect.width / 2 : 100);
+          const cy = rect.top + (rect.height ? rect.height / 2 : 100);
+          el.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, clientX: cx, clientY: cy }));
+          el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, clientX: cx, clientY: cy }));
+          el.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: cx, clientY: cy }));
+          el.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx, clientY: cy }));
+        });
+
+        // 2. Kick Ayarlar Çark/Dişli Butonunu Kapsamlı ve Güvenli Analizle Bul
+        const explicitSelectors = [
           '[data-testid="player-settings-button"]',
           '[data-testid="settings-button"]',
           'button[aria-label*="ayar" i]',
@@ -1037,74 +1180,67 @@
           'button[aria-label*="option" i]',
           'button[aria-label*="quality" i]',
           'button[aria-label*="kalite" i]',
+          'button[title*="ayar" i]',
+          'button[title*="setting" i]',
           'button[data-state][aria-haspopup="menu"]',
           'button[data-state][aria-haspopup="dialog"]',
-          'button[id*="settings"]',
-          'button[class*="settings"]',
-          '.vjs-control-bar button.vjs-cog-menu-button',
-          'div[data-testid="player-controls"] button',
-          '#channel-player button',
-          '.player-container button',
-          '.relative.flex-1 button',
-          'button'
+          'button[id*="setting"]',
+          'button[class*="setting"]',
+          '.vjs-control-bar button.vjs-cog-menu-button'
         ];
 
         let settingsBtn = null;
-        for (const sel of buttonSelectors) {
+        for (const sel of explicitSelectors) {
           const list = Array.from(document.querySelectorAll(sel));
-          settingsBtn = list.find(b => {
+          if (list.length > 0) {
+            settingsBtn = list.find(b => {
+              const rect = b.getBoundingClientRect();
+              return rect.width > 0 && rect.height > 0;
+            }) || list[0];
+            if (settingsBtn) break;
+          }
+        }
+
+        // Eğer doğrudan selektörlerle bulunamadıysa, player kontrolleri içindeki butonları SVG/ikon analiziyle incele
+        if (!settingsBtn) {
+          const playerBtnCandidates = Array.from(document.querySelectorAll(
+            'div[data-testid="player-controls"] button, ' +
+            'div[data-testid="player-controls"] [role="button"], ' +
+            '#channel-player button, ' +
+            '#channel-player [role="button"], ' +
+            '.player-container button, ' +
+            '.player-container [role="button"], ' +
+            '.relative.flex-1 button'
+          ));
+
+          settingsBtn = playerBtnCandidates.find(b => {
             const aria = (b.getAttribute('aria-label') || '').toLowerCase();
             const title = (b.getAttribute('title') || '').toLowerCase();
-            const txt = (b.textContent || '').toLowerCase();
             const testId = (b.getAttribute('data-testid') || '').toLowerCase();
-            const id = (b.id || '').toLowerCase();
-            const className = (typeof b.className === 'string' ? b.className : '').toLowerCase();
+            const isPlayOrPause = aria.includes('play') || aria.includes('pause') || aria.includes('oynat') || aria.includes('duraklat');
+            const isFullscreen = aria.includes('fullscreen') || aria.includes('tam ekran');
+            const isVolume = aria.includes('volume') || aria.includes('ses') || aria.includes('mute') || aria.includes('sessiz');
+            const isTheater = aria.includes('theater') || aria.includes('sinema') || aria.includes('pip') || aria.includes('clip');
 
-            // Metin veya attribute bazlı kontrol
-            if (aria.includes('ayar') || aria.includes('setting') || aria.includes('option') ||
-                title.includes('ayar') || title.includes('setting') ||
-                testId.includes('setting') || id.includes('setting') ||
-                txt.includes('setting') || txt.includes('ayar')) {
+            if (isPlayOrPause || isFullscreen || isVolume || isTheater) return false;
+
+            if (aria.includes('setting') || aria.includes('ayar') || title.includes('setting') || title.includes('ayar') || testId.includes('setting')) {
               return true;
             }
 
-            // SVG İkon Analizi (Dişli çark / gear icon path)
             const svgs = b.querySelectorAll('svg');
             for (const svg of svgs) {
               const svgHtml = svg.innerHTML.toLowerCase();
-              if (svgHtml.includes('path') && (
-                svgHtml.includes('gear') || svgHtml.includes('cog') || svgHtml.includes('setting') ||
-                svg.getAttribute('data-icon') === 'gear' || svg.getAttribute('data-icon') === 'settings'
-              )) {
+              if (svgHtml.includes('path') || svgHtml.includes('circle')) {
                 return true;
-              }
-              // Oynatıcı kontrolleri içindeki sağ tarafta kalan butonlar
-              if (b.closest('#channel-player, .player-container, div[data-testid="player-controls"]')) {
-                const parent = b.parentElement;
-                if (parent && (parent.className.includes('right') || parent.className.includes('end') || parent.className.includes('justify-end'))) {
-                  if (aria.includes('setting') || title.includes('setting') || testId.includes('setting')) return true;
-                }
               }
             }
             return false;
           });
-          if (settingsBtn) break;
-        }
-
-        // Yedek Kontrol Buton Seçimi
-        if (!settingsBtn) {
-          const controlsButtons = Array.from(document.querySelectorAll('div[data-testid="player-controls"] button, #channel-player button, .player-controls button'));
-          settingsBtn = controlsButtons.find(b => {
-            const hasSvg = !!b.querySelector('svg');
-            const isPlayOrPause = (b.getAttribute('aria-label') || '').toLowerCase().includes('play') || (b.getAttribute('aria-label') || '').toLowerCase().includes('pause');
-            const isFullscreen = (b.getAttribute('aria-label') || '').toLowerCase().includes('fullscreen');
-            const isVolume = (b.getAttribute('aria-label') || '').toLowerCase().includes('volume') || (b.getAttribute('aria-label') || '').toLowerCase().includes('ses') || (b.getAttribute('aria-label') || '').toLowerCase().includes('mute');
-            return hasSvg && !isPlayOrPause && !isFullscreen && !isVolume;
-          });
         }
 
         if (!settingsBtn) {
-          addDiagnosticLog('WARN', '[KickAdapter] Ayarlar butonu DOM üzerinde bulunamadı.');
+          addDiagnosticLog('WARN', '[KickAdapter] Ayarlar butonu DOM üzerinde bulunamadı (Kontroller React Fiber ile senkronize edildi).');
           return;
         }
 
