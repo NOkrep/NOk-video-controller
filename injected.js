@@ -730,8 +730,61 @@
   };
 
   /**
-   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + React Fiber + DOM Fallback)
+   * 2. Kick.com Canlı Yayın & VOD Adaptörü (Amazon IVS + React Fiber + Radix Pointer UI + Native Tracker)
    */
+  function simulateFullPointerClick(el) {
+    if (!el) return false;
+    try {
+      const rect = el.getBoundingClientRect();
+      const x = rect.left + (rect.width ? rect.width / 2 : 10);
+      const y = rect.top + (rect.height ? rect.height / 2 : 10);
+      const commonOpts = {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clientX: x,
+        clientY: y,
+        screenX: x,
+        screenY: y,
+        view: window
+      };
+
+      el.dispatchEvent(new PointerEvent('pointerover', commonOpts));
+      el.dispatchEvent(new MouseEvent('mouseover', commonOpts));
+      el.dispatchEvent(new PointerEvent('pointerdown', { ...commonOpts, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+      el.dispatchEvent(new MouseEvent('mousedown', { ...commonOpts, button: 0, buttons: 1 }));
+      if (typeof el.focus === 'function') el.focus();
+      el.dispatchEvent(new PointerEvent('pointerup', { ...commonOpts, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
+      el.dispatchEvent(new MouseEvent('mouseup', { ...commonOpts, button: 0, buttons: 0 }));
+      el.dispatchEvent(new MouseEvent('click', { ...commonOpts, button: 0, buttons: 0 }));
+      if (typeof el.click === 'function') el.click();
+      return true;
+    } catch (e) {
+      if (typeof el.click === 'function') {
+        el.click();
+        return true;
+      }
+      return false;
+    }
+  }
+
+  function setReactInputValue(input, val) {
+    if (!input) return;
+    try {
+      const proto = window.HTMLInputElement ? window.HTMLInputElement.prototype : null;
+      const descriptor = proto ? Object.getOwnPropertyDescriptor(proto, 'value') : null;
+      if (descriptor && descriptor.set) {
+        descriptor.set.call(input, val);
+      } else {
+        input.value = val;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+    } catch (e) {
+      input.value = val;
+    }
+  }
+
   const KickAdapter = {
     name: 'KickAdapter',
     matches() {
@@ -826,20 +879,115 @@
       return null;
     },
 
+    findAndInvokeReactQuality(targetLabel, targetHeight) {
+      if (!targetLabel) return false;
+      const cleanDigits = (targetLabel.match(/\d+/) || [''])[0];
+      const rootCandidates = [
+        document.querySelector('#channel-player'),
+        document.querySelector('.player-container'),
+        document.querySelector('.relative.flex-1'),
+        document.querySelector('video') ? document.querySelector('video').parentElement : null,
+        document.querySelector('video'),
+        document.querySelector('div[data-testid="player-controls"]'),
+        document.getElementById('__next'),
+        document.body
+      ].filter(Boolean);
+
+      for (const root of rootCandidates) {
+        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+        if (!fiberKey || !root[fiberKey]) continue;
+
+        let node = root[fiberKey];
+        let depth = 0;
+        while (node && depth < 150) {
+          const props = node.memoizedProps;
+          if (props && typeof props === 'object') {
+            const setterNames = ['setQuality', 'onQualityChange', 'changeQuality', 'handleQualitySelect', 'setSelectedQuality', 'setPlayerQuality', 'onSelectQuality', 'selectQuality'];
+            for (const name of setterNames) {
+              if (typeof props[name] === 'function') {
+                try {
+                  props[name](targetLabel);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} çağrıldı: ${targetLabel}`);
+                  return true;
+                } catch (e) {}
+              }
+            }
+
+            const p = props.player || props.ivsPlayer || props.mediaPlayer || (props.stream && props.stream.player);
+            if (p && typeof p.getQualities === 'function') {
+              globalCapturedIvsPlayer = p;
+              if (typeof p.setAutoQualityMode === 'function') p.setAutoQualityMode(false);
+              const qList = p.getQualities();
+              if (Array.isArray(qList)) {
+                const match = qList.find(q => (q.name && q.name.toLowerCase().includes(cleanDigits)) || (targetHeight && q.height === targetHeight));
+                if (match && typeof p.setQuality === 'function') {
+                  p.setQuality(match);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber props.player.setQuality kilitlendi: ${match.name}`);
+                  return true;
+                }
+              }
+            }
+          }
+
+          let hook = node.memoizedState;
+          let hookDepth = 0;
+          while (hook && typeof hook === 'object' && hookDepth < 30) {
+            const m = hook.memoizedState;
+            if (m && typeof m === 'object') {
+              const p = m.current || m.player || m.ivsPlayer || (typeof m.getQualities === 'function' ? m : null);
+              if (p && typeof p.getQualities === 'function') {
+                globalCapturedIvsPlayer = p;
+                if (typeof p.setAutoQualityMode === 'function') p.setAutoQualityMode(false);
+                const qList = p.getQualities();
+                if (Array.isArray(qList)) {
+                  const match = qList.find(q => (q.name && q.name.toLowerCase().includes(cleanDigits)) || (targetHeight && q.height === targetHeight));
+                  if (match && typeof p.setQuality === 'function') {
+                    p.setQuality(match);
+                    addDiagnosticLog('INFO', `[KickAdapter] React Hook Player.setQuality kilitlendi: ${match.name}`);
+                    return true;
+                  }
+                }
+              }
+            }
+            if (hook.queue && typeof hook.queue.dispatch === 'function') {
+              if (typeof m === 'string' && (m.includes('1080') || m.includes('720') || m.includes('480') || m.includes('360') || m.includes('160') || m.toLowerCase() === 'auto')) {
+                try {
+                  hook.queue.dispatch(targetLabel);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State dispatch tetiklendi: ${targetLabel}`);
+                } catch (e) {}
+              }
+            }
+            hook = hook.next;
+            hookDepth++;
+          }
+
+          node = node.return || node.child || node.sibling;
+          depth++;
+        }
+      }
+      return false;
+    },
+
     syncKickPlayerVolume(percent) {
       try {
         const { video } = findVideoAndPlayer();
         const validPercent = Math.max(0, Math.min(100, Math.round(percent)));
         
-        // 1. Kick DOM Volume Slider Güncellemesi
-        const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"]');
+        // 1. Kick Range Slider'larına React Native Tracker ile yaz
+        const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"], #channel-player input[type="range"]');
         sliders.forEach(slider => {
-          slider.value = validPercent.toString();
+          setReactInputValue(slider, validPercent);
+        });
+
+        // 2. Radix UI Slider Elementleri
+        const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="player-controls"] [role="slider"]');
+        radixSliders.forEach(slider => {
+          slider.setAttribute('aria-valuenow', validPercent.toString());
           slider.dispatchEvent(new Event('input', { bubbles: true }));
           slider.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
-        // 2. IVS Player Nesnesi Ses Eşitlemesi
+        // 3. IVS Player Nesnesi Ses Eşitlemesi
         const ivs = this.findIvsPlayer(video);
         if (ivs) {
           if (typeof ivs.setVolume === 'function') {
@@ -861,6 +1009,7 @@
         }
         if (video) {
           video.playbackRate = rate;
+          video.defaultPlaybackRate = rate;
           video.dispatchEvent(new Event('ratechange', { bubbles: true }));
         }
       } catch (e) {}
@@ -869,18 +1018,50 @@
     triggerKickUiQuality(targetLabel) {
       try {
         if (!targetLabel) return;
-        const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
         const digits = (targetLabel.match(/\d+/) || [''])[0];
-        
-        const settingsBtn = document.querySelector('[data-testid="player-settings-button"], button[aria-label*="ayar" i], button[aria-label*="Setting" i], button[aria-label*="Ayarlar" i], .vjs-control-bar button.vjs-cog-menu-button, div[data-testid="player-controls"] button:has(svg)');
-        if (!settingsBtn) return;
+        const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
 
-        // 1. Kick Ayarlar menüsünü aç
-        settingsBtn.click();
+        // 1. Önce Player Container üzerinde fare hareketi simüle et ki kontrol çubuğu uyanıp DOM'da görünsün
+        const playerContainer = document.querySelector('#channel-player, .player-container, .relative.flex-1');
+        if (playerContainer) {
+          playerContainer.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 100, clientY: 100 }));
+          playerContainer.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        }
+
+        // 2. Kick Ayarlar Çark/Dişli Butonunu Bul
+        const buttonSelectors = [
+          '[data-testid="player-settings-button"]',
+          'button[aria-label*="ayar" i]',
+          'button[aria-label*="Setting" i]',
+          'button[aria-label*="Ayarlar" i]',
+          '.vjs-control-bar button.vjs-cog-menu-button',
+          'div[data-testid="player-controls"] button:has(svg)',
+          '#channel-player button:has(svg)'
+        ];
+
+        let settingsBtn = null;
+        for (const sel of buttonSelectors) {
+          const list = Array.from(document.querySelectorAll(sel));
+          settingsBtn = list.find(b => {
+            const txt = (b.getAttribute('aria-label') || b.textContent || '').toLowerCase();
+            const hasGearSvg = !!b.querySelector('svg');
+            return txt.includes('ayar') || txt.includes('setting') || b.getAttribute('data-testid') === 'player-settings-button' || hasGearSvg;
+          }) || list[list.length - 1];
+          if (settingsBtn) break;
+        }
+
+        if (!settingsBtn) {
+          addDiagnosticLog('WARN', '[KickAdapter] Ayarlar butonu DOM üzerinde bulunamadı.');
+          return;
+        }
+
+        // 3. Pointer & Mouse Olaylarıyla Menüyü Aç
+        simulateFullPointerClick(settingsBtn);
+        addDiagnosticLog('INFO', '[KickAdapter] Kick Ayarlar butonu tıklandı, popover bekleniyor.');
 
         setTimeout(() => {
-          // 2. Açılan menüde "Quality" / "Kalite" sekmesini ara ve tıkla
-          const popoverContainers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[role="menu"], div[class*="popover"], div[class*="menu"], body > div'));
+          // 4. Açılan Popover / Dropdown içerisinden "Kalite" / "Quality" sekmesini ara
+          const popoverContainers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal], div[role="menu"], div[role="dialog"], div[class*="popover"], div[class*="menu"], body > div'));
           let qualitySubMenuTrigger = null;
 
           for (const cont of popoverContainers) {
@@ -893,11 +1074,12 @@
           }
 
           if (qualitySubMenuTrigger) {
-            qualitySubMenuTrigger.click();
+            simulateFullPointerClick(qualitySubMenuTrigger);
+            addDiagnosticLog('INFO', `[KickAdapter] Kalite alt menü başlığı tıklandı: ${qualitySubMenuTrigger.textContent.trim()}`);
           }
 
           setTimeout(() => {
-            // 3. Kalite listesinden hedef çözünürlüğü seç (Örn. 1080p60, 720p60, 480p30, 360p30, 160p30)
+            // 5. Kalite listesinden hedef çözünürlüğü seç (Örn. 1080p60, 720p60, 480p30, 360p30, 160p30)
             const allItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
             const matchBtn = allItems.find(el => {
               const txt = (el.textContent || '').trim().toLowerCase();
@@ -908,18 +1090,19 @@
             });
 
             if (matchBtn) {
-              matchBtn.click();
+              simulateFullPointerClick(matchBtn);
               addDiagnosticLog('INFO', `[KickAdapter] 2-Kademeli UI menü seçimi başarıyla tıklandı: ${targetLabel}`);
             }
 
-            // 4. Menüyü arka planda temizce kapat (Escape tuşu + backdrop simülasyonu)
+            // 6. Menüyü arka planda temizce kapat (Escape tuşu + backdrop simülasyonu)
             setTimeout(() => {
               document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
-              const backdrop = document.querySelector('[class*="backdrop"], [class*="overlay"]');
+              document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+              const backdrop = document.querySelector('[class*="backdrop"], [class*="overlay"], [data-radix-popover-overlay]');
               if (backdrop) backdrop.click();
-            }, 60);
-          }, 100);
-        }, 100);
+            }, 80);
+          }, 120);
+        }, 120);
       } catch (e) {
         addDiagnosticLog('WARN', '[KickAdapter] UI tetikleyici hatası', e.message);
       }
@@ -1064,9 +1247,16 @@
     },
 
     applyQuality(targetItem, video) {
-      const ivs = this.findIvsPlayer(video);
       const isVod = this.isVodPage();
+      let applied = false;
 
+      // 1. Doğrudan React Fiber kancası üzerinden çağır
+      if (this.findAndInvokeReactQuality(targetItem.label, targetItem.height)) {
+        applied = true;
+      }
+
+      // 2. IVS Player Nesnesi üzerinden çağır
+      const ivs = this.findIvsPlayer(video);
       if (ivs && typeof ivs.getQualities === 'function') {
         try {
           if (typeof ivs.setAutoQualityMode === 'function') {
@@ -1087,18 +1277,18 @@
 
           if (targetQuality && typeof ivs.setQuality === 'function') {
             ivs.setQuality(targetQuality);
-            this.triggerKickUiQuality(targetItem.label);
-            showToast(`Kick ${isVod ? 'Kayıt' : 'Canlı'}: ${targetQuality.name || targetItem.label} (Kilitlendi)`);
             addDiagnosticLog('INFO', `[KickAdapter] IVS Kalitesi Kilitlendi: ${targetQuality.name}`);
-            return true;
+            applied = true;
           }
         } catch (e) {
           addDiagnosticLog('WARN', '[KickAdapter] IVS setQuality hatası', e.message);
         }
       }
 
+      // 3. Kick DOM Menü Simülasyonu ile UI senkronizasyonunu sağla
       this.triggerKickUiQuality(targetItem.label);
-      showToast(`Kick: ${targetItem.label}`);
+
+      showToast(`Kick ${isVod ? 'Kayıt' : 'Canlı'}: ${targetItem.label} (Kilitlendi)`);
       return true;
     }
   };
