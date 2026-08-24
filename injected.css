@@ -32,15 +32,28 @@
   transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease !important;
 }
 
-/* 10 Saniye Hareketsizlik Sonrası %85-90 Transparanlık */
-#pvc-controller-popup.pvc-idle-transparent {
+/* 2-Kademeli Akıllı Transparanlık:
+   1. Kademe: 2 saniye hareketsizlikte %88 saydamlık (opacity: 0.12)
+   2. Kademe: +2 saniye daha hareketsizlikte tam görünmezlik (opacity: 0)
+   Hover: Fare üzerine gelindiğinde anında %100 net opaklık
+*/
+#pvc-controller-popup.pvc-idle-semi {
   opacity: 0.12 !important;
   border-color: rgba(59, 130, 246, 0.15) !important;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
 }
 
-#pvc-controller-popup.pvc-idle-transparent:hover {
+#pvc-controller-popup.pvc-idle-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+#pvc-controller-popup:hover,
+#pvc-controller-popup.pvc-idle-semi:hover {
   opacity: 1 !important;
+  pointer-events: auto !important;
   border-color: rgba(59, 130, 246, 0.5) !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 20px rgba(37, 99, 235, 0.35) !important;
 }

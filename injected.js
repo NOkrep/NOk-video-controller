@@ -56,8 +56,9 @@
   const HOSTNAME = window.location.hostname;
 
   // Bellek içi geçici durumlar (Stateless / In-Memory Only)
-  let idleDelaySeconds = 3;
-  let idleTimer = null;
+  let idleDelaySeconds = 2;
+  let idleTimerStep1 = null;
+  let idleTimerStep2 = null;
   let activeForcedQualityId = '';
   let activeForcedQualityLabel = '';
   let pendingQualityLabel = '';
@@ -1917,10 +1918,25 @@
 
   function resetIdleTimer(popup) {
     if (!popup) return;
-    popup.classList.remove('pvc-idle-transparent');
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-      popup.classList.add('pvc-idle-transparent');
+    
+    // Herhangi bir fare hareketi veya video etkileşiminde:
+    // Eğer tamamen kaybolmuşsa (%0) -> %88 yarı-saydamlığa (0.12 opacity) geçer
+    popup.classList.remove('pvc-idle-hidden');
+    popup.classList.add('pvc-idle-semi');
+
+    clearTimeout(idleTimerStep1);
+    clearTimeout(idleTimerStep2);
+
+    // 1. Kademe: 2 saniye sonra %88 saydam moda geçer
+    idleTimerStep1 = setTimeout(() => {
+      popup.classList.add('pvc-idle-semi');
+
+      // 2. Kademe: 2 saniye daha (toplam 4 saniye) hareketsiz kalınırsa tamamen transparan (%0) olur
+      idleTimerStep2 = setTimeout(() => {
+        if (!popup.matches(':hover')) {
+          popup.classList.add('pvc-idle-hidden');
+        }
+      }, 2000);
     }, idleDelaySeconds * 1000);
   }
 
@@ -2145,10 +2161,24 @@
     const dragHeader = popup.querySelector('#pvc-drag-header');
     makeDraggable(popup, dragHeader);
 
-    popup.addEventListener('mouseenter', () => resetIdleTimer(popup));
+    popup.addEventListener('mouseenter', () => {
+      popup.classList.remove('pvc-idle-semi', 'pvc-idle-hidden');
+    });
+    popup.addEventListener('mouseleave', () => resetIdleTimer(popup));
     popup.addEventListener('mousemove', () => resetIdleTimer(popup));
     popup.addEventListener('mousedown', () => resetIdleTimer(popup));
     popup.addEventListener('touchstart', () => resetIdleTimer(popup));
+
+    // Fare genel sayfada veya video üzerinde gezindiğinde HUD gizli durumdan (%0) %88 yarı-saydamlığa döner
+    window.addEventListener('mousemove', () => {
+      if (popup && popup.style.display !== 'none') {
+        if (popup.classList.contains('pvc-idle-hidden')) {
+          popup.classList.remove('pvc-idle-hidden');
+          popup.classList.add('pvc-idle-semi');
+        }
+        resetIdleTimer(popup);
+      }
+    }, { passive: true });
 
     // Akordeon Başlık Tıklama Olayları
     popup.querySelectorAll('.pvc-section-header').forEach(header => {
