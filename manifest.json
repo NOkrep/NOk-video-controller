@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.4.0",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Now TV (nowtv.com.tr) ErCDN SMIL adaptörü, Kick 16x reklam hızlandırıcı & IVS kancası, %0-%200 ses yükseltici ve PuhuTV video denetleyicisi.",
+  "version": "0.4.1",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Now TV ErCDN SMIL adaptörü, Kick reklam hızlandırıcı, ses yükseltici, dinamik taşma koruması ve site izinleri rehberi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",

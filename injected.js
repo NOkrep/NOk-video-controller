@@ -1,26 +1,26 @@
 /**
- * injected.js - NOk Video Controller v0.4.0 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.0 İyileştirmeleri & Düzeltmeleri:
- * 1. Now TV (nowtv.com.tr) ErCDN SMIL Akış Genişletmesi:
- *    - 360p tek paket kısıtlaması aşıldı; ErCDN SMIL 1080p FHD, 720p HD, 576p PAL, 480p SD ve 360p profilleri aktif edildi.
- *    - Video.js VHS systemBandwidth_ (4.5 Mbps) ve fastQualityChange_ kancalarıyla yüksek çözünürlüğe anında geçiş sağlandı.
- * 2. Kick.com Reklam & IVS Kalite Koruyucusu:
- *    - 16x reklam hızlandırma ve mute döngüsü stabilize edildi.
- *    - Reklam anında Amazon IVS oynatıcısı üzerinden 360p tampon koruması sağlandı ve reklam bitiminde orijinal HD profile dönüldü.
- * 3. 2-Kademeli Akıllı Saydamlık & HUD Sadeleştirmesi:
- *    - 2 saniye hareketsizlikte %88 yarı-saydamlık, +2 saniye (toplam 4sn) hareketsizlikte %0 tam görünmezlik.
- *    - HUD içerisindeki saydamlık gecikmesi bölümü kaldırılarak kompakt arayüze geçildi.
+ * v0.4.1 İyileştirmeleri & Düzeltmeleri:
+ * 1. Taşma Önleyici Akıllı Metin & Tooltip Sistemi (Hover Expansion):
+ *    - Uzun metinler (çözünürlük, butonlar, rozetler) HUD sınırlarını aşmaz; ellipsis (...) ve dinamik hover tooltip ile tam görüntülenir.
+ * 2. Site ve Alan Adı İzinleri Rehberi (Site Permissions Guide):
+ *    - Firefox ve Chromium kullanıcıları için eksik izin durumunda adım adım yönlendirme modalı ve araç çubuğu rehberi eklendi.
+ * 3. Now TV ErCDN Yayıncı Akışı Doğrulama & BVR Bitrate Boost:
+ *    - Now TV SMIL akışının yayıncı tarafındaki doğal sınırları açıkça belirtilir; 12 Mbps ErCDN boost seçeneği optimize edildi.
+ * 4. 3-Butonlu Kompakt Footer:
+ *    - CDN Ping, Site İzinleri ve Teşhis / Hata Bildirimi panelleri tek satırda hizalandı.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.0';
+  const EXTENSION_VERSION = '0.4.1';
   const VERSION_HISTORY = [
+    { version: 'v0.4.1', notes: 'Now TV ErCDN akış doğrulaması, taşma önleyici akıllı metin (ellipsis & dynamic tooltip), Firefox/Chromium site izinleri rehberi ve 3-butonlu alt panel.' },
     { version: 'v0.4.0', notes: 'Now TV (nowtv.com.tr) ErCDN SMIL çoklu kalite kilidi (1080p/720p/576p/480p/360p), Kick.com IVS ve hız koruyucusu, 2-kademeli saydamlık optimizasyonu ve HUD sadeleştirmesi.' },
     { version: 'v0.3.9', notes: 'Now TV (nowtv.com.tr) Video.js VHS ve ErCDN SMIL adaptörü, Kick.com 2-kademeli ayarlar menüsü kancası ve global Amazon IVS yakalayıcısı.' },
     { version: 'v0.3.8', notes: 'Kick.com reklamlarında 360p akıllı kalite düşürme & geri alma, %0-%200 ses seviyesi ve Gain booster, Mono/Stereo ses anahtarı, akıllı akordeon HUD bölümleri ve genel küçültme çözünürlük düzeltmesi.' },
@@ -42,7 +42,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.4.0)');
+      showToast('NOk Video Controller Aktif (v0.4.1)');
     }
   });
 
@@ -52,7 +52,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.3.8 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.4.1 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -2018,6 +2018,68 @@
     };
   }
 
+  function showPermissionsGuideModal() {
+    const existing = document.getElementById('pvc-permissions-modal');
+    if (existing) existing.remove();
+
+    const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+
+    const modal = document.createElement('div');
+    modal.id = 'pvc-permissions-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Alan Adı ve Site İzinleri Rehberi');
+    modal.innerHTML = `
+      <div class="pvc-modal-card">
+        <div class="pvc-modal-header">
+          <span>🔐 Alan Adı ve Site İzinleri Rehberi (v${EXTENSION_VERSION})</span>
+          <button id="pvc-close-perms-btn" aria-label="Rehberi Kapat">✕</button>
+        </div>
+        <div class="pvc-modal-body">
+          <p class="pvc-modal-desc">
+            NOk Video Controller, <strong>Sıfır Kalıcı Veri & Sıfır Depolama</strong> prensibiyle çalışır. Eklentinin video oynatıcılara müdahale edebilmesi için tarayıcınızın eklentiye bu sitede (<strong>${HOSTNAME}</strong>) çalışma izni vermesi gerekir.
+          </p>
+
+          <!-- Firefox Rehberi -->
+          <div class="pvc-perm-card" style="border-color: ${isFirefox ? '#38bdf8' : 'rgba(255,255,255,0.1)'};">
+            <div class="pvc-perm-title">
+              <span>🦊 Firefox (Gecko) İzin Adımları</span>
+              ${isFirefox ? '<span class="pvc-val-badge" style="font-size:9px;">Mevcut Tarayıcınız</span>' : ''}
+            </div>
+            <div class="pvc-perm-step">1. Adres çubuğundaki eklentiler (yapboz 🧩) simgesine veya araç çubuğundaki NOk simgesine tıklayın.</div>
+            <div class="pvc-perm-step">2. <strong>about:addons</strong> (Eklentiler) sayfasını açıp <em>NOk Video Controller</em> eklentisini seçin.</div>
+            <div class="pvc-perm-step">3. <strong>İzinler (Permissions)</strong> sekmesine geçin ve <em>İsteğe Bağlı Site İzinleri</em> anahtarlarını açın.</div>
+            <div class="pvc-perm-step">4. Veya site üzerinde eklenti simgesine sağ tıklayıp <strong>"Her Zaman Bu Sitede İzin Ver"</strong> seçeneğini işaretleyin.</div>
+          </div>
+
+          <!-- Chrome / Chromium Rehberi -->
+          <div class="pvc-perm-card" style="border-color: ${!isFirefox ? '#38bdf8' : 'rgba(255,255,255,0.1)'};">
+            <div class="pvc-perm-title">
+              <span>🌐 Chrome, Brave, Edge & Opera İzin Adımları</span>
+              ${!isFirefox ? '<span class="pvc-val-badge" style="font-size:9px;">Mevcut Tarayıcınız</span>' : ''}
+            </div>
+            <div class="pvc-perm-step">1. Araç çubuğundaki NOk eklenti simgesine sağ tıklayın.</div>
+            <div class="pvc-perm-step">2. <strong>"Bu Siteye Erişebilir" (Site Access)</strong> menüsünden <em>"Tüm Sitelerde"</em> veya <em>"${HOSTNAME} üzerinde"</em> seçeneğini seçin.</div>
+            <div class="pvc-perm-step">3. Sayfayı bir kez yenileyin (F5).</div>
+          </div>
+
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 8px; line-height: 1.4;">
+            💡 <em>İzin verildiğinde eklenti anında oynatıcı kancalarını takar ve tüm denetim özellikleri aktif hale gelir.</em>
+          </div>
+        </div>
+        <div class="pvc-modal-footer">
+          <button id="pvc-dismiss-perms-btn" class="pvc-modal-btn-secondary" style="width:100%; text-align:center;">Tamam, Anladım</button>
+        </div>
+      </div>
+    `;
+
+    const container = getActiveContainer();
+    container.appendChild(modal);
+
+    document.getElementById('pvc-close-perms-btn').onclick = () => modal.remove();
+    document.getElementById('pvc-dismiss-perms-btn').onclick = () => modal.remove();
+  }
+
   function resetIdleTimer(popup) {
     if (!popup) return;
     
@@ -2117,8 +2179,8 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge">NOkrep v0.4.0</span>
-          <span class="pvc-menu-title">NOk Video Controller</span>
+          <span class="pvc-menu-badge" title="NOk Video Controller Sürüm v0.4.1">NOkrep v0.4.1</span>
+          <span class="pvc-menu-title" title="NOk Video Controller">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
           <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Paneli Küçült / Büyüt" aria-label="Paneli Küçült veya Büyüt">➖</button>
@@ -2127,8 +2189,8 @@
       </div>
 
       <!-- Canlı Render Çözünürlüğü Rozeti (Küçültme modunda da her zaman tam metinle korunur) -->
-      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 8px; box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);">
-        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: #38bdf8; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite">
+      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 8px; box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);" title="Oynatıcıda o an işlenen video piksel boyutu">
+        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: #38bdf8; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite" title="Gerçek Piksel Çözünürlüğü">
           🎬 Gerçek: Ölçülüyor...
         </span>
         <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 0.15s ease;" title="Çözünürlük ve Paketleri Yenile" aria-label="Çözünürlük ve Paketleri Yenile">🔄</button>
@@ -2139,9 +2201,9 @@
         <div class="pvc-section-header" data-target="pvc-content-speed" title="Daraltmak veya genişletmek için tıklayın">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">⚡ Oynatma Hızı & Sarma</span>
+            <span class="pvc-label" title="Oynatma Hızı & Hızlı Sarma">⚡ Oynatma Hızı & Sarma</span>
           </div>
-          <span id="pvc-hdr-speed-badge" class="pvc-val-badge">1.0x</span>
+          <span id="pvc-hdr-speed-badge" class="pvc-val-badge" title="Mevcut Oynatma Hızı">1.0x</span>
         </div>
         <div id="pvc-content-speed" class="pvc-section-content">
           <div class="pvc-slider-row">
@@ -2155,19 +2217,20 @@
               value="1.0" 
               class="pvc-range-slider"
               aria-label="Oynatma Hızı Kaydırıcı"
+              title="Oynatma hızını hassas ayarlayın"
             />
             <span class="pvc-slider-bound">3.0x</span>
           </div>
           <div class="pvc-quick-speed-buttons">
-            <button class="pvc-chip-btn" data-speed="1.0" aria-label="1x Hız">1x</button>
-            <button class="pvc-chip-btn" data-speed="1.25" aria-label="1.25x Hız">1.25x</button>
-            <button class="pvc-chip-btn" data-speed="1.5" aria-label="1.5x Hız">1.5x</button>
-            <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız">2x</button>
-            <button class="pvc-chip-btn" data-speed="2.5" aria-label="2.5x Hız">2.5x</button>
+            <button class="pvc-chip-btn" data-speed="1.0" aria-label="1x Hız" title="Normal Hız (1.0x)">1x</button>
+            <button class="pvc-chip-btn" data-speed="1.25" aria-label="1.25x Hız" title="1.25x Hız">1.25x</button>
+            <button class="pvc-chip-btn" data-speed="1.5" aria-label="1.5x Hız" title="1.5x Hız">1.5x</button>
+            <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız" title="2.0x Hız">2x</button>
+            <button class="pvc-chip-btn" data-speed="2.5" aria-label="2.5x Hız" title="2.5x Hız">2.5x</button>
           </div>
           <div class="pvc-btn-grid-2" style="margin-top: 6px;">
-            <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar">⏪ -10 Saniye</button>
-            <button id="pvc-seek-p10" class="pvc-action-btn" aria-label="10 Saniye İleri Sar">⏩ +10 Saniye</button>
+            <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar" title="10 Saniye Geri Sar">⏪ -10 Saniye</button>
+            <button id="pvc-seek-p10" class="pvc-action-btn" aria-label="10 Saniye İleri Sar" title="10 Saniye İleri Sar">⏩ +10 Saniye</button>
           </div>
         </div>
       </div>
@@ -2177,11 +2240,11 @@
         <div class="pvc-section-header" data-target="pvc-content-audio" title="Daraltmak veya genişletmek için tıklayın">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">🔊 Ses Seviyesi & Kanallar</span>
+            <span class="pvc-label" title="Ses Seviyesi & Kanallar">🔊 Ses Seviyesi & Kanallar</span>
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: #a78bfa; background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3);">STEREO</span>
-            <span id="pvc-hdr-volume-badge" class="pvc-val-badge">100%</span>
+            <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: #a78bfa; background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3);" title="Ses Kanalı Modu">STEREO</span>
+            <span id="pvc-hdr-volume-badge" class="pvc-val-badge" title="Ses Seviyesi">100%</span>
           </div>
         </div>
         <div id="pvc-content-audio" class="pvc-section-content">
@@ -2196,16 +2259,17 @@
               value="100" 
               class="pvc-range-slider"
               aria-label="Ses Seviyesi ve Yükseltici Kaydırıcı"
+              title="Ses seviyesi (%0 - %200 Yükseltici)"
             />
-            <span class="pvc-slider-bound" style="color: #38bdf8;">%200 🚀</span>
+            <span class="pvc-slider-bound" style="color: #38bdf8;" title="Maksimum Güçlendirici">%200 🚀</span>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
             <div class="pvc-quick-speed-buttons" style="flex: 1; margin-right: 8px;">
-              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="0" aria-label="Sessiz (%0)">%0</button>
-              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="50" aria-label="Yarım Ses (%50)">%50</button>
-              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="100" aria-label="Normal Ses (%100)">%100</button>
-              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="150" aria-label="Yükseltilmiş Ses (%150)">%150</button>
-              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="200" aria-label="Maksimum Ses (%200)">%200</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="0" aria-label="Sessiz (%0)" title="Sessiz (%0)">%0</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="50" aria-label="Yarım Ses (%50)" title="Yarım Ses (%50)">%50</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="100" aria-label="Normal Ses (%100)" title="Normal Ses (%100)">%100</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="150" aria-label="Yükseltilmiş Ses (%150)" title="Yükseltilmiş Ses (%150)">%150</button>
+              <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="200" aria-label="Maksimum Ses (%200)" title="Maksimum Ses (%200)">%200</button>
             </div>
             <div style="display: flex; gap: 4px;">
               <button id="pvc-audio-stereo-btn" class="pvc-audio-mode-btn pvc-audio-active" title="Stereo (Doğal Çift Kanal)" aria-label="Stereo Ses Modu">🎧 Stereo</button>
@@ -2220,9 +2284,9 @@
         <div class="pvc-section-header" data-target="pvc-content-quality" title="Daraltmak veya genişletmek için tıklayın">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">🎬 Akış Paket Kaliteleri</span>
+            <span class="pvc-label" title="Akış Paket Kaliteleri">🎬 Akış Paket Kaliteleri</span>
           </div>
-          <span id="pvc-quality-count-badge" class="pvc-val-badge" style="color: #38bdf8;" aria-live="polite">Paketler...</span>
+          <span id="pvc-quality-count-badge" class="pvc-val-badge" style="color: #38bdf8;" aria-live="polite" title="Tespit Edilen Paket Sayısı">Paketler...</span>
         </div>
         <div id="pvc-content-quality" class="pvc-section-content">
           <div id="pvc-dynamic-quality-container" class="pvc-dynamic-grid" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;" role="group" aria-label="Kalite Seçenekleri">
@@ -2231,10 +2295,11 @@
         </div>
       </div>
 
-      <!-- Footer: Ping ve Hata Raporu (Küçültme modunda da her zaman görünür) -->
+      <!-- Footer: Ping, İzinler Rehberi ve Hata Raporu (Küçültme modunda da her zaman görünür) -->
       <div class="pvc-menu-footer" id="pvc-menu-footer">
-        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Sunucu gecikmesini ölç" aria-label="Sunucu CDN Gecikmesini Ölç">📡 CDN Ping</button>
-        <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç" aria-label="Anonim Teşhis ve Hata Raporunu Aç">⚠️ Teşhis / Hata</button>
+        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Sunucu gecikmesini ölç (CDN Ping)" aria-label="Sunucu CDN Gecikmesini Ölç">📡 CDN Ping</button>
+        <button id="pvc-perms-btn" class="pvc-footer-btn pvc-btn-sky" title="Site & Alan Adı İzinleri Rehberi" aria-label="Alan Adı İzinleri Rehberi">🔐 İzin Rehberi</button>
+        <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç" aria-label="Anonim Teşhis ve Hata Raporunu Aç">⚠️ Teşhis</button>
       </div>
     `;
 
@@ -2340,7 +2405,7 @@
       showToast(`🎬 Güncellendi: ${lastObservedResolution}`);
     };
 
-    // Ping ve Teşhis
+    // Ping, İzinler ve Teşhis
     popup.querySelector('#pvc-ping-btn').onclick = async function () {
       resetIdleTimer(popup);
       this.textContent = 'Ölçülüyor...';
@@ -2350,6 +2415,11 @@
       } else {
         this.textContent = '📡 Ping';
       }
+    };
+
+    popup.querySelector('#pvc-perms-btn').onclick = () => {
+      resetIdleTimer(popup);
+      showPermissionsGuideModal();
     };
 
     popup.querySelector('#pvc-report-err-btn').onclick = () => {
@@ -2409,7 +2479,7 @@
         // Ses grafiğini ve başlangıç ses seviyesini bağla
         initAudioGraphForVideo(video);
       }
-      showToast('NOk Video Controller Aktif (v0.3.8)');
+      showToast('NOk Video Controller Aktif (v0.4.1)');
     }
   }
 

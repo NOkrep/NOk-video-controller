@@ -1,5 +1,5 @@
 /**
- * injected.css - NOk Video Controller v0.4.0
+ * injected.css - NOk Video Controller v0.4.1
  * Gezdirilebilir (Draggable), Tam Ekran (Fullscreen) Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -16,6 +16,7 @@
   height: auto !important;
   max-height: calc(100vh - 30px) !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   background: rgba(11, 17, 32, 0.95) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
@@ -206,6 +207,11 @@
   padding: 2px 6px !important;
   border-radius: 4px !important;
   border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  max-width: 140px !important;
+  display: inline-block !important;
 }
 
 .pvc-audio-mode-btn {
@@ -218,6 +224,7 @@
   border-radius: 4px !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
+  white-space: nowrap !important;
 }
 
 .pvc-audio-mode-btn.pvc-audio-active {
@@ -290,6 +297,9 @@
   cursor: pointer !important;
   text-align: center !important;
   transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .pvc-chip-btn:hover {
@@ -315,6 +325,9 @@
   border-radius: 6px !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .pvc-action-btn:hover {
@@ -340,6 +353,9 @@
   cursor: pointer !important;
   text-align: center !important;
   transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .pvc-quality-btn:hover {
@@ -357,7 +373,8 @@
 
 .pvc-quality-chip-btn {
   flex: 1 1 calc(50% - 6px) !important;
-  min-width: 70px !important;
+  min-width: 80px !important;
+  max-width: 100% !important;
   background: rgba(255, 255, 255, 0.07) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: #cbd5e1 !important;
@@ -369,6 +386,10 @@
   text-align: center !important;
   transition: all 0.15s ease !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: inline-block !important;
+  box-sizing: border-box !important;
 }
 
 .pvc-quality-chip-btn:hover {
@@ -384,26 +405,29 @@
   box-shadow: 0 0 10px rgba(37, 99, 235, 0.5) !important;
 }
 
-/* 5. Footer & Ping / Hata Butonları */
+/* 5. Footer & Ping / İzinler / Hata Butonları */
 .pvc-menu-footer {
   display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 6px !important;
+  grid-template-columns: 1fr 1fr 1.1fr !important;
+  gap: 4px !important;
   padding-top: 10px !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 .pvc-footer-btn {
-  padding: 6px 8px !important;
+  padding: 6px 4px !important;
   border-radius: 6px !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   font-weight: 700 !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
+  gap: 3px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .pvc-btn-emerald {
@@ -414,6 +438,17 @@
 
 .pvc-btn-emerald:hover {
   background: rgba(16, 185, 129, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.pvc-btn-sky {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+}
+
+.pvc-btn-sky:hover {
+  background: rgba(56, 189, 248, 0.3) !important;
   color: #ffffff !important;
 }
 
@@ -459,8 +494,9 @@
   transform: translateX(-50%) translateY(0) !important;
 }
 
-/* 7. Hata Modalı */
-#pvc-error-modal {
+/* 7. Hata ve İzinler Modalları */
+#pvc-error-modal,
+#pvc-permissions-modal {
   position: fixed !important;
   inset: 0 !important;
   background: rgba(0, 0, 0, 0.75) !important;
@@ -470,6 +506,31 @@
   align-items: center !important;
   justify-content: center !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.pvc-perm-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(56, 189, 248, 0.2) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  margin-bottom: 8px !important;
+}
+
+.pvc-perm-title {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #38bdf8 !important;
+  margin-bottom: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.pvc-perm-step {
+  font-size: 11px !important;
+  color: #cbd5e1 !important;
+  line-height: 1.5 !important;
+  margin: 3px 0 !important;
 }
 
 .pvc-modal-card {
