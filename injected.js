@@ -1,25 +1,25 @@
 /**
- * injected.js - NOk Video Controller v0.4.2 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.3 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.2 İyileştirmeleri & Düzeltmeleri:
- * 1. Sadeleştirilmiş ve Kristal Netliğinde Preset Butonları (Kompakt 3-4 Seçenek):
- *    - Ses seviyesinde kalabalık seçenekler yerine 4 net ve ferah preset (%0 Sessiz, %50 Orta, %100 Doğal, %150 Yükseltici).
- *    - Hız bölümünde en sık kullanılan 4 ana hız (1x, 1.25x, 1.5x, 2x).
- *    - Tüm preset butonlarında sayılar doğrudan ve yüksek kontrastla görünür, minik ekranlarda bile metinler kırpılmaz.
- * 2. Güvenlik & Gizlilik Koruyucu Gelişmiş Teşhis Motoru:
- *    - Kişisel veriler, kullanıcı IP'si veya özel çerezler asla toplanmaz; sadece oynatıcı render ölçüleri, hata kodları ve CDN telemetrisi raporlanır.
- * 3. Video.js VHS & Now TV ErCDN Entegrasyon Sağlamlaştırması:
- *    - VideoJS Tech/VHS null kontrolü güçlendirildi; t.querySelector null hataları önlendi.
+ * v0.4.3 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Tam UI & IVS Oynatıcı Senkronizasyonu (Full Player Sync):
+ *    - Ses seviyesi değiştirildiğinde Kick'in kendi kontrol çubuğu ses kaydırıcısı ve IVS ses motoru eşzamanlı güncellenir.
+ *    - Oynatma hızı değiştirildiğinde IVS setPlaybackRate ve video ratechange olayları tetiklenir.
+ *    - Kalite seçildiğinde derin React Fiber kancası + 2-kademeli Popover UI simülasyonu ile Kick oynatıcısındaki kalite rozeti ve akış anında kilitlenir.
+ * 2. Kick.com Canlı Reklam Tampon Koruması (Ad Low-Buffer Quality Lock):
+ *    - Reklam anında 16x hız ve sessize almanın yanı sıra, kalite hem IVS API'den hem de UI'dan 360p/160p'ye düşürülerek donmalar engellenir; reklam bitince orijinal kaliteye dönülür.
+ * 3. Sadeleştirilmiş 4-Preset Ses/Hız Denetimi ve Gelişmiş Sıfır-PII Teşhis Motoru.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.2';
+  const EXTENSION_VERSION = '0.4.3';
   const VERSION_HISTORY = [
+    { version: 'v0.4.3', notes: 'Kick.com Amazon IVS & React tam UI senkronizasyonu (ses seviyesi kaydırıcısı, oynatma hızı, 2-kademeli kalite seçimi kilidi), reklam tampon koruması (360p/160p zorlama), VideoJS ve ErCDN adaptör optimizasyonları.' },
     { version: 'v0.4.2', notes: 'Sadeleştirilmiş kristal netliğinde ses/hız preset butonları (4 net seçenek, %0/%50/%100/%150 ve 1x/1.25x/1.5x/2x), VideoJS null referans koruması ve geliştirilmiş sıfır-PII teşhis motoru.' },
     { version: 'v0.4.1', notes: 'Now TV ErCDN akış doğrulaması, taşma önleyici akıllı metin (ellipsis & dynamic tooltip), Firefox/Chromium site izinleri rehberi ve 3-butonlu alt panel.' },
     { version: 'v0.4.0', notes: 'Now TV (nowtv.com.tr) ErCDN SMIL çoklu kalite kilidi (1080p/720p/576p/480p/360p), Kick.com IVS ve hız koruyucusu, 2-kademeli saydamlık optimizasyonu ve HUD sadeleştirmesi.' },
@@ -43,7 +43,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.4.2)');
+      showToast('NOk Video Controller Aktif (v0.4.3)');
     }
   });
 
@@ -53,7 +53,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.4.2 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.4.3 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -744,6 +744,8 @@
 
     findIvsPlayer(video) {
       if (globalCapturedIvsPlayer && typeof globalCapturedIvsPlayer.getQualities === 'function') return globalCapturedIvsPlayer;
+      if (video && video.__ivsPlayer && typeof video.__ivsPlayer.getQualities === 'function') return video.__ivsPlayer;
+      if (video && video._ivsPlayer && typeof video._ivsPlayer.getQualities === 'function') return video._ivsPlayer;
       if (window.ivsPlayer && typeof window.ivsPlayer.getQualities === 'function') return window.ivsPlayer;
       if (window.__ivsPlayer && typeof window.__ivsPlayer.getQualities === 'function') return window.__ivsPlayer;
       if (window.player && typeof window.player.getQualities === 'function') return window.player;
@@ -753,9 +755,13 @@
       const candidates = [
         video,
         video ? video.parentElement : null,
+        video ? video.closest('#channel-player') : null,
+        video ? video.closest('.player-container') : null,
+        video ? video.closest('.relative.flex-1') : null,
         document.querySelector('#channel-player'),
         document.querySelector('.relative.flex-1'),
         document.querySelector('.player-container'),
+        document.querySelector('div[data-clip-player]'),
         document.querySelector('.vjs-control-bar'),
         document.querySelector('[data-testid="player-settings-button"]'),
         document.querySelector('div[class*="player"]'),
@@ -763,29 +769,52 @@
       ].filter(Boolean);
 
       for (const el of candidates) {
-        if (el.__ivsPlayer && typeof el.__ivsPlayer.getQualities === 'function') return el.__ivsPlayer;
-        if (el._ivsPlayer && typeof el._ivsPlayer.getQualities === 'function') return el._ivsPlayer;
-        if (el._ivs && typeof el._ivs.getQualities === 'function') return el._ivs;
-        if (el.player && typeof el.player.getQualities === 'function') return el.player;
-        if (el._player && typeof el._player.getQualities === 'function') return el._player;
-        if (el._mediaPlayer && typeof el._mediaPlayer.getQualities === 'function') return el._mediaPlayer;
+        if (el.__ivsPlayer && typeof el.__ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = el.__ivsPlayer);
+        if (el._ivsPlayer && typeof el._ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = el._ivsPlayer);
+        if (el._ivs && typeof el._ivs.getQualities === 'function') return (globalCapturedIvsPlayer = el._ivs);
+        if (el.player && typeof el.player.getQualities === 'function') return (globalCapturedIvsPlayer = el.player);
+        if (el._player && typeof el._player.getQualities === 'function') return (globalCapturedIvsPlayer = el._player);
+        if (el._mediaPlayer && typeof el._mediaPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = el._mediaPlayer);
 
         try {
-          const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+          const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
           if (fiberKey && el[fiberKey]) {
             let node = el[fiberKey];
             let depth = 0;
-            while (node && depth < 80) {
+            while (node && depth < 100) {
               const props = node.memoizedProps;
               const state = node.memoizedState;
+              const stateNode = node.stateNode;
               
               if (props) {
-                if (props.player && typeof props.player.getQualities === 'function') return props.player;
-                if (props.ivsPlayer && typeof props.ivsPlayer.getQualities === 'function') return props.ivsPlayer;
-                if (props.mediaPlayer && typeof props.mediaPlayer.getQualities === 'function') return props.mediaPlayer;
-                if (props.stream && props.stream.player && typeof props.stream.player.getQualities === 'function') return props.stream.player;
+                if (props.player && typeof props.player.getQualities === 'function') return (globalCapturedIvsPlayer = props.player);
+                if (props.ivsPlayer && typeof props.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = props.ivsPlayer);
+                if (props.mediaPlayer && typeof props.mediaPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = props.mediaPlayer);
+                if (props.stream && props.stream.player && typeof props.stream.player.getQualities === 'function') return (globalCapturedIvsPlayer = props.stream.player);
+                if (props.ivs && typeof props.ivs.getQualities === 'function') return (globalCapturedIvsPlayer = props.ivs);
               }
-              if (state && state.player && typeof state.player.getQualities === 'function') return state.player;
+              if (stateNode) {
+                if (stateNode.player && typeof stateNode.player.getQualities === 'function') return (globalCapturedIvsPlayer = stateNode.player);
+                if (stateNode.ivsPlayer && typeof stateNode.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = stateNode.ivsPlayer);
+              }
+              if (state) {
+                if (state.player && typeof state.player.getQualities === 'function') return (globalCapturedIvsPlayer = state.player);
+                // React Function Component Hook Linked List (useRef / useState)
+                let hook = state;
+                let hookDepth = 0;
+                while (hook && typeof hook === 'object' && hookDepth < 30) {
+                  const m = hook.memoizedState;
+                  if (m) {
+                    if (typeof m.getQualities === 'function') return (globalCapturedIvsPlayer = m);
+                    if (m.current && typeof m.current.getQualities === 'function') return (globalCapturedIvsPlayer = m.current);
+                    if (m.player && typeof m.player.getQualities === 'function') return (globalCapturedIvsPlayer = m.player);
+                    if (m.ivsPlayer && typeof m.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = m.ivsPlayer);
+                    if (m.mediaPlayer && typeof m.mediaPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = m.mediaPlayer);
+                  }
+                  hook = hook.next;
+                  hookDepth++;
+                }
+              }
               
               node = node.return || node.child || node.sibling;
               depth++;
@@ -797,33 +826,85 @@
       return null;
     },
 
+    syncKickPlayerVolume(percent) {
+      try {
+        const { video } = findVideoAndPlayer();
+        const validPercent = Math.max(0, Math.min(100, Math.round(percent)));
+        
+        // 1. Kick DOM Volume Slider Güncellemesi
+        const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"]');
+        sliders.forEach(slider => {
+          slider.value = validPercent.toString();
+          slider.dispatchEvent(new Event('input', { bubbles: true }));
+          slider.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        // 2. IVS Player Nesnesi Ses Eşitlemesi
+        const ivs = this.findIvsPlayer(video);
+        if (ivs) {
+          if (typeof ivs.setVolume === 'function') {
+            ivs.setVolume(validPercent / 100);
+          }
+          if (typeof ivs.setMuted === 'function') {
+            ivs.setMuted(validPercent === 0);
+          }
+        }
+      } catch (e) {}
+    },
+
+    syncKickPlayerSpeed(rate) {
+      try {
+        const { video } = findVideoAndPlayer();
+        const ivs = this.findIvsPlayer(video);
+        if (ivs && typeof ivs.setPlaybackRate === 'function') {
+          ivs.setPlaybackRate(rate);
+        }
+        if (video) {
+          video.playbackRate = rate;
+          video.dispatchEvent(new Event('ratechange', { bubbles: true }));
+        }
+      } catch (e) {}
+    },
+
     triggerKickUiQuality(targetLabel) {
       try {
+        if (!targetLabel) return;
         const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
-        const settingsBtn = document.querySelector('[data-testid="player-settings-button"], button[aria-label*="ayar" i], button[aria-label*="Setting" i], button[aria-label*="Ayarlar" i]');
+        const digits = (targetLabel.match(/\d+/) || [''])[0];
+        
+        const settingsBtn = document.querySelector('[data-testid="player-settings-button"], button[aria-label*="ayar" i], button[aria-label*="Setting" i], button[aria-label*="Ayarlar" i], .vjs-control-bar button.vjs-cog-menu-button, div[data-testid="player-controls"] button:has(svg)');
         if (!settingsBtn) return;
 
-        // 1. Ayarlar butonuna tıkla
+        // 1. Kick Ayarlar menüsünü aç
         settingsBtn.click();
 
         setTimeout(() => {
           // 2. Açılan menüde "Quality" / "Kalite" sekmesini ara ve tıkla
-          const menuItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], div[class*="popover"] button'));
-          const qualitySubMenuTrigger = menuItems.find(el => {
-            const txt = (el.textContent || '').trim().toLowerCase();
-            return txt.includes('quality') || txt.includes('kalite') || txt.includes('1080p') || txt.includes('720p') || txt.includes('auto') || txt.includes('otomatik');
-          });
+          const popoverContainers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[role="menu"], div[class*="popover"], div[class*="menu"], body > div'));
+          let qualitySubMenuTrigger = null;
 
-          if (qualitySubMenuTrigger && !qualitySubMenuTrigger.textContent.toLowerCase().includes(cleanTarget)) {
+          for (const cont of popoverContainers) {
+            const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
+            qualitySubMenuTrigger = items.find(el => {
+              const txt = (el.textContent || '').trim().toLowerCase();
+              return txt.includes('quality') || txt.includes('kalite') || txt.includes('1080p') || txt.includes('720p') || txt.includes('auto') || txt.includes('otomatik');
+            });
+            if (qualitySubMenuTrigger) break;
+          }
+
+          if (qualitySubMenuTrigger) {
             qualitySubMenuTrigger.click();
           }
 
           setTimeout(() => {
-            // 3. Kalite listesinden hedef çözünürlüğü seç
-            const targetMenuItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span'));
-            const matchBtn = targetMenuItems.find(el => {
+            // 3. Kalite listesinden hedef çözünürlüğü seç (Örn. 1080p60, 720p60, 480p30, 360p30, 160p30)
+            const allItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
+            const matchBtn = allItems.find(el => {
               const txt = (el.textContent || '').trim().toLowerCase();
-              return txt.includes(cleanTarget) || (targetLabel && txt === targetLabel.toLowerCase());
+              if (digits && txt.includes(digits)) return true;
+              if (cleanTarget && txt.includes(cleanTarget)) return true;
+              if (targetLabel && txt.includes(targetLabel.toLowerCase())) return true;
+              return false;
             });
 
             if (matchBtn) {
@@ -831,14 +912,14 @@
               addDiagnosticLog('INFO', `[KickAdapter] 2-Kademeli UI menü seçimi başarıyla tıklandı: ${targetLabel}`);
             }
 
-            // 4. Menüyü kapat
+            // 4. Menüyü arka planda temizce kapat (Escape tuşu + backdrop simülasyonu)
             setTimeout(() => {
+              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
               const backdrop = document.querySelector('[class*="backdrop"], [class*="overlay"]');
               if (backdrop) backdrop.click();
-              else if (document.body.click) document.body.click();
-            }, 80);
-          }, 120);
-        }, 120);
+            }, 60);
+          }, 100);
+        }, 100);
       } catch (e) {
         addDiagnosticLog('WARN', '[KickAdapter] UI tetikleyici hatası', e.message);
       }
@@ -891,6 +972,8 @@
         try {
           video.playbackRate = 16.0;
           video.muted = true;
+          this.syncKickPlayerSpeed(16.0);
+          this.syncKickPlayerVolume(0);
         } catch (e) {}
 
         // Takılmayı önlemek için reklam kalitesini 360p / 160p seviyesine düşür
@@ -907,12 +990,9 @@
                 addDiagnosticLog('INFO', `[KickAdapter] Reklam hızlandırmada tampon koruması: Kalite ${lowQ.name || lowQ.height + 'p'} seviyesine çekildi.`);
               }
             }
-          } catch (e) {
-            this.triggerKickUiQuality('360p');
-          }
-        } else {
-          this.triggerKickUiQuality('360p');
+          } catch (e) {}
         }
+        this.triggerKickUiQuality('360p30');
 
         showToast('⚡ Kick Reklamı Algılandı: 16x Hız + 360p Tampon Koruması & Mute Devrede');
         addDiagnosticLog('INFO', '[KickAdapter] Canlı reklam tespit edildi: 16x hızlandırma, 360p düşük profil ve ses kapalı devrede.');
@@ -921,6 +1001,8 @@
         try {
           video.playbackRate = this.preKickAdSpeed || 1.0;
           video.muted = this.preKickAdMuted;
+          this.syncKickPlayerSpeed(this.preKickAdSpeed || 1.0);
+          this.syncKickPlayerVolume(this.preKickAdMuted ? 0 : currentAudioVolumePercent);
         } catch (e) {}
 
         // Orijinal yayına dönünce önceki kaliteyi geri yükle
@@ -930,7 +1012,8 @@
             ivs.setQuality(this.preKickAdQuality);
             addDiagnosticLog('INFO', `[KickAdapter] Reklam bitti: Orijinal IVS kalitesi (${this.preKickAdQuality.name || 'HD'}) geri yüklendi.`);
           } catch (e) {}
-        } else if (activeForcedQualityLabel) {
+        }
+        if (activeForcedQualityLabel) {
           this.triggerKickUiQuality(activeForcedQualityLabel);
         }
 
@@ -1445,11 +1528,16 @@
     try {
       const validRate = Math.min(3.0, Math.max(0.25, parseFloat(rate.toFixed(2))));
       video.playbackRate = validRate;
+      video.dispatchEvent(new Event('ratechange', { bubbles: true }));
       
       if (player && typeof player.playbackRate === 'function') {
         player.playbackRate(validRate);
       } else if (player && typeof player.setPlaybackRate === 'function') {
         player.setPlaybackRate(validRate);
+      }
+
+      if (HOSTNAME.includes('kick.com') || currentActiveAdapterName === 'KickAdapter') {
+        KickAdapter.syncKickPlayerSpeed(validRate);
       }
 
       const slider = document.getElementById('pvc-speed-slider');
@@ -1559,6 +1647,11 @@
         video.muted = false;
         video.volume = Math.min(1.0, validPercent / 100);
       }
+      video.dispatchEvent(new Event('volumechange', { bubbles: true }));
+    }
+
+    if (HOSTNAME.includes('kick.com') || currentActiveAdapterName === 'KickAdapter') {
+      KickAdapter.syncKickPlayerVolume(validPercent);
     }
 
     // %100 - %200 arası Web Audio API GainNode yükseltmesi (Booster)

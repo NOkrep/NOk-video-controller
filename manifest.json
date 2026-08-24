@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.4.2",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Now TV ErCDN adaptörü, Kick reklam hızlandırıcı, kompakt 3-4 preset butonlu ses/hız denetleyici ve genişletilmiş teşhis motoru.",
+  "version": "0.4.3",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick tam UI senkronizasyonu & IVS kalite kilidi, Now TV ErCDN adaptörü ve 4-preset ses/hız denetleyici.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",
