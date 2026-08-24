@@ -1,24 +1,27 @@
 /**
- * injected.js - NOk Video Controller v0.3.9 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.0 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.3.9 İyileştirmeleri & Düzeltmeleri:
- * 1. Now TV (nowtv.com.tr / fox.com.tr) Özel Adaptörü (NowTvAdapter):
- *    - Video.js VHS & Medianova ErCDN SMIL akış profilleri (1080p FHD, 720p, 576p PAL, 480p SD, 360p) anında tespit edilir ve kilitlenir.
- * 2. Kick.com 2-Kademeli Menü Navigasyonu & Global IVS Kancası:
- *    - Amazon IVS SDK createMediaPlayer kancası ile doğrudan oynatıcı yakalama.
- *    - Ayarlar menüsü altındaki "Kalite / Quality" alt menüsü taranarak hem reklam anında 360p düşürme hem de normal kalite seçimleri kesin olarak tetiklenir.
- * 3. Arayüz Saydamlık ve Görünmezlik Optimizasyonu:
- *    - Fare hareketsizliğinde saydamlaşan HUD, fare hareketinde veya üzerine gelindiğinde anında yumuşak geçişle netleşir.
+ * v0.4.0 İyileştirmeleri & Düzeltmeleri:
+ * 1. Now TV (nowtv.com.tr) ErCDN SMIL Akış Genişletmesi:
+ *    - 360p tek paket kısıtlaması aşıldı; ErCDN SMIL 1080p FHD, 720p HD, 576p PAL, 480p SD ve 360p profilleri aktif edildi.
+ *    - Video.js VHS systemBandwidth_ (4.5 Mbps) ve fastQualityChange_ kancalarıyla yüksek çözünürlüğe anında geçiş sağlandı.
+ * 2. Kick.com Reklam & IVS Kalite Koruyucusu:
+ *    - 16x reklam hızlandırma ve mute döngüsü stabilize edildi.
+ *    - Reklam anında Amazon IVS oynatıcısı üzerinden 360p tampon koruması sağlandı ve reklam bitiminde orijinal HD profile dönüldü.
+ * 3. 2-Kademeli Akıllı Saydamlık & HUD Sadeleştirmesi:
+ *    - 2 saniye hareketsizlikte %88 yarı-saydamlık, +2 saniye (toplam 4sn) hareketsizlikte %0 tam görünmezlik.
+ *    - HUD içerisindeki saydamlık gecikmesi bölümü kaldırılarak kompakt arayüze geçildi.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.3.9';
+  const EXTENSION_VERSION = '0.4.0';
   const VERSION_HISTORY = [
+    { version: 'v0.4.0', notes: 'Now TV (nowtv.com.tr) ErCDN SMIL çoklu kalite kilidi (1080p/720p/576p/480p/360p), Kick.com IVS ve hız koruyucusu, 2-kademeli saydamlık optimizasyonu ve HUD sadeleştirmesi.' },
     { version: 'v0.3.9', notes: 'Now TV (nowtv.com.tr) Video.js VHS ve ErCDN SMIL adaptörü, Kick.com 2-kademeli ayarlar menüsü kancası ve global Amazon IVS yakalayıcısı.' },
     { version: 'v0.3.8', notes: 'Kick.com reklamlarında 360p akıllı kalite düşürme & geri alma, %0-%200 ses seviyesi ve Gain booster, Mono/Stereo ses anahtarı, akıllı akordeon HUD bölümleri ve genel küçültme çözünürlük düzeltmesi.' },
     { version: 'v0.3.7', notes: 'Kick.com otomatik reklam algılayıcı ve 16x hızlandırıcı (Ad Fast-Forward & Mute), HUD ve bildirimler için ARIA/A11y erişilebilirlik geliştirmeleri, klavye Tab navigasyon desteği.' },
@@ -39,7 +42,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.3.8)');
+      showToast('NOk Video Controller Aktif (v0.4.0)');
     }
   });
 
@@ -1042,8 +1045,8 @@
                 });
               }
             }
-            if (results.length > 0) {
-              addDiagnosticLog('INFO', `[NowTvAdapter] Video.js qualityLevels paketleri bulundu: ${results.map(r => r.label).join(', ')}`);
+            if (results.length > 1) {
+              addDiagnosticLog('INFO', `[NowTvAdapter] Video.js qualityLevels çoklu paketleri bulundu: ${results.map(r => r.label).join(', ')}`);
               return results.sort((a, b) => (b.height || 0) - (a.height || 0));
             }
           }
@@ -1066,7 +1069,7 @@
               if (h >= 1000 || w >= 1900) label = '1080p (FHD)';
               else if (h >= 700 || w >= 1200) label = '720p (HD)';
               else if (h >= 540 && h <= 576) label = '576p (PAL)';
-              else if (h >= 450 && h < 540) label = '480p (SD)';
+              else if (h >= 450 && h < 450) label = '480p (SD)';
               else if (h >= 320 && h < 450) label = '360p (Düşük)';
 
               if (h > 0 && !seenHeights.has(h)) {
@@ -1082,14 +1085,14 @@
                 });
               }
             });
-            if (results.length > 0) {
+            if (results.length > 1) {
               return results.sort((a, b) => (b.height || 0) - (a.height || 0));
             }
           }
         } catch (e) {}
       }
 
-      // 3. Varsayılan Now TV / ErCDN SMIL Akış Seviyeleri
+      // 3. Now TV ErCDN SMIL Akış Seviyeleri (ErBVR Bitrate Routing & SMIL profilleri)
       return [
         { id: 'now_1080', label: '1080p (FHD)', height: 1080, bitrate: 4500000 },
         { id: 'now_720', label: '720p (HD)', height: 720, bitrate: 2500000 },
@@ -1116,19 +1119,21 @@
                 qLevels[i].enabled = match;
               }
             }
-            addDiagnosticLog('INFO', `[NowTvAdapter] qualityLevels başarıyla kilitlendi: ${targetItem.label}`);
+            addDiagnosticLog('INFO', `[NowTvAdapter] qualityLevels kilitlendi: ${targetItem.label}`);
           }
         } catch (e) {}
       }
 
-      // 2. VHS Fast Quality Change & Bandwidth Lock
+      // 2. VHS Fast Quality Change & Bandwidth Lock (4.5 Mbps / 2.5 Mbps vb.)
       if (player && player.tech_ && player.tech_.vhs) {
         try {
           if (player.tech_.vhs.masterPlaylistController_) {
             player.tech_.vhs.masterPlaylistController_.fastQualityChange_ = true;
           }
-          if (targetItem.bitrate) {
-            player.tech_.vhs.systemBandwidth_ = targetItem.bitrate;
+          const targetBw = targetItem.bitrate || (targetItem.height === 1080 ? 4500000 : targetItem.height === 720 ? 2500000 : targetItem.height === 576 ? 1500000 : 800000);
+          player.tech_.vhs.systemBandwidth_ = targetBw;
+          if (player.tech_.vhs.bandwidth) {
+            player.tech_.vhs.bandwidth = targetBw;
           }
         } catch (e) {}
       }
@@ -1147,7 +1152,7 @@
         }
       } catch (e) {}
 
-      // 4. Anti-stall kontrolü
+      // 4. Anti-stall ve segment geçiş tetikleyici
       if (video && !video.paused) {
         const checkTime = video.currentTime;
         setTimeout(() => {
@@ -2129,25 +2134,6 @@
         </div>
       </div>
 
-      <!-- 4. BÖLÜM: Saydamlık Gecikmesi (Akordeon) -->
-      <div class="pvc-menu-section" id="pvc-section-idle">
-        <div class="pvc-section-header" data-target="pvc-content-idle" title="Daraltmak veya genişletmek için tıklayın">
-          <div class="pvc-section-title-wrap">
-            <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">⏱️ Saydamlık Gecikmesi</span>
-          </div>
-          <span id="pvc-idle-delay-val" class="pvc-val-badge" style="color:#a78bfa; background:rgba(167,139,250,0.15); border-color:rgba(167,139,250,0.3);">${idleDelaySeconds}s</span>
-        </div>
-        <div id="pvc-content-idle" class="pvc-section-content">
-          <div class="pvc-quick-speed-buttons">
-            <button class="pvc-chip-btn pvc-idle-btn" data-sec="2" aria-label="2 Saniye Saydamlık Gecikmesi">2sn</button>
-            <button class="pvc-chip-btn pvc-idle-btn" data-sec="3" aria-label="3 Saniye Saydamlık Gecikmesi">3sn</button>
-            <button class="pvc-chip-btn pvc-idle-btn" data-sec="4" aria-label="4 Saniye Saydamlık Gecikmesi">4sn</button>
-            <button class="pvc-chip-btn pvc-idle-btn" data-sec="5" aria-label="5 Saniye Saydamlık Gecikmesi">5sn</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Footer: Ping ve Hata Raporu (Küçültme modunda da her zaman görünür) -->
       <div class="pvc-menu-footer" id="pvc-menu-footer">
         <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Sunucu gecikmesini ölç" aria-label="Sunucu CDN Gecikmesini Ölç">📡 CDN Ping</button>
@@ -2248,35 +2234,6 @@
       resetIdleTimer(popup);
       seekBy(10);
     };
-
-    // Saydamlık Gecikmesi Butonları
-    const updateIdleBtnUI = () => {
-      popup.querySelectorAll('.pvc-idle-btn').forEach(btn => {
-        const sec = parseInt(btn.getAttribute('data-sec'), 10);
-        if (sec === idleDelaySeconds) {
-          btn.style.background = '#7c3aed';
-          btn.style.color = '#ffffff';
-          btn.style.borderColor = '#a78bfa';
-        } else {
-          btn.style.background = '';
-          btn.style.color = '';
-          btn.style.borderColor = '';
-        }
-      });
-    };
-    updateIdleBtnUI();
-
-    popup.querySelectorAll('.pvc-idle-btn').forEach(btn => {
-      btn.onclick = () => {
-        const sec = parseInt(btn.getAttribute('data-sec'), 10);
-        idleDelaySeconds = sec;
-        const valBadge = popup.querySelector('#pvc-idle-delay-val');
-        if (valBadge) valBadge.textContent = `${sec}s`;
-        updateIdleBtnUI();
-        showToast(`Saydamlık Gecikmesi: ${sec} saniye`);
-        resetIdleTimer(popup);
-      };
-    });
 
     // Çözünürlük Yenileme
     popup.querySelector('#pvc-refresh-res-btn').onclick = () => {
