@@ -11,14 +11,15 @@
    * erişebilmek için injected.js dosyasını DOM'a bir script elementi olarak ekleyip
    * işi bitince DOM'dan temizleriz (kod bellekte çalışmaya devam eder).
    */
-  function injectMainWorldScript() {
+  function injectMainWorldScript(autoOpen = false) {
     try {
       const script = document.createElement('script');
       script.src = browserAPI.runtime.getURL('injected.js');
       script.onload = function () {
         this.remove();
-        // İlk enjeksiyon bittiğinde pop-up'ı anında aç
-        window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
+        if (autoOpen) {
+          window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
+        }
       };
       (document.head || document.documentElement).appendChild(script);
     } catch (e) {
@@ -26,12 +27,14 @@
     }
   }
 
-  // Eğer sayfa ilk defa yükleniyorsa script'i enjekte et
+  // Eğer sayfa ilk defa yükleniyorsa (document_start veya toolbar click)
   if (!window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__) {
     window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__ = true;
-    injectMainWorldScript();
+    // Otomatik enjeksiyonda arka planda kancaları sessizce tak (kullanıcı ikona basınca popup açılır)
+    const isManualClick = document.readyState === 'complete' || document.readyState === 'interactive';
+    injectMainWorldScript(false);
   } else {
-    // Zaten enjekte edilmiş, toggle mesajını doğrudan ilet
+    // Kullanıcı ikona tekrar tıkladıysa popup'ı aç/kapat
     window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');
   }
 

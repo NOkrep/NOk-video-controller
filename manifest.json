@@ -22,6 +22,14 @@
     "scripting"
   ],
   "host_permissions": [],
+  "content_scripts": [
+    {
+      "matches": ["*://*.nowtv.com.tr/*", "*://*.fox.com.tr/*", "*://*.puhutv.com/*", "*://*.kick.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "scripts": ["background.js"]

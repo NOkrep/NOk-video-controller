@@ -113,34 +113,56 @@
   } catch (e) {}
 
   // =========================================================================
-  // 🌐 PUHUTV ÇİFT CDN (AKAMAI & MEDIANOVA MNCDN) AĞ KANCASI (XHR / FETCH)
+  // 🌐 ÇİFT CDN VE SMIL / BVR AĞ KANCASI (PUHUTV, NOW TV & ERCDN) (XHR / FETCH)
   // =========================================================================
-  function transformPuhuStreamUrl(url) {
+  let targetNowBvrBandwidth = null; // null | number (Örn. 5500000 veya 15000000)
+  let lastCapturedNowPlaylistUrl = '';
+  let discoveredNowBvrProfiles = [];
+
+  function transformStreamRequestUrl(url) {
     if (typeof url !== 'string') return url;
 
-    // Canlı DYG API isteğini yakala ve hafızada tut
+    // 1. PuhuTV DYG API Yakalama & MNCDN 1080p Yönlendirme
     if (url.includes('dygvideo.dygdigital.com/api/video_info')) {
       lastCapturedDygApiUrl = url;
       addDiagnosticLog('INFO', `[PuhuTvAdapter] DYG Video API yakalandı: ${sanitizeStreamUrl(url)}`);
+      if (targetPuhuSmilLevel === '1080p.smil' && url.includes('akamai=true')) {
+        const redirectUrl = url.replace('akamai=true', 'akamai=false');
+        addDiagnosticLog('INFO', '[PuhuTvAdapter] DYG Video API: 1080p FHD için MNCDN moduna yönlendirildi.');
+        return redirectUrl;
+      }
     }
 
-    // Yalnızca kullanıcı 1080p FHD hedefi seçmişse ve doğrudan API isteği atılıyorsa MNCDN moduna dönüştür
-    if (targetPuhuSmilLevel === '1080p.smil' && url.includes('dygvideo.dygdigital.com/api/video_info') && url.includes('akamai=true')) {
-      const redirectUrl = url.replace('akamai=true', 'akamai=false');
-      addDiagnosticLog('INFO', '[PuhuTvAdapter] DYG Video API: 1080p FHD için MNCDN moduna yönlendirildi.');
-      return redirectUrl;
+    // 2. Now TV ErCDN SMIL Playlist Yakalama
+    if (url.includes('erbvr.com') || url.includes('ercdn.net')) {
+      if (url.includes('.smil/playlist.m3u8') || url.includes('.m3u8')) {
+        lastCapturedNowPlaylistUrl = url;
+        addDiagnosticLog('INFO', `[NowTvAdapter] ErCDN Playlist yakalandı: ${sanitizeStreamUrl(url)}`);
+      }
+
+      // 3. Now TV ErCDN BVR Segment Bitrate Boost (bvr_bw parameter override)
+      // Kullanıcı yüksek kalite / bitrate zorladığında ErCDN CDN sunucusunun en yüksek kaliteli video segmentini vermesini sağla
+      if (targetNowBvrBandwidth && (url.includes('bvr_bw=') || url.includes('.ts') || url.includes('.m4s') || url.includes('.mp4'))) {
+        if (url.includes('bvr_bw=')) {
+          const overriddenUrl = url.replace(/bvr_bw=\d+/g, `bvr_bw=${targetNowBvrBandwidth}`);
+          return overriddenUrl;
+        } else {
+          const separator = url.includes('?') ? '&' : '?';
+          return `${url}${separator}bvr_bw=${targetNowBvrBandwidth}`;
+        }
+      }
     }
 
     return url;
   }
 
-  (function hookNetworkRequestsForPuhu() {
+  (function hookNetworkRequests() {
     // 1. XMLHttpRequest Hook
     const originalOpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function (method, url, ...rest) {
       try {
         if (typeof url === 'string') {
-          const transformedUrl = transformPuhuStreamUrl(url);
+          const transformedUrl = transformStreamRequestUrl(url);
           return originalOpen.call(this, method, transformedUrl, ...rest);
         }
       } catch (e) {}
@@ -152,10 +174,10 @@
     window.fetch = function (input, init) {
       try {
         if (typeof input === 'string') {
-          const transformedUrl = transformPuhuStreamUrl(input);
+          const transformedUrl = transformStreamRequestUrl(input);
           return originalFetch.call(this, transformedUrl, init);
         } else if (input instanceof Request && input.url) {
-          const transformedUrl = transformPuhuStreamUrl(input.url);
+          const transformedUrl = transformStreamRequestUrl(input.url);
           if (transformedUrl !== input.url) {
             const newRequest = new Request(transformedUrl, input);
             return originalFetch.call(this, newRequest, init);
@@ -1124,21 +1146,36 @@
         } catch (e) {}
       }
 
-      // 3. Now TV ErCDN SMIL Akış Seviyeleri (ErBVR Bitrate Routing & SMIL profilleri)
+      // 3. Tek akışlı ErCDN SMIL / BVR Durumu:
+      // Kullanıcı kafa karışıklığı yaşamaması için hayali paketler uydurmak yerine
+      // Orijinal akış profilini ve ErCDN Bitrate Zorlama (Max Bitrate Boost) seçeneğini sunarız.
+      const currentHeight = video && video.videoHeight ? video.videoHeight : 360;
+      let currentLabel = '360p (Düşük)';
+      if (currentHeight >= 1000) currentLabel = '1080p (FHD)';
+      else if (currentHeight >= 700) currentLabel = '720p (HD)';
+      else if (currentHeight >= 500) currentLabel = '576p (PAL)';
+      else if (currentHeight >= 400) currentLabel = '480p (SD)';
+
       return [
-        { id: 'now_1080', label: '1080p (FHD)', height: 1080, bitrate: 5500000 },
-        { id: 'now_720', label: '720p (HD)', height: 720, bitrate: 2500000 },
-        { id: 'now_576', label: '576p (PAL)', height: 576, bitrate: 1500000 },
-        { id: 'now_480', label: '480p (SD)', height: 480, bitrate: 1000000 },
-        { id: 'now_360', label: '360p (Düşük)', height: 360, bitrate: 600000 }
+        { id: 'now_bvr_max', label: '🚀 Max Bitrate (ErCDN Boost)', height: 1080, bitrate: 12000000, isBoost: true },
+        { id: 'now_bvr_hd', label: '⚡ Yüksek Bitrate (HD Zorla)', height: 720, bitrate: 5500000, isBoost: true },
+        { id: 'now_current', label: `🎬 Doğal Akış (${currentLabel})`, height: currentHeight, bitrate: 0, isBoost: false }
       ];
     },
 
     applyQuality(targetItem, video, player) {
-      addDiagnosticLog('INFO', `[NowTvAdapter] Kalite uygulanıyor: ${targetItem.label}`);
+      addDiagnosticLog('INFO', `[NowTvAdapter] Kalite / Bitrate uygulanıyor: ${targetItem.label}`);
 
       const targetHeight = targetItem.height || 1080;
-      const targetBitrate = targetItem.bitrate || (targetHeight >= 1000 ? 5500000 : targetHeight >= 700 ? 2500000 : targetHeight >= 576 ? 1500000 : 800000);
+      const targetBitrate = targetItem.bitrate || (targetHeight >= 1000 ? 12000000 : targetHeight >= 700 ? 5500000 : 1500000);
+
+      // ErCDN BVR Ağ Kancası için global bant genişliğini ayarla (Segment URL'lerinde bvr_bw parametresini dönüştürür)
+      if (targetItem.isBoost) {
+        targetNowBvrBandwidth = targetBitrate;
+        addDiagnosticLog('INFO', `[NowTvAdapter] ErCDN BVR Ağ Kancası devrede: bvr_bw=${targetBitrate}`);
+      } else {
+        targetNowBvrBandwidth = null;
+      }
 
       // 1. Video.js qualityLevels Güvenli Kilit (Non-destructive)
       if (player && typeof player.qualityLevels === 'function') {
@@ -1222,7 +1259,7 @@
         }, 900);
       }
 
-      showToast(`Now TV: ${targetItem.label} (Kilitlendi)`);
+      showToast(`Now TV: ${targetItem.label}`);
       addDiagnosticLog('INFO', `[NowTvAdapter] Kalite uygulandı: ${targetItem.label}`);
       return true;
     }
