@@ -1,23 +1,26 @@
 /**
- * injected.js - NOk Video Controller v0.4.6 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.7 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.6 İyileştirmeleri & Düzeltmeleri:
- * 1. Tiyatro Modu & Sayfa Kayma Koruması (Scroll-Lock & PreventScroll Architecture):
- *    - Kalite ve hız menüsü simülasyonlarında sayfanın yukarı kayıp videoyu ekran dışına itmesi engellendi (focus preventScroll & mutlak scroll kilidi).
- * 2. Kick.com Ses Slider'ı & UI Tam Eşitlemesi (Pointer Coordinate & Radix Track Sync):
- *    - Ses çubuğunun fiziksel koordinatlarına pointerdown/move/up simülasyonu, CSS --slider-fill & Radix transform güncellemeleri ve 0-1/0-100 React hook dispatch'i bağlandı.
- * 3. Kick.com Oynatma Hızı 2-Kademeli UI Tetikleyicisi (Playback Speed UI & VOD Hook Dispatch):
- *    - VOD oynatıcılarında hem kontrol çubuğundaki doğrudan hız butonları hem de Ayarlar popover'ındaki Hız alt menüsü otomatik seçilerek Kick oynatıcı UI'ı ile tam eşitlendi.
+ * v0.4.7 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Radix UI Array State & Pointer/Hover Ses Eşitlemesi (useSlider [val] Hook Dispatch):
+ *    - Radix UI Slider hook array state ([0..1], [0..100]), container hover, track bounding box pointerdown/move/up ve tam ses senkronizasyonu.
+ * 2. Kick.com 2-Kademeli Hız UI Eşitlemesi (Playback Speed Menü Tetikleyici & React Fiber):
+ *    - VOD ve canlı oynatıcıda Ayarlar menüsü altındaki "Playback Speed" / "Oynatma Hızı" alt menüsü otomatik açılarak hedef hız seçimi tıklandı.
+ * 3. Hızlı Sarma Butonları (±30s & ±10s 4-Butonlu Grid):
+ *    - HUD hız bölümüne 10 saniye ileri/geri sarma butonlarının yanına 30 saniye ileri/geri sarma (-30s, -10s, +10s, +30s) eklendi.
+ * 4. Arka Planda Periyodik CDN Ping Ölçümü (Silent 15s Telemetri & Canlı Rozet):
+ *    - Ping değeri eklentide her 15 saniyede bir akışı ve izlemeyi bölmeden (silent mode) otomatik olarak güncellenir.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.6';
+  const EXTENSION_VERSION = '0.4.7';
   const VERSION_HISTORY = [
+    { version: 'v0.4.7', notes: 'Kick.com Radix UI array [val] state ses ve 2-kademeli hız UI eşitlemesi, ±30s & ±10s 4-butonlu sarma matrisi, 15s sessiz periyodik CDN ping telemetrisi.' },
     { version: 'v0.4.6', notes: 'Tiyatro modu sayfa kayma koruması (focus preventScroll & mutlak scroll kilidi), Kick.com ses slider fiziksel koordinat & Radix senkronizasyonu, Kick VOD hız 2-kademeli UI menü tetikleyicisi.' },
     { version: 'v0.4.5', notes: 'Kick.com reklam bitiş döngüsü & takılma düzeltmesi (Ad de-flapping state guard), geniş ekran/tiyatro modunun korunması (Escape klavye sinyali engellendi), Kick ses slider ve hız React Fiber state/hook senkronizasyonu.' },
     { version: 'v0.4.4', notes: 'Kick.com çift yönlü React Fiber BFS crawler & Amazon IVS erken SDK prototip kancası, 2-kademeli Radix UI kalite/hız senkronizasyonu, gelişmiş sıfır-PII telemetri.' },
@@ -45,7 +48,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.4.3)');
+      showToast('NOk Video Controller Aktif (v0.4.7)');
     }
   });
 
@@ -55,7 +58,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.4.3 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.4.7 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -1077,23 +1080,34 @@
         document.querySelector('.relative.flex-1'),
         document.querySelector('video'),
         document.querySelector('div[data-testid="player-controls"]'),
-        document.getElementById('__next')
+        document.querySelector('div[data-testid="video-player"]'),
+        document.getElementById('__next'),
+        document.body
       ].filter(Boolean);
 
+      const rateStr = `${rate}`;
+      const rateLabel = `${rate}x`;
+
       for (const root of rootCandidates) {
-        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
         if (!fiberKey || !root[fiberKey]) continue;
 
         let success = false;
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
-            const speedSetters = ['setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate', 'setRate', 'onSpeedChange', 'handleSpeedChange', 'setPlaybackSpeed', 'onRateChange'];
+            const speedSetters = [
+              'setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate',
+              'setRate', 'onSpeedChange', 'handleSpeedChange', 'setPlaybackSpeed',
+              'onRateChange', 'onValueChange', 'onValueCommit', 'handleRateChange'
+            ];
             for (const name of speedSetters) {
               if (typeof props[name] === 'function') {
                 try {
                   props[name](rate);
-                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${rate}x) çağrıldı.`);
+                  try { props[name](rateLabel); } catch (e) {}
+                  try { props[name]([rate]); } catch (e) {}
+                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${rateLabel}) çağrıldı.`);
                   success = true;
                   return true;
                 } catch (e) {}
@@ -1103,15 +1117,34 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 45) {
+          while (hook && typeof hook === 'object' && hookDepth < 50) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
-              if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 1.75 || m === 2)) {
+              if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 1.75 || m === 2 || (m >= 0.2 && m <= 4))) {
                 try {
                   hook.queue.dispatch(rate);
-                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State hız dispatch tetiklendi: ${rate}x`);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State hız dispatch: ${rateLabel}`);
                   success = true;
                   return true;
+                } catch (e) {}
+              } else if (typeof m === 'string' && (m.includes('x') || m.toLowerCase() === 'normal' || m === '1' || m === '1.0')) {
+                try {
+                  hook.queue.dispatch(rate === 1 ? '1x' : rateLabel);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State string hız dispatch: ${rateLabel}`);
+                  success = true;
+                  return true;
+                } catch (e) {}
+              } else if (Array.isArray(m) && m.length > 0) {
+                try {
+                  if (typeof m[0] === 'number') {
+                    hook.queue.dispatch([rate]);
+                    success = true;
+                    return true;
+                  } else if (typeof m[0] === 'string') {
+                    hook.queue.dispatch([rate === 1 ? '1x' : rateLabel]);
+                    success = true;
+                    return true;
+                  }
                 } catch (e) {}
               }
             }
@@ -1119,7 +1152,7 @@
             hookDepth++;
           }
           return false;
-        }, 450);
+        }, 500);
 
         if (success) return true;
       }
@@ -1132,27 +1165,36 @@
         document.querySelector('div[data-testid="player-controls"]'),
         document.querySelector('div[data-testid="volume-slider"]'),
         document.querySelector('.volume-slider'),
+        document.querySelector('[class*="volume-slider"]'),
         document.querySelector('#channel-player'),
         document.querySelector('.player-container'),
         document.querySelector('.relative.flex-1'),
         document.querySelector('video'),
-        document.getElementById('__next')
+        document.querySelector('div[data-testid="video-player"]'),
+        document.getElementById('__next'),
+        document.body
       ].filter(Boolean);
 
       for (const root of rootCandidates) {
-        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
         if (!fiberKey || !root[fiberKey]) continue;
 
         let success = false;
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
-            const volSetters = ['setVolume', 'onVolumeChange', 'handleVolumeChange', 'setVolumeLevel', 'handleVolume', 'changeVolume', 'setVolumePercent', 'onVolume', 'updateVolume'];
+            const volSetters = [
+              'setVolume', 'onVolumeChange', 'handleVolumeChange', 'setVolumeLevel',
+              'handleVolume', 'changeVolume', 'setVolumePercent', 'onVolume',
+              'updateVolume', 'onValueChange', 'onValueCommit', 'onChange'
+            ];
             for (const name of volSetters) {
               if (typeof props[name] === 'function') {
                 try {
                   props[name](normalizedVol);
                   try { props[name](percent); } catch (e) {}
+                  try { props[name]([normalizedVol]); } catch (e) {}
+                  try { props[name]([percent]); } catch (e) {}
                   addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${percent}%) çağrıldı.`);
                   success = true;
                   return true;
@@ -1168,10 +1210,21 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 45) {
+          while (hook && typeof hook === 'object' && hookDepth < 50) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
-              if (typeof m === 'number' && m >= 0 && m <= 1) {
+              // 1. Array Hook State (Radix UI Slider useSlider [values] state)
+              if (Array.isArray(m) && m.length > 0 && typeof m[0] === 'number') {
+                try {
+                  const targetArr = m[0] <= 1 ? [normalizedVol] : [percent];
+                  hook.queue.dispatch(targetArr);
+                  addDiagnosticLog('INFO', `[KickAdapter] Radix UI Slider Hook Array state dispatch: [${targetArr[0]}]`);
+                  success = true;
+                  return true;
+                } catch (e) {}
+              }
+              // 2. Sayısal Hook State (0-1 veya 0-100)
+              else if (typeof m === 'number' && m >= 0 && m <= 1) {
                 try {
                   hook.queue.dispatch(normalizedVol);
                   addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-1) dispatch: ${normalizedVol}`);
@@ -1191,7 +1244,7 @@
             hookDepth++;
           }
           return false;
-        }, 500);
+        }, 550);
 
         if (success) return true;
       }
@@ -1204,19 +1257,31 @@
         const validPercent = Math.max(0, Math.min(100, Math.round(percent)));
         const normalizedVol = validPercent / 100;
         
-        // 1. Kick React Fiber Ses Kancalarını Doğrudan Tetikle
+        // 1. Kick React Fiber & Radix Array Hook Ses Kancalarını Doğrudan Tetikle
         this.findAndInvokeReactVolume(validPercent);
 
-        // 2. Kick Range Slider'larına React Native Tracker ile yaz & CSS stillerini güncelle
+        // 2. Ses Kontrol Çubuğu Kapsayıcısını Hover ile Canlandır (Açılabilir Slider Görünürlüğü)
+        const volContainers = document.querySelectorAll(
+          'div[data-testid="volume-slider"], .volume-slider, [class*="volume-slider"], div[data-testid="player-controls"] [class*="volume"], #channel-player [class*="volume"]'
+        );
+        volContainers.forEach(container => {
+          try {
+            container.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+            container.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+            container.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+          } catch (e) {}
+        });
+
+        // 3. Kick Range Slider'larına React Native Tracker ile yaz & CSS stillerini güncelle
         const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"], #channel-player input[type="range"]');
         sliders.forEach(slider => {
           setReactInputValue(slider, validPercent);
           slider.style.setProperty('--slider-fill', `${validPercent}%`);
           slider.style.setProperty('--value', `${validPercent}%`);
+          slider.style.setProperty('--slider-thumb-position', `${validPercent}%`);
         });
 
-        // 3. Kick Fiziksel Slider Track Koordinatlarına Pointer Event Simülasyonu
-        const volContainers = document.querySelectorAll('div[data-testid="volume-slider"], .volume-slider, div[data-testid="player-controls"] [class*="volume"]');
+        // 4. Kick Fiziksel Slider Track Koordinatlarına Pointer Event Simülasyonu
         volContainers.forEach(container => {
           const track = container.querySelector('[role="slider"], [data-radix-slider-track], input[type="range"], div[class*="track"], span[class*="track"], div[class*="range"]');
           if (track) {
@@ -1231,23 +1296,27 @@
           }
         });
 
-        // 4. Radix UI Slider DOM Nitelikleri ve Transform
+        // 5. Radix UI Slider DOM Nitelikleri, Transform ve Range Fill Güncellemesi
         const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="volume-slider"] [role="slider"], div[data-testid="player-controls"] [role="slider"]');
         radixSliders.forEach(slider => {
           slider.setAttribute('aria-valuenow', validPercent.toString());
           slider.setAttribute('aria-valuetext', `${validPercent}%`);
-          slider.style.left = `${validPercent}%`;
-          slider.style.transform = `translateX(-50%)`;
+          slider.style.setProperty('left', `${validPercent}%`, 'important');
+          slider.style.setProperty('transform', `translateX(-50%)`, 'important');
+          slider.style.setProperty('--slider-thumb-position', `${validPercent}%`);
+          slider.style.setProperty('--slider-fill', `${validPercent}%`);
           slider.dispatchEvent(new Event('input', { bubbles: true }));
           slider.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
-        const sliderBars = document.querySelectorAll('div[data-testid="volume-slider"] [class*="range"], div[data-testid="volume-slider"] [class*="track"], div[data-testid="volume-slider"] [class*="fill"], .volume-slider [class*="range"], .volume-slider [class*="fill"], div[data-testid="volume-slider"] [data-radix-slider-range]');
+        const sliderBars = document.querySelectorAll('div[data-testid="volume-slider"] [class*="range"], div[data-testid="volume-slider"] [class*="track"], div[data-testid="volume-slider"] [class*="fill"], .volume-slider [class*="range"], .volume-slider [class*="fill"], div[data-testid="volume-slider"] [data-radix-slider-range], [data-radix-slider-range]');
         sliderBars.forEach(bar => {
-          bar.style.width = `${validPercent}%`;
+          bar.style.setProperty('width', `${validPercent}%`, 'important');
+          bar.style.setProperty('--slider-fill', `${validPercent}%`);
+          bar.style.setProperty('--value', `${validPercent}%`);
         });
 
-        // 5. IVS Player Nesnesi Ses Eşitlemesi
+        // 6. IVS Player Nesnesi Ses Eşitlemesi
         const ivs = this.findIvsPlayer(video);
         if (ivs) {
           if (typeof ivs.setVolume === 'function') {
@@ -1274,7 +1343,7 @@
         )).filter(b => {
           const txt = (b.textContent || '').trim().toLowerCase();
           const aria = (b.getAttribute('aria-label') || '').toLowerCase();
-          return txt.endsWith('x') || aria.includes('speed') || aria.includes('hız');
+          return txt.endsWith('x') || aria.includes('speed') || aria.includes('hız') || aria.includes('playback');
         });
 
         let directBtn = directSpeedBtns.find(b => {
@@ -1287,11 +1356,11 @@
           setTimeout(() => {
             const popovers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal] div[role="menu"]'));
             for (const cont of popovers) {
-              const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span'));
+              const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
               const targetItem = items.find(el => {
                 const txt = (el.textContent || '').trim().toLowerCase();
-                if (txt.length > 20) return false;
-                return txt === rateLabel.toLowerCase() || txt === rateStr || (rate === 1 && (txt.includes('normal') || txt === '1x'));
+                if (txt.length > 25) return false;
+                return txt === rateLabel.toLowerCase() || txt === rateStr || (rate === 1 && (txt.includes('normal') || txt === '1x')) || txt.includes(rateLabel.toLowerCase());
               });
               if (targetItem) {
                 simulateFullPointerClick(targetItem);
@@ -1344,7 +1413,7 @@
             speedSubMenuTrigger = items.find(el => {
               const txt = (el.textContent || '').trim().toLowerCase();
               if (txt.length > 35) return false;
-              return txt.includes('speed') || txt.includes('hız') || txt.includes('playback') || txt.includes('rate');
+              return txt.includes('speed') || txt.includes('hız') || txt.includes('hizi') || txt.includes('playback') || txt.includes('rate') || txt.includes('wiedergabe');
             });
             if (speedSubMenuTrigger) break;
           }
@@ -1359,10 +1428,10 @@
             let matchBtn = null;
 
             for (const cont of activePopovers) {
-              const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span'));
+              const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
               matchBtn = items.find(el => {
                 const txt = (el.textContent || '').trim().toLowerCase();
-                if (txt.length > 20) return false;
+                if (txt.length > 25) return false;
                 return txt === rateLabel.toLowerCase() || txt === rateStr || (rate === 1 && (txt.includes('normal') || txt === '1x')) || txt.includes(rateLabel.toLowerCase());
               });
               if (matchBtn) break;
@@ -2457,10 +2526,13 @@
     }, 400);
   }
 
-  async function testCdnPing() {
+  let lastMeasuredPingMs = null;
+  let periodicPingTimer = null;
+
+  async function testCdnPing(silent = false) {
     const { video, player } = findVideoAndPlayer();
     if (!video) {
-      showToast('Video bulunamadı');
+      if (!silent) showToast('Video bulunamadı');
       return null;
     }
 
@@ -2478,13 +2550,16 @@
         r.name.includes('media-') || 
         r.name.includes('mncdn') || 
         r.name.includes('akamaized') || 
-        r.name.includes('kick')
+        r.name.includes('kick') ||
+        r.name.includes('ivs') ||
+        r.name.includes('ercdn') ||
+        r.name.includes('amazon')
       );
       if (mediaEntry) targetUrl = mediaEntry.name;
     }
 
     if (!targetUrl) {
-      showToast('Ping için aktif CDN akışı bulunamadı');
+      if (!silent) showToast('Ping için aktif CDN akışı bulunamadı');
       return null;
     }
 
@@ -2494,30 +2569,62 @@
       hostDisplay = parsed.hostname;
     } catch (e) {}
 
+    const updatePingBadge = (ms) => {
+      lastMeasuredPingMs = ms;
+      const pingBtn = document.getElementById('pvc-ping-btn');
+      if (pingBtn) {
+        pingBtn.textContent = `📡 ${ms} ms`;
+        if (ms <= 50) {
+          pingBtn.style.color = '#34d399';
+        } else if (ms <= 120) {
+          pingBtn.style.color = '#38bdf8';
+        } else {
+          pingBtn.style.color = '#f59e0b';
+        }
+      }
+    };
+
     try {
       const startTime = performance.now();
       await fetch(targetUrl, { method: 'HEAD', cache: 'no-store', mode: 'cors' });
       const ms = Math.round(performance.now() - startTime);
+      updatePingBadge(ms);
       
       let rating = 'Mükemmel (Takılmasız)';
       if (ms > 120) rating = 'Yüksek Gecikme (Buffer Riski)';
       else if (ms > 50) rating = 'İyi (HD Akış)';
 
-      showToast(`📡 ${ms} ms • ${rating} (${hostDisplay})`);
-      addDiagnosticLog('INFO', `[CDN Ping] ${ms} ms (${hostDisplay})`);
+      if (!silent) {
+        showToast(`📡 ${ms} ms • ${rating} (${hostDisplay})`);
+        addDiagnosticLog('INFO', `[CDN Ping] ${ms} ms (${hostDisplay})`);
+      }
       return { ms, rating, host: hostDisplay };
     } catch (err) {
       try {
         const startTime = performance.now();
         await fetch(targetUrl, { method: 'GET', cache: 'no-store', mode: 'no-cors' });
         const ms = Math.round(performance.now() - startTime);
-        showToast(`📡 ${ms} ms (${hostDisplay})`);
+        updatePingBadge(ms);
+        if (!silent) showToast(`📡 ${ms} ms (${hostDisplay})`);
         return { ms, rating: 'Aktif', host: hostDisplay };
       } catch (innerErr) {
-        showToast(`Ping ölçülemedi (${hostDisplay})`);
+        if (!silent) showToast(`Ping ölçülemedi (${hostDisplay})`);
         return null;
       }
     }
+  }
+
+  function startPeriodicPingEngine() {
+    if (periodicPingTimer) clearInterval(periodicPingTimer);
+    // Her 15 saniyede bir video veya HUD açıkken arka planda akışı bölmeden (silent) ping telemetrisi al
+    periodicPingTimer = setInterval(() => {
+      if (document.hidden) return;
+      const popup = document.getElementById('pvc-controller-popup');
+      const { video } = findVideoAndPlayer();
+      if ((popup && popup.style.display !== 'none') || (video && !video.paused)) {
+        testCdnPing(true);
+      }
+    }, 15000);
   }
 
   /**
@@ -2870,7 +2977,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge" title="NOk Video Controller Sürüm v0.4.3">NOkrep v0.4.3</span>
+          <span class="pvc-menu-badge" title="NOk Video Controller Sürüm v0.4.7">NOkrep v0.4.7</span>
           <span class="pvc-menu-title" title="NOk Video Controller">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
@@ -2918,9 +3025,11 @@
             <button class="pvc-chip-btn" data-speed="1.5" aria-label="1.5x Hız" title="1.5x Hız">1.5x</button>
             <button class="pvc-chip-btn" data-speed="2.0" aria-label="2x Hız" title="2.0x Hız">2.0x</button>
           </div>
-          <div class="pvc-btn-grid-2" style="margin-top: 6px;">
-            <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar" title="10 Saniye Geri Sar">⏪ -10 Saniye</button>
-            <button id="pvc-seek-p10" class="pvc-action-btn" aria-label="10 Saniye İleri Sar" title="10 Saniye İleri Sar">⏩ +10 Saniye</button>
+          <div class="pvc-btn-grid-4" style="margin-top: 6px;">
+            <button id="pvc-seek-m30" class="pvc-action-btn" aria-label="30 Saniye Geri Sar" title="30 Saniye Geri Sar">⏪ -30s</button>
+            <button id="pvc-seek-m10" class="pvc-action-btn" aria-label="10 Saniye Geri Sar" title="10 Saniye Geri Sar">⏮️ -10s</button>
+            <button id="pvc-seek-p10" class="pvc-action-btn" aria-label="10 Saniye İleri Sar" title="10 Saniye İleri Sar">⏭️ +10s</button>
+            <button id="pvc-seek-p30" class="pvc-action-btn" aria-label="30 Saniye İleri Sar" title="30 Saniye İleri Sar">⏩ +30s</button>
           </div>
         </div>
       </div>
@@ -3075,7 +3184,15 @@
       setAudioMode('mono');
     };
 
-    // Sarma Butonları
+    // Sarma Butonları (4 Kademeli: -30s, -10s, +10s, +30s)
+    const seekM30 = popup.querySelector('#pvc-seek-m30');
+    if (seekM30) {
+      seekM30.onclick = () => {
+        resetIdleTimer(popup);
+        seekBy(-30);
+      };
+    }
+
     popup.querySelector('#pvc-seek-m10').onclick = () => {
       resetIdleTimer(popup);
       seekBy(-10);
@@ -3086,11 +3203,20 @@
       seekBy(10);
     };
 
+    const seekP30 = popup.querySelector('#pvc-seek-p30');
+    if (seekP30) {
+      seekP30.onclick = () => {
+        resetIdleTimer(popup);
+        seekBy(30);
+      };
+    }
+
     // Çözünürlük Yenileme
     popup.querySelector('#pvc-refresh-res-btn').onclick = () => {
       resetIdleTimer(popup);
       updateRealtimeResolutionBadge();
       renderDynamicQualityButtons();
+      testCdnPing(true);
       showToast(`🎬 Güncellendi: ${lastObservedResolution}`);
     };
 
@@ -3098,7 +3224,7 @@
     popup.querySelector('#pvc-ping-btn').onclick = async function () {
       resetIdleTimer(popup);
       this.textContent = 'Ölçülüyor...';
-      const res = await testCdnPing();
+      const res = await testCdnPing(false);
       if (res && res.ms !== undefined) {
         this.textContent = `📡 ${res.ms} ms`;
       } else {
@@ -3154,6 +3280,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
+      testCdnPing(true);
 
       const { video } = findVideoAndPlayer();
       if (video) {
@@ -3168,16 +3295,18 @@
         // Ses grafiğini ve başlangıç ses seviyesini bağla
         initAudioGraphForVideo(video);
       }
-      showToast('NOk Video Controller Aktif (v0.4.3)');
+      showToast('NOk Video Controller Aktif (v0.4.7)');
     }
   }
 
-  // Başlangıç Video Gözlemcisi
+  // Başlangıç Video Gözlemcisi ve Periyodik Ping Motoru
+  startPeriodicPingEngine();
   setTimeout(() => {
     const { video } = findVideoAndPlayer();
     if (video) {
       monitorVideoResolution(video);
     }
+    testCdnPing(true);
   }, 1000);
 
 })();
