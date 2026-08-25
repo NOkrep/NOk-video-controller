@@ -1,23 +1,24 @@
 /**
- * injected.js - NOk Video Controller v0.4.5 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.6 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.5 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Reklam Döngüsü & Flapping Düzeltmesi (Ad De-Flapping State Guard):
- *    - Reklam bitiminde 6-7 kez takılı kalıp geri sarma döngüsü 3 ardışık kararlı tarama filtresi ve IVS doğrudan profil geçişi ile çözüldü.
- * 2. Geniş Ekran / Tiyatro Modu Koruyucusu (Theater Mode Preservation):
- *    - Menü simülasyonunda Escape tuşu atılması engellendi, geniş ekran/tiyatro modunun bozulması önlendi; Radix popover hedeflemesi daraltıldı.
- * 3. Kick.com Ses Slider'ı & Oynatma Hızı Tam Senkronizasyonu (React Fiber Volume & Speed Hook Dispatch):
- *    - Oynatıcının ses slider'ı, dolgu çubuğu ve VOD hız göstergeleri React Fiber state/hook dispatch'i ile anında güncellenir.
+ * v0.4.6 İyileştirmeleri & Düzeltmeleri:
+ * 1. Tiyatro Modu & Sayfa Kayma Koruması (Scroll-Lock & PreventScroll Architecture):
+ *    - Kalite ve hız menüsü simülasyonlarında sayfanın yukarı kayıp videoyu ekran dışına itmesi engellendi (focus preventScroll & mutlak scroll kilidi).
+ * 2. Kick.com Ses Slider'ı & UI Tam Eşitlemesi (Pointer Coordinate & Radix Track Sync):
+ *    - Ses çubuğunun fiziksel koordinatlarına pointerdown/move/up simülasyonu, CSS --slider-fill & Radix transform güncellemeleri ve 0-1/0-100 React hook dispatch'i bağlandı.
+ * 3. Kick.com Oynatma Hızı 2-Kademeli UI Tetikleyicisi (Playback Speed UI & VOD Hook Dispatch):
+ *    - VOD oynatıcılarında hem kontrol çubuğundaki doğrudan hız butonları hem de Ayarlar popover'ındaki Hız alt menüsü otomatik seçilerek Kick oynatıcı UI'ı ile tam eşitlendi.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.5';
+  const EXTENSION_VERSION = '0.4.6';
   const VERSION_HISTORY = [
+    { version: 'v0.4.6', notes: 'Tiyatro modu sayfa kayma koruması (focus preventScroll & mutlak scroll kilidi), Kick.com ses slider fiziksel koordinat & Radix senkronizasyonu, Kick VOD hız 2-kademeli UI menü tetikleyicisi.' },
     { version: 'v0.4.5', notes: 'Kick.com reklam bitiş döngüsü & takılma düzeltmesi (Ad de-flapping state guard), geniş ekran/tiyatro modunun korunması (Escape klavye sinyali engellendi), Kick ses slider ve hız React Fiber state/hook senkronizasyonu.' },
     { version: 'v0.4.4', notes: 'Kick.com çift yönlü React Fiber BFS crawler & Amazon IVS erken SDK prototip kancası, 2-kademeli Radix UI kalite/hız senkronizasyonu, gelişmiş sıfır-PII telemetri.' },
     { version: 'v0.4.3', notes: 'Kick.com Amazon IVS & React tam UI senkronizasyonu (ses seviyesi kaydırıcısı, oynatma hızı, 2-kademeli kalite seçimi kilidi), reklam tampon koruması (360p/160p zorlama), VideoJS ve ErCDN adaptör optimizasyonları.' },
@@ -774,6 +775,8 @@
    */
   function simulateFullPointerClick(el) {
     if (!el) return false;
+    const initialScrollX = window.scrollX;
+    const initialScrollY = window.scrollY;
     try {
       const rect = el.getBoundingClientRect();
       const x = rect.left + (rect.width ? rect.width / 2 : 10);
@@ -793,19 +796,28 @@
       el.dispatchEvent(new MouseEvent('mouseover', commonOpts));
       el.dispatchEvent(new PointerEvent('pointerdown', { ...commonOpts, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
       el.dispatchEvent(new MouseEvent('mousedown', { ...commonOpts, button: 0, buttons: 1 }));
-      if (typeof el.focus === 'function') el.focus();
+      if (typeof el.focus === 'function') {
+        try {
+          el.focus({ preventScroll: true });
+        } catch (e) {
+          el.focus();
+        }
+      }
       el.dispatchEvent(new PointerEvent('pointerup', { ...commonOpts, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
       el.dispatchEvent(new MouseEvent('mouseup', { ...commonOpts, button: 0, buttons: 0 }));
       el.dispatchEvent(new MouseEvent('click', { ...commonOpts, button: 0, buttons: 0 }));
       if (typeof el.click === 'function') el.click();
-      return true;
     } catch (e) {
       if (typeof el.click === 'function') {
-        el.click();
-        return true;
+        try { el.click(); } catch (err) {}
       }
-      return false;
+    } finally {
+      // Tiyatro modunu ve sayfa konumunu korumak için kaymayı kesin olarak sıfırla
+      if (window.scrollY !== initialScrollY || window.scrollX !== initialScrollX) {
+        window.scrollTo(initialScrollX, initialScrollY);
+      }
     }
+    return true;
   }
 
   function setReactInputValue(input, val) {
@@ -1076,7 +1088,7 @@
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
-            const speedSetters = ['setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate', 'setRate', 'onSpeedChange', 'handleSpeedChange', 'setPlaybackSpeed'];
+            const speedSetters = ['setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate', 'setRate', 'onSpeedChange', 'handleSpeedChange', 'setPlaybackSpeed', 'onRateChange'];
             for (const name of speedSetters) {
               if (typeof props[name] === 'function') {
                 try {
@@ -1091,10 +1103,10 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 35) {
+          while (hook && typeof hook === 'object' && hookDepth < 45) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
-              if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 2)) {
+              if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 1.75 || m === 2)) {
                 try {
                   hook.queue.dispatch(rate);
                   addDiagnosticLog('INFO', `[KickAdapter] React Hook State hız dispatch tetiklendi: ${rate}x`);
@@ -1107,7 +1119,7 @@
             hookDepth++;
           }
           return false;
-        }, 350);
+        }, 450);
 
         if (success) return true;
       }
@@ -1135,11 +1147,12 @@
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
-            const volSetters = ['setVolume', 'onVolumeChange', 'handleVolumeChange', 'setVolumeLevel', 'handleVolume', 'changeVolume'];
+            const volSetters = ['setVolume', 'onVolumeChange', 'handleVolumeChange', 'setVolumeLevel', 'handleVolume', 'changeVolume', 'setVolumePercent', 'onVolume', 'updateVolume'];
             for (const name of volSetters) {
               if (typeof props[name] === 'function') {
                 try {
                   props[name](normalizedVol);
+                  try { props[name](percent); } catch (e) {}
                   addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${percent}%) çağrıldı.`);
                   success = true;
                   return true;
@@ -1155,13 +1168,20 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 35) {
+          while (hook && typeof hook === 'object' && hookDepth < 45) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
-              if (typeof m === 'number' && m >= 0 && m <= 1 && (m === 0 || m === 1 || m === 0.5 || Math.abs(m - normalizedVol) > 0.01)) {
+              if (typeof m === 'number' && m >= 0 && m <= 1) {
                 try {
                   hook.queue.dispatch(normalizedVol);
-                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses dispatch tetiklendi: ${percent}%`);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-1) dispatch: ${normalizedVol}`);
+                  success = true;
+                  return true;
+                } catch (e) {}
+              } else if (typeof m === 'number' && m >= 0 && m <= 100) {
+                try {
+                  hook.queue.dispatch(percent);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-100) dispatch: ${percent}`);
                   success = true;
                   return true;
                 } catch (e) {}
@@ -1171,7 +1191,7 @@
             hookDepth++;
           }
           return false;
-        }, 400);
+        }, 500);
 
         if (success) return true;
       }
@@ -1187,29 +1207,47 @@
         // 1. Kick React Fiber Ses Kancalarını Doğrudan Tetikle
         this.findAndInvokeReactVolume(validPercent);
 
-        // 2. Kick Range Slider'larına React Native Tracker ile yaz
+        // 2. Kick Range Slider'larına React Native Tracker ile yaz & CSS stillerini güncelle
         const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"], #channel-player input[type="range"]');
         sliders.forEach(slider => {
           setReactInputValue(slider, validPercent);
           slider.style.setProperty('--slider-fill', `${validPercent}%`);
+          slider.style.setProperty('--value', `${validPercent}%`);
         });
 
-        // 3. Radix UI & Özel Slider Elementleri (Track & Thumb DOM senkronizasyonu)
+        // 3. Kick Fiziksel Slider Track Koordinatlarına Pointer Event Simülasyonu
+        const volContainers = document.querySelectorAll('div[data-testid="volume-slider"], .volume-slider, div[data-testid="player-controls"] [class*="volume"]');
+        volContainers.forEach(container => {
+          const track = container.querySelector('[role="slider"], [data-radix-slider-track], input[type="range"], div[class*="track"], span[class*="track"], div[class*="range"]');
+          if (track) {
+            const rect = track.getBoundingClientRect();
+            if (rect.width > 0) {
+              const targetX = rect.left + (rect.width * normalizedVol);
+              const targetY = rect.top + (rect.height / 2);
+              track.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+              track.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+              track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
+            }
+          }
+        });
+
+        // 4. Radix UI Slider DOM Nitelikleri ve Transform
         const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="volume-slider"] [role="slider"], div[data-testid="player-controls"] [role="slider"]');
         radixSliders.forEach(slider => {
           slider.setAttribute('aria-valuenow', validPercent.toString());
           slider.setAttribute('aria-valuetext', `${validPercent}%`);
           slider.style.left = `${validPercent}%`;
+          slider.style.transform = `translateX(-50%)`;
           slider.dispatchEvent(new Event('input', { bubbles: true }));
           slider.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
-        const sliderBars = document.querySelectorAll('div[data-testid="volume-slider"] [class*="range"], div[data-testid="volume-slider"] [class*="track"], div[data-testid="volume-slider"] [class*="fill"], .volume-slider [class*="range"], .volume-slider [class*="fill"]');
+        const sliderBars = document.querySelectorAll('div[data-testid="volume-slider"] [class*="range"], div[data-testid="volume-slider"] [class*="track"], div[data-testid="volume-slider"] [class*="fill"], .volume-slider [class*="range"], .volume-slider [class*="fill"], div[data-testid="volume-slider"] [data-radix-slider-range]');
         sliderBars.forEach(bar => {
           bar.style.width = `${validPercent}%`;
         });
 
-        // 4. IVS Player Nesnesi Ses Eşitlemesi
+        // 5. IVS Player Nesnesi Ses Eşitlemesi
         const ivs = this.findIvsPlayer(video);
         if (ivs) {
           if (typeof ivs.setVolume === 'function') {
@@ -1222,6 +1260,133 @@
       } catch (e) {}
     },
 
+    triggerKickUiSpeed(rate) {
+      try {
+        if (!rate) return;
+        const initialScrollX = window.scrollX;
+        const initialScrollY = window.scrollY;
+        const rateStr = `${rate}`;
+        const rateLabel = `${rate}x`;
+
+        // 1. Player Kontrollerinde doğrudan Hız Butonu var mı? (VOD kontrol çubuğunda "1x", "1.25x" vb.)
+        const directSpeedBtns = Array.from(document.querySelectorAll(
+          'div[data-testid="player-controls"] button, #channel-player button, .player-container button'
+        )).filter(b => {
+          const txt = (b.textContent || '').trim().toLowerCase();
+          const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+          return txt.endsWith('x') || aria.includes('speed') || aria.includes('hız');
+        });
+
+        let directBtn = directSpeedBtns.find(b => {
+          const rect = b.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        });
+
+        if (directBtn) {
+          simulateFullPointerClick(directBtn);
+          setTimeout(() => {
+            const popovers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal] div[role="menu"]'));
+            for (const cont of popovers) {
+              const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span'));
+              const targetItem = items.find(el => {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                if (txt.length > 20) return false;
+                return txt === rateLabel.toLowerCase() || txt === rateStr || (rate === 1 && (txt.includes('normal') || txt === '1x'));
+              });
+              if (targetItem) {
+                simulateFullPointerClick(targetItem);
+                addDiagnosticLog('INFO', `[KickAdapter] Hız menü öğesi doğrudan tıklandı: ${rateLabel}`);
+                break;
+              }
+            }
+            setTimeout(() => {
+              window.scrollTo(initialScrollX, initialScrollY);
+            }, 50);
+          }, 80);
+          return;
+        }
+
+        // 2. Settings Dişli Menüsü Üzerinden 2-Kademeli Hız Seçimi
+        const settingsSelectors = [
+          '[data-testid="player-settings-button"]',
+          '[data-testid="settings-button"]',
+          'div[data-testid="player-controls"] button[aria-label*="ayar" i]',
+          'div[data-testid="player-controls"] button[aria-label*="setting" i]',
+          '#channel-player button[aria-label*="ayar" i]',
+          '#channel-player button[aria-label*="setting" i]',
+          '.player-container button[aria-label*="ayar" i]',
+          '.player-container button[aria-label*="setting" i]'
+        ];
+
+        let settingsBtn = null;
+        for (const sel of settingsSelectors) {
+          const list = Array.from(document.querySelectorAll(sel));
+          if (list.length > 0) {
+            settingsBtn = list.find(b => {
+              const rect = b.getBoundingClientRect();
+              return rect.width > 0 && rect.height > 0;
+            }) || list[0];
+            if (settingsBtn) break;
+          }
+        }
+
+        if (!settingsBtn) return;
+
+        simulateFullPointerClick(settingsBtn);
+        addDiagnosticLog('INFO', '[KickAdapter] Kick Ayarlar butonu tıklandı, Hız menüsü aranıyor.');
+
+        setTimeout(() => {
+          const popoverContainers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal] div[role="menu"]'));
+          let speedSubMenuTrigger = null;
+
+          for (const cont of popoverContainers) {
+            const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
+            speedSubMenuTrigger = items.find(el => {
+              const txt = (el.textContent || '').trim().toLowerCase();
+              if (txt.length > 35) return false;
+              return txt.includes('speed') || txt.includes('hız') || txt.includes('playback') || txt.includes('rate');
+            });
+            if (speedSubMenuTrigger) break;
+          }
+
+          if (speedSubMenuTrigger) {
+            simulateFullPointerClick(speedSubMenuTrigger);
+            addDiagnosticLog('INFO', `[KickAdapter] Hız alt menü başlığı tıklandı: ${speedSubMenuTrigger.textContent.trim()}`);
+          }
+
+          setTimeout(() => {
+            const activePopovers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal] div[role="menu"]'));
+            let matchBtn = null;
+
+            for (const cont of activePopovers) {
+              const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span'));
+              matchBtn = items.find(el => {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                if (txt.length > 20) return false;
+                return txt === rateLabel.toLowerCase() || txt === rateStr || (rate === 1 && (txt.includes('normal') || txt === '1x')) || txt.includes(rateLabel.toLowerCase());
+              });
+              if (matchBtn) break;
+            }
+
+            if (matchBtn) {
+              simulateFullPointerClick(matchBtn);
+              addDiagnosticLog('INFO', `[KickAdapter] 2-Kademeli Hız UI menü seçimi tıklandı: ${rateLabel}`);
+            }
+
+            setTimeout(() => {
+              const isStillOpen = document.querySelector('div[data-radix-popper-content-wrapper]');
+              if (isStillOpen && settingsBtn) {
+                simulateFullPointerClick(settingsBtn);
+              }
+              window.scrollTo(initialScrollX, initialScrollY);
+            }, 60);
+          }, 90);
+        }, 90);
+      } catch (e) {
+        addDiagnosticLog('WARN', '[KickAdapter] Hız UI tetikleyici hatası', e.message);
+      }
+    },
+
     syncKickPlayerSpeed(rate) {
       try {
         const { video } = findVideoAndPlayer();
@@ -1230,6 +1395,7 @@
           ivs.setPlaybackRate(rate);
         }
         this.findAndInvokeReactSpeed(rate);
+        this.triggerKickUiSpeed(rate);
         if (video) {
           video.playbackRate = rate;
           video.defaultPlaybackRate = rate;
@@ -1241,6 +1407,8 @@
     triggerKickUiQuality(targetLabel) {
       try {
         if (!targetLabel) return;
+        const initialScrollX = window.scrollX;
+        const initialScrollY = window.scrollY;
         const digits = (targetLabel.match(/\d+/) || [''])[0];
         const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
 
@@ -1325,6 +1493,7 @@
               if (isStillOpen && settingsBtn) {
                 simulateFullPointerClick(settingsBtn);
               }
+              window.scrollTo(initialScrollX, initialScrollY);
             }, 60);
           }, 100);
         }, 100);

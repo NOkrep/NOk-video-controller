@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick tam UI senkronizasyonu & IVS kalite kilidi, Now TV ErCDN adaptörü ve 4-preset ses/hız denetleyici.",
   "author": "NOkrep",
   "icons": {
