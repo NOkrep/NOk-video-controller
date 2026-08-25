@@ -1,25 +1,24 @@
 /**
- * injected.js - NOk Video Controller v0.4.7 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.8 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.7 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Radix UI Array State & Pointer/Hover Ses Eşitlemesi (useSlider [val] Hook Dispatch):
- *    - Radix UI Slider hook array state ([0..1], [0..100]), container hover, track bounding box pointerdown/move/up ve tam ses senkronizasyonu.
- * 2. Kick.com 2-Kademeli Hız UI Eşitlemesi (Playback Speed Menü Tetikleyici & React Fiber):
- *    - VOD ve canlı oynatıcıda Ayarlar menüsü altındaki "Playback Speed" / "Oynatma Hızı" alt menüsü otomatik açılarak hedef hız seçimi tıklandı.
- * 3. Hızlı Sarma Butonları (±30s & ±10s 4-Butonlu Grid):
- *    - HUD hız bölümüne 10 saniye ileri/geri sarma butonlarının yanına 30 saniye ileri/geri sarma (-30s, -10s, +10s, +30s) eklendi.
- * 4. Arka Planda Periyodik CDN Ping Ölçümü (Silent 15s Telemetri & Canlı Rozet):
- *    - Ping değeri eklentide her 15 saniyede bir akışı ve izlemeyi bölmeden (silent mode) otomatik olarak güncellenir.
+ * v0.4.8 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Next.js Rotası ve React Fiber Crawler İzolasyonu (404 Sayfa Yönlendirme Düzeltmesi):
+ *    - Fiber ağacı tarayıcısından Next.js kök düğümleri (__next, document.body) ve genel onChange tetikleyicileri çıkarıldı; video oynatıcı bileşenleri izole edildi.
+ * 2. TRT 1 & TRT İzle Özel Adaptörü (TrtAdapter):
+ *    - trt1.com.tr, trtizle.com ve TRT yayın platformları için HLS master profil kilitleri (1080p FHD, 720p HD, 576p PAL, 480p SD, 360p), Video.js & Hls.js seviye kontrolü ve TRT oynatıcı ses çubuğu UI eşitlemesi.
+ * 3. KickAdapter Eşleşme Güvenliği:
+ *    - KickAdapter eşleşmesi yalnızca kick.com domaini veya özel Kick oynatıcı kapsayıcıları ile sınırlandırıldı.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.7';
+  const EXTENSION_VERSION = '0.4.8';
   const VERSION_HISTORY = [
+    { version: 'v0.4.8', notes: 'Kick.com Next.js rota ve React Fiber crawler izolasyonu (404 sayfa yönlendirme çözümü), TRT 1 / TRT İzle özel HLS adaptörü ve ses çubuğu UI eşitlemesi, KickAdapter domain izolasyonu.' },
     { version: 'v0.4.7', notes: 'Kick.com Radix UI array [val] state ses ve 2-kademeli hız UI eşitlemesi, ±30s & ±10s 4-butonlu sarma matrisi, 15s sessiz periyodik CDN ping telemetrisi.' },
     { version: 'v0.4.6', notes: 'Tiyatro modu sayfa kayma koruması (focus preventScroll & mutlak scroll kilidi), Kick.com ses slider fiziksel koordinat & Radix senkronizasyonu, Kick VOD hız 2-kademeli UI menü tetikleyicisi.' },
     { version: 'v0.4.5', notes: 'Kick.com reklam bitiş döngüsü & takılma düzeltmesi (Ad de-flapping state guard), geniş ekran/tiyatro modunun korunması (Escape klavye sinyali engellendi), Kick ses slider ve hız React Fiber state/hook senkronizasyonu.' },
@@ -48,7 +47,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.4.7)');
+      showToast('NOk Video Controller Aktif (v0.4.8)');
     }
   });
 
@@ -878,7 +877,8 @@
   const KickAdapter = {
     name: 'KickAdapter',
     matches() {
-      return HOSTNAME.includes('kick.com') || !!document.querySelector('#channel-player, [data-testid="player-settings-button"], [data-testid="settings-button"], [class*="kick-player"]');
+      // SADECE ve SADECE Kick.com veya özel Kick oynatıcı kapsayıcısı varsa eşleş (ASLA genel settings-button ile eşleşme!)
+      return HOSTNAME.includes('kick.com') || (!!document.querySelector('#channel-player, [class*="kick-player"]') && !HOSTNAME.includes('trt') && !HOSTNAME.includes('puhu') && !HOSTNAME.includes('nowtv'));
     },
 
     isVodPage() {
@@ -895,6 +895,7 @@
       if (window.kickPlayer && typeof window.kickPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = window.kickPlayer);
       if (window.__kick_player && typeof window.__kick_player.getQualities === 'function') return (globalCapturedIvsPlayer = window.__kick_player);
 
+      // YALNIZCA Oynatıcı Kapsayıcıları (ASLA __next veya document.body ekleme!)
       const candidates = [
         video,
         video ? video.parentElement : null,
@@ -906,10 +907,7 @@
         document.querySelector('.player-container'),
         document.querySelector('div[data-clip-player]'),
         document.querySelector('div[data-testid="player-controls"]'),
-        document.querySelector('div[data-testid="video-player"]'),
-        document.querySelector('div[class*="player"]'),
-        document.getElementById('__next'),
-        document.body
+        document.querySelector('div[data-testid="video-player"]')
       ].filter(Boolean);
 
       for (const el of candidates) {
@@ -960,7 +958,7 @@
                 }
               }
               return false;
-            }, 400);
+            }, 350);
 
             if (foundPlayer) {
               globalCapturedIvsPlayer = foundPlayer;
@@ -978,6 +976,7 @@
     findAndInvokeReactQuality(targetLabel, targetHeight) {
       if (!targetLabel) return false;
       const cleanDigits = (targetLabel.match(/\d+/) || [''])[0];
+      // SADECE oynatıcı bileşenleri (ASLA __next veya document.body DEĞİL!)
       const rootCandidates = [
         document.querySelector('#channel-player'),
         document.querySelector('.player-container'),
@@ -985,9 +984,7 @@
         document.querySelector('video') ? document.querySelector('video').parentElement : null,
         document.querySelector('video'),
         document.querySelector('div[data-testid="player-controls"]'),
-        document.querySelector('div[data-testid="video-player"]'),
-        document.getElementById('__next'),
-        document.body
+        document.querySelector('div[data-testid="video-player"]')
       ].filter(Boolean);
 
       for (const root of rootCandidates) {
@@ -1066,7 +1063,7 @@
             hookDepth++;
           }
           return false;
-        }, 500);
+        }, 400);
 
         if (success) return true;
       }
@@ -1074,15 +1071,14 @@
     },
 
     findAndInvokeReactSpeed(rate) {
+      // SADECE Oynatıcı kapsayıcıları (ASLA __next veya document.body DEĞİL - Next.js rotasını bozmaz!)
       const rootCandidates = [
         document.querySelector('#channel-player'),
         document.querySelector('.player-container'),
         document.querySelector('.relative.flex-1'),
         document.querySelector('video'),
         document.querySelector('div[data-testid="player-controls"]'),
-        document.querySelector('div[data-testid="video-player"]'),
-        document.getElementById('__next'),
-        document.body
+        document.querySelector('div[data-testid="video-player"]')
       ].filter(Boolean);
 
       const rateStr = `${rate}`;
@@ -1096,10 +1092,11 @@
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
+            // SADECE belirgin hız fonksiyonları (genel onChange veya onValueChange YOK!)
             const speedSetters = [
               'setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate',
               'setRate', 'onSpeedChange', 'handleSpeedChange', 'setPlaybackSpeed',
-              'onRateChange', 'onValueChange', 'onValueCommit', 'handleRateChange'
+              'onRateChange', 'handleRateChange'
             ];
             for (const name of speedSetters) {
               if (typeof props[name] === 'function') {
@@ -1117,10 +1114,10 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 50) {
+          while (hook && typeof hook === 'object' && hookDepth < 40) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
-              if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 1.75 || m === 2 || (m >= 0.2 && m <= 4))) {
+              if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 1.75 || m === 2)) {
                 try {
                   hook.queue.dispatch(rate);
                   addDiagnosticLog('INFO', `[KickAdapter] React Hook State hız dispatch: ${rateLabel}`);
@@ -1134,25 +1131,13 @@
                   success = true;
                   return true;
                 } catch (e) {}
-              } else if (Array.isArray(m) && m.length > 0) {
-                try {
-                  if (typeof m[0] === 'number') {
-                    hook.queue.dispatch([rate]);
-                    success = true;
-                    return true;
-                  } else if (typeof m[0] === 'string') {
-                    hook.queue.dispatch([rate === 1 ? '1x' : rateLabel]);
-                    success = true;
-                    return true;
-                  }
-                } catch (e) {}
               }
             }
             hook = hook.next;
             hookDepth++;
           }
           return false;
-        }, 500);
+        }, 400);
 
         if (success) return true;
       }
@@ -1161,18 +1146,17 @@
 
     findAndInvokeReactVolume(percent) {
       const normalizedVol = Math.max(0, Math.min(1, percent / 100));
+      // SADECE Ses çubuğu ve Oynatıcı Kapsayıcıları (ASLA __next veya document.body DEĞİL!)
       const rootCandidates = [
-        document.querySelector('div[data-testid="player-controls"]'),
         document.querySelector('div[data-testid="volume-slider"]'),
         document.querySelector('.volume-slider'),
         document.querySelector('[class*="volume-slider"]'),
+        document.querySelector('div[data-testid="player-controls"]'),
         document.querySelector('#channel-player'),
         document.querySelector('.player-container'),
         document.querySelector('.relative.flex-1'),
         document.querySelector('video'),
-        document.querySelector('div[data-testid="video-player"]'),
-        document.getElementById('__next'),
-        document.body
+        document.querySelector('div[data-testid="video-player"]')
       ].filter(Boolean);
 
       for (const root of rootCandidates) {
@@ -1183,10 +1167,11 @@
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
+            // SADECE ses odaklı fonksiyonlar (ASLA genel onChange YOK - Next.js 404 hatasını önler!)
             const volSetters = [
               'setVolume', 'onVolumeChange', 'handleVolumeChange', 'setVolumeLevel',
               'handleVolume', 'changeVolume', 'setVolumePercent', 'onVolume',
-              'updateVolume', 'onValueChange', 'onValueCommit', 'onChange'
+              'updateVolume'
             ];
             for (const name of volSetters) {
               if (typeof props[name] === 'function') {
@@ -1210,7 +1195,7 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 50) {
+          while (hook && typeof hook === 'object' && hookDepth < 40) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
               // 1. Array Hook State (Radix UI Slider useSlider [values] state)
@@ -1231,7 +1216,7 @@
                   success = true;
                   return true;
                 } catch (e) {}
-              } else if (typeof m === 'number' && m >= 0 && m <= 100) {
+              } else if (typeof m === 'number' && m > 1 && m <= 100) {
                 try {
                   hook.queue.dispatch(percent);
                   addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-100) dispatch: ${percent}`);
@@ -1244,7 +1229,7 @@
             hookDepth++;
           }
           return false;
-        }, 550);
+        }, 400);
 
         if (success) return true;
       }
@@ -2012,7 +1997,166 @@
   };
 
   /**
-   * 4. HLS.js Adaptörü
+   * 4. TRT 1 & TRT İzle (trt1.com.tr, trtizle.com, trt.com.tr) Adaptörü
+   * HLS Master Playlist & CDN-V TRT akış ayrıştırıcısı, Video.js / Hls.js / Native HTML5 kilitleri
+   */
+  const TrtAdapter = {
+    name: 'TrtAdapter',
+    matches(video, player) {
+      return (
+        HOSTNAME.includes('trt1.com.tr') ||
+        HOSTNAME.includes('trtizle.com') ||
+        HOSTNAME.includes('trt.com.tr') ||
+        HOSTNAME.includes('trthaber.com.tr') ||
+        HOSTNAME.includes('trtspor.com.tr') ||
+        (video && (video.src?.includes('trt.com.tr') || video.currentSrc?.includes('trt.com.tr'))) ||
+        !!document.querySelector('[class*="trt-player"], [id*="trt-player"], [class*="trtizle"]')
+      );
+    },
+
+    syncTrtUiVolume(percent) {
+      try {
+        const val = Math.max(0, Math.min(100, Math.round(percent)));
+        const normalized = val / 100;
+        const rangeInputs = document.querySelectorAll('input[type="range"][class*="volume"], input[type="range"][aria-label*="ses" i], input[type="range"][aria-label*="volume" i], .clappr-volume-slider, [class*="volume-bar"]');
+        rangeInputs.forEach(inp => {
+          if (inp.tagName === 'INPUT') {
+            setReactInputValue(inp, val <= 1 ? normalized : val);
+          }
+        });
+        const volumeBars = document.querySelectorAll('[class*="volume-progress"], [class*="volume-fill"], [class*="volume-level"]');
+        volumeBars.forEach(bar => {
+          bar.style.width = `${val}%`;
+        });
+      } catch (e) {}
+    },
+
+    getQualities(video, player) {
+      const results = [];
+      const seenHeights = new Set();
+
+      // 1. Video.js qualityLevels()
+      if (player && typeof player.qualityLevels === 'function') {
+        try {
+          const qLevels = player.qualityLevels();
+          if (qLevels && qLevels.length > 0) {
+            for (let i = 0; i < qLevels.length; i++) {
+              const q = qLevels[i];
+              const h = q.height || 0;
+              const w = q.width || 0;
+              let label = q.label || `${h}p`;
+              if (h >= 1000 || w >= 1900) label = '1080p (FHD)';
+              else if (h >= 700 || w >= 1200) label = '720p (HD)';
+              else if (h >= 540 && h <= 576) label = '576p (PAL)';
+              else if (h >= 450 && h < 540) label = '480p (SD)';
+              else if (h >= 320 && h < 450) label = '360p (Düşük)';
+
+              if (h > 0 && !seenHeights.has(h)) {
+                seenHeights.add(h);
+                results.push({
+                  id: `trt_vjs_${i}`,
+                  index: i,
+                  label: label,
+                  height: h,
+                  width: w,
+                  bitrate: q.bitrate || 0,
+                  raw: q
+                });
+              }
+            }
+            if (results.length > 1) {
+              return results.sort((a, b) => (b.height || 0) - (a.height || 0));
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. HLS.js Seviyeleri
+      const hls = (video && video.hls) || (player && player.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]);
+      if (hls && hls.levels && hls.levels.length > 0) {
+        hls.levels.forEach((lvl, idx) => {
+          const h = lvl.height || 0;
+          let label = `${h}p`;
+          if (h >= 1000) label = '1080p (FHD)';
+          else if (h >= 700) label = '720p (HD)';
+          else if (h >= 540) label = '576p (PAL)';
+          else if (h >= 450) label = '480p (SD)';
+          else if (h >= 320) label = '360p (Düşük)';
+
+          if (h > 0 && !seenHeights.has(h)) {
+            seenHeights.add(h);
+            results.push({
+              id: `trt_hls_${idx}`,
+              index: idx,
+              label: label,
+              height: h,
+              bitrate: lvl.bitrate || 0,
+              raw: lvl
+            });
+          }
+        });
+        if (results.length > 1) {
+          return results.sort((a, b) => (b.height || 0) - (a.height || 0));
+        }
+      }
+
+      // 3. TRT CDN-V Standart HLS Yayın Profilleri
+      return [
+        { id: 'trt_1080', label: '1080p (FHD)', height: 1080, suffix: '1080p' },
+        { id: 'trt_720', label: '720p (HD)', height: 720, suffix: '720p' },
+        { id: 'trt_576', label: '576p (PAL)', height: 576, suffix: '576p' },
+        { id: 'trt_480', label: '480p (SD)', height: 480, suffix: '480p' },
+        { id: 'trt_360', label: '360p (Düşük)', height: 360, suffix: '360p' }
+      ];
+    },
+
+    applyQuality(targetItem, video, player) {
+      addDiagnosticLog('INFO', `[TrtAdapter] TRT Kalite uygulanıyor: ${targetItem.label}`);
+
+      // 1. Video.js qualityLevels()
+      if (player && typeof player.qualityLevels === 'function') {
+        try {
+          const qLevels = player.qualityLevels();
+          if (qLevels && qLevels.length > 0) {
+            for (let i = 0; i < qLevels.length; i++) {
+              const q = qLevels[i];
+              const isTarget = (targetItem.index !== undefined && targetItem.index === i) ||
+                               (q.height && Math.abs(q.height - targetItem.height) < 40);
+              q.enabled = isTarget;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. HLS.js Seviye Değişimi
+      const hls = (video && video.hls) || (player && player.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]);
+      if (hls && hls.levels && targetItem.index !== undefined) {
+        hls.currentLevel = targetItem.index;
+      }
+
+      // 3. TRT CDN-V Doğrudan Kaynak Değişimi (cdn-v.pr.trt.com.tr)
+      let curSrc = '';
+      if (player && typeof player.currentSrc === 'function') curSrc = player.currentSrc();
+      if (!curSrc && video) curSrc = video.currentSrc || video.src || '';
+
+      if (curSrc && curSrc.includes('cdn-v.pr.trt.com.tr') && targetItem.suffix) {
+        const regex = /master(1080p|720p|576p|480p|360p|240p)?/i;
+        if (regex.test(curSrc)) {
+          const newSrc = curSrc.replace(regex, `master${targetItem.suffix}`);
+          if (newSrc !== curSrc) {
+            smoothPlayerSourceSwitch(video, player, newSrc, `TRT ${targetItem.label}`);
+            return true;
+          }
+        }
+      }
+
+      showToast(`TRT: ${targetItem.label}`);
+      return true;
+    }
+  };
+
+  /**
+   * 5. HLS.js Adaptörü
    */
   const HlsJsAdapter = {
     name: 'HlsJsAdapter',
@@ -2050,7 +2194,7 @@
   };
 
   /**
-   * 5. Genel Standart VideoJS / HTML5 Adaptörü
+   * 6. Genel Standart VideoJS / HTML5 Adaptörü
    */
   const GenericAdapter = {
     name: 'GenericAdapter',
@@ -2074,6 +2218,7 @@
     PuhuTvAdapter,
     KickAdapter,
     NowTvAdapter,
+    TrtAdapter,
     HlsJsAdapter,
     GenericAdapter
   ];
@@ -2198,7 +2343,7 @@
         player.setPlaybackRate(validRate);
       }
 
-      if (HOSTNAME.includes('kick.com') || currentActiveAdapterName === 'KickAdapter') {
+      if (HOSTNAME.includes('kick.com')) {
         KickAdapter.syncKickPlayerSpeed(validRate);
       }
 
@@ -2312,8 +2457,10 @@
       video.dispatchEvent(new Event('volumechange', { bubbles: true }));
     }
 
-    if (HOSTNAME.includes('kick.com') || currentActiveAdapterName === 'KickAdapter') {
+    if (HOSTNAME.includes('kick.com')) {
       KickAdapter.syncKickPlayerVolume(validPercent);
+    } else if (HOSTNAME.includes('trt') || currentActiveAdapterName === 'TrtAdapter') {
+      TrtAdapter.syncTrtUiVolume(validPercent);
     }
 
     // %100 - %200 arası Web Audio API GainNode yükseltmesi (Booster)

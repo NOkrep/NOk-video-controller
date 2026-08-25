@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.4.7",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick.com tam UI/Fiber ses-hız senkronizasyonu, 4 kademeli hızlı sarma (±10s/±30s), periyodik CDN ping telemetrisi.",
+  "version": "0.4.8",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick.com Next.js rotası & React Fiber crawler izolasyonu, TRT 1 / TRT İzle yayın & ses adaptörü, 4 kademeli hızlı sarma (±10s/±30s), periyodik CDN ping telemetrisi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",
@@ -24,7 +24,17 @@
   "host_permissions": [],
   "content_scripts": [
     {
-      "matches": ["*://*.nowtv.com.tr/*", "*://*.fox.com.tr/*", "*://*.puhutv.com/*", "*://*.kick.com/*"],
+      "matches": [
+        "*://*.nowtv.com.tr/*",
+        "*://*.fox.com.tr/*",
+        "*://*.puhutv.com/*",
+        "*://*.kick.com/*",
+        "*://*.trt1.com.tr/*",
+        "*://*.trtizle.com/*",
+        "*://*.trt.com.tr/*",
+        "*://*.trthaber.com.tr/*",
+        "*://*.trtspor.com.tr/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_start",
       "all_frames": true
