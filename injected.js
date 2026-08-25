@@ -1,24 +1,24 @@
 /**
- * injected.js - NOk Video Controller v0.4.4 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.5 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.4 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Çift Yönlü React Fiber Ağaç Tarayıcısı (Bidirectional BFS & Ancestor Crawler):
- *    - Hem ata zincirini (return) hem de alt bileşen ağacını (child/sibling) tarayarak Amazon IVS Player ve kalite/hız fonksiyonlarını kesin olarak yakalar.
- * 2. Amazon IVS Player Erken SDK Yakalama & Prototip Kancası:
- *    - IVSPlayer.create, AmazonIVS.createMediaPlayer ve attachHTMLVideoElement prototip kancasıyla oynatıcı nesnesini ve video bağlamını ilk saniyede yakalar.
- * 3. 2-Kademeli Kick UI & Kalite Rozeti Senkronizasyonu:
- *    - Fare/pointer hareketiyle kontrol çubuğunu uyandırır, dişli/ayarlar butonunu ve Radix kalite menü öğesini doğrudan tetikler.
- * 4. Canlı Reklam Tampon Koruması (Ad Low-Buffer Quality Lock) ve VideoJS/ErCDN optimizasyonları.
+ * v0.4.5 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Reklam Döngüsü & Flapping Düzeltmesi (Ad De-Flapping State Guard):
+ *    - Reklam bitiminde 6-7 kez takılı kalıp geri sarma döngüsü 3 ardışık kararlı tarama filtresi ve IVS doğrudan profil geçişi ile çözüldü.
+ * 2. Geniş Ekran / Tiyatro Modu Koruyucusu (Theater Mode Preservation):
+ *    - Menü simülasyonunda Escape tuşu atılması engellendi, geniş ekran/tiyatro modunun bozulması önlendi; Radix popover hedeflemesi daraltıldı.
+ * 3. Kick.com Ses Slider'ı & Oynatma Hızı Tam Senkronizasyonu (React Fiber Volume & Speed Hook Dispatch):
+ *    - Oynatıcının ses slider'ı, dolgu çubuğu ve VOD hız göstergeleri React Fiber state/hook dispatch'i ile anında güncellenir.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.4';
+  const EXTENSION_VERSION = '0.4.5';
   const VERSION_HISTORY = [
+    { version: 'v0.4.5', notes: 'Kick.com reklam bitiş döngüsü & takılma düzeltmesi (Ad de-flapping state guard), geniş ekran/tiyatro modunun korunması (Escape klavye sinyali engellendi), Kick ses slider ve hız React Fiber state/hook senkronizasyonu.' },
     { version: 'v0.4.4', notes: 'Kick.com çift yönlü React Fiber BFS crawler & Amazon IVS erken SDK prototip kancası, 2-kademeli Radix UI kalite/hız senkronizasyonu, gelişmiş sıfır-PII telemetri.' },
     { version: 'v0.4.3', notes: 'Kick.com Amazon IVS & React tam UI senkronizasyonu (ses seviyesi kaydırıcısı, oynatma hızı, 2-kademeli kalite seçimi kilidi), reklam tampon koruması (360p/160p zorlama), VideoJS ve ErCDN adaptör optimizasyonları.' },
     { version: 'v0.4.2', notes: 'Sadeleştirilmiş kristal netliğinde ses/hız preset butonları (4 net seçenek, %0/%50/%100/%150 ve 1x/1.25x/1.5x/2x), VideoJS null referans koruması ve geliştirilmiş sıfır-PII teşhis motoru.' },
@@ -1076,7 +1076,7 @@
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
-            const speedSetters = ['setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate', 'setRate'];
+            const speedSetters = ['setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate', 'setRate', 'onSpeedChange', 'handleSpeedChange', 'setPlaybackSpeed'];
             for (const name of speedSetters) {
               if (typeof props[name] === 'function') {
                 try {
@@ -1088,8 +1088,90 @@
               }
             }
           }
+
+          let hook = node.memoizedState;
+          let hookDepth = 0;
+          while (hook && typeof hook === 'object' && hookDepth < 35) {
+            const m = hook.memoizedState;
+            if (hook.queue && typeof hook.queue.dispatch === 'function') {
+              if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 2)) {
+                try {
+                  hook.queue.dispatch(rate);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State hız dispatch tetiklendi: ${rate}x`);
+                  success = true;
+                  return true;
+                } catch (e) {}
+              }
+            }
+            hook = hook.next;
+            hookDepth++;
+          }
           return false;
         }, 350);
+
+        if (success) return true;
+      }
+      return false;
+    },
+
+    findAndInvokeReactVolume(percent) {
+      const normalizedVol = Math.max(0, Math.min(1, percent / 100));
+      const rootCandidates = [
+        document.querySelector('div[data-testid="player-controls"]'),
+        document.querySelector('div[data-testid="volume-slider"]'),
+        document.querySelector('.volume-slider'),
+        document.querySelector('#channel-player'),
+        document.querySelector('.player-container'),
+        document.querySelector('.relative.flex-1'),
+        document.querySelector('video'),
+        document.getElementById('__next')
+      ].filter(Boolean);
+
+      for (const root of rootCandidates) {
+        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+        if (!fiberKey || !root[fiberKey]) continue;
+
+        let success = false;
+        searchFiberTree(root[fiberKey], (node) => {
+          const props = node.memoizedProps;
+          if (props && typeof props === 'object') {
+            const volSetters = ['setVolume', 'onVolumeChange', 'handleVolumeChange', 'setVolumeLevel', 'handleVolume', 'changeVolume'];
+            for (const name of volSetters) {
+              if (typeof props[name] === 'function') {
+                try {
+                  props[name](normalizedVol);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${percent}%) çağrıldı.`);
+                  success = true;
+                  return true;
+                } catch (e) {}
+              }
+            }
+            if (percent === 0 && typeof props.setMuted === 'function') {
+              try { props.setMuted(true); } catch (e) {}
+            } else if (percent > 0 && typeof props.setMuted === 'function') {
+              try { props.setMuted(false); } catch (e) {}
+            }
+          }
+
+          let hook = node.memoizedState;
+          let hookDepth = 0;
+          while (hook && typeof hook === 'object' && hookDepth < 35) {
+            const m = hook.memoizedState;
+            if (hook.queue && typeof hook.queue.dispatch === 'function') {
+              if (typeof m === 'number' && m >= 0 && m <= 1 && (m === 0 || m === 1 || m === 0.5 || Math.abs(m - normalizedVol) > 0.01)) {
+                try {
+                  hook.queue.dispatch(normalizedVol);
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses dispatch tetiklendi: ${percent}%`);
+                  success = true;
+                  return true;
+                } catch (e) {}
+              }
+            }
+            hook = hook.next;
+            hookDepth++;
+          }
+          return false;
+        }, 400);
 
         if (success) return true;
       }
@@ -1100,26 +1182,38 @@
       try {
         const { video } = findVideoAndPlayer();
         const validPercent = Math.max(0, Math.min(100, Math.round(percent)));
+        const normalizedVol = validPercent / 100;
         
-        // 1. Kick Range Slider'larına React Native Tracker ile yaz
+        // 1. Kick React Fiber Ses Kancalarını Doğrudan Tetikle
+        this.findAndInvokeReactVolume(validPercent);
+
+        // 2. Kick Range Slider'larına React Native Tracker ile yaz
         const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"], #channel-player input[type="range"]');
         sliders.forEach(slider => {
           setReactInputValue(slider, validPercent);
+          slider.style.setProperty('--slider-fill', `${validPercent}%`);
         });
 
-        // 2. Radix UI Slider Elementleri
-        const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="player-controls"] [role="slider"]');
+        // 3. Radix UI & Özel Slider Elementleri (Track & Thumb DOM senkronizasyonu)
+        const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="volume-slider"] [role="slider"], div[data-testid="player-controls"] [role="slider"]');
         radixSliders.forEach(slider => {
           slider.setAttribute('aria-valuenow', validPercent.toString());
+          slider.setAttribute('aria-valuetext', `${validPercent}%`);
+          slider.style.left = `${validPercent}%`;
           slider.dispatchEvent(new Event('input', { bubbles: true }));
           slider.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
-        // 3. IVS Player Nesnesi Ses Eşitlemesi
+        const sliderBars = document.querySelectorAll('div[data-testid="volume-slider"] [class*="range"], div[data-testid="volume-slider"] [class*="track"], div[data-testid="volume-slider"] [class*="fill"], .volume-slider [class*="range"], .volume-slider [class*="fill"]');
+        sliderBars.forEach(bar => {
+          bar.style.width = `${validPercent}%`;
+        });
+
+        // 4. IVS Player Nesnesi Ses Eşitlemesi
         const ivs = this.findIvsPlayer(video);
         if (ivs) {
           if (typeof ivs.setVolume === 'function') {
-            ivs.setVolume(validPercent / 100);
+            ivs.setVolume(normalizedVol);
           }
           if (typeof ivs.setMuted === 'function') {
             ivs.setMuted(validPercent === 0);
@@ -1150,43 +1244,17 @@
         const digits = (targetLabel.match(/\d+/) || [''])[0];
         const cleanTarget = targetLabel.replace(/p\d+/, '').replace(/\s+/g, '').toLowerCase();
 
-        // 1. Önce Player Container üzerinde fare ve pointer hareketi simüle et ki kontrol çubuğu React tarafından render edilsin
-        const wakeElements = [
-          document.querySelector('#channel-player'),
-          document.querySelector('.player-container'),
-          document.querySelector('video'),
-          document.querySelector('.relative.flex-1'),
-          document.querySelector('div[data-testid="player-controls"]'),
-          document.querySelector('div[data-clip-player]'),
-          document.querySelector('div[class*="player"]')
-        ].filter(Boolean);
-
-        wakeElements.forEach(el => {
-          const rect = el.getBoundingClientRect();
-          const cx = rect.left + (rect.width ? rect.width / 2 : 100);
-          const cy = rect.top + (rect.height ? rect.height / 2 : 100);
-          el.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, clientX: cx, clientY: cy }));
-          el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, clientX: cx, clientY: cy }));
-          el.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: cx, clientY: cy }));
-          el.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx, clientY: cy }));
-        });
-
-        // 2. Kick Ayarlar Çark/Dişli Butonunu Kapsamlı ve Güvenli Analizle Bul
+        // 1. Player Kontrol Çubuğu Dişli / Ayarlar Butonunu Bul
         const explicitSelectors = [
           '[data-testid="player-settings-button"]',
           '[data-testid="settings-button"]',
-          'button[aria-label*="ayar" i]',
-          'button[aria-label*="setting" i]',
-          'button[aria-label*="option" i]',
-          'button[aria-label*="quality" i]',
-          'button[aria-label*="kalite" i]',
-          'button[title*="ayar" i]',
-          'button[title*="setting" i]',
-          'button[data-state][aria-haspopup="menu"]',
-          'button[data-state][aria-haspopup="dialog"]',
-          'button[id*="setting"]',
-          'button[class*="setting"]',
-          '.vjs-control-bar button.vjs-cog-menu-button'
+          'div[data-testid="player-controls"] button[aria-label*="ayar" i]',
+          'div[data-testid="player-controls"] button[aria-label*="setting" i]',
+          '#channel-player button[aria-label*="ayar" i]',
+          '#channel-player button[aria-label*="setting" i]',
+          '.player-container button[aria-label*="ayar" i]',
+          '.player-container button[aria-label*="setting" i]',
+          'button[data-state][aria-haspopup="menu"]'
         ];
 
         let settingsBtn = null;
@@ -1201,62 +1269,23 @@
           }
         }
 
-        // Eğer doğrudan selektörlerle bulunamadıysa, player kontrolleri içindeki butonları SVG/ikon analiziyle incele
-        if (!settingsBtn) {
-          const playerBtnCandidates = Array.from(document.querySelectorAll(
-            'div[data-testid="player-controls"] button, ' +
-            'div[data-testid="player-controls"] [role="button"], ' +
-            '#channel-player button, ' +
-            '#channel-player [role="button"], ' +
-            '.player-container button, ' +
-            '.player-container [role="button"], ' +
-            '.relative.flex-1 button'
-          ));
+        if (!settingsBtn) return;
 
-          settingsBtn = playerBtnCandidates.find(b => {
-            const aria = (b.getAttribute('aria-label') || '').toLowerCase();
-            const title = (b.getAttribute('title') || '').toLowerCase();
-            const testId = (b.getAttribute('data-testid') || '').toLowerCase();
-            const isPlayOrPause = aria.includes('play') || aria.includes('pause') || aria.includes('oynat') || aria.includes('duraklat');
-            const isFullscreen = aria.includes('fullscreen') || aria.includes('tam ekran');
-            const isVolume = aria.includes('volume') || aria.includes('ses') || aria.includes('mute') || aria.includes('sessiz');
-            const isTheater = aria.includes('theater') || aria.includes('sinema') || aria.includes('pip') || aria.includes('clip');
-
-            if (isPlayOrPause || isFullscreen || isVolume || isTheater) return false;
-
-            if (aria.includes('setting') || aria.includes('ayar') || title.includes('setting') || title.includes('ayar') || testId.includes('setting')) {
-              return true;
-            }
-
-            const svgs = b.querySelectorAll('svg');
-            for (const svg of svgs) {
-              const svgHtml = svg.innerHTML.toLowerCase();
-              if (svgHtml.includes('path') || svgHtml.includes('circle')) {
-                return true;
-              }
-            }
-            return false;
-          });
-        }
-
-        if (!settingsBtn) {
-          addDiagnosticLog('WARN', '[KickAdapter] Ayarlar butonu DOM üzerinde bulunamadı (Kontroller React Fiber ile senkronize edildi).');
-          return;
-        }
-
-        // 3. Pointer & Mouse Olaylarıyla Menüyü Aç
+        // 2. Ayarlar butonunu güvenle tıkla
         simulateFullPointerClick(settingsBtn);
         addDiagnosticLog('INFO', '[KickAdapter] Kick Ayarlar butonu tıklandı, popover bekleniyor.');
 
         setTimeout(() => {
-          // 4. Açılan Popover / Dropdown içerisinden "Kalite" / "Quality" sekmesini ara
-          const popoverContainers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal], div[role="menu"], div[role="dialog"], div[class*="popover"], div[class*="menu"], body > div'));
+          // 3. SADECE Radix popover kapsayıcıları içinde kalite sekmesini ara (ASLA body/main kapsayıcılarına dokunma!)
+          const popoverContainers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal] div[role="menu"]'));
           let qualitySubMenuTrigger = null;
 
           for (const cont of popoverContainers) {
             const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
             qualitySubMenuTrigger = items.find(el => {
+              // Çok uzun veya sayfa içeriği taşıyan elementleri atla (yalnızca kısa menü etiketleri)
               const txt = (el.textContent || '').trim().toLowerCase();
+              if (txt.length > 35) return false;
               return txt.includes('quality') || txt.includes('kalite') || txt.includes('1080p') || txt.includes('720p') || txt.includes('auto') || txt.includes('otomatik');
             });
             if (qualitySubMenuTrigger) break;
@@ -1268,30 +1297,37 @@
           }
 
           setTimeout(() => {
-            // 5. Kalite listesinden hedef çözünürlüğü seç (Örn. 1080p60, 720p60, 480p30, 360p30, 160p30)
-            const allItems = Array.from(document.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"], span, div'));
-            const matchBtn = allItems.find(el => {
-              const txt = (el.textContent || '').trim().toLowerCase();
-              if (digits && txt.includes(digits)) return true;
-              if (cleanTarget && txt.includes(cleanTarget)) return true;
-              if (targetLabel && txt.includes(targetLabel.toLowerCase())) return true;
-              return false;
-            });
+            // 4. Hedef çözünürlüğü seç (Örn. 1080p60, 720p60, 480p, 360p)
+            const activePopovers = Array.from(document.querySelectorAll('div[data-radix-popper-content-wrapper], div[data-radix-portal] div[role="menu"]'));
+            let matchBtn = null;
+
+            for (const cont of activePopovers) {
+              const items = Array.from(cont.querySelectorAll('button, div[role="menuitem"], [class*="menu-item"]'));
+              matchBtn = items.find(el => {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                if (txt.length > 25) return false;
+                if (digits && txt.includes(digits)) return true;
+                if (cleanTarget && txt.includes(cleanTarget)) return true;
+                if (targetLabel && txt.includes(targetLabel.toLowerCase())) return true;
+                return false;
+              });
+              if (matchBtn) break;
+            }
 
             if (matchBtn) {
               simulateFullPointerClick(matchBtn);
               addDiagnosticLog('INFO', `[KickAdapter] 2-Kademeli UI menü seçimi başarıyla tıklandı: ${targetLabel}`);
             }
 
-            // 6. Menüyü arka planda temizce kapat (Escape tuşu + backdrop simülasyonu)
+            // 5. Menüyü kapatmak için ayarlara geri tıkla (ASLA Escape TUŞU GÖNDERME - Geniş Ekran / Tiyatro Modunu Bozar!)
             setTimeout(() => {
-              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
-              document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
-              const backdrop = document.querySelector('[class*="backdrop"], [class*="overlay"], [data-radix-popover-overlay]');
-              if (backdrop) backdrop.click();
-            }, 80);
-          }, 120);
-        }, 120);
+              const isStillOpen = document.querySelector('div[data-radix-popper-content-wrapper]');
+              if (isStillOpen && settingsBtn) {
+                simulateFullPointerClick(settingsBtn);
+              }
+            }, 60);
+          }, 100);
+        }, 100);
       } catch (e) {
         addDiagnosticLog('WARN', '[KickAdapter] UI tetikleyici hatası', e.message);
       }
@@ -1328,73 +1364,82 @@
         }
       }
 
-      if (hasAd && !this.isKickAdActive) {
-        this.isKickAdActive = true;
-        this.preKickAdSpeed = video.playbackRate || 1.0;
-        this.preKickAdMuted = video.muted;
-        
-        // Mevcut IVS kalitesini hatırla
-        const ivs = this.findIvsPlayer(video);
-        if (ivs && typeof ivs.getQuality === 'function') {
+      if (hasAd) {
+        this.adAbsenceCounter = 0; // Reklam var, sayaç sıfırlandı
+        if (!this.isKickAdActive) {
+          this.isKickAdActive = true;
+          this.preKickAdSpeed = video.playbackRate || 1.0;
+          this.preKickAdMuted = video.muted;
+          
+          // Mevcut IVS kalitesini hatırla
+          const ivs = this.findIvsPlayer(video);
+          if (ivs && typeof ivs.getQuality === 'function') {
+            try {
+              this.preKickAdQuality = ivs.getQuality();
+            } catch (e) {}
+          }
+
           try {
-            this.preKickAdQuality = ivs.getQuality();
+            video.playbackRate = 16.0;
+            video.muted = true;
+            this.syncKickPlayerSpeed(16.0);
+            this.syncKickPlayerVolume(0);
           } catch (e) {}
-        }
 
-        try {
-          video.playbackRate = 16.0;
-          video.muted = true;
-          this.syncKickPlayerSpeed(16.0);
-          this.syncKickPlayerVolume(0);
-        } catch (e) {}
-
-        // Takılmayı önlemek için reklam kalitesini 360p / 160p seviyesine düşür
-        if (ivs && typeof ivs.getQualities === 'function') {
-          try {
-            if (typeof ivs.setAutoQualityMode === 'function') {
-              ivs.setAutoQualityMode(false);
-            }
-            const qList = ivs.getQualities();
-            if (Array.isArray(qList) && qList.length > 0) {
-              const lowQ = qList.find(q => (q.height && q.height <= 360) || (q.name && (q.name.includes('360') || q.name.includes('160')))) || qList[qList.length - 1];
-              if (lowQ && typeof ivs.setQuality === 'function') {
-                ivs.setQuality(lowQ);
-                addDiagnosticLog('INFO', `[KickAdapter] Reklam hızlandırmada tampon koruması: Kalite ${lowQ.name || lowQ.height + 'p'} seviyesine çekildi.`);
+          // Takılmayı önlemek için IVS üzerinden reklam kalitesini 360p / 160p seviyesine düşür
+          if (ivs && typeof ivs.getQualities === 'function') {
+            try {
+              if (typeof ivs.setAutoQualityMode === 'function') {
+                ivs.setAutoQualityMode(false);
               }
+              const qList = ivs.getQualities();
+              if (Array.isArray(qList) && qList.length > 0) {
+                const lowQ = qList.find(q => (q.height && q.height <= 360) || (q.name && (q.name.includes('360') || q.name.includes('160')))) || qList[qList.length - 1];
+                if (lowQ && typeof ivs.setQuality === 'function') {
+                  ivs.setQuality(lowQ);
+                  addDiagnosticLog('INFO', `[KickAdapter] Reklam tampon koruması: Kalite ${lowQ.name || lowQ.height + 'p'} seviyesine çekildi.`);
+                }
+              }
+            } catch (e) {}
+          }
+
+          showToast('⚡ Kick Reklamı Algılandı: 16x Hız + 360p Tampon Koruması & Mute Devrede');
+          addDiagnosticLog('INFO', '[KickAdapter] Canlı reklam tespit edildi: 16x hızlandırma ve 360p düşük profil devrede.');
+        }
+      } else if (!hasAd && this.isKickAdActive) {
+        // 🛡️ REKLAM BİTİŞ FLAPPING / DÖNGÜ KORUMASI (En az 3 ardışık temiz tarama bekle)
+        this.adAbsenceCounter = (this.adAbsenceCounter || 0) + 1;
+        if (this.adAbsenceCounter >= 3) {
+          this.isKickAdActive = false;
+          this.adAbsenceCounter = 0;
+
+          try {
+            video.playbackRate = this.preKickAdSpeed || 1.0;
+            video.muted = this.preKickAdMuted;
+            this.syncKickPlayerSpeed(this.preKickAdSpeed || 1.0);
+            this.syncKickPlayerVolume(this.preKickAdMuted ? 0 : currentAudioVolumePercent);
+            if (video.paused) {
+              video.play().catch(() => {});
             }
           } catch (e) {}
-        }
-        this.triggerKickUiQuality('360p30');
 
-        showToast('⚡ Kick Reklamı Algılandı: 16x Hız + 360p Tampon Koruması & Mute Devrede');
-        addDiagnosticLog('INFO', '[KickAdapter] Canlı reklam tespit edildi: 16x hızlandırma, 360p düşük profil ve ses kapalı devrede.');
-      } else if (!hasAd && this.isKickAdActive) {
-        this.isKickAdActive = false;
-        try {
-          video.playbackRate = this.preKickAdSpeed || 1.0;
-          video.muted = this.preKickAdMuted;
-          this.syncKickPlayerSpeed(this.preKickAdSpeed || 1.0);
-          this.syncKickPlayerVolume(this.preKickAdMuted ? 0 : currentAudioVolumePercent);
-        } catch (e) {}
+          // Orijinal yayına dönünce önceki IVS kalitesini geri yükle (UI döngüsünü tetiklemeden doğrudan SDK ile)
+          const ivs = this.findIvsPlayer(video);
+          if (ivs && this.preKickAdQuality && typeof ivs.setQuality === 'function') {
+            try {
+              ivs.setQuality(this.preKickAdQuality);
+              addDiagnosticLog('INFO', `[KickAdapter] Reklam bitti: Orijinal IVS kalitesi (${this.preKickAdQuality.name || 'HD'}) geri yüklendi.`);
+            } catch (e) {}
+          }
 
-        // Orijinal yayına dönünce önceki kaliteyi geri yükle
-        const ivs = this.findIvsPlayer(video);
-        if (ivs && this.preKickAdQuality && typeof ivs.setQuality === 'function') {
-          try {
-            ivs.setQuality(this.preKickAdQuality);
-            addDiagnosticLog('INFO', `[KickAdapter] Reklam bitti: Orijinal IVS kalitesi (${this.preKickAdQuality.name || 'HD'}) geri yüklendi.`);
-          } catch (e) {}
+          showToast('✅ Reklam Bitti: Normal Yayına ve Orijinal Kaliteye Dönüldü');
+          addDiagnosticLog('INFO', `[KickAdapter] Reklam sona erdi: Oynatma hızı (${this.preKickAdSpeed || 1}x), ses ve kalite kararlı şekilde geri yüklendi.`);
         }
-        if (activeForcedQualityLabel) {
-          this.triggerKickUiQuality(activeForcedQualityLabel);
-        }
-
-        showToast('✅ Reklam Bitti: Normal Canlı Yayına ve Orijinal Kaliteye Dönüldü');
-        addDiagnosticLog('INFO', `[KickAdapter] Reklam sona erdi: Oynatma hızı (${this.preKickAdSpeed}x), ses seviyesi ve kalite geri yüklendi.`);
       }
     },
 
     isKickAdActive: false,
+    adAbsenceCounter: 0,
     preKickAdSpeed: 1.0,
     preKickAdMuted: false,
     preKickAdQuality: null,
