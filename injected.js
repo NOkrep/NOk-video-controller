@@ -19,26 +19,11 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.9';
+  const EXTENSION_VERSION = '0.5.0';
   const VERSION_HISTORY = [
+    { version: 'v0.5.0', notes: 'Kick.com %0/Mute ve tüm ses seviyelerinde (%50/%100/%150) kesintisiz Radix UI & React Slider eşitlemesi, Kick VOD oynatma hızı 2-kademeli açılır pencere (popover submenu) otomasyonu, TRT 1 / TRT İzle HUD tıklama ve olay yakalama izolasyonu (stop-propagation & 100% aktif idle düzeltmesi), sadeleştirilmiş son 3 sürüm teşhis JSON geçmişi.' },
     { version: 'v0.4.9', notes: 'Kick.com ses butonları anlık donma optimizasyonu (React Fiber hook/setter 0ms önbellekleme & re-entrancy guard), TRT 1 / TRT İzle CDN-V ağ seviyesinde HLS paket yakalama & kesintisiz kalite yönlendirmesi, TRT 1 oynatıcı ses çubuğu UI eşitlemesi ve oynatma hızı kilit koruması (persistent playbackRate).' },
-    { version: 'v0.4.8', notes: 'Kick.com Next.js rota ve React Fiber crawler izolasyonu (404 sayfa yönlendirme çözümü), TRT 1 / TRT İzle özel HLS adaptörü ve ses çubuğu UI eşitlemesi, KickAdapter domain izolasyonu.' },
-    { version: 'v0.4.7', notes: 'Kick.com Radix UI array [val] state ses ve 2-kademeli hız UI eşitlemesi, ±30s & ±10s 4-butonlu sarma matrisi, 15s sessiz periyodik CDN ping telemetrisi.' },
-    { version: 'v0.4.6', notes: 'Tiyatro modu sayfa kayma koruması (focus preventScroll & mutlak scroll kilidi), Kick.com ses slider fiziksel koordinat & Radix senkronizasyonu, Kick VOD hız 2-kademeli UI menü tetikleyicisi.' },
-    { version: 'v0.4.5', notes: 'Kick.com reklam bitiş döngüsü & takılma düzeltmesi (Ad de-flapping state guard), geniş ekran/tiyatro modunun korunması (Escape klavye sinyali engellendi), Kick ses slider ve hız React Fiber state/hook senkronizasyonu.' },
-    { version: 'v0.4.4', notes: 'Kick.com çift yönlü React Fiber BFS crawler & Amazon IVS erken SDK prototip kancası, 2-kademeli Radix UI kalite/hız senkronizasyonu, gelişmiş sıfır-PII telemetri.' },
-    { version: 'v0.4.3', notes: 'Kick.com Amazon IVS & React tam UI senkronizasyonu (ses seviyesi kaydırıcısı, oynatma hızı, 2-kademeli kalite seçimi kilidi), reklam tampon koruması (360p/160p zorlama), VideoJS ve ErCDN adaptör optimizasyonları.' },
-    { version: 'v0.4.2', notes: 'Sadeleştirilmiş kristal netliğinde ses/hız preset butonları (4 net seçenek, %0/%50/%100/%150 ve 1x/1.25x/1.5x/2x), VideoJS null referans koruması ve geliştirilmiş sıfır-PII teşhis motoru.' },
-    { version: 'v0.4.1', notes: 'Now TV ErCDN akış doğrulaması, taşma önleyici akıllı metin (ellipsis & dynamic tooltip), Firefox/Chromium site izinleri rehberi ve 3-butonlu alt panel.' },
-    { version: 'v0.4.0', notes: 'Now TV (nowtv.com.tr) ErCDN SMIL çoklu kalite kilidi (1080p/720p/576p/480p/360p), Kick.com IVS ve hız koruyucusu, 2-kademeli saydamlık optimizasyonu ve HUD sadeleştirmesi.' },
-    { version: 'v0.3.9', notes: 'Now TV (nowtv.com.tr) Video.js VHS ve ErCDN SMIL adaptörü, Kick.com 2-kademeli ayarlar menüsü kancası ve global Amazon IVS yakalayıcısı.' },
-    { version: 'v0.3.8', notes: 'Kick.com reklamlarında 360p akıllı kalite düşürme & geri alma, %0-%200 ses seviyesi ve Gain booster, Mono/Stereo ses anahtarı, akıllı akordeon HUD bölümleri ve genel küçültme çözünürlük düzeltmesi.' },
-    { version: 'v0.3.7', notes: 'Kick.com otomatik reklam algılayıcı ve 16x hızlandırıcı (Ad Fast-Forward & Mute), HUD ve bildirimler için ARIA/A11y erişilebilirlik geliştirmeleri, klavye Tab navigasyon desteği.' },
-    { version: 'v0.3.6', notes: 'PuhuTV 576p/480p Video.js VHS donma düzeltmesi (non-destructive qualityLevels switch), Anti-Stall oynatıcı nöbetçisi, sayfa açılışında doğal akış koruması & isteğe bağlı pürüzsüz 1080p MNCDN geçişi.' },
-    { version: 'v0.3.5', notes: 'PuhuTV MNCDN dahili profil pürüzsüz geçişi, 1-tıkla anında açılış senkronizasyonu, 16px sürükleme sıçramasını önleyen 24px sabit sağ ray, canlı DYG Video API yakalama ve telemetri.' },
-    { version: 'v0.3.4', notes: 'Pürüzsüz tampon motoru (Smooth Buffer Engine), doğrudan 1080p MNCDN API geçişi, 5 profil ayrıştırma.' },
-    { version: 'v0.3.3', notes: 'Sentetik olmayan gerçek HLS paketleri, tek tık iyileştirmesi, 480p SD / 576p PAL ayrımı.' },
-    { version: 'v0.3.2', notes: 'HUD UI, Kick adaptörü, Zero-PII teşhis motoru.' }
+    { version: 'v0.4.8', notes: 'Kick.com Next.js rota ve React Fiber crawler izolasyonu (404 sayfa yönlendirme çözümü), TRT 1 / TRT İzle özel HLS adaptörü ve ses çubuğu UI eşitlemesi, KickAdapter domain izolasyonu.' }
   ];
 
   window.addEventListener('message', (event) => {
@@ -51,7 +36,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.4.9)');
+      showToast(`NOk Video Controller Aktif (v${EXTENSION_VERSION})`);
     }
   });
 
@@ -61,7 +46,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.4.9 aktif.');
+  console.log(`[NOkrep] NOk Video Controller v${EXTENSION_VERSION} aktif.`);
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -1310,10 +1295,33 @@
         const validPercent = Math.max(0, Math.min(100, Math.round(percent)));
         const normalizedVol = validPercent / 100;
         
-        // 1. Kick React Fiber & Radix Array Hook Ses Kancalarını Anında Tetikle (0ms önbellek)
+        // 1. Kick React Fiber & Radix Array Hook Ses Kancalarını Tetikle
         this.findAndInvokeReactVolume(validPercent);
 
-        // 2. Kick Range Slider'larına React Native Tracker ile yaz & CSS stillerini güncelle
+        // 2. Mute / Unmute Buton Durumu ve HTML5 video.muted Eşitlemesi
+        if (video) {
+          if (validPercent === 0) {
+            video.muted = true;
+          } else if (video.muted) {
+            video.muted = false;
+          }
+        }
+
+        const muteButtons = document.querySelectorAll('button[data-testid="volume-button"], button[aria-label*="ses" i], button[aria-label*="mute" i]');
+        muteButtons.forEach(btn => {
+          const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+          if (validPercent === 0) {
+            btn.setAttribute('aria-label', 'Sesi aç');
+          } else {
+            btn.setAttribute('aria-label', 'Sessize al');
+            // Eğer mute durumundaysa ve ses %0'dan büyük seçildiyse butona tıkla
+            if (aria.includes('aç') || aria.includes('unmute')) {
+              simulateFullPointerClick(btn);
+            }
+          }
+        });
+
+        // 3. Kick Range Slider'larına React Native Tracker ile yaz & CSS stillerini güncelle
         const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"], #channel-player input[type="range"]');
         sliders.forEach(slider => {
           setReactInputValue(slider, validPercent);
@@ -1322,7 +1330,7 @@
           slider.style.setProperty('--slider-thumb-position', `${validPercent}%`);
         });
 
-        // 3. Radix UI Slider DOM Nitelikleri, Transform ve Range Fill Güncellemesi
+        // 4. Radix UI Slider DOM Nitelikleri, Transform ve Range Fill Güncellemesi
         const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="volume-slider"] [role="slider"], div[data-testid="player-controls"] [role="slider"]');
         radixSliders.forEach(slider => {
           slider.setAttribute('aria-valuenow', validPercent.toString());
@@ -1340,17 +1348,25 @@
           bar.style.setProperty('--value', `${validPercent}%`);
         });
 
-        // 4. Mute / Unmute Buton Durumu Güncellemesi
-        const muteButtons = document.querySelectorAll('button[data-testid="volume-button"], button[aria-label*="ses" i], button[aria-label*="mute" i]');
-        muteButtons.forEach(btn => {
-          if (validPercent === 0) {
-            btn.setAttribute('aria-label', 'Sesi aç');
-          } else {
-            btn.setAttribute('aria-label', 'Sessize al');
+        // 5. Radix UI Slider Track Pointer Simülasyonu (%0 dışındaki değerler arasında da Radix state tetiklenmesi için)
+        const volContainers = document.querySelectorAll(
+          'div[data-testid="volume-slider"], .volume-slider, [class*="volume-slider"], div[data-testid="player-controls"] [class*="volume"]'
+        );
+        volContainers.forEach(container => {
+          const track = container.querySelector('[role="slider"], [data-radix-slider-track], input[type="range"]');
+          if (track) {
+            const rect = track.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+              const targetX = rect.left + (rect.width * Math.min(1, Math.max(0, normalizedVol)));
+              const targetY = rect.top + (rect.height / 2);
+              track.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+              track.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+              track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
+            }
           }
         });
 
-        // 5. IVS Player Nesnesi Ses Eşitlemesi
+        // 6. IVS Player Nesnesi Ses Eşitlemesi
         const ivs = this.findIvsPlayer(video);
         if (ivs) {
           if (typeof ivs.setVolume === 'function') {
@@ -2990,7 +3006,7 @@
     const anonymousPayload = {
       timestamp: new Date().toISOString(),
       extensionVersion: EXTENSION_VERSION,
-      versionHistory: VERSION_HISTORY,
+      versionHistory: VERSION_HISTORY.slice(0, 3),
       errorCode: errorCode || 'USER_MANUAL_DIAGNOSTIC',
       cleanMessage: message ? sanitizeStreamUrl(message) : 'Kullanıcı teşhis ve hata bildirimini tetikledi.',
       streamCdnProvider,
@@ -3038,7 +3054,7 @@
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
-            Sitede (<strong>${payload.domain}</strong>) oynatıcı durumu, CDN telemetrisi ve sürüm geçmişi anonimleştirilerek toplandı (<strong>Sıfır Kişisel Veri</strong>):
+            Sitede (<strong>${payload.domain}</strong>) oynatıcı durumu, CDN telemetrisi ve son 3 sürüm geçmişi anonimleştirilerek toplandı (<strong>Sıfır Kişisel Veri</strong>):
           </p>
 
           <!-- Kullanıcı Görüşleri ve Notu Bölümü -->
@@ -3048,7 +3064,7 @@
             </label>
             <textarea 
               id="pvc-user-feedback-input" 
-              placeholder="Örn: 1080p seçeneği tıklandıktan sonra görüntüde takılma oldu mu? Karşılaştığınız durumu buraya yazabilirsiniz..."
+              placeholder="Örn: TRT veya Kick üzerinde karşılaştığınız durumu buraya yazabilirsiniz..."
               style="width: 100%; height: 60px; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; color: #f8fafc; font-size: 11px; padding: 8px; font-family: sans-serif; resize: none; box-sizing: border-box;"
             ></textarea>
           </div>
@@ -3065,6 +3081,16 @@
 
     const container = getActiveContainer();
     container.appendChild(modal);
+
+    ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
+      modal.addEventListener(evtType, (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    });
 
     const feedbackInput = document.getElementById('pvc-user-feedback-input');
     const codeBlock = document.getElementById('pvc-modal-code-block');
@@ -3094,8 +3120,12 @@
     feedbackInput.addEventListener('input', refreshLinks);
     refreshLinks();
 
-    document.getElementById('pvc-close-modal-btn').onclick = () => modal.remove();
-    document.getElementById('pvc-copy-payload-btn').onclick = () => {
+    document.getElementById('pvc-close-modal-btn').onclick = (e) => {
+      e.stopPropagation();
+      modal.remove();
+    };
+    document.getElementById('pvc-copy-payload-btn').onclick = (e) => {
+      e.stopPropagation();
       const finalJson = updatePayloadJson();
       navigator.clipboard.writeText(finalJson);
       showToast('Zenginleştirilmiş teşhis JSON kopyalandı!');
@@ -3160,28 +3190,45 @@
     const container = getActiveContainer();
     container.appendChild(modal);
 
-    document.getElementById('pvc-close-perms-btn').onclick = () => modal.remove();
-    document.getElementById('pvc-dismiss-perms-btn').onclick = () => modal.remove();
+    ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
+      modal.addEventListener(evtType, (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    });
+
+    document.getElementById('pvc-close-perms-btn').onclick = (e) => {
+      e.stopPropagation();
+      modal.remove();
+    };
+    document.getElementById('pvc-dismiss-perms-btn').onclick = (e) => {
+      e.stopPropagation();
+      modal.remove();
+    };
   }
 
   function resetIdleTimer(popup) {
     if (!popup) return;
     
-    // Herhangi bir fare hareketi veya video etkileşiminde:
-    // Eğer tamamen kaybolmuşsa (%0) -> %88 yarı-saydamlığa (0.12 opacity) geçer
-    popup.classList.remove('pvc-idle-hidden');
-    popup.classList.add('pvc-idle-semi');
+    // Herhangi bir fare hareketi veya etkileşimde:
+    // Popup'ı derhal %100 görünür ve aktif yap (pvc-idle-semi ve pvc-idle-hidden kaldırılır)
+    popup.classList.remove('pvc-idle-hidden', 'pvc-idle-semi');
 
     clearTimeout(idleTimerStep1);
     clearTimeout(idleTimerStep2);
 
-    // 1. Kademe: 2 saniye sonra %88 saydam moda geçer
+    // 1. Kademe: idleDelaySeconds (varsayılan 2s) sonra yarı saydam moda (%88) geçer
     idleTimerStep1 = setTimeout(() => {
-      popup.classList.add('pvc-idle-semi');
+      if (!popup.matches(':hover') && !popup.contains(document.activeElement)) {
+        popup.classList.add('pvc-idle-semi');
+      }
 
       // 2. Kademe: 2 saniye daha (toplam 4 saniye) hareketsiz kalınırsa tamamen transparan (%0) olur
       idleTimerStep2 = setTimeout(() => {
-        if (!popup.matches(':hover')) {
+        if (!popup.matches(':hover') && !popup.contains(document.activeElement)) {
           popup.classList.add('pvc-idle-hidden');
         }
       }, 2000);
@@ -3263,7 +3310,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Normal modda sağ raya kilitli dikey kayar)">
         <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge" title="NOk Video Controller Sürüm v0.4.7">NOkrep v0.4.7</span>
+          <span class="pvc-menu-badge" title="NOk Video Controller Sürüm v${EXTENSION_VERSION}">NOkrep v${EXTENSION_VERSION}</span>
           <span class="pvc-menu-title" title="NOk Video Controller">NOk Video Controller</span>
         </div>
         <div class="pvc-header-actions">
@@ -3390,6 +3437,13 @@
     const container = getActiveContainer();
     container.appendChild(popup);
 
+    // Olay İzolasyonu (TRT 1 / Kick gibi sitelerde oynatıcı click/pointer yakalamalarının HUD'u engellemesini önler)
+    ['click', 'pointerdown', 'mousedown', 'mouseup', 'touchstart', 'touchend'].forEach(evtType => {
+      popup.addEventListener(evtType, (e) => {
+        e.stopPropagation();
+      }, { capture: false });
+    });
+
     const dragHeader = popup.querySelector('#pvc-drag-header');
     makeDraggable(popup, dragHeader);
 
@@ -3415,6 +3469,7 @@
     // Akordeon Başlık Tıklama Olayları
     popup.querySelectorAll('.pvc-section-header').forEach(header => {
       header.addEventListener('click', (e) => {
+        e.stopPropagation();
         resetIdleTimer(popup);
         const section = header.closest('.pvc-menu-section');
         if (section) {
@@ -3428,6 +3483,7 @@
     const speedVal = popup.querySelector('#pvc-speed-value');
 
     speedSlider.addEventListener('input', (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       const val = parseFloat(e.target.value);
       if (speedVal) speedVal.textContent = `${val}x`;
@@ -3435,7 +3491,8 @@
     });
 
     popup.querySelectorAll('.pvc-chip-btn:not(.pvc-idle-btn):not(.pvc-vol-preset-btn)').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
         resetIdleTimer(popup);
         const val = parseFloat(btn.getAttribute('data-speed'));
         setSpeed(val);
@@ -3445,13 +3502,15 @@
     // Ses Slider ve Preset Butonları
     const volumeSlider = popup.querySelector('#pvc-volume-slider');
     volumeSlider.addEventListener('input', (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       const val = parseInt(e.target.value, 10);
       setAudioVolume(val);
     });
 
     popup.querySelectorAll('.pvc-vol-preset-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
         resetIdleTimer(popup);
         const val = parseInt(btn.getAttribute('data-vol'), 10);
         setAudioVolume(val);
@@ -3461,11 +3520,13 @@
     // Stereo / Mono Butonları
     const stereoBtn = popup.querySelector('#pvc-audio-stereo-btn');
     const monoBtn = popup.querySelector('#pvc-audio-mono-btn');
-    stereoBtn.onclick = () => {
+    stereoBtn.onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       setAudioMode('stereo');
     };
-    monoBtn.onclick = () => {
+    monoBtn.onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       setAudioMode('mono');
     };
@@ -3473,32 +3534,37 @@
     // Sarma Butonları (4 Kademeli: -30s, -10s, +10s, +30s)
     const seekM30 = popup.querySelector('#pvc-seek-m30');
     if (seekM30) {
-      seekM30.onclick = () => {
+      seekM30.onclick = (e) => {
+        e.stopPropagation();
         resetIdleTimer(popup);
         seekBy(-30);
       };
     }
 
-    popup.querySelector('#pvc-seek-m10').onclick = () => {
+    popup.querySelector('#pvc-seek-m10').onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       seekBy(-10);
     };
 
-    popup.querySelector('#pvc-seek-p10').onclick = () => {
+    popup.querySelector('#pvc-seek-p10').onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       seekBy(10);
     };
 
     const seekP30 = popup.querySelector('#pvc-seek-p30');
     if (seekP30) {
-      seekP30.onclick = () => {
+      seekP30.onclick = (e) => {
+        e.stopPropagation();
         resetIdleTimer(popup);
         seekBy(30);
       };
     }
 
     // Çözünürlük Yenileme
-    popup.querySelector('#pvc-refresh-res-btn').onclick = () => {
+    popup.querySelector('#pvc-refresh-res-btn').onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       updateRealtimeResolutionBadge();
       renderDynamicQualityButtons();
@@ -3507,7 +3573,8 @@
     };
 
     // Ping, İzinler ve Teşhis
-    popup.querySelector('#pvc-ping-btn').onclick = async function () {
+    popup.querySelector('#pvc-ping-btn').onclick = async function (e) {
+      e.stopPropagation();
       resetIdleTimer(popup);
       this.textContent = 'Ölçülüyor...';
       const res = await testCdnPing(false);
@@ -3518,30 +3585,31 @@
       }
     };
 
-    popup.querySelector('#pvc-perms-btn').onclick = () => {
+    popup.querySelector('#pvc-perms-btn').onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       showPermissionsGuideModal();
     };
 
-    popup.querySelector('#pvc-report-err-btn').onclick = () => {
+    popup.querySelector('#pvc-report-err-btn').onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       reportAnonymousError('USER_MANUAL_DIAGNOSTIC', 'Kullanıcı teşhis ve hata bildirimini tetikledi.');
     };
 
-    popup.querySelector('#pvc-close-popup-btn').onclick = () => {
+    popup.querySelector('#pvc-close-popup-btn').onclick = (e) => {
+      e.stopPropagation();
       popup.style.display = 'none';
     };
 
-    // Genel Küçültme (➖ / ➕):
-    // Kullanıcı talebi doğrultusunda: Küçültüldüğünde akordeon bölümleri gizlenir;
-    // Çözünürlük rozeti (metin eksiksiz görünür), Ping ve Hata bölümleri görünmeye devam eder.
+    // Genel Küçültme (➖ / ➕)
     let isCollapsed = false;
-    popup.querySelector('#pvc-collapse-btn').onclick = () => {
+    popup.querySelector('#pvc-collapse-btn').onclick = (e) => {
+      e.stopPropagation();
       resetIdleTimer(popup);
       isCollapsed = !isCollapsed;
       popup.classList.toggle('pvc-collapsed', isCollapsed);
       
-      // Sadece 4 ana ayar bölümünü gizle, çözünürlük rozeti ve footer'ı açık tut
       popup.querySelectorAll('.pvc-menu-section').forEach(el => {
         el.style.display = isCollapsed ? 'none' : '';
       });
@@ -3581,7 +3649,7 @@
         // Ses grafiğini ve başlangıç ses seviyesini bağla
         initAudioGraphForVideo(video);
       }
-      showToast('NOk Video Controller Aktif (v0.4.7)');
+      showToast(`NOk Video Controller Aktif (v${EXTENSION_VERSION})`);
     }
   }
 
