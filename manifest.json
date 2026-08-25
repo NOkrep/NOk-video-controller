@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.4.8",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick.com Next.js rotası & React Fiber crawler izolasyonu, TRT 1 / TRT İzle yayın & ses adaptörü, 4 kademeli hızlı sarma (±10s/±30s), periyodik CDN ping telemetrisi.",
+  "version": "0.4.9",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick.com React Fiber sıfır donma ses önbelleklemesi, TRT 1 / TRT İzle CDN-V ağ seviyesinde HLS kalite kilitleri ve tam ses/hız eşitlemesi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",

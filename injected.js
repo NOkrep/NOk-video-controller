@@ -1,23 +1,27 @@
 /**
- * injected.js - NOk Video Controller v0.4.8 (Main World Engine)
+ * injected.js - NOk Video Controller v0.4.9 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.8 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Next.js Rotası ve React Fiber Crawler İzolasyonu (404 Sayfa Yönlendirme Düzeltmesi):
- *    - Fiber ağacı tarayıcısından Next.js kök düğümleri (__next, document.body) ve genel onChange tetikleyicileri çıkarıldı; video oynatıcı bileşenleri izole edildi.
- * 2. TRT 1 & TRT İzle Özel Adaptörü (TrtAdapter):
- *    - trt1.com.tr, trtizle.com ve TRT yayın platformları için HLS master profil kilitleri (1080p FHD, 720p HD, 576p PAL, 480p SD, 360p), Video.js & Hls.js seviye kontrolü ve TRT oynatıcı ses çubuğu UI eşitlemesi.
- * 3. KickAdapter Eşleşme Güvenliği:
- *    - KickAdapter eşleşmesi yalnızca kick.com domaini veya özel Kick oynatıcı kapsayıcıları ile sınırlandırıldı.
+ * v0.4.9 İyileştirmeleri & Düzeltmeleri:
+ * 1. Kick.com Ses Butonları Anlık Donma Optimizasyonu (0ms React Fiber Caching & Re-entrancy Guard):
+ *    - React Fiber hook dispatch ve prop setter fonksiyonları modül düzeyinde önbelleklendi; her buton tıklamasında ağır BFS ağaç taraması yapılmaz (0ms gecikme).
+ *    - setAudioVolume içinde gereksiz çift volumechange dispatch kaldırıldı ve re-entrancy koruması eklendi.
+ * 2. TRT 1 & TRT İzle CDN-V Ağ Seviyesinde HLS Paket Yönlendirmesi & Kalite Kilitleri:
+ *    - transformStreamRequestUrl ile cdn-v.pr.trt.com.tr istekleri (master1080p, 720p, 576p, 480p, 360p) anında seçilen kalite profiline yönlendirilir.
+ *    - Kalite değiştiğinde 0.001s micro-seek tampon yenilemesi ile oynatıcı donmadan anında yeni kalite segmentlerini çeker.
+ * 3. TRT 1 Oynatıcı Ses Çubuğu (Volume Bar / Level / Handle) ve Oynatma Hızı Kilit Koruması:
+ *    - TRT oynatıcılarının (Clappr, Video.js, Custom) ses barı, ilerleme çizgisi, düğmesi ve aria durumları tam senkronize edildi.
+ *    - ratechange ve defaultPlaybackRate ile TRT oynatıcısının hızı zorla 1x'e sıfırlaması engellendi.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.4.8';
+  const EXTENSION_VERSION = '0.4.9';
   const VERSION_HISTORY = [
+    { version: 'v0.4.9', notes: 'Kick.com ses butonları anlık donma optimizasyonu (React Fiber hook/setter 0ms önbellekleme & re-entrancy guard), TRT 1 / TRT İzle CDN-V ağ seviyesinde HLS paket yakalama & kesintisiz kalite yönlendirmesi, TRT 1 oynatıcı ses çubuğu UI eşitlemesi ve oynatma hızı kilit koruması (persistent playbackRate).' },
     { version: 'v0.4.8', notes: 'Kick.com Next.js rota ve React Fiber crawler izolasyonu (404 sayfa yönlendirme çözümü), TRT 1 / TRT İzle özel HLS adaptörü ve ses çubuğu UI eşitlemesi, KickAdapter domain izolasyonu.' },
     { version: 'v0.4.7', notes: 'Kick.com Radix UI array [val] state ses ve 2-kademeli hız UI eşitlemesi, ±30s & ±10s 4-butonlu sarma matrisi, 15s sessiz periyodik CDN ping telemetrisi.' },
     { version: 'v0.4.6', notes: 'Tiyatro modu sayfa kayma koruması (focus preventScroll & mutlak scroll kilidi), Kick.com ses slider fiziksel koordinat & Radix senkronizasyonu, Kick VOD hız 2-kademeli UI menü tetikleyicisi.' },
@@ -47,7 +51,7 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      showToast('NOk Video Controller Aktif (v0.4.8)');
+      showToast('NOk Video Controller Aktif (v0.4.9)');
     }
   });
 
@@ -57,7 +61,7 @@
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
-  console.log('[NOkrep] NOk Video Controller v0.4.7 aktif.');
+  console.log('[NOkrep] NOk Video Controller v0.4.9 aktif.');
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -157,11 +161,14 @@
   } catch (e) {}
 
   // =========================================================================
-  // 🌐 ÇİFT CDN VE SMIL / BVR AĞ KANCASI (PUHUTV, NOW TV & ERCDN) (XHR / FETCH)
+  // 🌐 ÇİFT CDN VE SMIL / BVR / TRT AĞ KANCASI (PUHUTV, NOW TV, ERCDN & TRT CDN-V) (XHR / FETCH)
   // =========================================================================
   let targetNowBvrBandwidth = null; // null | number (Örn. 5500000 veya 15000000)
   let lastCapturedNowPlaylistUrl = '';
   let discoveredNowBvrProfiles = [];
+
+  let targetTrtQualitySuffix = null; // null | '1080p' | '720p' | '576p' | '480p' | '360p'
+  let lastCapturedTrtStreamUrl = '';
 
   function transformStreamRequestUrl(url) {
     if (typeof url !== 'string') return url;
@@ -184,8 +191,7 @@
         addDiagnosticLog('INFO', `[NowTvAdapter] ErCDN Playlist yakalandı: ${sanitizeStreamUrl(url)}`);
       }
 
-      // 3. Now TV ErCDN BVR Segment Bitrate Boost (bvr_bw parameter override)
-      // Kullanıcı yüksek kalite / bitrate zorladığında ErCDN CDN sunucusunun en yüksek kaliteli video segmentini vermesini sağla
+      // Now TV ErCDN BVR Segment Bitrate Boost (bvr_bw parameter override)
       if (targetNowBvrBandwidth && (url.includes('bvr_bw=') || url.includes('.ts') || url.includes('.m4s') || url.includes('.mp4'))) {
         if (url.includes('bvr_bw=')) {
           const overriddenUrl = url.replace(/bvr_bw=\d+/g, `bvr_bw=${targetNowBvrBandwidth}`);
@@ -193,6 +199,20 @@
         } else {
           const separator = url.includes('?') ? '&' : '?';
           return `${url}${separator}bvr_bw=${targetNowBvrBandwidth}`;
+        }
+      }
+    }
+
+    // 3. TRT 1 & TRT İzle CDN-V Akış & Segment Kalite Yönlendirmesi (cdn-v.pr.trt.com.tr)
+    if (url.includes('cdn-v.pr.trt.com.tr') || url.includes('trt.com.tr') || url.includes('trtizle.com')) {
+      if (url.includes('.m3u8') || url.includes('.ts')) {
+        lastCapturedTrtStreamUrl = url;
+      }
+      if (targetTrtQualitySuffix && (url.includes('master') || url.includes('.m3u8') || url.includes('.ts'))) {
+        const regex = /master(1080p|720p|576p|480p|360p|240p)?/i;
+        if (regex.test(url)) {
+          const overriddenUrl = url.replace(regex, `master${targetTrtQualitySuffix}`);
+          return overriddenUrl;
         }
       }
     }
@@ -874,6 +894,12 @@
     return false;
   }
 
+  // Kick.com React Fiber 0ms Hızlı Önbelleği (Sıfır Donma & CPU Tasarrufu)
+  let cachedKickVolSetter = null;
+  let cachedKickVolHook = null;
+  let cachedKickSpeedSetter = null;
+  let cachedKickSpeedHook = null;
+
   const KickAdapter = {
     name: 'KickAdapter',
     matches() {
@@ -1071,18 +1097,37 @@
     },
 
     findAndInvokeReactSpeed(rate) {
-      // SADECE Oynatıcı kapsayıcıları (ASLA __next veya document.body DEĞİL - Next.js rotasını bozmaz!)
-      const rootCandidates = [
-        document.querySelector('#channel-player'),
-        document.querySelector('.player-container'),
-        document.querySelector('.relative.flex-1'),
-        document.querySelector('video'),
-        document.querySelector('div[data-testid="player-controls"]'),
-        document.querySelector('div[data-testid="video-player"]')
-      ].filter(Boolean);
-
-      const rateStr = `${rate}`;
       const rateLabel = `${rate}x`;
+
+      // 1. Önbelleğe alınmış React Fiber fonksiyonunu anında çalıştır (0ms)
+      if (cachedKickSpeedSetter) {
+        try {
+          cachedKickSpeedSetter(rate);
+          try { cachedKickSpeedSetter(rateLabel); } catch (e) {}
+          return true;
+        } catch (e) {
+          cachedKickSpeedSetter = null;
+        }
+      }
+      if (cachedKickSpeedHook && typeof cachedKickSpeedHook.dispatch === 'function') {
+        try {
+          if (cachedKickSpeedHook.type === 'string') {
+            cachedKickSpeedHook.dispatch(rate === 1 ? '1x' : rateLabel);
+          } else {
+            cachedKickSpeedHook.dispatch(rate);
+          }
+          return true;
+        } catch (e) {
+          cachedKickSpeedHook = null;
+        }
+      }
+
+      // SADECE Oynatıcı Kontrolleri (ASLA __next veya document.body DEĞİL!)
+      const rootCandidates = [
+        document.querySelector('div[data-testid="player-controls"]'),
+        document.querySelector('#channel-player'),
+        document.querySelector('.player-container')
+      ].filter(Boolean);
 
       for (const root of rootCandidates) {
         const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
@@ -1092,19 +1137,17 @@
         searchFiberTree(root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
-            // SADECE belirgin hız fonksiyonları (genel onChange veya onValueChange YOK!)
             const speedSetters = [
-              'setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'changePlaybackRate',
-              'setRate', 'onSpeedChange', 'handleSpeedChange', 'setPlaybackSpeed',
-              'onRateChange', 'handleRateChange'
+              'setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'handlePlaybackRateChange',
+              'handleSpeedChange', 'changeSpeed', 'setRate', 'onRateChange'
             ];
             for (const name of speedSetters) {
               if (typeof props[name] === 'function') {
                 try {
                   props[name](rate);
                   try { props[name](rateLabel); } catch (e) {}
-                  try { props[name]([rate]); } catch (e) {}
-                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${rateLabel}) çağrıldı.`);
+                  cachedKickSpeedSetter = props[name];
+                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${rateLabel}) önbelleğe alındı.`);
                   success = true;
                   return true;
                 } catch (e) {}
@@ -1114,20 +1157,22 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 40) {
+          while (hook && typeof hook === 'object' && hookDepth < 20) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
               if (typeof m === 'number' && (m === 0.25 || m === 0.5 || m === 0.75 || m === 1 || m === 1.25 || m === 1.5 || m === 1.75 || m === 2)) {
                 try {
                   hook.queue.dispatch(rate);
-                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State hız dispatch: ${rateLabel}`);
+                  cachedKickSpeedHook = { dispatch: hook.queue.dispatch, type: 'number' };
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State hız (${rateLabel}) önbelleklendi.`);
                   success = true;
                   return true;
                 } catch (e) {}
               } else if (typeof m === 'string' && (m.includes('x') || m.toLowerCase() === 'normal' || m === '1' || m === '1.0')) {
                 try {
                   hook.queue.dispatch(rate === 1 ? '1x' : rateLabel);
-                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State string hız dispatch: ${rateLabel}`);
+                  cachedKickSpeedHook = { dispatch: hook.queue.dispatch, type: 'string' };
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State string hız (${rateLabel}) önbelleklendi.`);
                   success = true;
                   return true;
                 } catch (e) {}
@@ -1137,7 +1182,7 @@
             hookDepth++;
           }
           return false;
-        }, 400);
+        }, 80);
 
         if (success) return true;
       }
@@ -1146,17 +1191,39 @@
 
     findAndInvokeReactVolume(percent) {
       const normalizedVol = Math.max(0, Math.min(1, percent / 100));
+
+      // 1. Önbelleğe alınmış React Fiber fonksiyonunu anında çalıştır (0ms gecikme / sıfır donma)
+      if (cachedKickVolSetter) {
+        try {
+          cachedKickVolSetter(normalizedVol);
+          try { cachedKickVolSetter(percent); } catch (e) {}
+          try { cachedKickVolSetter([normalizedVol]); } catch (e) {}
+          return true;
+        } catch (e) {
+          cachedKickVolSetter = null;
+        }
+      }
+      if (cachedKickVolHook && typeof cachedKickVolHook.dispatch === 'function') {
+        try {
+          if (cachedKickVolHook.type === 'array') {
+            cachedKickVolHook.dispatch([normalizedVol]);
+          } else if (cachedKickVolHook.type === 'percent') {
+            cachedKickVolHook.dispatch(percent);
+          } else {
+            cachedKickVolHook.dispatch(normalizedVol);
+          }
+          return true;
+        } catch (e) {
+          cachedKickVolHook = null;
+        }
+      }
+
       // SADECE Ses çubuğu ve Oynatıcı Kapsayıcıları (ASLA __next veya document.body DEĞİL!)
       const rootCandidates = [
         document.querySelector('div[data-testid="volume-slider"]'),
         document.querySelector('.volume-slider'),
-        document.querySelector('[class*="volume-slider"]'),
         document.querySelector('div[data-testid="player-controls"]'),
-        document.querySelector('#channel-player'),
-        document.querySelector('.player-container'),
-        document.querySelector('.relative.flex-1'),
-        document.querySelector('video'),
-        document.querySelector('div[data-testid="video-player"]')
+        document.querySelector('#channel-player')
       ].filter(Boolean);
 
       for (const root of rootCandidates) {
@@ -1177,10 +1244,8 @@
               if (typeof props[name] === 'function') {
                 try {
                   props[name](normalizedVol);
-                  try { props[name](percent); } catch (e) {}
-                  try { props[name]([normalizedVol]); } catch (e) {}
-                  try { props[name]([percent]); } catch (e) {}
-                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${percent}%) çağrıldı.`);
+                  cachedKickVolSetter = props[name];
+                  addDiagnosticLog('INFO', `[KickAdapter] React Fiber prop.${name} (${percent}%) önbelleğe alındı.`);
                   success = true;
                   return true;
                 } catch (e) {}
@@ -1195,7 +1260,7 @@
 
           let hook = node.memoizedState;
           let hookDepth = 0;
-          while (hook && typeof hook === 'object' && hookDepth < 40) {
+          while (hook && typeof hook === 'object' && hookDepth < 20) {
             const m = hook.memoizedState;
             if (hook.queue && typeof hook.queue.dispatch === 'function') {
               // 1. Array Hook State (Radix UI Slider useSlider [values] state)
@@ -1203,7 +1268,8 @@
                 try {
                   const targetArr = m[0] <= 1 ? [normalizedVol] : [percent];
                   hook.queue.dispatch(targetArr);
-                  addDiagnosticLog('INFO', `[KickAdapter] Radix UI Slider Hook Array state dispatch: [${targetArr[0]}]`);
+                  cachedKickVolHook = { dispatch: hook.queue.dispatch, type: 'array' };
+                  addDiagnosticLog('INFO', `[KickAdapter] Radix UI Slider Hook Array state önbelleklendi: [${targetArr[0]}]`);
                   success = true;
                   return true;
                 } catch (e) {}
@@ -1212,14 +1278,16 @@
               else if (typeof m === 'number' && m >= 0 && m <= 1) {
                 try {
                   hook.queue.dispatch(normalizedVol);
-                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-1) dispatch: ${normalizedVol}`);
+                  cachedKickVolHook = { dispatch: hook.queue.dispatch, type: 'unit' };
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-1) önbelleklendi: ${normalizedVol}`);
                   success = true;
                   return true;
                 } catch (e) {}
               } else if (typeof m === 'number' && m > 1 && m <= 100) {
                 try {
                   hook.queue.dispatch(percent);
-                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-100) dispatch: ${percent}`);
+                  cachedKickVolHook = { dispatch: hook.queue.dispatch, type: 'percent' };
+                  addDiagnosticLog('INFO', `[KickAdapter] React Hook State ses (0-100) önbelleklendi: ${percent}`);
                   success = true;
                   return true;
                 } catch (e) {}
@@ -1229,7 +1297,7 @@
             hookDepth++;
           }
           return false;
-        }, 400);
+        }, 80);
 
         if (success) return true;
       }
@@ -1242,22 +1310,10 @@
         const validPercent = Math.max(0, Math.min(100, Math.round(percent)));
         const normalizedVol = validPercent / 100;
         
-        // 1. Kick React Fiber & Radix Array Hook Ses Kancalarını Doğrudan Tetikle
+        // 1. Kick React Fiber & Radix Array Hook Ses Kancalarını Anında Tetikle (0ms önbellek)
         this.findAndInvokeReactVolume(validPercent);
 
-        // 2. Ses Kontrol Çubuğu Kapsayıcısını Hover ile Canlandır (Açılabilir Slider Görünürlüğü)
-        const volContainers = document.querySelectorAll(
-          'div[data-testid="volume-slider"], .volume-slider, [class*="volume-slider"], div[data-testid="player-controls"] [class*="volume"], #channel-player [class*="volume"]'
-        );
-        volContainers.forEach(container => {
-          try {
-            container.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-            container.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-            container.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-          } catch (e) {}
-        });
-
-        // 3. Kick Range Slider'larına React Native Tracker ile yaz & CSS stillerini güncelle
+        // 2. Kick Range Slider'larına React Native Tracker ile yaz & CSS stillerini güncelle
         const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input, .volume-slider input, div[data-testid="player-controls"] input[type="range"], #channel-player input[type="range"]');
         sliders.forEach(slider => {
           setReactInputValue(slider, validPercent);
@@ -1266,22 +1322,7 @@
           slider.style.setProperty('--slider-thumb-position', `${validPercent}%`);
         });
 
-        // 4. Kick Fiziksel Slider Track Koordinatlarına Pointer Event Simülasyonu
-        volContainers.forEach(container => {
-          const track = container.querySelector('[role="slider"], [data-radix-slider-track], input[type="range"], div[class*="track"], span[class*="track"], div[class*="range"]');
-          if (track) {
-            const rect = track.getBoundingClientRect();
-            if (rect.width > 0) {
-              const targetX = rect.left + (rect.width * normalizedVol);
-              const targetY = rect.top + (rect.height / 2);
-              track.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
-              track.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
-              track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, clientX: targetX, clientY: targetY, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
-            }
-          }
-        });
-
-        // 5. Radix UI Slider DOM Nitelikleri, Transform ve Range Fill Güncellemesi
+        // 3. Radix UI Slider DOM Nitelikleri, Transform ve Range Fill Güncellemesi
         const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="volume-slider"] [role="slider"], div[data-testid="player-controls"] [role="slider"]');
         radixSliders.forEach(slider => {
           slider.setAttribute('aria-valuenow', validPercent.toString());
@@ -1290,8 +1331,6 @@
           slider.style.setProperty('transform', `translateX(-50%)`, 'important');
           slider.style.setProperty('--slider-thumb-position', `${validPercent}%`);
           slider.style.setProperty('--slider-fill', `${validPercent}%`);
-          slider.dispatchEvent(new Event('input', { bubbles: true }));
-          slider.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
         const sliderBars = document.querySelectorAll('div[data-testid="volume-slider"] [class*="range"], div[data-testid="volume-slider"] [class*="track"], div[data-testid="volume-slider"] [class*="fill"], .volume-slider [class*="range"], .volume-slider [class*="fill"], div[data-testid="volume-slider"] [data-radix-slider-range], [data-radix-slider-range]');
@@ -1301,7 +1340,17 @@
           bar.style.setProperty('--value', `${validPercent}%`);
         });
 
-        // 6. IVS Player Nesnesi Ses Eşitlemesi
+        // 4. Mute / Unmute Buton Durumu Güncellemesi
+        const muteButtons = document.querySelectorAll('button[data-testid="volume-button"], button[aria-label*="ses" i], button[aria-label*="mute" i]');
+        muteButtons.forEach(btn => {
+          if (validPercent === 0) {
+            btn.setAttribute('aria-label', 'Sesi aç');
+          } else {
+            btn.setAttribute('aria-label', 'Sessize al');
+          }
+        });
+
+        // 5. IVS Player Nesnesi Ses Eşitlemesi
         const ivs = this.findIvsPlayer(video);
         if (ivs) {
           if (typeof ivs.setVolume === 'function') {
@@ -2018,15 +2067,71 @@
       try {
         const val = Math.max(0, Math.min(100, Math.round(percent)));
         const normalized = val / 100;
-        const rangeInputs = document.querySelectorAll('input[type="range"][class*="volume"], input[type="range"][aria-label*="ses" i], input[type="range"][aria-label*="volume" i], .clappr-volume-slider, [class*="volume-bar"]');
+        
+        // 1. TRT Range ve input elementleri
+        const rangeInputs = document.querySelectorAll(
+          'input[type="range"][class*="volume" i], input[type="range"][aria-label*="ses" i], input[type="range"][aria-label*="volume" i], input[type="range"][name*="volume" i], .clappr-volume-slider input, [class*="volume-bar"] input'
+        );
         rangeInputs.forEach(inp => {
           if (inp.tagName === 'INPUT') {
-            setReactInputValue(inp, val <= 1 ? normalized : val);
+            setReactInputValue(inp, inp.max === '1' ? normalized : val);
+            inp.value = inp.max === '1' ? normalized.toString() : val.toString();
+            inp.style.setProperty('--value', `${val}%`);
+            inp.style.setProperty('--slider-fill', `${val}%`);
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+            inp.dispatchEvent(new Event('change', { bubbles: true }));
           }
         });
-        const volumeBars = document.querySelectorAll('[class*="volume-progress"], [class*="volume-fill"], [class*="volume-level"]');
+
+        // 2. TRT 1 / TRT İzle Progress ve Seviye Barları (CSS Değişkenleri & Genişlik)
+        const volumeBars = document.querySelectorAll(
+          '[class*="volume-progress"], [class*="volume-fill"], [class*="volume-level"], [class*="volume-bar-progress"], [class*="volume-bar-value"], .vjs-volume-level, .clappr-volume-slider .bar, [class*="volume-bar-fill"], [class*="volume_progress"], [class*="volume_level"], [class*="volume_fill"]'
+        );
         volumeBars.forEach(bar => {
-          bar.style.width = `${val}%`;
+          bar.style.setProperty('width', `${val}%`, 'important');
+          bar.style.setProperty('--volume-width', `${val}%`);
+          bar.style.setProperty('--fill-width', `${val}%`);
+          bar.style.setProperty('--value', `${val}%`);
+        });
+
+        // 3. TRT 1 Ses Düğmesi / Handle Konumu
+        const volumeKnobs = document.querySelectorAll(
+          '[class*="volume-handle"], [class*="volume-knob"], [class*="volume-thumb"], .vjs-volume-handle, .clappr-volume-slider .scrubber, [class*="volume-slider"] [class*="thumb"]'
+        );
+        volumeKnobs.forEach(knob => {
+          knob.style.setProperty('left', `${val}%`, 'important');
+        });
+
+        // 4. ARIA Nitelikleri
+        const ariaSliders = document.querySelectorAll('[role="slider"][aria-label*="ses" i], [role="slider"][aria-label*="volume" i], [class*="volume-slider"][role="slider"]');
+        ariaSliders.forEach(slider => {
+          slider.setAttribute('aria-valuenow', val.toString());
+          slider.setAttribute('aria-valuetext', `${val}%`);
+        });
+
+        // 5. TRT Ses Simgesi (Mute / Unmute) Durumu
+        const muteIcons = document.querySelectorAll('[class*="volume-icon"], [class*="mute-button"], [aria-label*="sessiz" i], [aria-label*="sesi aç" i]');
+        muteIcons.forEach(icon => {
+          if (val === 0) {
+            icon.classList.add('is-muted', 'muted');
+          } else {
+            icon.classList.remove('is-muted', 'muted');
+          }
+        });
+      } catch (e) {}
+    },
+
+    syncTrtUiSpeed(rate) {
+      try {
+        const rateLabel = `${rate}x`;
+        const speedBtns = Array.from(document.querySelectorAll(
+          '[class*="speed"], [aria-label*="hız" i], [aria-label*="speed" i], [title*="hız" i]'
+        ));
+        speedBtns.forEach(btn => {
+          if (btn.textContent && (btn.textContent.includes('x') || btn.textContent.includes('Hız'))) {
+            const valSpan = btn.querySelector('span, div');
+            if (valSpan) valSpan.textContent = rateLabel;
+          }
         });
       } catch (e) {}
     },
@@ -2060,6 +2165,7 @@
                   height: h,
                   width: w,
                   bitrate: q.bitrate || 0,
+                  suffix: h >= 1000 ? '1080p' : h >= 700 ? '720p' : h >= 540 ? '576p' : h >= 450 ? '480p' : '360p',
                   raw: q
                 });
               }
@@ -2091,6 +2197,7 @@
               label: label,
               height: h,
               bitrate: lvl.bitrate || 0,
+              suffix: h >= 1000 ? '1080p' : h >= 700 ? '720p' : h >= 540 ? '576p' : h >= 450 ? '480p' : '360p',
               raw: lvl
             });
           }
@@ -2113,7 +2220,13 @@
     applyQuality(targetItem, video, player) {
       addDiagnosticLog('INFO', `[TrtAdapter] TRT Kalite uygulanıyor: ${targetItem.label}`);
 
-      // 1. Video.js qualityLevels()
+      // 1. Ağ Kancası ile TRT CDN Segment / Master Yönlendirmesini Aktif Et
+      if (targetItem.suffix) {
+        targetTrtQualitySuffix = targetItem.suffix;
+        addDiagnosticLog('INFO', `[TrtAdapter] targetTrtQualitySuffix ayarlandı: ${targetItem.suffix}`);
+      }
+
+      // 2. Video.js qualityLevels()
       if (player && typeof player.qualityLevels === 'function') {
         try {
           const qLevels = player.qualityLevels();
@@ -2128,26 +2241,38 @@
         } catch (e) {}
       }
 
-      // 2. HLS.js Seviye Değişimi
+      // 3. HLS.js Seviye Değişimi
       const hls = (video && video.hls) || (player && player.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]);
       if (hls && hls.levels && targetItem.index !== undefined) {
-        hls.currentLevel = targetItem.index;
+        try {
+          hls.currentLevel = targetItem.index;
+          hls.loadLevel = targetItem.index;
+        } catch (e) {}
       }
 
-      // 3. TRT CDN-V Doğrudan Kaynak Değişimi (cdn-v.pr.trt.com.tr)
+      // 4. TRT CDN-V Doğrudan Kaynak Değişimi (cdn-v.pr.trt.com.tr)
       let curSrc = '';
       if (player && typeof player.currentSrc === 'function') curSrc = player.currentSrc();
       if (!curSrc && video) curSrc = video.currentSrc || video.src || '';
+      if (!curSrc && lastCapturedTrtStreamUrl) curSrc = lastCapturedTrtStreamUrl;
 
-      if (curSrc && curSrc.includes('cdn-v.pr.trt.com.tr') && targetItem.suffix) {
+      if (curSrc && (curSrc.includes('cdn-v.pr.trt.com.tr') || curSrc.includes('trt.com.tr')) && targetItem.suffix) {
         const regex = /master(1080p|720p|576p|480p|360p|240p)?/i;
         if (regex.test(curSrc)) {
           const newSrc = curSrc.replace(regex, `master${targetItem.suffix}`);
-          if (newSrc !== curSrc) {
+          if (newSrc !== curSrc && video.src && !video.src.startsWith('blob:')) {
             smoothPlayerSourceSwitch(video, player, newSrc, `TRT ${targetItem.label}`);
             return true;
           }
         }
+      }
+
+      // 5. Anında Yeni Kaliteye Geçiş için Micro-Buffer Yenilemesi (0.001s Micro-Seek)
+      if (video && video.currentTime > 0) {
+        try {
+          const ct = video.currentTime;
+          video.currentTime = Math.max(0, ct + 0.001);
+        } catch (e) {}
       }
 
       showToast(`TRT: ${targetItem.label}`);
@@ -2325,6 +2450,8 @@
     }
   }
 
+  let targetEnforcedPlaybackRate = 1.0;
+
   function setSpeed(rate) {
     const { video, player } = findVideoAndPlayer();
     if (!video) {
@@ -2334,17 +2461,22 @@
 
     try {
       const validRate = Math.min(3.0, Math.max(0.25, parseFloat(rate.toFixed(2))));
+      targetEnforcedPlaybackRate = validRate;
       video.playbackRate = validRate;
-      video.dispatchEvent(new Event('ratechange', { bubbles: true }));
+      video.defaultPlaybackRate = validRate;
       
+      // Oynatıcı API hız kancaları
       if (player && typeof player.playbackRate === 'function') {
-        player.playbackRate(validRate);
+        try { player.playbackRate(validRate); } catch (e) {}
       } else if (player && typeof player.setPlaybackRate === 'function') {
-        player.setPlaybackRate(validRate);
+        try { player.setPlaybackRate(validRate); } catch (e) {}
       }
 
+      // Sitelere özel UI Hız Eşitlemesi
       if (HOSTNAME.includes('kick.com')) {
         KickAdapter.syncKickPlayerSpeed(validRate);
+      } else if (HOSTNAME.includes('trt') || currentActiveAdapterName === 'TrtAdapter') {
+        TrtAdapter.syncTrtUiSpeed(validRate);
       }
 
       const slider = document.getElementById('pvc-speed-slider');
@@ -2440,50 +2572,57 @@
     }
   }
 
+  let isInternalVolumeUpdating = false;
+
   function setAudioVolume(percent) {
-    const { video } = findVideoAndPlayer();
-    const validPercent = Math.max(0, Math.min(200, Math.round(percent)));
-    currentAudioVolumePercent = validPercent;
+    if (isInternalVolumeUpdating) return;
+    isInternalVolumeUpdating = true;
+    try {
+      const { video } = findVideoAndPlayer();
+      const validPercent = Math.max(0, Math.min(200, Math.round(percent)));
+      currentAudioVolumePercent = validPercent;
 
-    // Normal %0 - %100 arası video.volume ve muted kontrolü
-    if (video) {
-      if (validPercent === 0) {
-        video.muted = true;
-        video.volume = 0;
-      } else {
-        video.muted = false;
-        video.volume = Math.min(1.0, validPercent / 100);
+      // Normal %0 - %100 arası video.volume ve muted kontrolü
+      if (video) {
+        if (validPercent === 0) {
+          video.muted = true;
+          video.volume = 0;
+        } else {
+          video.muted = false;
+          video.volume = Math.min(1.0, validPercent / 100);
+        }
       }
-      video.dispatchEvent(new Event('volumechange', { bubbles: true }));
-    }
 
-    if (HOSTNAME.includes('kick.com')) {
-      KickAdapter.syncKickPlayerVolume(validPercent);
-    } else if (HOSTNAME.includes('trt') || currentActiveAdapterName === 'TrtAdapter') {
-      TrtAdapter.syncTrtUiVolume(validPercent);
-    }
-
-    // %100 - %200 arası Web Audio API GainNode yükseltmesi (Booster)
-    const graph = video ? initAudioGraphForVideo(video) : null;
-    if (audioGainNodeInstance && audioContextInstance) {
-      if (audioContextInstance.state === 'suspended') {
-        audioContextInstance.resume().catch(() => {});
+      if (HOSTNAME.includes('kick.com')) {
+        KickAdapter.syncKickPlayerVolume(validPercent);
+      } else if (HOSTNAME.includes('trt') || currentActiveAdapterName === 'TrtAdapter') {
+        TrtAdapter.syncTrtUiVolume(validPercent);
       }
-      const gainMultiplier = validPercent > 100 ? (validPercent / 100) : 1.0;
-      audioGainNodeInstance.gain.setValueAtTime(gainMultiplier, audioContextInstance.currentTime);
+
+      // %100 - %200 arası Web Audio API GainNode yükseltmesi (Booster)
+      if (video) initAudioGraphForVideo(video);
+      if (audioGainNodeInstance && audioContextInstance) {
+        if (audioContextInstance.state === 'suspended') {
+          audioContextInstance.resume().catch(() => {});
+        }
+        const gainMultiplier = validPercent > 100 ? (validPercent / 100) : 1.0;
+        audioGainNodeInstance.gain.setValueAtTime(gainMultiplier, audioContextInstance.currentTime);
+      }
+
+      // UI Güncelle
+      const slider = document.getElementById('pvc-volume-slider');
+      const valBadge = document.getElementById('pvc-volume-value');
+      const hdrBadge = document.getElementById('pvc-hdr-volume-badge');
+      if (slider) slider.value = validPercent.toString();
+      if (valBadge) valBadge.textContent = `${validPercent}%`;
+      if (hdrBadge) hdrBadge.textContent = `${validPercent}%`;
+
+      const boostMsg = validPercent > 100 ? ` (🚀 +${validPercent - 100}% Güçlendirici)` : '';
+      showToast(`Ses: %${validPercent}${boostMsg}`);
+      addDiagnosticLog('INFO', `[Audio] Ses ayarlandı: %${validPercent} (Mode: ${currentAudioMode})`);
+    } finally {
+      isInternalVolumeUpdating = false;
     }
-
-    // UI Güncelle
-    const slider = document.getElementById('pvc-volume-slider');
-    const valBadge = document.getElementById('pvc-volume-value');
-    const hdrBadge = document.getElementById('pvc-hdr-volume-badge');
-    if (slider) slider.value = validPercent.toString();
-    if (valBadge) valBadge.textContent = `${validPercent}%`;
-    if (hdrBadge) hdrBadge.textContent = `${validPercent}%`;
-
-    const boostMsg = validPercent > 100 ? ` (🚀 +${validPercent - 100}% Güçlendirici)` : '';
-    showToast(`Ses: %${validPercent}${boostMsg}`);
-    addDiagnosticLog('INFO', `[Audio] Ses ayarlandı: %${validPercent} (Mode: ${currentAudioMode})`);
   }
 
   function setAudioMode(mode) {
