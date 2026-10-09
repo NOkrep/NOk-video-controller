@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.3.8",
-  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick 16x reklam hızlandırıcı & 360p tampon koruyucu, %0-%200 ses yükseltici, Mono/Stereo anahtarı, akordeon HUD ve PuhuTV akış adaptif video denetleyicisi.",
+  "version": "0.5.0",
+  "description": "NOkrep tarafından geliştirilen sıfır depolama izinli, Kick.com React Fiber sıfır donma ses önbelleklemesi, TRT 1 / TRT İzle CDN-V ağ seviyesinde HLS kalite kilitleri ve tam ses/hız eşitlemesi.",
   "author": "NOkrep",
   "icons": {
     "16": "icons/icon16.png",
@@ -22,6 +22,24 @@
     "scripting"
   ],
   "host_permissions": [],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.nowtv.com.tr/*",
+        "*://*.fox.com.tr/*",
+        "*://*.puhutv.com/*",
+        "*://*.kick.com/*",
+        "*://*.trt1.com.tr/*",
+        "*://*.trtizle.com/*",
+        "*://*.trt.com.tr/*",
+        "*://*.trthaber.com.tr/*",
+        "*://*.trtspor.com.tr/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "scripts": ["background.js"]

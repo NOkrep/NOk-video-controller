@@ -1,0 +1,8 @@
+{
+  "name": "NOk Video Controller",
+  "description": "Browser extension and interactive testbed for video playback control, speed adjustment, quality selection, and CDN telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
