@@ -20,7 +20,7 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '0.4.6',
+    version: '0.5.0',
     name: 'NOk Video Controller'
   });
 });
@@ -28,7 +28,7 @@ app.get('/api/health', (req, res) => {
 // ZIP Download endpoint for the unpacked extension
 app.get('/api/download-zip', (req, res) => {
   res.setHeader('Content-Type', 'application/zip');
-  res.setHeader('Content-Disposition', 'attachment; filename=NOk-video-controller-v0.4.6.zip');
+  res.setHeader('Content-Disposition', 'attachment; filename=NOk-video-controller-v0.5.0.zip');
 
   const archive = archiver('zip', { zlib: { level: 9 } });
 
