@@ -2770,7 +2770,6 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Kenarlara 16px yaklaşınca mıknatıslı hizalanır)">
         <div class="pvc-menu-brand">
-          ${NOK_LOGO_URL ? `<img src="${NOK_LOGO_URL}" alt="NOk" class="pvc-brand-logo" />` : ''}
           <span class="pvc-menu-badge" title="NOk Video Controller v${EXTENSION_VERSION}">NOkrep v${EXTENSION_VERSION}</span>
           <span class="pvc-menu-title">NOk Controller</span>
         </div>
@@ -2973,6 +2972,20 @@
         <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">⚠️ Teşhis</button>
       </div>
     `;
+
+    // NOkrep logosu (icons/nok-logo.svg): DOM API ile eklenir; dosya yoksa veya sayfa CSP'si engellerse sessizce kaldırılır.
+    if (/^(chrome|moz)-extension:\/\//.test(NOK_LOGO_URL)) {
+      const brandEl = popup.querySelector('.pvc-menu-brand');
+      if (brandEl) {
+        const logoImg = document.createElement('img');
+        logoImg.className = 'pvc-brand-logo';
+        logoImg.alt = 'NOk';
+        logoImg.draggable = false; // Başlıktaki mousedown sürüklemesini tarayıcının yerel resim sürüklemesi bozmasın
+        logoImg.addEventListener('error', () => logoImg.remove());
+        logoImg.src = NOK_LOGO_URL;
+        brandEl.insertBefore(logoImg, brandEl.firstChild);
+      }
+    }
 
     getActiveContainer().appendChild(popup);
 

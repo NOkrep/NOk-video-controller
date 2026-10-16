@@ -152,6 +152,7 @@ Manifest V3 kısıtlamaları altında hem Firefox (Gecko) hem Chromium tarayıc�
 - **Bellek İçi Harici Altyazı Motoru:** `.srt`/`.vtt` RAM içi ayrıştırıcı ve `±100ms` senkronizasyon eklendi.
 - **%300 Ses Booster, Gain Renk Geçişi & Çift Tıkla Sıfırlama:** Ses üst sınırı %300 olarak yapılandırıldı; dinamik slider renk geçişi ve çift tıkla sıfırlama eklendi.
 - **Mıknatıslı Kenar Hizalama, Küçültülmüş Detaylı Bar & PiP:** 2D mıknatıslı sürükleme, viewport sınır koruması, küçültülmüş özet bar, doğrudan PiP kontrolü ve vektörel `nok-logo.svg` entegrasyonu tamamlandı.
+- **NOkrep Logosu (HUD Başlığı):** `content.js` logo adresini `data-logo-url` ile Main World'e aktarır; `injected.js` logoyu DOM API ile ekler (yalnızca `chrome-extension://` / `moz-extension://` adresleri kabul edilir), `draggable=false` ile başlık sürüklemesini bozmaz, dosya bulunamaz/engellenirse `error` olayında kendini kaldırır. Kullanıcı kendi `icons/nok-logo.svg` dosyasını koyar.
 - **Saf WebExtension Temizliği:** AI Studio simülasyon/sunucu dosyaları (`index.html`, `server.js`, `package.json`, `bun.lock`, `.env.example`, `metadata.json`, `popup.*`, `test.zip`) kaldırıldı ve `SITE_COMPATIBILITY.md` eklendi.
 
 ### v0.5.1
@@ -194,7 +195,7 @@ NOk-video-controller/
 │   ├── icon16.png             # 16x16 araç çubuğu ikonu
 │   ├── icon48.png             # 48x48 eklenti yönetim ikonu
 │   ├── icon128.png            # 128x128 mağaza/kurulum ikonu
-│   └── nok-logo.svg           # Saf vektörel NOkrep organizasyon logosu (HUD başlığı)
+│   └── nok-logo.svg           # NOkrep organizasyon logosu (SVG; HUD başlığında gösterilir, yüklenemezse otomatik gizlenir)
 ├── manifest.json              # Manifest V3 yapılandırması (Firefox scripts + Chromium service_worker)
 ├── background.js              # Stateless arka plan betiği (Toolbar tıklamasıyla enjeksiyon)
 ├── content.js                 # Isolated World köprüsü (Main World injected.js enjektörü)
@@ -632,7 +633,7 @@ NOk-video-controller/
 │   ├── icon16.png             # 16x16 araç çubuğu ikonu
 │   ├── icon48.png             # 48x48 eklenti yönetim ikonu
 │   ├── icon128.png            # 128x128 mağaza/kurulum ikonu
-│   └── nok-logo.svg           # Saf vektörel NOkrep organizasyon logosu (HUD başlığı)
+│   └── nok-logo.svg           # NOkrep organizasyon logosu (SVG; HUD başlığında gösterilir, yüklenemezse otomatik gizlenir)
 ├── manifest.json              # Manifest V3 yapılandırması (Firefox scripts + Chromium service_worker)
 ├── background.js              # Stateless arka plan betiği (Toolbar tıklamasıyla enjeksiyon)
 ├── content.js                 # Isolated World köprüsü (Main World injected.js enjektörü)
