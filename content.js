@@ -15,6 +15,7 @@
     try {
       const script = document.createElement('script');
       script.src = browserAPI.runtime.getURL('injected.js');
+      script.dataset.logoUrl = browserAPI.runtime.getURL('icons/nok-logo.svg');
       script.onload = function () {
         this.remove();
         if (autoOpen) {

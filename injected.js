@@ -18,6 +18,7 @@
 
 (() => {
   const EXTENSION_VERSION = '0.5.2';
+  const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
     { version: 'v0.5.2', notes: 'İzole klavye kısayolları motoru, görüntü filtreleri ve gece kalkanı modülü, bellek içi .srt/.vtt harici altyazı yükleyici ve ±100ms senkronizasyon, doğrudan PiP kontrolü, küçültülmüş detaylı bilgi barı, %300 ses booster + dinamik renk geçişi + çift tıkla sıfırlama, mıknatıslı kenar hizalama (magnetic edge snapping) ve Manifest V3 service_worker düzeltmesi.' },
     { version: 'v0.5.1', notes: 'Evrensel medya tespiti, Shadow DOM ve Web Component derin BFS tarayıcısı, Widevine/FairPlay DRM korumalı akış güvenli modu (%100 ses kilit koruması), 3-kademeli basamaklı adaptör mimarisi (Cascade Strategy Pipeline), manuel adaptör seçici ve tek tıkla geliştiriciye anonim teşhis bildirme motoru.' },
@@ -538,7 +539,7 @@
 
     if (discovered.length === 0) {
       try {
-        const customHosts = document.querySelectorAll('video-js, mux-player, youtube-video, [data-player], .html5-video-player');
+        const customHosts = document.querySelectorAll('video-js, mux-player, youtube-video, shreddit-player, [data-player], .html5-video-player');
         customHosts.forEach(host => {
           if (host.shadowRoot && !visitedShadowRoots.has(host.shadowRoot)) {
             traverse(host.shadowRoot, true);
@@ -2769,6 +2770,7 @@
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Kenarlara 16px yaklaşınca mıknatıslı hizalanır)">
         <div class="pvc-menu-brand">
+          ${NOK_LOGO_URL ? `<img src="${NOK_LOGO_URL}" alt="NOk" class="pvc-brand-logo" />` : ''}
           <span class="pvc-menu-badge" title="NOk Video Controller v${EXTENSION_VERSION}">NOkrep v${EXTENSION_VERSION}</span>
           <span class="pvc-menu-title">NOk Controller</span>
         </div>

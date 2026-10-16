@@ -33,13 +33,15 @@
     }
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
   "web_accessible_resources": [
     {
       "resources": [
         "injected.js",
-        "injected.css"
+        "injected.css",
+        "icons/nok-logo.svg"
       ],
       "matches": ["<all_urls>"]
     }

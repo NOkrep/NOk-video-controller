@@ -1,45 +1,36 @@
-# NOk Video Controller (v0.5.0)
+# NOk Video Controller (v0.5.2)
 
-> Gelişmiş Video Oynatıcı Kontrolü, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%400), Kick.com 0ms React Fiber Entegrasyonu ve TRT 1 Özel Adaptörü.
+> Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
 **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 **Lisans:** MIT  
-**Platform:** Chromium & Firefox Manifest V3 WebExtension
+**Platform:** Firefox (Gecko) & Chromium (Chrome, Brave, Edge, Opera) Manifest V3 WebExtension
 
 ---
 
 ## ⚡ Hızlı Başlangıç
 
-1. Projeyi ZIP olarak indirin veya klonlayın.
-2. Chrome / Brave / Edge tarayıcınızda `chrome://extensions` adresine gidin.
-3. Sağ üstteki **Geliştirici Modu (Developer Mode)** seçeneğini açın.
-4. **Paketlenmemiş Öğe Yükle (Load Unpacked)** butonuna basarak bu klasörü seçin.
-5. Kick.com, TRT 1, TRT İzle, Now TV veya herhangi bir video platformunu açıp tarayıcı araç çubuğundaki **NOk Video Controller** ikonuna tıklayın!
+### 🦊 Firefox (Gecko) Kurulumu
+1. Tarayıcınızda `about:debugging#/runtime/this-firefox` adresine gidin.
+2. **Geçici Eklenti Yükle (Load Temporary Add-on...)** butonuna tıklayın.
+3. Proje klasöründeki `manifest.json` dosyasını seçin.
+
+### 🌐 Chrome / Brave / Edge Kurulumu
+1. Tarayıcınızda `chrome://extensions` adresine gidin.
+2. Sağ üstteki **Geliştirici Modu (Developer Mode)** seçeneğini açın.
+3. **Paketlenmemiş Öğe Yükle (Load Unpacked)** butonuna basarak proje klasörünü seçin.
 
 ---
 
 ## 📚 Kapsamlı Proje & Mimari Dokümantasyonu
 
-Projenin tüm iç çalışma mekanizması, mimarisi, teknik tercihleri, yol haritası ve geliştirici devir kılavuzu için lütfen ana dokümantasyon dosyasını inceleyin:
-
-👉 **[PROJECT_MASTER_GUIDE.md](./PROJECT_MASTER_GUIDE.md)**
-
-### Dokümantasyon İçeriği:
-- **Bölüm 1:** Yönetici Özeti & Temel Misyon
-- **Bölüm 2:** Mimari Tasarım (Manifest V3 Hibrit Enjeksiyon & Katmanlar)
-- **Bölüm 3:** Tasarım ve Mühendislik Tercihleri (Neyi Neden Tercih Ettik?)
-- **Bölüm 4:** Bileşenler ve Derinlemesine Çalışma Detayları (Ağ Kancaları, Web Audio, Kick/TRT Adaptörleri)
-- **Bölüm 5:** Sürüm Evrimi ve Çözülen Kritik Problemler (v0.5.0 Kararlı)
-- **Bölüm 6:** Güncel Zorluklar, Bilinen Sınırlar ve Edge Cases
-- **Bölüm 7:** Gelecek Yol Haritası ve Eklenecek Özellikler (Klavye kısayolları, PiP, filtreler)
-- **Bölüm 8:** Dosya Ağacı ve Sorumluluk Matrisi
-- **Bölüm 9:** Geliştirici Devir & Yeni Konuşmaya Taşıma Kılavuzu (Handoff Prompts & Rules)
+- 👉 **[PROJECT_MASTER_GUIDE.md](./PROJECT_MASTER_GUIDE.md)**: Mimari tasarım, basamaklı adaptör hattı, ses/filtre/altyazı motorları ve geliştirici devir kılavuzu.
+- 👉 **[SITE_COMPATIBILITY.md](./SITE_COMPATIBILITY.md)**: Platform bazlı çalışma durumu ve uyumluluk takip tablosu.
 
 ---
 
 ## 🛡️ Temel İlkeler
 
-- **Sıfır Depolama (Zero Storage):** Çerez, localStorage veya persistent arka plan depolaması kullanılmaz; %100 bellek içi (stateless) çalışır.
-- **Minimum İzinler:** Yalnızca `activeTab` ve `scripting` izinleri kullanılır; gizlilik dostudur.
+- **Sıfır Depolama (Zero Storage):** Çerez, `localStorage`, `sessionStorage` veya `chrome.storage` kullanılmaz; %100 bellek içi (in-memory stateless) çalışır.
+- **Minimum İzinler:** Yalnızca `activeTab` ve `scripting` izinleri kullanılır; `host_permissions` talep edilmez.
 - **Sıfır Kişisel Veri (Zero-PII):** Teşhis ve hata raporlama paneli tüm kimlik doğrulama tokenlarını maskeler.
-

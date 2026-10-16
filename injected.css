@@ -137,6 +137,15 @@
   pointer-events: none !important;
 }
 
+.pvc-brand-logo {
+  height: 20px !important;
+  width: auto !important;
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  padding: 1px 4px !important;
+  display: inline-block !important;
+}
+
 .pvc-menu-badge {
   background: #2563eb !important;
   color: #ffffff !important;
