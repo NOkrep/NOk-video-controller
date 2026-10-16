@@ -30,9 +30,9 @@
   // Eğer sayfa ilk defa yükleniyorsa (document_start veya toolbar click)
   if (!window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__) {
     window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__ = true;
-    // Otomatik enjeksiyonda arka planda kancaları sessizce tak (kullanıcı ikona basınca popup açılır)
+    // Otomatik enjeksiyonda kancaları sessizce tak; kullanıcı toolbar ikonuna bastıysa doğrudan aç
     const isManualClick = document.readyState === 'complete' || document.readyState === 'interactive';
-    injectMainWorldScript(false);
+    injectMainWorldScript(isManualClick);
   } else {
     // Kullanıcı ikona tekrar tıkladıysa popup'ı aç/kapat
     window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');

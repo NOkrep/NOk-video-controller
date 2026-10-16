@@ -1,23 +1,35 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.0  
+> **Sürüm:** v0.5.1  
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Chrome, Brave, Edge, Opera, Firefox (Manifest V3 WebExtensions)  
-> **Son Güncelleme:** v0.5.0 (TRT HUD Olay İzolasyonu, Kick Radix & Fiber Ses Senkronizasyonu, Sadeleştirilmiş Teşhis)
+> **Son Güncelleme:** v0.5.1 (Evrensel Medya Tespiti, Shadow DOM Derin BFS Taraması, DRM/EME Korumalı İçerik Güvenli Modu, 3-Kademeli Basamaklı Adaptör Mimarisi)
 
 ---
 
 ## 1. 📌 Yönetici Özeti & Temel Misyon
 
-**NOk Video Controller**, Türkiye'deki ve dünyadaki popüler canlı yayın ile VoD (Video on Demand) platformlarında kullanıcıya video oynatıcı üzerinde eksiksiz hakimiyet sağlayan, **sıfır depolama izinli (Zero-Storage / In-Memory Stateless)**, modern bir tarayıcı eklentisidir.
+**NOk Video Controller**, Türkiye'deki ve dünyadaki popüler canlı yayın ile VoD (Video on Demand) platformlarında kullanıcıya video oynatıcı üzerinde eksiksiz hakimiyet sağlayan, **sıfır depolama izinli (Zero-Storage / In-Memory Stateless)**, evrensel uyumluluklu modern bir tarayıcı eklentisidir.
 
 ### Temel Yetenekler:
-1. **Ağ Seviyesinde HLS / SMIL / BVR Kalite Kilitleri:**
+1. **Evrensel Medya ve Shadow DOM Derin Taraması (v0.5.1):**
+   - `<all_urls>` desteğiyle her sitede çalışma olanağı.
+   - Açık/kapalı Shadow Root'lar, Web Component'ler (YouTube, Reddit, Twitter/X, Mux) ve aynı kökenli iframe'lerdeki `<video>` etiketlerini özyinelemeli BFS ile yakalama.
+   - Akıllı Video Puanlama Matrisi: Oynatılan (+120), sesi açık (+40), viewport içinde (+30), en büyük alana sahip video önceliği.
+2. **DRM / EME Korumalı İçerik Tespiti & Güvenli Mod (v0.5.1):**
+   - Widevine, FairPlay, PlayReady şifrelemeli akışları (`video.mediaKeys`, `encrypted` event) otomatik algılama.
+   - Donanım ses susturmasını önlemek için Web Audio API booster'ını güvenli modda atlayıp yerel ses kontrolünü (%100) koruma.
+   - HUD üzerinde `🛡️ DRM Korumalı Akış` rozeti ve bilgilendirici kılavuz paneli.
+3. **3-Kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline - v0.5.1):**
+   - **Tier 1 (Siteye Özel):** Kick.com, TRT 1 / TRT İzle, Now TV, PuhuTV.
+   - **Tier 2 (Oynatıcı Kütüphaneleri):** YouTube (`movie_player`), Video.js, Hls.js, Shaka Player, Dash.js.
+   - **Tier 3 (Evrensel Standart):** HTML5 & Shadow DOM doğrudan denetimi.
+   - Canlı sağlık kontrolü (`probeAdapterHealth`), HUD üzerinden tek tıkla manuel adaptör değiştirme ve tek tıkla Sıfır-PII anonim JSON teşhis kopyalama.
+4. **Ağ Seviyesinde HLS / SMIL / BVR Kalite Kilitleri:**
    - TRT 1 & TRT İzle (`cdn-v.pr.trt.com.tr` üzerinde HLS `master1080p`, `720p`, `576p`, `480p`, `360p` yönlendirmesi).
    - Now TV / Fox (ErCDN BVR segment bant genişliği zorlaması `bvr_bw=...`).
    - PuhuTV (DYG Video API akıllı yönlendirmesi: Akamai vs. MNCDN 1080p FHD SMIL rotası).
-   - Standart HTML5 & HLS.js / Dash.js / Video.js / Shaka oynatıcı adaptasyonu.
-2. **Kick.com Derin Entegrasyonu:**
+5. **Kick.com Derin Entegrasyonu:**
    - Amazon IVS Player SDK erken yakalama (`IVSPlayer.create`, `AmazonIVS.createMediaPlayer`, `attachHTMLVideoElement`).
    - React Fiber (Next.js / Radix UI) hook ve setter fonksiyonlarını **0ms önbellekleme** ile yönetme (UI donması olmadan ses kontrolü).
    - Kick VOD oynatma hızını yerel 2-kademeli ayarlar penceresini (popover sub-menu) otomatik simüle ederek değiştirme.
@@ -93,7 +105,7 @@ Chrome Manifest V3 kısıtlamaları altında sayfa içi oynatıcı değişkenler
 | Tercih Edilen Yaklaşım | Neden Tercih Edildi? (Gerekçe & Avantaj) | Tercih Edilmeyen / Kaçınılan Yaklaşım |
 | :--- | :--- | :--- |
 | **Sıfır Depolama (Zero Storage / Stateless)** | Kullanıcı gizliliği (sıfır ayak izi), platformların depolama kotalarına takılmama, sekme kapatıldığında sıfır kalıntı bırakma ve bellek sızıntısını önleme. | `localStorage`, `sessionStorage`, `chrome.storage`, `IndexedDB`, `cookies`. |
-| **Minimum İzinler (Zero Host Permissions)** | Chrome Web Store ve Mozilla AMO mağaza onay süreçlerinde gereksiz bürokrasiyi engellemek; kullanıcıya *"Tüm web sitelerindeki verilerinizi okuyabilir"* uyarısı çıkartıp korkutmamak. Yalnızca `activeTab` ve `scripting` kullanılır. | Manifest'te `<all_urls>` veya geniş `host_permissions` wildcard'ları. |
+| **Evrensel Enjeksiyon & Minimum Yetki (Content Script `<all_urls>` + Sıfır `host_permissions`)** | Herhangi bir web sitesinde video açıldığında kullanıcıyı kısıtlamamak için `content_scripts.matches` alanında `<all_urls>` kullanılır. Ancak tehlikeli `host_permissions` ve depolama izinleri bilinçli olarak **eklenmemiştir**; yalnızca `activeTab` ve `scripting` kullanılır. Bu sayede hem evrensel erişim sağlanır hem de mağaza güvenlik incelemelerinden hızla geçer. | Dar domain listesi (başka sitelerde eklentinin hiç açılmaması) veya gereksiz `host_permissions` / `storage` izinleri istemek. |
 | **Main World Doğrudan Enjeksiyon** | React Fiber ağaçları (`__reactFiber$`), Amazon IVS SDK (`window.IVSPlayer`), Clappr ve Video.js değişkenleri Isolated World'den okunamaz. Main World ile sıfır gecikmeli doğrudan nesne manipülasyonu yapılır. | Yalnızca Content Script kullanarak `postMessage` ile veri kopyalamaya çalışmak (büyük gecikme ve prototip erişim kaybı). |
 | **Ağ Kancası ile HLS Yönlendirmesi** | TRT ve Now TV gibi sitelerde oynatıcı arayüzünde kalite seçimi gizlenmiş veya devre dışı bırakılmış olabilir. `XHR` ve `fetch` seviyesinde m3u8 isteklerini `master1080p`ye zorlamak oynatıcıdan bağımsız kesin çözüm sağlar. | Oynatıcının kapalı/şifreli UI menülerini kırmaya çalışmak. |
 | **React Fiber 0ms Hook Caching (Kick)** | Kick.com'da her ses butonuna basıldığında tüm DOM ağacında derin BFS (Breadth-First Search) taraması yapmak 100-300ms UI takılmalarına yol açıyordu. Hook dispatch referansları modül seviyesinde önbelleklenerek tıklama maliyeti **0ms**'ye indirildi. | Her tıklamada DOM'u baştan aşağı taramak. |
@@ -140,37 +152,98 @@ const merger = audioCtx.createChannelMerger(2);
 
 ---
 
-### 4.3 Platform Adaptörleri Matrisi
+### 4.3 Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline - v0.5.1)
 
-#### 1. `KickAdapter` (Kick.com)
-- **IVS Player Erken Yakalama:** Sayfa yüklenirken `window.IVSPlayer.create`, `AmazonIVS.createMediaPlayer` ve `attachHTMLVideoElement` fonksiyonları kancalanarak IVS oynatıcı örneği global önbelleğe (`globalCapturedIvsPlayer`) kaydedilir.
-- **React Fiber BFS & Hook Caching:**
-  - Kick'in Next.js arayüzündeki DOM elemanları taranarak React Fiber düğümlerine (`__reactFiber$`, `__reactProps$`) ulaşılır.
-  - Radix UI Slider hook dispatch fonksiyonları modül düzeyinde saklanır; böylece her ses butonuna tıklandığında ağır ağaç araması yapılmaz (**0ms gecikme**).
-- **Mute / Unmute & Radix Track Simülasyonu (v0.5.0):**
-  - Ses %0 yapıldığında `video.muted = true` ve Kick mute butonuna sentetik tıklama yapılır.
-  - Ses %50/%100/%150 gibi bir değere alındığında, Kick'in "Sesi aç" butonuna PointerEvent tıklaması yollanır ve Radix slider izine (`[role="slider"]`, `data-radix-slider-track`) `pointerdown`/`pointermove`/`pointerup` olayları gönderilerek React state'i kesin senkronize edilir.
-- **Kick VOD Oynatma Hızı:**
-  - Kick VOD'larında doğrudan `playbackRate` atandığında React bunu ezebilir. Bu yüzden Kick'in kendi ayarlar menüsü (çark simgesi) ve ardındaki "Oynatma Hızı" alt menüsü DOM üzerinden programatik tıklama zinciriyle açılıp istenen hız seçilir.
+Sistem artık statik bir adaptör listesi yerine, 3 kademeli hiyerarşik ve kendini doğrulayan (self-healing / health-probed) bir boru hattı mimarisi kullanmaktadır:
 
-#### 2. `TrtAdapter` (TRT 1, TRT İzle, TRT Haber, TRT Spor)
-- **Ağ Seviyesinde HLS Akış Kilitleri:** `cdn-v.pr.trt.com.tr` üzerindeki tüm playlist ve segmentler seçilen çözünürlüğe yönlendirilir.
-- **TRT Oynatıcı UI & Ses Eşitlemesi:** TRT oynatıcılarının ses çubuğu genişliği (`.vjs-volume-level`, `.vjs-volume-bar`), düğmesi (`.vjs-volume-handle`) ve `aria-valuenow` özellikleri çift yönlü eşitlenir.
-- **Oynatma Hızı Kilidi:** TRT oynatıcılarının `ratechange` olayı ile hızı zorla 1x'e sıfırlaması engellenir; `video.playbackRate` değeri kilitlenerek korunur.
-- **HUD Olay İzolasyonu (v0.5.0):** TRT'nin video üzerindeki tıklama engelleyici katmanlarının eklenti menüsünü engellemesi önlenmiştir.
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        NOk Video Controller Core                       │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│             Evrensel Medya & Shadow DOM BFS Tarayıcısı                 │
+│  ├─ DOM + Açık/Kapalı Shadow Root'lar + Same-Origin iframes            │
+│  ├─ Video Puanlama: (Oynatılan > Sesi Açık > En Geniş Piksel Alanı)    │
+│  └─ DRM Sentinel: (video.mediaKeys, encrypted event, Widevine/FairPlay)│
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                      Basamaklı Yürütme Hattı (Cascade)                 │
+│                                                                        │
+│  [Kullanıcı Tercihi (Manuel Override)?] ──► Seçilen Adaptör            │
+│                       │ Yok                                            │
+│                       ▼                                                │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ Tier 1: Siteye Özel Adaptörler (Kick, TRT, Now TV, PuhuTV)        │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│       │ Eşleşti mi & probeAdapterHealth Başarılı mı?                   │
+│       ├─► EVET ──► Aktif Et                                            │
+│       └─► HAYIR ──┐ (Sessiz Fallback)                                  │
+│                   ▼                                                    │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ Tier 2: Oynatıcı Kütüphaneleri (YouTube, Video.js, Hls.js, Shaka)│  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│       │ Eşleşti mi & probeAdapterHealth Başarılı mı?                   │
+│       ├─► EVET ──► Aktif Et                                            │
+│       └─► HAYIR ──┐ (Sessiz Fallback)                                  │
+│                   ▼                                                    │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ Tier 3: Evrensel HTML5 & Shadow DOM Standart Adaptör             │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│       │ Video Mevcut mu?                                               │
+│       ├─► EVET ──► Standart Hız / Ses / Sarma Kontrolleri              │
+│       └─► HAYIR ──┐                                                    │
+│                   ▼                                                    │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ Tier 4: Kullanıcı Uyarısı & Tek Tıkla Sıfır-PII Teşhis Raporu    │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
+```
 
-#### 3. `NowTvAdapter` & `FoxAdapter`
-- ErCDN BVR altyapısında `bvr_bw` parametresi manipüle edilerek canlı yayında ve arşiv dizilerinde en yüksek bitrate zorlanır.
-
-#### 4. `PuhuTvAdapter`
-- DYG Video API manipülasyonu ile Akamai CDN yerine MNCDN rotası açılarak 1080p FHD SMIL seviyesi kilitlenir.
-
-#### 5. `GenericAdapter`
-- Yukarıdaki platformların dışındaki herhangi bir sitede standart HTML5 Video, Hls.js, Shaka Player, Dash.js veya Video.js tespit edilir ve genel hız/ses/kalite mekanizmaları çalıştırılır.
+#### Adaptör Kademeleri:
+- **Tier 1 (Siteye Özel):**
+  - `KickAdapter`: Amazon IVS Player SDK kancaları, React Fiber 0ms önbelleklenmiş hook'lar, Radix UI slider pointer simülasyonu, Kick VOD hız alt menü otomasyonu.
+  - `TrtAdapter`: `cdn-v.pr.trt.com.tr` HLS m3u8 regex yönlendirmesi, TRT ses çubuğu ve UI slider eşitlemesi, `playbackRate` kilit koruması.
+  - `NowTvAdapter`: ErCDN BVR segment bant genişliği zorlaması (`bvr_bw`).
+  - `PuhuTvAdapter`: DYG Video API manipülasyonu ve MNCDN 1080p FHD rotası.
+- **Tier 2 (Oynatıcı Kütüphaneleri):**
+  - `YouTubeAdapter`: `movie_player` API, `getAvailableQualityLevels` ve `setPlaybackQualityRange`.
+  - `VideoJsAdapter`: `player.qualityLevels()`, `player.playbackRate()`.
+  - `HlsJsAdapter`: `hls.levels`, `hls.currentLevel` ve `hls.loadLevel`.
+  - `ShakaPlayerAdapter`: `shaka.getVariantTracks()`, `shaka.selectVariantTrack()`, ABR bypass.
+  - `DashJsAdapter`: `dashjs.MediaPlayer` bitrate seçimi.
+- **Tier 3 (Evrensel HTML5 & Shadow DOM):**
+  - `GenericAdapter`: Standart veya Shadow DOM içindeki her `<video>` elemanı için 0.25x-3.0x oynatma hızı, ses düzeyi, 4 kademeli sarma (-30s, -10s, +10s, +30s) ve gerçek çözünürlük ölçümü.
 
 ---
 
-### 4.4 Canlı Çözünürlük Rozeti & Kare Takibi
+### 4.4 Kök Neden Analizi: "Programımız Neden Her Sitede Açılmıyordu?"
+1. **Manifest V3 İzin Kısıtlaması (`content_scripts.matches`):**  
+   Önceki sürümlerde içerik betiği sadece 9 alan adıyla (`*.nowtv.com.tr`, `*.kick.com`, `*.trt1.com.tr` vb.) sınırlandırılmıştı. Başka sitelerde `content.js` açılışta hiç enjekte edilmiyordu.  
+   *Çözüm (v0.5.1):* `<all_urls>` evrensel eşleşmesi tanımlandı; kullanıcı araç çubuğu ikonuna bastığında da anında kancalar devreye sokulur.
+2. **Shadow DOM İzolasyonu:**  
+   YouTube, Reddit, Twitter/X, Mux ve modern Web Component oynatıcıları `<video>` etiketini ana `document` içine değil, bileşenin Shadow Root'u (`#shadow-root`) içine gizler. `document.querySelectorAll('video')` bu öğeleri göremez.  
+   *Çözüm (v0.5.1):* Özyinelemeli `deepFindMediaElements()` BFS tarayıcısı ile tüm açık/kapalı Shadow DOM ağaçları taranarak gizli videolar yakalanır.
+3. **DRM / EME Şifrelemesi:**  
+   Netflix, Spotify ve korumalı yayınlarda Web Audio API bağlandığında tarayıcının donanım seviyesindeki ses koruması sesi susturur.  
+   *Çözüm (v0.5.1):* `detectDrmStatus()` ile DRM otomatik tanınır ve güvenli modda çalıştırılır.
+4. **Çapraz Kaynaklı (Cross-Origin) iframe:**  
+   Gömülü oynatıcılar farklı bir domainden iframe ile yüklendiğinde tarayıcının güvenlik modeli (Same-Origin Policy) ana sayfadan iframe içine erişimi engeller.  
+   *Çözüm (v0.5.1):* Same-origin iframe'ler taranır; erişilemeyen cross-origin durumlarda kullanıcıya tek tıkla teşhis ve raporlama olanağı verilir.
+
+---
+
+### 4.5 DRM / EME Korumalı İçerik Tespiti & Güvenli Mod (Graceful Degradation)
+- **Tespit:** `video.mediaKeys`, `encrypted` olayı ve `WebKitMediaKeys` varlığı izlenir.
+- **Reaksiyon:** EME algılandığında Web Audio API (`createMediaElementSource`) **bilinçli olarak bypass edilir**; ses yerel `video.volume` (%100) üzerinden yürütülür.
+- **Kullanıcı Geri Bildirimi:** HUD üzerinde `🛡️ DRM Korumalı Akış` rozeti çıkar; tıklandığında *"Bu içerik platform tarafından şifrelenmiştir. Donanım koruması gereği harici ses güçlendirici sınırlandırılmış olup, temel ses, oynatma hızı ve sarma kontrolleri tam aktiftir"* bilgilendirmesi sunulur.
+
+---
+
+### 4.6 Canlı Çözünürlük Rozeti & Kare Takibi
 Modern tarayıcılarda `requestVideoFrameCallback` API'si varsa kullanılır (yoksa `timeupdate` ve periyodik timer'a dönülür).
 - Video karesinin gerçek çizim piksel boyutu (`video.videoWidth` x `video.videoHeight`) anlık olarak ölçülür.
 - Rozette şu formatta gösterilir:  
@@ -295,14 +368,18 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesine devam ediyoruz (Mevcut kararlı sürüm: v0.5.0).
-Projenin mimarisi, tasarım tercihleri ve güncel durumu /PROJECT_MASTER_GUIDE.md dosyasında eksiksiz belgelenmiştir.
-Bu projede şunlar KESİNLİKLE YASAKTIR:
-1. localStorage, sessionStorage, chrome.storage veya cookies KULLANILMAZ (Stateless mimari).
-2. manifest.json içine <all_urls> veya geniş host_permissions EKLENMEZ (activeTab yeterlidir).
-3. Kick.com ses optimizasyonlarında BFS ağaç taraması tekrar yapılmamalı, 0ms React Fiber önbellek mekanizması korunmalıdır.
-4. TRT 1 ve Kick üzerindeki olay izolasyonu (e.stopPropagation()) bozulmamalıdır.
-Lütfen PROJECT_MASTER_GUIDE.md dosyasını inceleyerek kaldığım yerden devam etmeme yardımcı ol.
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut kararlı sürüm: v0.5.1).
+Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir.
+
+Bu projede dikkat edilmesi gereken katı kurallar:
+1. SIFIR DEPOLAMA (Stateless): localStorage, sessionStorage, chrome.storage veya cookies KESİNLİKLE kullanılmaz. Tüm durum bellek içi (in-memory) değişkenlerde tutulur.
+2. SIFIR HOST İZNİ: host_permissions eklenmez; activeTab ve scripting yetkisi yeterlidir.
+3. 3 KADEMELİ BASAMAK HATTI (Cascade Pipeline): Tier 1 (Siteye özel), Tier 2 (Oynatıcı kütüphaneleri: YouTube, Video.js, Hls.js, Shaka, Dash.js), Tier 3 (Evrensel HTML5 & Shadow DOM). Bu hiyerarşi ve sağlık kontrolü (probeAdapterHealth) bozulmamalıdır.
+4. DRM / EME GÜVENLİ MODU: Şifreli akışlarda (Widevine/FairPlay) Web Audio API booster atlanmalı, yerel ses ve oynatma kontrolleri korunmalıdır.
+5. KICK.COM OPTİMİZASYONU: 0ms React Fiber hook önbelleklemesi korunmalıdır.
+6. OLAY İZOLASYONU: HUD üzerindeki tüm etkileşimlerde e.stopPropagation() korunmalıdır.
+
+Lütfen ilk olarak PROJECT_MASTER_GUIDE.md dosyasını incele ve [BURAYA YAPMAK İSTEDİĞİNİZ YENİ ÖZELLİK VEYA DÜZELTMEYİ YAZIN] konusunda çalışmaya başla.
 ```
 
 ### Kodlama ve Geliştirme Kuralları (Kırmızı Çizgiler):

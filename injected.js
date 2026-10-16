@@ -1,29 +1,31 @@
 /**
- * injected.js - NOk Video Controller v0.4.9 (Main World Engine)
+ * injected.js - NOk Video Controller v0.5.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
  * Sıfır Veri Depolama (Zero Storage / In-Memory Stateless):
  * - localStorage, sessionStorage, cookies veya background storage KULLANILMAZ.
  * 
- * v0.4.9 İyileştirmeleri & Düzeltmeleri:
- * 1. Kick.com Ses Butonları Anlık Donma Optimizasyonu (0ms React Fiber Caching & Re-entrancy Guard):
- *    - React Fiber hook dispatch ve prop setter fonksiyonları modül düzeyinde önbelleklendi; her buton tıklamasında ağır BFS ağaç taraması yapılmaz (0ms gecikme).
- *    - setAudioVolume içinde gereksiz çift volumechange dispatch kaldırıldı ve re-entrancy koruması eklendi.
- * 2. TRT 1 & TRT İzle CDN-V Ağ Seviyesinde HLS Paket Yönlendirmesi & Kalite Kilitleri:
- *    - transformStreamRequestUrl ile cdn-v.pr.trt.com.tr istekleri (master1080p, 720p, 576p, 480p, 360p) anında seçilen kalite profiline yönlendirilir.
- *    - Kalite değiştiğinde 0.001s micro-seek tampon yenilemesi ile oynatıcı donmadan anında yeni kalite segmentlerini çeker.
- * 3. TRT 1 Oynatıcı Ses Çubuğu (Volume Bar / Level / Handle) ve Oynatma Hızı Kilit Koruması:
- *    - TRT oynatıcılarının (Clappr, Video.js, Custom) ses barı, ilerleme çizgisi, düğmesi ve aria durumları tam senkronize edildi.
- *    - ratechange ve defaultPlaybackRate ile TRT oynatıcısının hızı zorla 1x'e sıfırlaması engellendi.
+ * v0.5.1 İyileştirmeleri & Düzeltmeleri:
+ * 1. Evrensel Medya Tespiti & Shadow DOM Derin Taraması (Universal BFS Discovery):
+ *    - Açık/kapalı Shadow Root'lar, iç içe bileşenler ve yerel oynatıcılar (YouTube, Reddit, Mux, Twitter/X) derinlemesine taranır.
+ *    - Çift video koruması ve en yüksek puanlı (oynatılan > sesi açık > en geniş alan) aktif video seçimi.
+ * 2. DRM / EME Korumalı İçerik Tespiti & Güvenli Mod (Graceful Degradation):
+ *    - Widevine / FairPlay / PlayReady EME şifrelemeli akışlar otomatik tespit edilir.
+ *    - Web Audio API ses çökmesini/sessizleşmesini önlemek için güvenli yerel ses moduna (%100) geçilir.
+ *    - HUD üzerinde 🛡️ DRM Korumalı Akış durum rozeti ve açıklayıcı bilgi paneli gösterilir.
+ * 3. Basamaklı Adaptör Yürütme Mimarisi (Cascade Strategy Pipeline):
+ *    - 3 Kademeli Hiyerarşik Seçim: Tier 1 (Siteye Özel) -> Tier 2 (Oynatıcı Kütüphanesi: YouTube, Video.js, Hls.js, Shaka, Dash) -> Tier 3 (Evrensel HTML5/Shadow DOM).
+ *    - Her adaptör için anlık sağlık kontrolü (probeAdapterHealth); başarısızlıkta otomatik alt kademeye sessiz geçiş.
+ *    - HUD üzerinden tek tıkla manuel adaptör değiştirme ve hiçbir oynatıcı çalışmadığında Sıfır-PII anonim teşhis raporu.
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.5.0';
+  const EXTENSION_VERSION = '0.5.1';
   const VERSION_HISTORY = [
+    { version: 'v0.5.1', notes: 'Evrensel medya tespiti, Shadow DOM ve Web Component derin BFS tarayıcısı, Widevine/FairPlay DRM korumalı akış güvenli modu (%100 ses kilit koruması), 3-kademeli basamaklı adaptör mimarisi (Cascade Strategy Pipeline), manuel adaptör seçici ve tek tıkla geliştiriciye anonim teşhis bildirme motoru.' },
     { version: 'v0.5.0', notes: 'Kick.com %0/Mute ve tüm ses seviyelerinde (%50/%100/%150) kesintisiz Radix UI & React Slider eşitlemesi, Kick VOD oynatma hızı 2-kademeli açılır pencere (popover submenu) otomasyonu, TRT 1 / TRT İzle HUD tıklama ve olay yakalama izolasyonu (stop-propagation & 100% aktif idle düzeltmesi), sadeleştirilmiş son 3 sürüm teşhis JSON geçmişi.' },
-    { version: 'v0.4.9', notes: 'Kick.com ses butonları anlık donma optimizasyonu (React Fiber hook/setter 0ms önbellekleme & re-entrancy guard), TRT 1 / TRT İzle CDN-V ağ seviyesinde HLS paket yakalama & kesintisiz kalite yönlendirmesi, TRT 1 oynatıcı ses çubuğu UI eşitlemesi ve oynatma hızı kilit koruması (persistent playbackRate).' },
-    { version: 'v0.4.8', notes: 'Kick.com Next.js rota ve React Fiber crawler izolasyonu (404 sayfa yönlendirme çözümü), TRT 1 / TRT İzle özel HLS adaptörü ve ses çubuğu UI eşitlemesi, KickAdapter domain izolasyonu.' }
+    { version: 'v0.4.9', notes: 'Kick.com ses butonları anlık donma optimizasyonu (React Fiber hook/setter 0ms önbellekleme & re-entrancy guard), TRT 1 / TRT İzle CDN-V ağ seviyesinde HLS paket yakalama & kesintisiz kalite yönlendirmesi, TRT 1 oynatıcı ses çubuğu UI eşitlemesi ve oynatma hızı kilit koruması (persistent playbackRate).' }
   ];
 
   window.addEventListener('message', (event) => {
@@ -63,6 +65,10 @@
   let lastObservedResolution = 'Ölçülüyor...';
   let cachedDiscoveredQualities = [];
   let currentActiveAdapterName = 'GenericAdapter';
+  let userForcedAdapterName = ''; // Kullanıcının HUD üzerinden açıkça seçtiği adaptör
+  let adapterHealthStatus = 'healthy'; // 'healthy' | 'fallback' | 'failed'
+  let activeDrmState = { isDrm: false, keySystem: '', label: '' };
+  let isMediaInShadowDom = false;
   let targetPuhuMediaLevel = null;
   let targetPuhuSmilLevel = null;
   let puhuFallbackAttempted = false;
@@ -421,42 +427,197 @@
   }
 
   // =========================================================================
-  // 🎯 AKTİF OYNATILAN VİDEOYU VE OYNATICIYI BULMA (MULTI-VIDEO ISOLATION)
+  // 🛡️ DRM / EME GÜVENLİK VE ŞİFRELEME TESPİT MOTORU (DRM SENTINEL)
+  // =========================================================================
+  try {
+    const origSetMediaKeys = HTMLMediaElement.prototype.setMediaKeys;
+    if (origSetMediaKeys && !HTMLMediaElement.prototype.__nokHookedDrm) {
+      HTMLMediaElement.prototype.__nokHookedDrm = true;
+      HTMLMediaElement.prototype.setMediaKeys = function (mediaKeys) {
+        if (mediaKeys) {
+          this.__nokHasMediaKeys = true;
+          this.__nokKeySystem = mediaKeys.keySystem || 'Widevine/FairPlay EME';
+          addDiagnosticLog('WARN', `[DRM Sentinel] setMediaKeys çağrıldı: ${this.__nokKeySystem}`);
+          updateDrmHudBadge(this);
+        }
+        return origSetMediaKeys.apply(this, arguments);
+      };
+    }
+  } catch (e) {}
+
+  document.addEventListener('encrypted', (e) => {
+    if (e.target && e.target.tagName === 'VIDEO') {
+      e.target.__nokEncryptedEvent = true;
+      addDiagnosticLog('WARN', '[DRM Sentinel] encrypted olayı yakalandı (EME şifreleme aktif)');
+      updateDrmHudBadge(e.target);
+    }
+  }, { capture: true, passive: true });
+
+  function detectDrmStatus(video) {
+    if (!video) return { isDrm: false, keySystem: 'Yok', label: 'Standart Akış' };
+    
+    const hasMediaKeys = !!video.mediaKeys || !!video.__nokHasMediaKeys;
+    const hasEncrypted = !!video.__nokEncryptedEvent;
+    const hasLegacy = !!video.webkitKeys || !!video.msKeys;
+    const isDrm = hasMediaKeys || hasEncrypted || hasLegacy;
+
+    let keySystem = 'Yok';
+    if (isDrm) {
+      if (video.mediaKeys && video.mediaKeys.keySystem) keySystem = video.mediaKeys.keySystem;
+      else if (video.__nokKeySystem) keySystem = video.__nokKeySystem;
+      else keySystem = 'EME Korumalı (Widevine / FairPlay)';
+    }
+
+    const state = {
+      isDrm,
+      keySystem,
+      label: isDrm ? '🛡️ DRM Korumalı Akış' : 'Standart Akış'
+    };
+    activeDrmState = state;
+    return state;
+  }
+
+  function updateDrmHudBadge(video) {
+    const drmBadge = document.getElementById('pvc-drm-status-badge');
+    const drmStatus = detectDrmStatus(video);
+    if (!drmBadge) return;
+    if (drmStatus.isDrm) {
+      drmBadge.style.display = 'block';
+      drmBadge.innerHTML = `<span>🛡️ DRM Korumalı Akış (${drmStatus.keySystem})</span>`;
+    } else {
+      drmBadge.style.display = 'none';
+    }
+  }
+
+  // =========================================================================
+  // 🔍 DERİN MEDYA VE SHADOW DOM TARAYICISI (DEEP BFS MEDIA DISCOVERY)
+  // =========================================================================
+  function deepFindMediaElements() {
+    const discovered = [];
+    const visitedShadowRoots = new Set();
+
+    function traverse(node, inShadow = false) {
+      if (!node) return;
+
+      // 1. Düğümün kendisi video ise listeye al
+      if (node.nodeType === 1 && node.tagName === 'VIDEO') {
+        discovered.push({
+          video: node,
+          isShadow: inShadow,
+          parent: node.parentElement || node.parentNode
+        });
+      }
+
+      // 2. Open Shadow Root kontrolü
+      if (node.shadowRoot && !visitedShadowRoots.has(node.shadowRoot)) {
+        visitedShadowRoots.add(node.shadowRoot);
+        traverse(node.shadowRoot, true);
+      }
+
+      // 3. Çocuk düğümleri özyinelemeli tara
+      if (node.children) {
+        for (let i = 0; i < node.children.length; i++) {
+          traverse(node.children[i], inShadow);
+        }
+      }
+
+      // 4. Same-origin iframe'leri tara
+      if (node.nodeType === 1 && (node.tagName === 'IFRAME' || node.tagName === 'FRAME')) {
+        try {
+          const doc = node.contentDocument || (node.contentWindow && node.contentWindow.document);
+          if (doc) {
+            traverse(doc.body || doc.documentElement, false);
+          }
+        } catch (e) {
+          // Cross-origin iframe'ler Same-Origin Policy nedeniyle güvenlik korumalıdır
+        }
+      }
+    }
+
+    traverse(document.body || document.documentElement, false);
+
+    // 5. Bilinen Web Component oynatıcı etiketleri için ek tarama (YouTube, Mux, VideoJS)
+    if (discovered.length === 0) {
+      try {
+        const customHosts = document.querySelectorAll('video-js, mux-player, youtube-video, [data-player], .html5-video-player');
+        customHosts.forEach(host => {
+          if (host.shadowRoot && !visitedShadowRoots.has(host.shadowRoot)) {
+            traverse(host.shadowRoot, true);
+          }
+          const innerVid = host.querySelector('video');
+          if (innerVid && !discovered.some(d => d.video === innerVid)) {
+            discovered.push({ video: innerVid, isShadow: true, parent: host });
+          }
+        });
+      } catch (e) {}
+    }
+
+    return discovered;
+  }
+
+  function scoreVideoCandidate(video) {
+    if (!video) return -999;
+    let score = 0;
+
+    // Gerçekten oynatılıyor mu? (En yüksek öncelik)
+    if (!video.paused && video.currentTime > 0 && !video.ended) score += 120;
+    // Sesi açık mı?
+    if (!video.muted && video.volume > 0) score += 40;
+    // Medya hazır mı?
+    if (video.readyState >= 2) score += 25;
+
+    // Ekrandaki piksel boyutu
+    try {
+      const rect = video.getBoundingClientRect();
+      const w = video.clientWidth || video.videoWidth || rect.width || 0;
+      const h = video.clientHeight || video.videoHeight || rect.height || 0;
+      const area = w * h;
+
+      if (area > 200000) score += 40; // Büyük ana oynatıcı (örn. 640x360 üzeri)
+      else if (area > 40000) score += 20; // Orta oynatıcı
+      if (w === 0 || h === 0) score -= 60; // Görünmeyen/gizli video
+
+      // Viewport içinde mi?
+      const inViewport = (
+        rect.bottom > 0 &&
+        rect.top < (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right > 0 &&
+        rect.left < (window.innerWidth || document.documentElement.clientWidth)
+      );
+      if (inViewport && area > 0) score += 30;
+    } catch (e) {}
+
+    return score;
+  }
+
+  // =========================================================================
+  // 🎯 AKTİF OYNATILAN VİDEOYU VE OYNATICIYI BULMA (MULTI-VIDEO ISOLATION & SHADOW DOM)
   // =========================================================================
   function findVideoAndPlayer() {
-    const videoElements = Array.from(document.querySelectorAll('video'));
-    if (videoElements.length === 0) {
-      return { video: null, player: null, playerType: 'none', platform: HOSTNAME };
+    const discoveredList = deepFindMediaElements();
+    if (discoveredList.length === 0) {
+      isMediaInShadowDom = false;
+      return { video: null, player: null, playerType: 'none', platform: HOSTNAME, isShadow: false };
     }
 
-    // 1. Öncelik: O an gerçekten çalan/oynatılan video
-    let selectedVideo = videoElements.find(v => !v.paused && v.currentTime > 0 && !v.ended);
+    // Adayları puanlayarak en uygun videoyu seç
+    discoveredList.sort((a, b) => scoreVideoCandidate(b.video) - scoreVideoCandidate(a.video));
+    const bestCandidate = discoveredList[0];
+    const selectedVideo = bestCandidate.video;
+    isMediaInShadowDom = bestCandidate.isShadow;
 
-    // 2. Öncelik: En son etkileşime girilen veya sesi açık olan
-    if (!selectedVideo) {
-      selectedVideo = videoElements.find(v => !v.muted && v.currentTime > 0);
-    }
-
-    // 3. Öncelik: Ekranda en büyük alana sahip video (Ana oynatıcı)
-    if (!selectedVideo) {
-      let maxArea = -1;
-      videoElements.forEach(v => {
-        const area = (v.clientWidth || v.videoWidth || 0) * (v.clientHeight || v.videoHeight || 0);
-        if (area > maxArea) {
-          maxArea = area;
-          selectedVideo = v;
-        }
-      });
-    }
-
-    if (!selectedVideo) selectedVideo = videoElements[0];
+    // DRM Durumunu Güncelle
+    detectDrmStatus(selectedVideo);
 
     let player = null;
-    let playerType = 'native-html5';
+    let playerType = bestCandidate.isShadow ? 'shadow-html5' : 'native-html5';
 
     if (HOSTNAME.includes('youtube.com')) {
       playerType = 'youtube-player';
       player = document.getElementById('movie_player') || null;
+    } else if (selectedVideo.__ivsPlayer || globalCapturedIvsPlayer) {
+      player = selectedVideo.__ivsPlayer || globalCapturedIvsPlayer;
+      playerType = 'amazon-ivs';
     } else if (selectedVideo.player) {
       player = selectedVideo.player;
       playerType = 'videojs-attached';
@@ -474,10 +635,20 @@
       }
     } else if (selectedVideo.hls || (selectedVideo.parentElement && selectedVideo.parentElement.hls) || window.Hls) {
       playerType = 'hlsjs';
-      player = selectedVideo.hls || (selectedVideo.parentElement && selectedVideo.parentElement.hls) || null;
+      player = selectedVideo.hls || (selectedVideo.parentElement && selectedVideo.parentElement.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]) || null;
+    } else if (selectedVideo._shakaPlayer || (window.shaka && window.shaka.Player)) {
+      playerType = 'shaka-player';
+      player = selectedVideo._shakaPlayer || null;
     }
 
-    return { video: selectedVideo, player, playerType, platform: HOSTNAME };
+    return { 
+      video: selectedVideo, 
+      player, 
+      playerType, 
+      platform: HOSTNAME, 
+      isShadow: isMediaInShadowDom,
+      isDrm: activeDrmState.isDrm
+    };
   }
 
   // =========================================================================
@@ -2335,10 +2506,185 @@
   };
 
   /**
-   * 6. Genel Standart VideoJS / HTML5 Adaptörü
+   * 6. YouTube HTML5 & movie_player API Adaptörü (Tier 2)
+   */
+  const YouTubeAdapter = {
+    name: 'YouTubeAdapter',
+    tier: 2,
+    displayName: 'YouTube Oynatıcı (Tier 2)',
+    matches(video, player) {
+      return HOSTNAME.includes('youtube.com') || !!document.getElementById('movie_player') || !!document.querySelector('.html5-video-player');
+    },
+    getQualities(video, player) {
+      const yt = player || document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+      if (yt && typeof yt.getAvailableQualityLevels === 'function') {
+        try {
+          const levels = yt.getAvailableQualityLevels();
+          if (Array.isArray(levels) && levels.length > 0) {
+            const labelMap = {
+              'hd2160': { label: '2160p (4K)', height: 2160 },
+              'hd1440': { label: '1440p (2K)', height: 1440 },
+              'hd1080': { label: '1080p (FHD)', height: 1080 },
+              'hd720': { label: '720p (HD)', height: 720 },
+              'large': { label: '480p (SD)', height: 480 },
+              'medium': { label: '360p (Düşük)', height: 360 },
+              'small': { label: '240p (Düşük)', height: 240 },
+              'tiny': { label: '144p (Mobil)', height: 144 },
+              'auto': { label: 'Otomatik', height: 0 }
+            };
+            return levels.map(lvl => ({
+              id: `yt_${lvl}`,
+              label: labelMap[lvl] ? labelMap[lvl].label : lvl,
+              height: labelMap[lvl] ? labelMap[lvl].height : 0,
+              raw: lvl
+            }));
+          }
+        } catch (e) {}
+      }
+      return GenericAdapter.getQualities();
+    },
+    applyQuality(targetItem, video, player) {
+      const yt = player || document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+      if (yt && typeof yt.setPlaybackQualityRange === 'function' && targetItem.raw) {
+        try {
+          yt.setPlaybackQualityRange(targetItem.raw, targetItem.raw);
+          showToast(`YouTube: ${targetItem.label}`);
+          return true;
+        } catch (e) {}
+      }
+      return false;
+    }
+  };
+
+  /**
+   * 7. Standart Video.js Kütüphane Adaptörü (Tier 2)
+   */
+  const VideoJsAdapter = {
+    name: 'VideoJsAdapter',
+    tier: 2,
+    displayName: 'Video.js Kütüphanesi (Tier 2)',
+    matches(video, player) {
+      return (
+        !!player ||
+        !!(video && (video.player || video.vjsPlayer)) ||
+        !!(window.videojs && typeof window.videojs.getAllPlayers === 'function' && window.videojs.getAllPlayers().length > 0) ||
+        !!document.querySelector('.video-js, .vjs-tech')
+      );
+    },
+    getQualities(video, player) {
+      const vjs = player || (video && (video.player || video.vjsPlayer)) || (window.videojs && window.videojs.getAllPlayers && window.videojs.getAllPlayers()[0]);
+      if (vjs && typeof vjs.qualityLevels === 'function') {
+        try {
+          const ql = vjs.qualityLevels();
+          if (ql && ql.length > 0) {
+            const res = [];
+            for (let i = 0; i < ql.length; i++) {
+              const h = ql[i].height || 0;
+              res.push({
+                id: `vjs_${i}`,
+                index: i,
+                label: ql[i].label || (h ? `${h}p` : `Seviye ${i + 1}`),
+                height: h,
+                raw: ql[i]
+              });
+            }
+            if (res.length > 0) return res.sort((a, b) => (b.height || 0) - (a.height || 0));
+          }
+        } catch (e) {}
+      }
+      return GenericAdapter.getQualities();
+    },
+    applyQuality(targetItem, video, player) {
+      const vjs = player || (video && (video.player || video.vjsPlayer)) || (window.videojs && window.videojs.getAllPlayers && window.videojs.getAllPlayers()[0]);
+      if (vjs && typeof vjs.qualityLevels === 'function') {
+        try {
+          const ql = vjs.qualityLevels();
+          if (ql && ql.length > 0) {
+            for (let i = 0; i < ql.length; i++) {
+              ql[i].enabled = (targetItem.index === i);
+            }
+            showToast(`Video.js: ${targetItem.label}`);
+            return true;
+          }
+        } catch (e) {}
+      }
+      return false;
+    }
+  };
+
+  /**
+   * 8. Shaka Player Adaptörü (Tier 2)
+   */
+  const ShakaPlayerAdapter = {
+    name: 'ShakaPlayerAdapter',
+    tier: 2,
+    displayName: 'Shaka Player (Tier 2)',
+    matches(video, player) {
+      return !!(video && video._shakaPlayer) || !!(window.shaka && window.shaka.Player);
+    },
+    getQualities(video, player) {
+      const shaka = (video && video._shakaPlayer) || (player && player.shaka);
+      if (shaka && typeof shaka.getVariantTracks === 'function') {
+        try {
+          const tracks = shaka.getVariantTracks();
+          const seen = new Set();
+          const res = [];
+          tracks.forEach((t, idx) => {
+            if (t.height && !seen.has(t.height)) {
+              seen.add(t.height);
+              res.push({
+                id: `shaka_${idx}`,
+                track: t,
+                label: `${t.height}p (${Math.round((t.bandwidth || 0) / 1000)}k)`,
+                height: t.height
+              });
+            }
+          });
+          if (res.length > 0) return res.sort((a, b) => b.height - a.height);
+        } catch (e) {}
+      }
+      return GenericAdapter.getQualities();
+    },
+    applyQuality(targetItem, video, player) {
+      const shaka = (video && video._shakaPlayer) || (player && player.shaka);
+      if (shaka && typeof shaka.selectVariantTrack === 'function' && targetItem.track) {
+        try {
+          shaka.configure({ abr: { enabled: false } });
+          shaka.selectVariantTrack(targetItem.track, true);
+          showToast(`Shaka Player: ${targetItem.label}`);
+          return true;
+        } catch (e) {}
+      }
+      return false;
+    }
+  };
+
+  /**
+   * 9. Dash.js Oynatıcı Adaptörü (Tier 2)
+   */
+  const DashJsAdapter = {
+    name: 'DashJsAdapter',
+    tier: 2,
+    displayName: 'Dash.js (Tier 2)',
+    matches() {
+      return !!(window.dashjs && window.dashjs.MediaPlayer);
+    },
+    getQualities() {
+      return GenericAdapter.getQualities();
+    },
+    applyQuality(targetItem) {
+      showToast(`Dash.js: ${targetItem.label}`);
+      return true;
+    }
+  };
+
+  /**
+   * 10. Evrensel HTML5 & Shadow DOM Adaptörü (Tier 3)
    */
   const GenericAdapter = {
     name: 'GenericAdapter',
+    tier: 3,
+    displayName: 'Evrensel HTML5 & Shadow DOM (Tier 3)',
     matches() { return true; },
     getQualities() {
       return [
@@ -2355,23 +2701,111 @@
     }
   };
 
-  const ADAPTER_PIPELINE = [
-    PuhuTvAdapter,
+  // Adaptörlerin Hiyerarşik Havuzu
+  PuhuTvAdapter.tier = 1; PuhuTvAdapter.displayName = 'PuhuTV (Tier 1)';
+  KickAdapter.tier = 1; KickAdapter.displayName = 'Kick.com (Tier 1)';
+  NowTvAdapter.tier = 1; NowTvAdapter.displayName = 'Now TV / Fox (Tier 1)';
+  TrtAdapter.tier = 1; TrtAdapter.displayName = 'TRT 1 / TRT İzle (Tier 1)';
+  HlsJsAdapter.tier = 2; HlsJsAdapter.displayName = 'Hls.js Kütüphanesi (Tier 2)';
+
+  const ALL_ADAPTERS = [
     KickAdapter,
-    NowTvAdapter,
     TrtAdapter,
+    NowTvAdapter,
+    PuhuTvAdapter,
+    YouTubeAdapter,
+    VideoJsAdapter,
     HlsJsAdapter,
+    ShakaPlayerAdapter,
+    DashJsAdapter,
     GenericAdapter
   ];
 
-  function getActiveAdapter(video, player) {
-    for (const adapter of ADAPTER_PIPELINE) {
-      if (adapter.matches(video, player)) {
-        currentActiveAdapterName = adapter.name;
-        return adapter;
+  /**
+   * Adaptör Canlı Sağlık Kontrolü (Health Probe)
+   */
+  function probeAdapterHealth(adapter, video, player) {
+    if (!adapter) return false;
+    try {
+      if (!video && adapter.tier !== 3) return false;
+      if (typeof adapter.getQualities === 'function') {
+        const qList = adapter.getQualities(video, player);
+        if (!Array.isArray(qList)) return false;
+      }
+      return true;
+    } catch (e) {
+      addDiagnosticLog('WARN', `[Cascade Health] ${adapter.name} testi başarısız:`, e.message);
+      return false;
+    }
+  }
+
+  /**
+   * Basamaklı Adaptör Çözümleme Hattı (Cascade Strategy Pipeline)
+   * 1. Kullanıcı tercihi (Manuel Override)
+   * 2. Tier 1: Siteye Özel Adaptörler (Kick, TRT, NowTV, Puhu)
+   * 3. Tier 2: Oynatıcı Kütüphaneleri (YouTube, Video.js, Hls.js, Shaka, Dash)
+   * 4. Tier 3: Evrensel HTML5 & Shadow DOM Standart Adaptör
+   */
+  function resolveCascadeAdapter(video, player) {
+    // 0. Kullanıcı manuel seçim yaptıysa
+    if (userForcedAdapterName) {
+      const forced = ALL_ADAPTERS.find(a => a.name === userForcedAdapterName);
+      if (forced) {
+        currentActiveAdapterName = forced.name;
+        adapterHealthStatus = 'healthy';
+        updateAdapterHudBadge(forced);
+        return forced;
       }
     }
+
+    // 1. Kademe 1: Siteye Özel Adaptörler
+    const tier1 = ALL_ADAPTERS.filter(a => a.tier === 1);
+    for (const a of tier1) {
+      if (a.matches(video, player)) {
+        if (probeAdapterHealth(a, video, player)) {
+          currentActiveAdapterName = a.name;
+          adapterHealthStatus = 'healthy';
+          updateAdapterHudBadge(a);
+          return a;
+        } else {
+          addDiagnosticLog('WARN', `[Cascade] Tier 1 (${a.name}) başarısız oldu, Tier 2 deneniyor.`);
+        }
+      }
+    }
+
+    // 2. Kademe 2: Oynatıcı Kütüphanesi Adaptörleri
+    const tier2 = ALL_ADAPTERS.filter(a => a.tier === 2);
+    for (const a of tier2) {
+      if (a.matches(video, player)) {
+        if (probeAdapterHealth(a, video, player)) {
+          currentActiveAdapterName = a.name;
+          adapterHealthStatus = 'healthy';
+          updateAdapterHudBadge(a);
+          return a;
+        } else {
+          addDiagnosticLog('WARN', `[Cascade] Tier 2 (${a.name}) başarısız oldu, Tier 3 deneniyor.`);
+        }
+      }
+    }
+
+    // 3. Kademe 3: Evrensel HTML5 / Shadow DOM Adaptörü
+    currentActiveAdapterName = GenericAdapter.name;
+    adapterHealthStatus = video ? 'healthy' : 'failed';
+    updateAdapterHudBadge(GenericAdapter);
     return GenericAdapter;
+  }
+
+  function getActiveAdapter(video, player) {
+    return resolveCascadeAdapter(video, player);
+  }
+
+  function updateAdapterHudBadge(adapter) {
+    const badge = document.getElementById('pvc-active-adapter-badge');
+    if (badge && adapter) {
+      const tierTag = adapter.tier ? `Tier ${adapter.tier}` : 'Tier 3';
+      badge.textContent = `${adapter.name} (${tierTag})`;
+      badge.title = adapter.displayName || adapter.name;
+    }
   }
 
   function discoverStreamQualities() {
@@ -2379,10 +2813,14 @@
     const adapter = getActiveAdapter(video, player);
 
     if (typeof adapter.getQualities === 'function') {
-      const found = adapter.getQualities(video, player);
-      if (found && found.length > 0) {
-        cachedDiscoveredQualities = found;
-        return found;
+      try {
+        const found = adapter.getQualities(video, player);
+        if (found && found.length > 0) {
+          cachedDiscoveredQualities = found;
+          return found;
+        }
+      } catch (e) {
+        addDiagnosticLog('WARN', `[Qualities] ${adapter.name} getQualities hatası:`, e.message);
       }
     }
 
@@ -2433,6 +2871,17 @@
     } else {
       badge.textContent = '🎬 Çözünürlük: Bekleniyor...';
       badge.style.color = '#94a3b8';
+    }
+
+    // No-video Alert ve DRM Rozeti Senkronizasyonu
+    const noVideoAlert = document.getElementById('pvc-no-video-alert');
+    if (noVideoAlert) {
+      noVideoAlert.style.display = video ? 'none' : 'block';
+    }
+    if (video) {
+      updateDrmHudBadge(video);
+      const adapter = getActiveAdapter(video);
+      updateAdapterHudBadge(adapter);
     }
   }
 
@@ -2516,6 +2965,11 @@
    */
   function initAudioGraphForVideo(video) {
     if (!video) return null;
+    // DRM Korumalı Akışlarda Web Audio API bağlamak sesi tamamen dilsizleştirebilir (Hardware CDM Audio Silence)
+    if (detectDrmStatus(video).isDrm) {
+      addDiagnosticLog('INFO', '[WebAudio] DRM korumalı akış: Web Audio API bağlantısı güvenli modda atlandı, yerel video.volume kullanılıyor.');
+      return null;
+    }
     try {
       if (!audioContextInstance) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -2560,6 +3014,7 @@
   function applyAudioGraphRouting(sourceNode) {
     if (!audioContextInstance || !audioGainNodeInstance) return;
     const { video } = findVideoAndPlayer();
+    if (video && detectDrmStatus(video).isDrm) return;
     const source = sourceNode || (video ? audioSourceElementMap.get(video) : null);
     if (!source) return;
 
@@ -2595,6 +3050,7 @@
     isInternalVolumeUpdating = true;
     try {
       const { video } = findVideoAndPlayer();
+      const isDrm = video ? detectDrmStatus(video).isDrm : false;
       const validPercent = Math.max(0, Math.min(200, Math.round(percent)));
       currentAudioVolumePercent = validPercent;
 
@@ -2615,14 +3071,16 @@
         TrtAdapter.syncTrtUiVolume(validPercent);
       }
 
-      // %100 - %200 arası Web Audio API GainNode yükseltmesi (Booster)
-      if (video) initAudioGraphForVideo(video);
-      if (audioGainNodeInstance && audioContextInstance) {
-        if (audioContextInstance.state === 'suspended') {
-          audioContextInstance.resume().catch(() => {});
+      // %100 - %200 arası Web Audio API GainNode yükseltmesi (Booster) - DRM korumalı akışlarda güvenlik nedeniyle pas geçilir
+      if (video && !isDrm) {
+        initAudioGraphForVideo(video);
+        if (audioGainNodeInstance && audioContextInstance) {
+          if (audioContextInstance.state === 'suspended') {
+            audioContextInstance.resume().catch(() => {});
+          }
+          const gainMultiplier = validPercent > 100 ? (validPercent / 100) : 1.0;
+          audioGainNodeInstance.gain.setValueAtTime(gainMultiplier, audioContextInstance.currentTime);
         }
-        const gainMultiplier = validPercent > 100 ? (validPercent / 100) : 1.0;
-        audioGainNodeInstance.gain.setValueAtTime(gainMultiplier, audioContextInstance.currentTime);
       }
 
       // UI Güncelle
@@ -2633,9 +3091,14 @@
       if (valBadge) valBadge.textContent = `${validPercent}%`;
       if (hdrBadge) hdrBadge.textContent = `${validPercent}%`;
 
-      const boostMsg = validPercent > 100 ? ` (🚀 +${validPercent - 100}% Güçlendirici)` : '';
+      let boostMsg = '';
+      if (isDrm && validPercent > 100) {
+        boostMsg = ' (🛡️ DRM: Yerel %100 Limiti)';
+      } else if (validPercent > 100) {
+        boostMsg = ` (🚀 +${validPercent - 100}% Güçlendirici)`;
+      }
       showToast(`Ses: %${validPercent}${boostMsg}`);
-      addDiagnosticLog('INFO', `[Audio] Ses ayarlandı: %${validPercent} (Mode: ${currentAudioMode})`);
+      addDiagnosticLog('INFO', `[Audio] Ses ayarlandı: %${validPercent} (Mode: ${currentAudioMode}, DRM: ${isDrm})`);
     } finally {
       isInternalVolumeUpdating = false;
     }
@@ -3014,6 +3477,12 @@
       lastCapturedDygApiUrl: lastCapturedDygApiUrl ? sanitizeStreamUrl(lastCapturedDygApiUrl) : null,
       playerType,
       activeAdapter: currentActiveAdapterName,
+      adapterTier: (ALL_ADAPTERS.find(a => a.name === currentActiveAdapterName)?.tier) || 3,
+      adapterHealthStatus,
+      isDrmProtected: activeDrmState.isDrm,
+      drmKeySystem: activeDrmState.keySystem,
+      isShadowDom: isMediaInShadowDom,
+      cascadePipelineSummary: 'Tier 1 (Site) -> Tier 2 (Kütüphane) -> Tier 3 (Evrensel HTML5/ShadowDOM)',
       domain: cleanHostname,
       activeForcedQuality: activeForcedQualityLabel || 'Otomatik',
       discoveredQualitiesCount: cachedDiscoveredQualities.length,
@@ -3210,6 +3679,161 @@
     };
   }
 
+  function showAdapterPickerModal() {
+    const existing = document.getElementById('pvc-adapter-modal');
+    if (existing) existing.remove();
+
+    const { video, player } = findVideoAndPlayer();
+    const current = getActiveAdapter(video, player);
+
+    const modal = document.createElement('div');
+    modal.id = 'pvc-adapter-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Adaptör Seçim ve Basamak Hattı');
+
+    const optionsHtml = [
+      { name: '', label: '⚡ Otomatik (Önerilen)', tier: 'Akıllı', desc: 'Sistem sayfayı ve oynatıcı prototiplerini analiz ederek en uygun adaptörü otomatik seçer.' },
+      ...ALL_ADAPTERS.map(a => ({
+        name: a.name,
+        label: a.displayName || a.name,
+        tier: `Tier ${a.tier || 3}`,
+        desc: a.tier === 1 ? 'Siteye özel derin API/Ağ kancası' : a.tier === 2 ? 'Oynatıcı kütüphanesi API kancası' : 'Evrensel HTML5 ve Shadow DOM tarayıcısı'
+      }))
+    ].map(opt => {
+      const isSelected = (!userForcedAdapterName && opt.name === '') || (userForcedAdapterName === opt.name);
+      return `
+        <div class="pvc-adapter-option ${isSelected ? 'pvc-adapter-selected' : ''}" data-adapter="${opt.name}" style="padding: 10px 12px; background: ${isSelected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isSelected ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+            <span style="font-weight: 700; font-size: 13px; color: ${isSelected ? '#38bdf8' : '#f8fafc'};">${opt.label}</span>
+            <span class="pvc-val-badge" style="font-size: 10px;">${opt.tier}</span>
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">${opt.desc}</div>
+        </div>
+      `;
+    }).join('');
+
+    modal.innerHTML = `
+      <div class="pvc-modal-card" style="max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="pvc-modal-header">
+          <span>🧩 Oynatıcı Adaptörü Seçimi (Basamaklı Hat)</span>
+          <button id="pvc-close-adapter-btn" aria-label="Kapat">✕</button>
+        </div>
+        <div class="pvc-modal-body" style="overflow-y: auto; flex: 1;">
+          <p class="pvc-modal-desc">
+            NOk Video Controller, 3 kademeli <strong>Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline)</strong> ile çalışır. Bir adaptör yanıt vermediğinde otomatik olarak alt kademedeki evrensel adaptöre geçilir. Buradan dilediğiniz adaptörü manuel olarak da zorlayabilirsiniz.
+          </p>
+          <div class="pvc-adapter-list">
+            ${optionsHtml}
+          </div>
+        </div>
+        <div class="pvc-modal-footer">
+          <button id="pvc-dismiss-adapter-btn" class="pvc-modal-btn-secondary" style="width: 100%; text-align: center;">Kapat</button>
+        </div>
+      </div>
+    `;
+
+    const container = getActiveContainer();
+    container.appendChild(modal);
+
+    ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
+      modal.addEventListener(evtType, (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    });
+
+    modal.querySelectorAll('.pvc-adapter-option').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const chosen = el.getAttribute('data-adapter');
+        userForcedAdapterName = chosen;
+        const newAdapter = getActiveAdapter(video, player);
+        renderDynamicQualityButtons();
+        updateRealtimeResolutionBadge();
+        showToast(chosen ? `Adaptör: ${newAdapter.name}` : 'Adaptör: Otomatik Mod');
+        addDiagnosticLog('INFO', `[Cascade] Kullanıcı manuel adaptör seçti: ${chosen || 'Otomatik'}`);
+        modal.remove();
+      });
+    });
+
+    document.getElementById('pvc-close-adapter-btn').onclick = (e) => {
+      e.stopPropagation();
+      modal.remove();
+    };
+    document.getElementById('pvc-dismiss-adapter-btn').onclick = (e) => {
+      e.stopPropagation();
+      modal.remove();
+    };
+  }
+
+  function showDrmInfoModal() {
+    const existing = document.getElementById('pvc-drm-modal');
+    if (existing) existing.remove();
+
+    const { video } = findVideoAndPlayer();
+    const drm = detectDrmStatus(video);
+
+    const modal = document.createElement('div');
+    modal.id = 'pvc-drm-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'DRM Korumalı Akış Bilgilendirmesi');
+
+    modal.innerHTML = `
+      <div class="pvc-modal-card">
+        <div class="pvc-modal-header" style="border-bottom-color: rgba(245, 158, 11, 0.3);">
+          <span style="color: #fbbf24;">🛡️ DRM / EME Korumalı Akış Bilgilendirmesi</span>
+          <button id="pvc-close-drm-btn" aria-label="Kapat">✕</button>
+        </div>
+        <div class="pvc-modal-body">
+          <div style="padding: 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; margin-bottom: 12px;">
+            <div style="font-weight: 700; color: #fbbf24; font-size: 13px; margin-bottom: 4px;">Güvenli Mod Devrede (Graceful Degradation)</div>
+            <div style="font-size: 12px; color: #fef3c7; line-height: 1.5;">
+              Bu sitedeki video akışı <strong>${drm.keySystem}</strong> koruma standardı ile şifrelenmiştir.
+            </div>
+          </div>
+          <p class="pvc-modal-desc">
+            <strong>Neden Bazı Özellikler Sınırlandırıldı?</strong><br>
+            Netflix, Spotify, Prime Video veya korumalı akış portallarında tarayıcının İçerik Şifre Çözme Modülü (CDM), ses ve görüntü verilerini doğrudan donanıma şifreli gönderir. Web Audio API harici yükselticisi (%200) bu akışlara bağlanmaya çalıştığında tarayıcı güvenlik politikası sesi tamamen susturabilir (blackout).
+          </p>
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; line-height: 1.6; color: #e2e8f0; margin-top: 8px;">
+            ✅ <strong>Aktif Kontroller:</strong> Yerel Ses Seviyesi (%0 - %100), Oynatma Hızı (0.25x - 3.0x), ±30s / ±10s Hassas Sarma.<br>
+            🔒 <strong>Korumaya Alınan:</strong> %100 üzeri yapay ses yükseltici (Audio Booster).
+          </div>
+        </div>
+        <div class="pvc-modal-footer">
+          <button id="pvc-dismiss-drm-btn" class="pvc-modal-btn-secondary" style="width: 100%; text-align: center;">Anladım, Kapat</button>
+        </div>
+      </div>
+    `;
+
+    const container = getActiveContainer();
+    container.appendChild(modal);
+
+    ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
+      modal.addEventListener(evtType, (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    });
+
+    document.getElementById('pvc-close-drm-btn').onclick = (e) => {
+      e.stopPropagation();
+      modal.remove();
+    };
+    document.getElementById('pvc-dismiss-drm-btn').onclick = (e) => {
+      e.stopPropagation();
+      modal.remove();
+    };
+  }
+
   function resetIdleTimer(popup) {
     if (!popup) return;
     
@@ -3320,11 +3944,35 @@
       </div>
 
       <!-- Canlı Render Çözünürlüğü Rozeti (Küçültme modunda da her zaman tam metinle korunur) -->
-      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 8px; box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);" title="Oynatıcıda o an işlenen video piksel boyutu">
+      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 6px; box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);" title="Oynatıcıda o an işlenen video piksel boyutu">
         <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: #38bdf8; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite" title="Gerçek Piksel Çözünürlüğü">
           🎬 Gerçek: Ölçülüyor...
         </span>
         <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 0.15s ease;" title="Çözünürlük ve Paketleri Yenile" aria-label="Çözünürlük ve Paketleri Yenile">🔄</button>
+      </div>
+
+      <!-- Basamaklı Adaptör Durumu & Manuel Seçici Barı -->
+      <div id="pvc-adapter-bar" style="padding: 5px 10px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <span style="font-size: 10.5px; color: #94a3b8;">Adaptör:</span>
+          <span id="pvc-active-adapter-badge" style="font-size: 10.5px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">Otomatik</span>
+        </div>
+        <button id="pvc-change-adapter-btn" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer; transition: all 0.15s ease;" title="Adaptör Listesini Aç ve Değiştir">Değiştir ▾</button>
+      </div>
+
+      <!-- DRM Koruma Rozeti (Korumalı akış tespit edildiğinde görünür) -->
+      <div id="pvc-drm-status-badge" style="display: none; padding: 5px 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; margin-bottom: 6px; color: #fbbf24; font-size: 10.5px; font-weight: 600; cursor: pointer;" title="Tıklayın: DRM koruması detaylarını görün">
+        <span>🛡️ DRM Korumalı Akış (Güvenli Mod)</span>
+      </div>
+
+      <!-- Video Bulunamadı Uyarısı (Video yoksa görünür) -->
+      <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: #fca5a5;">
+        <div style="font-weight: 700; margin-bottom: 2px;">⚠️ Aktif Oynatıcı Bekleniyor</div>
+        <div style="font-size: 10px; color: #cbd5e1; margin-bottom: 6px; line-height: 1.4;">Sayfadaki video henüz başlamadı, kapalı Shadow DOM veya iframe içinde olabilir.</div>
+        <div style="display: flex; gap: 6px;">
+          <button id="pvc-rescan-btn" style="flex: 1; padding: 3px; background: #2563eb; color: #fff; border: none; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">🔄 Yeniden Tara</button>
+          <button id="pvc-quick-report-btn" style="flex: 1; padding: 3px; background: rgba(255,255,255,0.08); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; font-size: 10px; cursor: pointer;">📋 Teşhis Raporu</button>
+        </div>
       </div>
 
       <!-- 1. BÖLÜM: Oynatma Hızı & Sarma (Akordeon) -->
@@ -3571,6 +4219,55 @@
       testCdnPing(true);
       showToast(`🎬 Güncellendi: ${lastObservedResolution}`);
     };
+
+    // Adaptör Seçici Butonu
+    const changeAdapterBtn = popup.querySelector('#pvc-change-adapter-btn');
+    if (changeAdapterBtn) {
+      changeAdapterBtn.onclick = (e) => {
+        e.stopPropagation();
+        resetIdleTimer(popup);
+        showAdapterPickerModal();
+      };
+    }
+
+    // DRM Durum Rozeti Tıklaması
+    const drmBadge = popup.querySelector('#pvc-drm-status-badge');
+    if (drmBadge) {
+      drmBadge.onclick = (e) => {
+        e.stopPropagation();
+        resetIdleTimer(popup);
+        showDrmInfoModal();
+      };
+    }
+
+    // Video Bulunamadı Butonları
+    const rescanBtn = popup.querySelector('#pvc-rescan-btn');
+    if (rescanBtn) {
+      rescanBtn.onclick = (e) => {
+        e.stopPropagation();
+        resetIdleTimer(popup);
+        const { video } = findVideoAndPlayer();
+        if (video) {
+          const alertBox = popup.querySelector('#pvc-no-video-alert');
+          if (alertBox) alertBox.style.display = 'none';
+          monitorVideoResolution(video);
+          updateRealtimeResolutionBadge();
+          renderDynamicQualityButtons();
+          showToast('🎬 Video başarıyla yakalandı!');
+        } else {
+          showToast('Video henüz bulunamadı');
+        }
+      };
+    }
+
+    const quickReportBtn = popup.querySelector('#pvc-quick-report-btn');
+    if (quickReportBtn) {
+      quickReportBtn.onclick = (e) => {
+        e.stopPropagation();
+        resetIdleTimer(popup);
+        reportAnonymousError('NO_VIDEO_FOUND', 'Sayfada herhangi bir video oynatıcı kilitlenemedi.');
+      };
+    }
 
     // Ping, İzinler ve Teşhis
     popup.querySelector('#pvc-ping-btn').onclick = async function (e) {

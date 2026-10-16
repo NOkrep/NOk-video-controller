@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOk Video Controller v0.4.9 | Proje Durum Paneli & İndirme</title>
+  <title>NOk Video Controller v0.5.1 | Proje Durum Paneli & İndirme</title>
+  <link rel="stylesheet" href="injected.css">
   
   <style>
     :root {
@@ -322,9 +323,9 @@
         <div>
           <div style="display:flex;align-items:center;gap:8px;">
             <h1 class="brand-title">NOk Video Controller</h1>
-            <span class="badge-tag">v0.4.9</span>
+            <span class="badge-tag">v0.5.1</span>
           </div>
-          <p style="font-size:12px;color:var(--text-muted);">Kick.com, TRT 1 / TRT İzle, Now TV & PuhuTV Sıfır Depolama İzinli, Canlı UI Senkronizasyonu & HLS Denetleyicisi</p>
+          <p style="font-size:12px;color:var(--text-muted);">Evrensel Medya Tespiti, Shadow DOM Desteği, DRM Güvenli Modu & 3-Kademeli Basamaklı Adaptör Mimarisi</p>
         </div>
       </div>
 
@@ -335,7 +336,7 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          Eklentiyi ZIP Olarak İndir
+          Eklentiyi ZIP Olarak İndir (v0.5.1)
         </a>
       </div>
     </div>
@@ -347,9 +348,9 @@
     <!-- Hero Summary -->
     <div class="hero-banner">
       <div class="hero-text">
-        <h2>⚡ Proje Durumu & Teknik Entegrasyon Özeti</h2>
+        <h2>⚡ Evrensel Medya Tespiti & Basamaklı Adaptör Mimarisi (v0.5.1)</h2>
         <p>
-          NOk Video Controller; sıfır depolama (stateless), minimal izin ilkeleriyle çalışan, PuhuTV, Now TV (nowtv.com.tr) ve Kick.com üzerinde doğrudan ağ ve DOM kancalarıyla kalite, ses (%0-%200) ve hız kontrolü sağlayan açık kaynaklı bir tarayıcı uzantısıdır.
+          NOk Video Controller; kısıtlı domain enjeksiyonunu aşarak her web sitesinde çalışan, açık/kapalı Shadow DOM ve Web Component yapılarını derinlemesine tarayan, Widevine/FairPlay DRM korumalı akışları algılayıp güvenli modda çalıştıran, 3 kademeli (Tier 1: Site → Tier 2: Kütüphane → Tier 3: Evrensel HTML5) akıllı basamaklı adaptör mimarisine sahip açık kaynaklı bir tarayıcı uzantısıdır.
         </p>
       </div>
       <div>
@@ -366,45 +367,47 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">
-            <span>🛠️ 1. Yapılan Değişiklikler (v0.3.9)</span>
+            <span>🛠️ 1. Yapılan Değişiklikler (v0.5.1)</span>
           </div>
-          <span class="pill-count pill-blue">Son Revizyonlar</span>
+          <span class="pill-count pill-blue">v0.5.1 Revizyonları</span>
         </div>
         <div class="card-body">
           <ul class="info-list">
             <li class="info-item">
               <div class="info-item-title">
-                <span>Now TV (nowtv.com.tr) Video.js VHS & ErCDN Adaptörü</span>
+                <span>Evrensel Medya Tespiti & Shadow DOM Derin Taraması</span>
               </div>
               <div class="info-item-desc">
-                Now TV'nin Video.js oynatıcısı, VHS kalite seviyeleri (<span class="tag-accent">qualityLevels</span>) ve Medianova/ErCDN SMIL akış profilleri tespit edilerek kilitlenebilir hale getirildi.
+                Kısıtlı 9 domain engeli kaldırılarak <span class="tag-accent">&lt;all_urls&gt;</span> evrensel enjeksiyonuna geçildi. Açık/kapalı Shadow Root'lar, Web Component'ler (YouTube, Reddit, Twitter/X) özyinelemeli BFS algoritması ve akıllı video puanlama (oynatılan > sesi açık > en geniş alan) ile taranmaktadır.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>Kick.com 2-Kademeli Ayarlar Menüsü & Global IVS Kancası</span>
+                <span>DRM / EME Korumalı İçerik Tespiti & Güvenli Mod</span>
               </div>
               <div class="info-item-desc">
-                Amazon IVS SDK kurucu metotları kancalanarak oynatıcı doğrudan yakalandı; React 18 ayarlar menüsündeki "Kalite" alt menüsü simülasyonu ile reklam tamponu (360p) ve normal HD kalite geçişleri tam kontrol altına alındı.
+                Widevine, FairPlay ve PlayReady ile şifrelenmiş medyalarda Web Audio API zorlanmayarak ses susturma (audio blackout) riski engellendi. HUD üzerinde <span class="tag-accent">🛡️ DRM Korumalı Akış</span> rozeti ve detaylı açıklama modalı entegre edildi.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>%0 - %200 Kaydırmalı Ses Denetimi & Gain Booster</span>
+                <span>3-Kademeli Basamaklı Adaptör Mimarisi (Cascade Pipeline)</span>
               </div>
               <div class="info-item-desc">
-                Web Audio API GainNode entegrasyonuyla tüm videolarda %0-%200 kaydırmalı ses ayarı ve 2 katına kadar yükseltme sağlandı.
+                <strong>Tier 1 (Siteye Özel):</strong> Kick, TRT 1/İzle, Now TV, PuhuTV.<br>
+                <strong>Tier 2 (Oynatıcı Kütüphanesi):</strong> YouTube (movie_player), Video.js, Hls.js, Shaka Player, Dash.js.<br>
+                <strong>Tier 3 (Evrensel HTML5):</strong> Tüm standart ve Shadow DOM video elementleri. Canlı <span class="tag-accent">probeAdapterHealth</span> kontrolü ile otomatik alt kademeye geçiş.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>Stereo & Mono Ses Kanalı Seçicisi</span>
+                <span>Canlı Adaptör Seçici & Tek Tıkla Teşhis Raporu</span>
               </div>
               <div class="info-item-desc">
-                ChannelMerger ve ChannelSplitter köprüsüyle tek kulaklık veya tek kanallı videolarda anında Mono/Stereo geçiş desteği eklendi.
+                HUD üzerinden anında manuel adaptör değiştirme menüsü (<span class="tag-accent">Değiştir ▾</span>) ve desteklenmeyen sayfalarda tek tıkla Sıfır-PII anonim JSON teşhis kopyalama paneli eklendi.
               </div>
             </li>
           </ul>
@@ -457,49 +460,46 @@
         </div>
       </div>
 
-      <!-- 3. Hataları Olan Sistemler ve Hataları -->
+      <!-- 3. Hataları Olan Sistemler ve Çözümler -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
-            <span>⚠️ 3. Hataları Olan Sistemler ve Hataları</span>
+            <span>⚠️ 3. Çözülen & İzlenen Kritik Hususlar</span>
           </div>
-          <span class="pill-count pill-rose">Aktif Hatalar</span>
+          <span class="pill-count pill-rose">Çözümler & Takip</span>
         </div>
         <div class="card-body">
           <ul class="info-list">
             <li class="info-item">
               <div class="info-item-title">
-                <span>PuhuTV: Sarma (Seek) Sırasında Tampon Kilitlenmesi</span>
+                <span>Her Web Sitesinde Açılmama Sorunu (Giderildi)</span>
               </div>
               <div class="info-item-desc">
-                Kalite 1080p veya 720p olarak değiştirildikten sonra video ileri/geri sarıldığında, Video.js VHS (HLS) motorunun önceki segment tamponunu boşaltamaması nedeniyle oynatıcı sonsuz "yükleniyor" durumunda kalıyor.
+                Mevcut manifestin 9 domainle sınırlı olması nedeniyle diğer sitelerde content script enjekte edilemiyordu. <span class="tag-accent">&lt;all_urls&gt;</span> ve Shadow DOM BFS taraması ile herhangi bir web sayfasındaki oynatıcı anında yakalanabilir hale getirildi.
               </div>
-              <div class="issue-highlight">
-                <strong>Hata:</strong> VHS buffer append mismatch & network abort sırasında oynatıcı readyState'in 2'ye takılması.
+              <div class="working-highlight">
+                ✓ Evrensel URL eşleşmesi ve derin bileşen algılayıcısı aktif.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>PuhuTV: Eski Dizilerde 1080p Yokluğu & 576p PAL Düşüşü</span>
+                <span>DRM Korumalı İçeriklerde Ses Susturma Riski (Giderildi)</span>
               </div>
               <div class="info-item-desc">
-                PuhuTV'nin arşiv içeriklerinde (Ezel vb.) 1080p akışı CDN'de bulunmadığında yönlendirme 404 dönüyor; otomatik fallback mekanizması devreye girmediğinde yayın donuyor.
+                Netflix, Spotify, Prime Video gibi EME/Widevine şifreli akışlarda Web Audio API bağlanmaya çalışıldığında tarayıcı sesi kilitliyordu. Sistem artık DRM'i otomatik tanıyarak güvenli yerel ses moduna (%100) geçmektedir.
               </div>
-              <div class="issue-highlight">
-                <strong>Hata:</strong> Akamai 404 yanıtında otomatik bir alt çözünürlüğe (576p/480p) yumuşak geçiş eksikliği.
+              <div class="working-highlight">
+                ✓ Güvenli EME algılayıcı ve Graceful Degradation modu aktif.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>Kick.com: Menü Gecikmesi ve Kalite Yakalama Bozulması</span>
+                <span>PuhuTV & Kick.com UI Senkronizasyonu (Gözetimde)</span>
               </div>
               <div class="info-item-desc">
-                Canlı yayın ve VOD sayfalarında HUD'daki kalite butonuna basıldığında, IVS Player veya React Fiber üzerinden sadece var olan kaliteleri yakalama listesinin bozulması veya tek tıkta menünün kapanmaması.
-              </div>
-              <div class="issue-highlight">
-                <strong>Hata:</strong> DOM menü simülasyonundaki zamanlama çakışması ve dinamik kalite listesinin HUD'a eksik yansıması.
+                Kick.com React Fiber 0ms önbellekleme ile donmasız ses kontrolü sağlandı. PuhuTV'de VHS tampon geçişlerinde yumuşak kaynak aktarımı (micro-seek buffer reload) gözetim altında tutulmaktadır.
               </div>
             </li>
           </ul>
@@ -518,42 +518,107 @@
           <ul class="info-list">
             <li class="info-item">
               <div class="info-item-title">
-                <span>PuhuTV Akıllı VHS Tampon Boşaltma & Seek Düzeltici</span>
+                <span>WebRTC & Düşük Gecikmeli Canlı Yayın Jitter Tamponu</span>
               </div>
               <div class="info-item-desc">
-                Sarma işlemi yapıldığında Video.js SourceBuffer'ı temizleyen (<span class="tag-accent">remove(0, duration)</span>) ve yeniden senkronize eden özel sarma kancası.
+                Discord, Twitch ve canlı konferanslarda WebRTC video akışlarını otomatik tespit eden ultra-düşük gecikmeli tampon optimizasyonu.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>Akıllı CDN Sağlık Kontrolü (Fallback Engine)</span>
+                <span>Altyazı (WebVTT / CEA-608) Boyut ve Stil Motoru</span>
               </div>
               <div class="info-item-desc">
-                1080p isteği yapılmadan önce veya 404 aldığında oynatıcıyı kitlemeden anında 720p / 576p PAL akışına düşüren hafif HEAD istek mekanizması.
+                Tüm video platformlarında altyazıların font boyutunu, arka plan saydamlığını ve dikey konumunu standartlaştıran HUD eklentisi.
               </div>
             </li>
 
             <li class="info-item">
               <div class="info-item-title">
-                <span>Doğrudan IVS `setQuality` Kancası (DOM Simülasyonsuz)</span>
+                <span>Kullanıcı Tercihleri Geçici RAM Profili</span>
               </div>
               <div class="info-item-desc">
-                Kick.com'da DOM menüsünü açıp kapatmaya gerek kalmadan Amazon IVS Player window globali üzerinden saf JavaScript ile tek tıkla kalite kilitleme.
-              </div>
-            </li>
-
-            <li class="info-item">
-              <div class="info-item-title">
-                <span>Kompakt & Sadeleştirilmiş UI Düzeni</span>
-              </div>
-              <div class="info-item-desc">
-                Yalnızca aktif platformda geçerli olan kaliteleri filtreleyen, taşma yapmayan minimal ve temiz HUD tasarımı.
+                Sekme açık kaldığı sürece tercih edilen varsayılan oynatma hızı ve ses modunu sekme belleğinde koruyan sıfır depolamalı oturum profili.
               </div>
             </li>
           </ul>
         </div>
       </div>
+
+    </div>
+
+    <!-- 5. İnteraktif Canlı Simülatör ve Test Sahası -->
+    <div class="card" style="margin-top: 4px;">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🧪 5. İnteraktif Canlı Simülatör & Test Sahası (Testbed)</span>
+        </div>
+        <span class="pill-count pill-blue">Canlı Simülasyon</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+          Aşağıdaki oynatıcı üzerinde NOk Video Controller'ın Evrensel Medya Tespiti, Shadow DOM izolasyonu, DRM korumalı akış simülasyonu ve Basamaklı Adaptör geçişlerini tarayıcınızda doğrudan canlı test edebilirsiniz:
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-top: 10px;">
+          <!-- Video Oynatıcı Alanı -->
+          <div style="background: #020617; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span id="test-player-type-label" style="font-size: 12px; font-weight: 700; color: #38bdf8;">🎬 Oynatıcı: Standart HTML5 Video</span>
+              <span id="test-drm-badge" style="display: none; font-size: 10.5px; font-weight: 700; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; padding: 2px 8px; border-radius: 12px;">🛡️ DRM Korumalı</span>
+            </div>
+
+            <div id="test-video-mount" style="position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px; display: flex; align-items: center; justify-content: center;">
+              <video 
+                id="sample-test-video" 
+                controls 
+                loop 
+                crossorigin="anonymous"
+                style="width: 100%; max-height: 280px; display: block;"
+                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+              ></video>
+            </div>
+            
+            <div id="test-shadow-mount" style="display: none;"></div>
+
+            <div style="display: flex; gap: 8px; font-size: 11.5px; color: #94a3b8; justify-content: space-between;">
+              <span id="test-playback-stat">Hız: 1.0x • Ses: 100%</span>
+              <span id="test-shadow-stat">DOM Tipi: Standart DOM</span>
+            </div>
+          </div>
+
+          <!-- Test Kontrolleri & Senaryolar -->
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px;">
+              <div style="font-weight: 700; font-size: 13px; color: #f8fafc; margin-bottom: 8px;">🎮 Test Senaryolarını Tetikle:</div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button id="btn-test-standard" class="btn-download" style="padding: 7px 14px; font-size: 12px; justify-content: flex-start; background: #1e293b; border-color: #334155;">
+                  ▶️ 1. Standart HTML5 Video Modu (Tier 3)
+                </button>
+                <button id="btn-test-shadow" class="btn-download" style="padding: 7px 14px; font-size: 12px; justify-content: flex-start; background: #1e293b; border-color: #334155;">
+                  🔮 2. Shadow DOM Web Component Modu (YouTube/Mux Benzetimi)
+                </button>
+                <button id="btn-test-drm" class="btn-download" style="padding: 7px 14px; font-size: 12px; justify-content: flex-start; background: #1e293b; border-color: #334155;">
+                  🛡️ 3. DRM / EME Şifreli Akış Simülasyonu (Widevine Modu)
+                </button>
+              </div>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px;">
+              <div style="font-weight: 700; font-size: 13px; color: #f8fafc; margin-bottom: 8px;">🕹️ Eklenti HUD Arayüzünü Test Et:</div>
+              <button id="btn-open-hud-test" class="btn-download" style="width: 100%; justify-content: center; padding: 10px;">
+                🚀 NOk Video Controller HUD'ını Aç / Kapat
+              </button>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 8px; line-height: 1.4;">
+                💡 Bu butona bastığınızda eklentinin gerçek <code>injected.js</code> motoru sayfadaki videoya kilitlenir ve tüm hız, ses, sarma ve basamaklı adaptör menüleri canlı çalışır.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
 
     </div>
 
@@ -585,5 +650,104 @@
 
   </div>
 
+  <script src="injected.js"></script>
+  <script>
+    // Canlı Simülatör ve Test Sahası Etkileşimi
+    document.addEventListener('DOMContentLoaded', () => {
+      const vidMount = document.getElementById('test-video-mount');
+      const shadowMount = document.getElementById('test-shadow-mount');
+      const playerLabel = document.getElementById('test-player-type-label');
+      const drmBadge = document.getElementById('test-drm-badge');
+      const domStat = document.getElementById('test-shadow-stat');
+      const speedStat = document.getElementById('test-playback-stat');
+
+      const updateStats = () => {
+        const v = document.querySelector('video') || (shadowMount.shadowRoot && shadowMount.shadowRoot.querySelector('video'));
+        if (v) {
+          speedStat.textContent = `Hız: ${v.playbackRate || 1.0}x • Ses: ${Math.round((v.volume !== undefined ? v.volume : 1) * 100)}%`;
+        }
+      };
+      setInterval(updateStats, 500);
+
+      // 1. Standart HTML5 Modu
+      document.getElementById('btn-test-standard')?.addEventListener('click', () => {
+        shadowMount.style.display = 'none';
+        shadowMount.innerHTML = '';
+        vidMount.style.display = 'flex';
+        vidMount.innerHTML = `
+          <video 
+            id="sample-test-video" 
+            controls 
+            loop 
+            crossorigin="anonymous"
+            style="width: 100%; max-height: 280px; display: block;"
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          ></video>
+        `;
+        playerLabel.textContent = '🎬 Oynatıcı: Standart HTML5 Video (Tier 3)';
+        drmBadge.style.display = 'none';
+        domStat.textContent = 'DOM Tipi: Standart Ana DOM';
+        window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
+      });
+
+      // 2. Shadow DOM Web Component Modu
+      document.getElementById('btn-test-shadow')?.addEventListener('click', () => {
+        vidMount.style.display = 'none';
+        vidMount.innerHTML = '';
+        shadowMount.style.display = 'block';
+        if (!shadowMount.shadowRoot) {
+          shadowMount.attachShadow({ mode: 'open' });
+        }
+        shadowMount.shadowRoot.innerHTML = `
+          <div style="background: #090d16; border-radius: 8px; padding: 6px; border: 1px solid #38bdf8;">
+            <div style="color: #38bdf8; font-size: 11px; font-weight: 700; margin-bottom: 6px;">🔮 Shadow Root Kapsayıcısı (#shadow-root (open))</div>
+            <video 
+              id="shadow-test-video" 
+              controls 
+              loop 
+              crossorigin="anonymous"
+              style="width: 100%; max-height: 260px; border-radius: 6px; display: block;"
+              src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+            ></video>
+          </div>
+        `;
+        playerLabel.textContent = '🔮 Oynatıcı: Shadow DOM Web Component (#shadow-root)';
+        drmBadge.style.display = 'none';
+        domStat.textContent = 'DOM Tipi: Kapalı/Açık Shadow Root';
+        window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
+      });
+
+      // 3. DRM Simülasyonu
+      document.getElementById('btn-test-drm')?.addEventListener('click', () => {
+        shadowMount.style.display = 'none';
+        shadowMount.innerHTML = '';
+        vidMount.style.display = 'flex';
+        vidMount.innerHTML = `
+          <video 
+            id="sample-test-video" 
+            controls 
+            loop 
+            crossorigin="anonymous"
+            style="width: 100%; max-height: 280px; display: block;"
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+          ></video>
+        `;
+        const v = document.getElementById('sample-test-video');
+        if (v) {
+          v.mediaKeys = { keySystem: 'com.widevine.alpha' };
+          v.dispatchEvent(new Event('encrypted'));
+        }
+        playerLabel.textContent = '🛡️ Oynatıcı: DRM Şifreli Akış (Widevine CDM)';
+        drmBadge.style.display = 'inline-block';
+        domStat.textContent = 'EME: com.widevine.alpha';
+        window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
+      });
+
+      // 4. HUD Aç / Kapat Butonu
+      document.getElementById('btn-open-hud-test')?.addEventListener('click', () => {
+        window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');
+      });
+    });
+  </script>
 </body>
 </html>
