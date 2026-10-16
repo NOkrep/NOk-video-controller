@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>TypeError: archiver is not a function<br> &nbsp; &nbsp;at file:///app/applet/server.js:33:19<br> &nbsp; &nbsp;at Layer.handle [as handle_request] (/app/applet/node_modules/express/lib/router/layer.js:95:5)<br> &nbsp; &nbsp;at next (/app/applet/node_modules/express/lib/router/route.js:149:13)<br> &nbsp; &nbsp;at Route.dispatch (/app/applet/node_modules/express/lib/router/route.js:119:3)<br> &nbsp; &nbsp;at Layer.handle [as handle_request] (/app/applet/node_modules/express/lib/router/layer.js:95:5)<br> &nbsp; &nbsp;at /app/applet/node_modules/express/lib/router/index.js:284:15<br> &nbsp; &nbsp;at Function.process_params (/app/applet/node_modules/express/lib/router/index.js:346:12)<br> &nbsp; &nbsp;at next (/app/applet/node_modules/express/lib/router/index.js:280:10)<br> &nbsp; &nbsp;at jsonParser (/app/applet/node_modules/body-parser/lib/types/json.js:117:7)<br> &nbsp; &nbsp;at Layer.handle [as handle_request] (/app/applet/node_modules/express/lib/router/layer.js:95:5)</pre>
+</body>
+</html>
