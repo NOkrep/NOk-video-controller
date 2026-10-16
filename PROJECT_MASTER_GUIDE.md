@@ -105,7 +105,7 @@ Chrome Manifest V3 kısıtlamaları altında sayfa içi oynatıcı değişkenler
 | Tercih Edilen Yaklaşım | Neden Tercih Edildi? (Gerekçe & Avantaj) | Tercih Edilmeyen / Kaçınılan Yaklaşım |
 | :--- | :--- | :--- |
 | **Sıfır Depolama (Zero Storage / Stateless)** | Kullanıcı gizliliği (sıfır ayak izi), platformların depolama kotalarına takılmama, sekme kapatıldığında sıfır kalıntı bırakma ve bellek sızıntısını önleme. | `localStorage`, `sessionStorage`, `chrome.storage`, `IndexedDB`, `cookies`. |
-| **Minimum İzinler (Zero Host Permissions)** | Chrome Web Store ve Mozilla AMO mağaza onay süreçlerinde gereksiz bürokrasiyi engellemek; kullanıcıya *"Tüm web sitelerindeki verilerinizi okuyabilir"* uyarısı çıkartıp korkutmamak. Yalnızca `activeTab` ve `scripting` kullanılır. | Manifest'te `<all_urls>` veya geniş `host_permissions` wildcard'ları. |
+| **Evrensel Enjeksiyon & Minimum Yetki (Content Script `<all_urls>` + Sıfır `host_permissions`)** | Herhangi bir web sitesinde video açıldığında kullanıcıyı kısıtlamamak için `content_scripts.matches` alanında `<all_urls>` kullanılır. Ancak tehlikeli `host_permissions` ve depolama izinleri bilinçli olarak **eklenmemiştir**; yalnızca `activeTab` ve `scripting` kullanılır. Bu sayede hem evrensel erişim sağlanır hem de mağaza güvenlik incelemelerinden hızla geçer. | Dar domain listesi (başka sitelerde eklentinin hiç açılmaması) veya gereksiz `host_permissions` / `storage` izinleri istemek. |
 | **Main World Doğrudan Enjeksiyon** | React Fiber ağaçları (`__reactFiber$`), Amazon IVS SDK (`window.IVSPlayer`), Clappr ve Video.js değişkenleri Isolated World'den okunamaz. Main World ile sıfır gecikmeli doğrudan nesne manipülasyonu yapılır. | Yalnızca Content Script kullanarak `postMessage` ile veri kopyalamaya çalışmak (büyük gecikme ve prototip erişim kaybı). |
 | **Ağ Kancası ile HLS Yönlendirmesi** | TRT ve Now TV gibi sitelerde oynatıcı arayüzünde kalite seçimi gizlenmiş veya devre dışı bırakılmış olabilir. `XHR` ve `fetch` seviyesinde m3u8 isteklerini `master1080p`ye zorlamak oynatıcıdan bağımsız kesin çözüm sağlar. | Oynatıcının kapalı/şifreli UI menülerini kırmaya çalışmak. |
 | **React Fiber 0ms Hook Caching (Kick)** | Kick.com'da her ses butonuna basıldığında tüm DOM ağacında derin BFS (Breadth-First Search) taraması yapmak 100-300ms UI takılmalarına yol açıyordu. Hook dispatch referansları modül seviyesinde önbelleklenerek tıklama maliyeti **0ms**'ye indirildi. | Her tıklamada DOM'u baştan aşağı taramak. |
@@ -368,14 +368,18 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesine devam ediyoruz (Mevcut kararlı sürüm: v0.5.0).
-Projenin mimarisi, tasarım tercihleri ve güncel durumu /PROJECT_MASTER_GUIDE.md dosyasında eksiksiz belgelenmiştir.
-Bu projede şunlar KESİNLİKLE YASAKTIR:
-1. localStorage, sessionStorage, chrome.storage veya cookies KULLANILMAZ (Stateless mimari).
-2. manifest.json içine <all_urls> veya geniş host_permissions EKLENMEZ (activeTab yeterlidir).
-3. Kick.com ses optimizasyonlarında BFS ağaç taraması tekrar yapılmamalı, 0ms React Fiber önbellek mekanizması korunmalıdır.
-4. TRT 1 ve Kick üzerindeki olay izolasyonu (e.stopPropagation()) bozulmamalıdır.
-Lütfen PROJECT_MASTER_GUIDE.md dosyasını inceleyerek kaldığım yerden devam etmeme yardımcı ol.
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut kararlı sürüm: v0.5.1).
+Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir.
+
+Bu projede dikkat edilmesi gereken katı kurallar:
+1. SIFIR DEPOLAMA (Stateless): localStorage, sessionStorage, chrome.storage veya cookies KESİNLİKLE kullanılmaz. Tüm durum bellek içi (in-memory) değişkenlerde tutulur.
+2. SIFIR HOST İZNİ: host_permissions eklenmez; activeTab ve scripting yetkisi yeterlidir.
+3. 3 KADEMELİ BASAMAK HATTI (Cascade Pipeline): Tier 1 (Siteye özel), Tier 2 (Oynatıcı kütüphaneleri: YouTube, Video.js, Hls.js, Shaka, Dash.js), Tier 3 (Evrensel HTML5 & Shadow DOM). Bu hiyerarşi ve sağlık kontrolü (probeAdapterHealth) bozulmamalıdır.
+4. DRM / EME GÜVENLİ MODU: Şifreli akışlarda (Widevine/FairPlay) Web Audio API booster atlanmalı, yerel ses ve oynatma kontrolleri korunmalıdır.
+5. KICK.COM OPTİMİZASYONU: 0ms React Fiber hook önbelleklemesi korunmalıdır.
+6. OLAY İZOLASYONU: HUD üzerindeki tüm etkileşimlerde e.stopPropagation() korunmalıdır.
+
+Lütfen ilk olarak PROJECT_MASTER_GUIDE.md dosyasını incele ve [BURAYA YAPMAK İSTEDİĞİNİZ YENİ ÖZELLİK VEYA DÜZELTMEYİ YAZIN] konusunda çalışmaya başla.
 ```
 
 ### Kodlama ve Geliştirme Kuralları (Kırmızı Çizgiler):
