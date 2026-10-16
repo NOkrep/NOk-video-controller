@@ -266,6 +266,18 @@ Hata veya beklenmeyen durum olduğunda:
    - Kullanıcının yazdığı serbest not
 4. Kullanıcıya şık bir modal içinde JSON'u kopyalama veya doğrudan geliştiriciye (`ihsanartrk07@gmail.com`) e-posta hazırlama bağlantısı (`mailto:`) sunulur.
 
+### 4.7 İzole Klavye Kısayolları Motoru: INPUT, TEXTAREA, SELECT ve isContentEditable odak kontrolü ile sohbet/arama kutularında tetiklenmeyen, e.stopPropagation() ile site kısayollarıyla çakışmayan kısayol motoru ([, ], R, M, Shift + ↑/↓, Alt + Q, Alt + P, Ctrl + Shift + S).
+
+### 4.8 Görüntü Filtreleri ve Gece Kalkanı: Aktif <video> elemanına CSS filter üzerinden uygulanan Parlaklık (%50–%150), Kontrast (%50–%150), Doygunluk (%0–%200), Gece Kalkanı (sepia + brightness) ve Ters Renk (invert + hue-rotate) motoru.
+
+### 4.9 Bellek İçi Harici Altyazı (.srt / .vtt) ve Senkronizasyon: Sıfır depolama ilkesine uygun olarak FileReader ile RAM'de ayrıştırılan altyazı motoru ve ±100ms canlı zaman kaydırma (offset) mekanizması.
+
+### 4.10 %300 Web Audio Ses Güçlendirici, Gain Renk Geçişi & Çift Tıkla Sıfırlama: Maksimum ses kazancının %300 (GainNode 3.0x) olarak sabitlenmesi; %0–100 (Cyan), %101–200 (Amber), %201–300 (Rose) görsel renk geçişi ve tüm slider'larda dblclick ile varsayılana sıfırlama.
+
+### 4.11 Mıknatıslı Kenar Hizalama (Magnetic Edge Snapping) & Viewport Clamping: HUD sürüklenirken pencere kenarlarına 16px mesafede mıknatıslı yapışma ve pencere boyutu değiştiğinde ekran dışına taşmayı önleyen clampPopupToViewport koruması.
+
+### 4.12 Küçültülmüş (Collapsed Mini-Pill) Detaylı Bilgi Barı & Doğrudan PiP Kontrolü: Panel daraltıldığında çözünürlük, hız, ses, kanal ve adaptör bilgisini gösteren özet bar ile tek tıkla PiP kontrolü.
+
 ---
 
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
@@ -344,7 +356,7 @@ Gelecek sürümlerde projeye eklenmesi planlanan özellikler:
 
 ```
 NOk-video-controller/
-├── manifest.json              # Manifest V3 eklenti tanımlayıcısı (İzinler, Content Script kuralları)
+├── manifest.json              
 ├── background.js              # Service Worker (Minimalist, Stateless, toolbar click ile enjeksiyon)
 ├── content.js                 # Isolated World scripti (Main World scriptini <script> ile enjekte eder)
 ├── injected.js                # Main World Engine (HUD DOM, Ağ kancaları, Platform adaptörleri, Web Audio)
@@ -359,6 +371,24 @@ NOk-video-controller/
 ├── README.md                  # Hızlı başlangıç ve repo özeti
 └── PROJECT_MASTER_GUIDE.md    # BU DOSYA (Eksiksiz mimari, geçmiş, felsefe ve devir kılavuzu)
 ```
+
+NOk-video-controller/
+├── .github/ISSUE_TEMPLATE/site_support.md
+├── icons/
+│   ├── icon16.png
+│   ├── icon48.png
+│   ├── icon128.png
+│   └── nok-logo.jpg (veya nok-logo.svg)
+├── manifest.json
+├── background.js
+├── content.js
+├── injected.js
+├── injected.css
+├── README.md
+├── PROJECT_MASTER_GUIDE.md
+└── SITE_COMPATIBILITY.md
+
+- index.html, server.js, package.json, bun.lock, .env.example, metadata.json dosyalarının kaldırılarak projenin saf WebExtension yapısına kavuşturulması ve /SITE_COMPATIBILITY.md dosyasının eklenmesi.
 
 ---
 
