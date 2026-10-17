@@ -140,10 +140,8 @@
 .pvc-brand-logo {
   height: 20px !important;
   width: auto !important;
-  border-radius: 4px !important;
-  background: rgba(255, 255, 255, 0.92) !important;
-  padding: 1px 4px !important;
   display: inline-block !important;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.35)) !important;
   pointer-events: none !important;
   -webkit-user-drag: none !important;
   user-select: none !important;

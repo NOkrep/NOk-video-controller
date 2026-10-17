@@ -10,12 +10,12 @@
 
 ## ⚡ Hızlı Başlangıç
 
-### 🦊 Firefox (Gecko) Kurulumu
+### 🦊 Firefox (Gecko) Kurulumu (Firefox 121+)
 1. Tarayıcınızda `about:debugging#/runtime/this-firefox` adresine gidin.
 2. **Geçici Eklenti Yükle (Load Temporary Add-on...)** butonuna tıklayın.
 3. Proje klasöründeki `manifest.json` dosyasını seçin.
 
-### 🌐 Chrome / Brave / Edge Kurulumu
+### 🌐 Chrome / Brave / Edge Kurulumu (Chrome 121+)
 1. Tarayıcınızda `chrome://extensions` adresine gidin.
 2. Sağ üstteki **Geliştirici Modu (Developer Mode)** seçeneğini açın.
 3. **Paketlenmemiş Öğe Yükle (Load Unpacked)** butonuna basarak proje klasörünü seçin.

@@ -3,8 +3,8 @@
 > **Son Güncelleme:** v0.5.2  
 > **Yönetim Kuralı (Katı Protokol):**
 > 1. **✅ Tam Çalışıyor:** Bu bölüme **yalnızca geliştiricilerin açık testi ve onayı/talebi** ile site eklenebilir. Yapay zeka kendi inisiyatifiyle bu bölüme site ekleyemez.
-> 2. **🟡 Yarı Çalışıyor (Test / Geliştirme Aşamasında):** Siteye özel bir adaptör/değişiklik yazıldığında veya mevcut basamaklı adaptör mimarisinin (Tier 1 / Tier 2 / Tier 3) sitede temel/kısmi işlevlerle çalışacağı öngörüldüğünde eklenir.
-> 3. **❌ Hiç Çalışmıyor (Desteklenmiyor):** Geliştiriciler tarafından çalışmadığı bildirilen veya eklentinin hedeflemediği medya türlerini kullanan siteler buraya eklenir.
+> 2. **🟡 Yarı Çalışıyor (Test / Geliştirme Aşamasında):** Siteye özel bir adaptör/değişiklik yazıldığında, siteye dair herhangi bir değişiklik yapıldığında veya mevcut basamaklı adaptör mimarisinin (Tier 1 / Tier 2 / Tier 3) sitede çalışacağı öngörüldüğünde eklenir.
+> 3. **❌ Hiç Çalışmıyor (Desteklenmiyor):** Geliştiriciler tarafından "bu sitede çalışmıyor" bilgisi verildiğinde veya çok bilinen bir site için sistemlerine özgü bir şey hazırlanmadığından çalışmayacağı düşünüldüğünde buraya eklenir.
 
 ---
 
