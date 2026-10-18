@@ -25,6 +25,7 @@ function harness(host = 'example.invalid') {
   video.ownerDocument = { defaultView: window };
   const dummy = name => ({ name, tier: 1, matches: () => false, getQualities: () => [] });
   const context = vm.createContext({
+    navigator: { language: 'tr' },
     window, video, HOSTNAME: host, activePlayer: null,
     document: { addEventListener() {}, querySelector: () => null, querySelectorAll: () => [], getElementById: () => null },
     performance: { now: () => 500, getEntriesByType: () => [] },
@@ -43,7 +44,8 @@ function harness(host = 'example.invalid') {
     pendingQualityLabel: '', pendingQualityHeight: 0, pendingTimeoutTimer: null,
     fetch: async (url, options) => { requests.push({ url, options }); return { ok: true }; }
   });
-  vm.runInContext(section('  const mediaLibraryBindings', '  function hookIvsInstance')
+  vm.runInContext(section('  const UI_MESSAGES', '  // END UI LOCALIZATION')
+    + section('  const mediaLibraryBindings', '  function hookIvsInstance')
     + section('  const TrtAdapter', '  function updateCollapsedSummaryBar')
     + section('  function parseTimecodeToSeconds', '  function shiftSubtitleSync')
     + section('  function diagnosticNumber', '  function addDiagnosticLog')
@@ -237,18 +239,67 @@ test('TRT delegates to real Shaka variants, keeps audio language and disables AB
   assert.equal(h.run('targetTrtQualitySuffix'), null);
 });
 
-test('TRT speed updates Shaka controller and uses a bounded rate reset guard', () => {
+test('TRT event fallback keeps correcting resets with bounded timers instead of a lifetime retry limit', () => {
   const h = harness('www.trt1.com.tr'); const { calls } = shakaPlayer(h, []);
   assert.equal(h.run('setSpeed(1.5)'), true);
   assert.deepEqual(calls.at(-1), ['speed', 1.5, false]);
   for (let i = 0; i < 6; i++) { h.video.playbackRate = 1; h.video.emit('ratechange'); h.flush(); }
-  assert.equal(h.logs.filter(log => log.event === 'TRT_RATE_REAPPLIED').length, 5);
-  assert.equal(h.logs.filter(log => log.event === 'TRT_RATE_GAVE_UP').length, 1);
+  assert.equal(h.run('trtRateGuards.get(video).attempts'), 6);
+  assert.equal(h.run('trtRateGuards.get(video).active'), true);
+  assert.equal(h.logs.filter(log => log.event === 'TRT_RATE_GAVE_UP').length, 0);
+  assert.equal(h.logs.filter(log => log.event === 'TRT_RATE_REAPPLIED').length, 1, 'Logs are throttled');
   assert.equal(h.timers.size, 0);
   h.run('setSpeed(1.5)'); h.video.playbackRate = 0; h.video.emit('ratechange');
   assert.equal(h.timers.size, 0, 'Do not fight buffering rate 0');
   h.video.playbackRate = 1; h.video.emit('ratechange'); assert.equal(h.timers.size, 1);
   h.video.emit('emptied'); h.flush(); assert.equal(h.video.playbackRate, 1);
+});
+
+test('TRT element lock redirects only 1x, preserves 0x buffering and restores native property on reset', () => {
+  const h = harness('www.trt1.com.tr'); let nativeRate = 1;
+  delete h.video.playbackRate;
+  const prototype = {};
+  Object.defineProperty(prototype, 'playbackRate', { configurable: true,
+    get() { return nativeRate; }, set(value) { nativeRate = value; } });
+  Object.setPrototypeOf(h.video, prototype);
+  assert.equal(h.run('setSpeed(1.5)'), true);
+  assert.equal(h.run('trtRateGuards.get(video).mode'), 'element');
+  for (let i = 0; i < 30; i++) h.video.playbackRate = 1;
+  assert.equal(h.video.playbackRate, 1.5);
+  assert.equal(h.timers.size, 0);
+  h.video.playbackRate = 0; assert.equal(h.video.playbackRate, 0);
+  h.video.playbackRate = 1; assert.equal(h.video.playbackRate, 1.5);
+  h.run('setSpeed(1)');
+  assert.equal(Object.getOwnPropertyDescriptor(h.video, 'playbackRate'), undefined);
+  assert.equal(h.video.playbackRate, 1);
+  h.run('setSpeed(2)'); h.video.emit('emptied');
+  assert.equal(Object.getOwnPropertyDescriptor(h.video, 'playbackRate'), undefined);
+  h.video.playbackRate = 1; assert.equal(h.video.playbackRate, 1);
+});
+
+test('Video.js reads VHS representations without qualityLevels and applies a stable representation ID', () => {
+  const h = harness(); const enabled = [true, true];
+  const reps = [
+    { id: 'PRIVATE_REP_A', height: 720, enabled: value => { enabled[0] = value; } },
+    { id: 'PRIVATE_REP_B', height: 1080, enabled: value => { enabled[1] = value; } }
+  ];
+  const player = { currentTime() {}, playbackRate() {}, qualityLevels: () => [], tech_: { vhs: { representations: () => reps } } };
+  h.video.parentElement = { player }; h.context.activePlayer = player;
+  const qualities = h.json('VideoJsAdapter.getQualities(video, activePlayer)');
+  assert.deepEqual(qualities.map(q => q.height), [1080, 720]);
+  h.context.choice = qualities[1];
+  assert.equal(h.run('VideoJsAdapter.applyQuality(choice, video, activePlayer)'), true);
+  assert.deepEqual(enabled, [true, false]);
+  h.context.choice.representationId = 'missing';
+  assert.equal(h.run('VideoJsAdapter.applyQuality(choice, video, activePlayer)'), false);
+  assert.deepEqual(enabled, [true, false]);
+});
+
+test('unmatched forced adapter cannot pretend to control a video', () => {
+  const h = harness(); h.context.userForcedAdapterName = 'DashJsAdapter';
+  assert.equal(h.run('getActiveAdapter(video, activePlayer).name'), 'GenericAdapter');
+  assert.equal(h.run('getActiveAdapter(null, null).name'), 'GenericAdapter');
+  assert.equal(h.run('adapterHealthStatus'), 'failed');
 });
 
 test('unbound libraries and generic video expose no fictitious quality choices or stale cache', () => {
@@ -309,11 +360,13 @@ test('content relay sends only fixed frame-open signal and reinjection adds no d
   const context = vm.createContext({ window, document, chrome: { runtime: { getURL: path => 'extension:///' + path } } });
   vm.runInContext(content, context);
   events[0]({ source: parent, data: { type: 'NOK_FRAME_OPEN', privateData: 'SECRET' } });
-  assert.deepEqual(JSON.parse(JSON.stringify(sent)), [{ type: 'NOK_FRAME_OPEN' }]);
-  assert.deepEqual(JSON.parse(JSON.stringify(selfPosts)), [{ type: 'PVC_OPEN_IF_MEDIA' }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(sent)), [{ type: 'NOK_FRAME_HIDE' }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(selfPosts)), [{ type: 'PVC_HIDE_POPUP' }, { type: 'PVC_OPEN_IF_MEDIA' }]);
+  events[0]({ source: window, data: { type: 'PVC_OPEN_IN_CHILD_FRAMES' } });
+  assert.equal(sent.at(-1).type, 'NOK_FRAME_OPEN');
   vm.runInContext(content, context);
   assert.equal(events.length, 1);
-  assert.equal(selfPosts.at(-1).type, 'PVC_TOGGLE_POPUP');
+  assert.equal(selfPosts.at(-1).type, 'PVC_TOOLBAR_TOGGLE');
 });
 
 test('complete main engine boots and reinjection does not register another message listener', () => {

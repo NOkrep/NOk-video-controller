@@ -1,5 +1,5 @@
 /**
- * injected.css - NOk Video Controller v0.5.5
+ * injected.css - NOk Video Controller v0.5.7
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -778,10 +778,35 @@
 }
 
 #pvc-controller-popup :focus-visible,
-#pvc-error-modal :focus-visible {
+#pvc-error-modal :focus-visible,
+#pvc-permissions-modal :focus-visible,
+#pvc-adapter-modal :focus-visible,
+#pvc-drm-modal :focus-visible {
   outline: 2px solid #38bdf8 !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35) !important;
+}
+
+.pvc-language-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin: 0 0 8px !important;
+  color: #cbd5e1 !important;
+  font-size: 12px !important;
+}
+#pvc-language-select {
+  min-height: 28px !important;
+  max-width: 150px !important;
+  padding: 3px 8px !important;
+  border: 1px solid #64748b !important;
+  border-radius: 6px !important;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  font: inherit !important;
+  cursor: pointer !important;
+  color-scheme: dark !important;
 }
 
 .pvc-adapter-option:hover {

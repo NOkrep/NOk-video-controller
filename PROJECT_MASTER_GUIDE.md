@@ -1,9 +1,9 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.5 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
+> **Sürüm:** v0.5.7 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.5 (Altyazı görünürlüğü ve video konumu, HLS çözünürlük kaynağı/envanter olayları)
+> **Son Güncelleme:** v0.5.7 (Türkçe/English UI, bellek içi dil seçimi, isteğe bağlı silme talebi ve HMI incelemesi)
 
 ---
 
@@ -355,7 +355,40 @@ API kaynakları: [Shaka Player API](https://shaka-project.github.io/shaka-player
 
 API kaynakları: [Hls Level metadatası](https://hlsjs.video-dev.org/api-docs/hls.js.level), [Hls olayları](https://hlsjs.video-dev.org/api-docs/hls.js.events).
 
+### 4.16 v0.5.6 — Çift HUD, TRT Hız Kilidi, Video.js ve Kick UI
+
+- **Yeni kanıt sınırı:** v0.5.5 HLS raporu `manifestObserved:true`, bir bildirilmiş seviye, sıfır çözünürlük metadatası ve otomatik ABR modu gösterdi. Kaynak genelindeki tüm kaliteler veya altyazı piksel görünürlüğü bu raporla doğrulanmadı. İframe raporunda kullanıcı çalışan panelin yanında boş üst panel gördüğünü bildirdi. TRT logları korumanın beş deneme sonrası tükenip hızın 1x kaldığını gösterdi. Kick'te IVS çağrıları var, React çağrıları yok; kullanıcı önceki hız/ses UI uyumsuzluğunu ayrıca doğruladı. Video.js'te kendi menüsünde kalite olmasına karşın eklenti listesi boştu.
+- **Tek HUD dalı:** Content bridge RAM'de doğrudan çocuk WindowProxy referansı tutar. Yerel medya yoksa çocuklar denenir; ilk `NOK_FRAME_ACTIVE` yanıtı kazanan dal olur. Üstteki boş HUD ve diğer dallar `NOK_FRAME_HIDE` / `PVC_HIDE_POPUP` ile kapanır. Yerel medya olan çerçeve kendi çocuklarını açmaz. İç içe çerçevelerde aktif/kapandı sinyali yalnızca seçili dal boyunca iletilir. Araç çubuğu, devredilmiş paneli de kapatıp yeniden açabilir. Programatik gizleme kullanıcı kapatma ACK'i üretmez; böylece çalışan çocuğun yanlışlıkla kapatılması önlenir. Yanıt vermeyen tüm dallarda üst hata paneli kullanılabilir kalır. Sinyaller yalnızca sabit `type` taşır; URL, rapor, video bilgisi veya kalıcı kimlik aktarılmaz. CSP/izin/DOM sınırları aşılmaz; yarışma sırasında kısa süreli geçiş görünürlüğü olabilir, Node testleri son durumda tek HUD'ı denetler.
+- **TRT element kilidi:** Açık hız isteği sonrası yalnızca o video üzerinde native playbackRate descriptor'ına yönlenen own accessor kurulur; global HTMLMediaElement prototipi değiştirilmez. Aktif kilitte otomatik 1x yazımı istenen hıza yönlenir; 0x buffering ve diğer hız değerleri engellenmez. Üçüncü taraf own accessor varsa üzerine yazılmaz: Shaka denetleyicisini de güncelleyen ratechange fallback'i ilk beş istekte 200ms, sonrasında en fazla saniyede bir düzeltir; ömür boyu beş deneme sınırı kaldırılmıştır. Periyodik interval kurulmaz. Panelde 1x, `emptied` veya `ended` kilidi kapatır ve yalnızca eklentinin kurduğu own accessor'ı siler. Site kilitliyken kendi menüsünden 1x isteyemez; HUD tooltip'i kilidi panelden 1x/çift tıkla kapatmayı açıklar. Loglar en sık beş saniyede bir tutulur; `playbackRateLock` raporda yalnızca `element/event/off/unknown` olur. Canlı Shaka/buffering davranışı ayrıca doğrulanmalıdır.
+- **Video.js VHS kaliteleri:** `qualityLevels()` doluysa önceki yol korunur. Yoksa/boşsa `tech_.vhs` veya `tech(...).vhs` üzerindeki `representations()` listesi kullanılır. Yalnızca gerçek temsil girdileri gösterilir; seçim sabit API temsil ID'siyle tekrar bulunur, önce hedef açılır sonra diğerleri kapanır. ID'ler yalnızca kontrol için bellektedir, rapora girmez. Bu çözüm siteye özel harici kalite menülerinin tamamını destekleme iddiası değildir.
+- **Kick ses UI:** Bilinen ses slider köklerinde Radix `onValueChange(number[])` aranır; yalnızca açık max 1/100 ölçeği kabul edilir. İşleyici ve ait olduğu DOM kökü önbelleğe alınır; sonraki çağrıda Fiber/DOM tekrar taranmaz. Bağlantısı kesilen kök önbelleği geçersizleştirir. Rastgele memoizedState hook dispatch'i/router state'i değiştirilmez. Önceki adlandırılmış setter hızlı yolu da korunur. Booster yüzde 100 üstündeyken yerel Kick slider'ı doğal yüzde 100 sınırında kalır.
+- **Kick hız UI:** Adlandırılmış React setter bulunamazsa VOD'da gerçek settings → playback speed → tam hız etiketi menü yolu, iki adet 120ms gecikmeli adımla denenir. Yeni hız isteği eski bekleyen adımı iptal eder. Yalnızca görünür menü seçenekleri kullanılır; bulunamayan/yerel menüde desteklenmeyen hız `KICK_SPEED_UI_UNAVAILABLE` olur. `KICK_SPEED_UI_INVOKED` seçim çağrısıdır, eşleşme kanıtı değildir. Açılmış menü başarısızlıkta mümkünse kapatılır. `simulateFullPointerClick` artık hem sentetik click hem `.click()` çağırarak menüyü iki kez toggle etmez; tek semantik click üretir. Canlı Kick DOM'u değişebilir, UI testi beklenir.
+- **Elle adaptör seçimi:** Eşleşmeyen veya sağlıksız zorlanmış adaptör otomatik hattı devralmaz. Video yoksa raporda `activeAdapter:none`, tier null olur; `forcedAdapter` ve `forcedAdapterStatus` yalnızca bilinen adaptör adlarından/`not-forced/no-video/selected/unavailable` durumlarından oluşur. Video bulunmaması DASH adaptörü gerektirdiği anlamına gelmez.
+- **Doğrulama:** `node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs tests/frame-coordination.test.cjs tests/kick-ui.test.cjs`. Video.js VHS, native descriptor/fallback kilidi, iki kardeş/iç içe iframe, toolbar kapat/aç, Radix handler ölçeği/önbelleği ve iki aşamalı hız menüsü üretim kaynak fonksiyonlarıyla sınanır. 50 Node testi; gerçek Firefox/Chromium, TRT ve Kick UI sonucu değildir. Ham raporlar repoya kopyalanmadı; ek kalıcı depolama/izin eklenmedi.
+
+Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-streaming#representations), [Radix Slider API](https://www.radix-ui.com/primitives/docs/components/slider), [HTMLMediaElement playbackRate](https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/playbackRate).
+
+### 4.17 v0.5.7 — Türkçe / English Arayüz ve Silme Talebi
+
+- **Dil:** `UI_MESSAGES` Türkçe kaynak metinlerini İngilizceye eşleyen yerel bir gettext sözlüğüdür; uzaktan çeviri yoktur. `navigator.language` Türkçe ise `tr`, diğer durumlarda `en`; seçim yalnızca RAM'de `uiLanguage` ile tutulur. `_locales/en,tr/messages.json` tarayıcı eklenti açıklaması içindir; manifest varsayılanı İngilizcedir. İzin eklenmedi.
+- **Durum koruma:** `setUiText`, `setUiAttribute` ve `localizeUi` yalnızca eklentinin panel/pencere/toast düğümlerini günceller. Türkçe kaynaklar WeakMap'te tutulur. Dil değişimi paneli yeniden kurmaz; event handler, kaydırıcı, açık bölüm, form ve kutu durumları korunur. Teşhis PRE, textarea değeri ve altyazı metni çevrilmez. Dinamik parametreler HTML olarak işlenmez; dosya adı boşlukları ve `$` karakterleri korunur. Yeni UI metni sözlüğe eklenmeli, dinamik yazımlar `setUiText`/`setUiAttribute` üzerinden yapılmalıdır.
+- **Çerçeveler:** Yerel `PVC_LANGUAGE_TR/EN`, köprüde `NOK_LANGUAGE_TR/EN`, motorda `PVC_APPLY_LANGUAGE_TR/EN` sabit türleri kullanılır. Köprü yalnızca kendisinden veya doğrudan ebeveyn/çocuktan gelen geçerli türleri işler; aynı dil tekrar yayılmaz. Yeni çocuk `NOK_LANGUAGE_REQUEST` ile bellekteki tercihi ister; script onload gecikirse tercih tekrar uygulanır. Sadece `type` iletilir; URL, kimlik, medya, JSON veya kullanıcı metni taşınmaz. Yenilemede varsayılan dil geri gelir; yerel ayar teşhis alanına eklenmez.
+- **Silme talebi:** Rapor kutusu varsayılan olarak kapalıdır. Açılırsa JSON'da opsiyonel `deleteAfterResolutionRequested: true` olur; kapanınca alan silinir. GitHub ve e-posta taslağına yalnızca sabit, kimliksiz İngilizce talep cümlesi eklenebilir; rapor ve özel açıklama URL'ye konmaz. Şema v2 ile uyumlu ek alandır. Otomatik paylaşım/silme yapılmaz; platform ve yetkili işlemine bağımlılık açıkça anlatılır. Manuel GitHub şablonunda da iki dilli kutu vardır.
+- **HMI:** Bölüm başlıklarına Tab, Enter/Space, `aria-expanded`/`aria-controls`; beş range kontrolüne ad; tüm pencerelere focus-visible stili eklendi. HUD focusin/focusout ile görünür olur; önceki odak içindeyken gizlenmeme koşulu korunur. SELECT ve diğer form kontrolleri sürükleme başlatmaz; HUD klavye olayları da sayfaya kabarcıklanmaz. HTTP ölçümü “CDN yanıtı” adıyla sunulur. DRM anahtar adı HTML yerine metin olarak yazılır. Açılır pencerelerin odak yönetimi ve diğer HMI önerileri halen açık; `HMI_REVIEW.md` canlı test veya uygunluk belgesi değildir.
+- **Doğrulama:** Çeviri kataloğu/parametreleri, panel ve dört pencerenin İngilizce metinleri, dil değişiminde form/JSON/altyazı koruması, kardeş/yeni çerçeve sinyalleri, silme talebi ve özel metnin URL'ye girmemesi Node testleriyle sınanır. 59 Node testi geçti; sözdizimi ve diff kontrolleri temiz. Gerçek Firefox/Chromium yerleşim, ekran okuyucu ve site testi beklenir.
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
+
+### v0.5.7 (Geliştirme — Canlı Test Bekliyor)
+- Türkçe/English UI ve çerçeveler arasında yalnızca RAM'de dil tercihi.
+- İsteğe bağlı çözüm sonrası silme talebi; JSON ve sabit taslak metni, otomatik silme yok.
+- Klavye akordeonu, range adları, odak görünürlüğü ve HMI kaynak incelemesi.
+
+### v0.5.6 (Geliştirme — Canlı Test Bekliyor)
+- Çalışan iframe dalına tek HUD devri ve araç çubuğu kapat/aç koordinasyonu.
+- TRT elemente özel geri alınabilir hız kilidi; beş denemede vazgeçen davranış kaldırıldı.
+- Video.js VHS kalite listesi, Kick Radix ses handler önbelleği ve native hız menüsü fallback'i.
+- Tek semantik tıklama ve aktif/elle istenen adaptör ayrımı; 50 Node testi, canlı doğrulama bekleniyor.
 
 ### v0.5.5 (Geliştirme — Canlı Test Bekliyor)
 - Altyazı `display:none!important` öncelik hatası, videoya konumlandırma ve native track geçişi.
@@ -453,6 +486,7 @@ NOk-video-controller/
 ├── .github/
 │   └── ISSUE_TEMPLATE/
 │       └── site_support.md    # GitHub yeni site destek/hata bildirim şablonu
+├── _locales/                 # en/tr eklenti açıklaması (tarayıcı dili)
 ├── icons/
 │   ├── icon16.png             # 16x16 araç çubuğu ikonu
 │   ├── icon48.png             # 48x48 eklenti yönetim ikonu
@@ -466,7 +500,11 @@ NOk-video-controller/
 ├── tests/
 │   ├── diagnostics.test.cjs    # Bağımlılıksız Node gizlilik/rapor sınırı testleri
 │   ├── player-controls.test.cjs # Altyazı, instance/kalite/hız, iframe ve HTTP regresyonları
+│   ├── frame-coordination.test.cjs # Kardeş/iç içe iframe HUD koordinasyonu
+│   ├── localization.test.cjs   # Dil/DOM durum koruma ve çeviri testleri
+│   ├── kick-ui.test.cjs        # Radix ses handler ve hız menüsü regresyonları
 │   └── ui-preview-server.cjs   # Localhost sentetik altyazı/HLS manuel önizlemesi
+├── HMI_REVIEW.md              # Kaynak temelli kullanılabilirlik bulguları ve canlı kabul ölçütleri
 ├── README.md                  # Hızlı kurulum ve proje özeti
 ├── SITE_COMPATIBILITY.md      # Katı kurallı site uyumluluk ve durum takip tablosu
 └── PROJECT_MASTER_GUIDE.md    # BU DOSYA (Eksiksiz mimari, geçmiş, felsefe ve devir kılavuzu)
@@ -480,7 +518,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.5; canlı tarayıcı/site testi bekliyor).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.7; canlı tarayıcı/site testi bekliyor).
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

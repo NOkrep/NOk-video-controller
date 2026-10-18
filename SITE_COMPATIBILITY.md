@@ -1,6 +1,6 @@
 # 🌐 NOk Video Controller — Site Uyumluluk ve Durum Takip Tablosu (`SITE_COMPATIBILITY.md`)
 
-> **Son Güncelleme:** v0.5.5 (geliştirme; canlı doğrulama bekliyor)
+> **Son Güncelleme:** v0.5.7 (geliştirme; canlı doğrulama bekliyor)
 > **Yönetim Kuralı (Katı Protokol):**
 > 1. **✅ Tam Çalışıyor:** Bu bölüme **yalnızca geliştiricilerin açık testi ve onayı/talebi** ile site eklenebilir. Yapay zeka kendi inisiyatifiyle bu bölüme site ekleyemez.
 > 2. **🟡 Yarı Çalışıyor (Test / Geliştirme Aşamasında):** Siteye özel bir adaptör/değişiklik yazıldığında, siteye dair herhangi bir değişiklik yapıldığında veya mevcut basamaklı adaptör mimarisinin (Tier 1 / Tier 2 / Tier 3) sitede çalışacağı öngörüldüğünde eklenir.
@@ -26,10 +26,14 @@ v0.5.4'te seçili videoya bağlı oynatıcı instance seçimi, TRT Shaka kalite/
 
 v0.5.4 Firefox raporunda HlsJsAdapter ve başarılı altyazı yüklemesi görülmüş, ancak kullanıcı altyazının görünmediğini ve tek boş kalite etiketi olduğunu bildirmiştir. v0.5.5 bu kaynak hatalarını ve envanter güncellemelerini düzeltir; gerçek siteye dair yeni çalışma onayı verilmemiştir. Oynatıcının bir seviye bildirmesi site genelinde tek kalite bulunduğu anlamına gelmez.
 
+v0.5.5 kullanıcı raporlarında çift HUD (üst panel boş, iframe paneli çalışır), TRT hızının koruma denemelerinden sonra 1x'e dönmesi ve Video.js yerel kalite seçeneklerinin eklentide görünmemesi bildirildi. Kick için kullanıcı hız/sesin değişip yerel arayüzün eşleşmediğini ayrıca doğruladı. v0.5.6 bu yollar için kaynak düzeltmeleri ve Node regresyonları içerir; gerçek site onayı beklenir.
+
+v0.5.7 Türkçe/İngilizce arayüz, sabit sinyalli çerçeve dil eşitlemesi ve isteğe bağlı çözüm sonrası rapor silme talebi ekler. Bunlar site uyumluluğu onayı değildir; iki dilde Firefox/Chromium yerleşimi, klavye kullanımı ve çalışan iframe paneli canlı test bekler. Kaynak temelli arayüz değerlendirmesi `HMI_REVIEW.md` içindedir.
+
 | Platform / Site | Alan Adı (Domain) | Aktif Adaptör & Kademe | Çalışan / Beklenen Özellikler | Bilinen Kısıtlar veya Test Edilecekler |
 | :--- | :--- | :--- | :--- | :--- |
-| **Kick** | `kick.com` | `KickAdapter` (Tier 1) | Canlı & VOD hız kontrolü, 0ms React Fiber ses önbelleklemesi, Radix UI ses eşitlemesi, Amazon IVS kalite seçimi, görüntü filtreleri, klavye kısayolları. | VOD menü geçişleri ve canlı reklam (16x) geçiş kararlılığı Firefox ve Chrome'da doğrulama bekliyor. |
-| **TRT 1 & TRT İzle** | `trt1.com.tr`, `trtizle.com`, `trt.com.tr` | `TrtAdapter` (Tier 1) | Ulaşılabilen Shaka/Hls.js/Video.js instance'ına kalite delegasyonu; bilinen eski HLS rotasında ağ fallback'i, olay izolasyonu, ses barı eşitlemesi, sınırlı hız koruması, filtreler. | v0.5.3 Firefox raporunda kalite ve 1x'e dönen hız sorunu doğrulandı; v0.5.4 uygulaması gerçek sitede tekrar test edilmeli. |
+| **Kick** | `kick.com` | `KickAdapter` (Tier 1) | Canlı & VOD hız kontrolü, React setter/Radix onValueChange önbelleği, gerçek hız menüsü fallback'i, Amazon IVS kalite seçimi, filtreler ve kısayollar. | v0.5.5'te IVS çağrısı var, React eşitlemesi yoktu; v0.5.6 ses/hız UI eşleşmesi ve reklam geçişleri canlı test bekliyor. |
+| **TRT 1 & TRT İzle** | `trt1.com.tr`, `trtizle.com`, `trt.com.tr` | `TrtAdapter` (Tier 1) | Ulaşılabilen Shaka/Hls.js/Video.js instance'ına kalite delegasyonu; bilinen eski HLS rotasında ağ fallback'i, olay izolasyonu, ses barı eşitlemesi, elemente özel hız kilidi, filtreler. | v0.5.5 raporunda beş deneme sonrası 1x'e dönüş görüldü; v0.5.6 hız kilidi ve kalite değişimleri canlı test bekliyor. |
 | **Now TV (FOX)** | `nowtv.com.tr` | `NowTvAdapter` (Tier 1) | Video.js `qualityLevels` kilidi, ErCDN BVR (`bvr_bw`) bitrate zorlama modu, hız, %300 ses yükseltici, filtreler ve harici altyazı. | Tek akışlı SMIL yayınlarda CDN'in `bvr_bw` parametresine verdiği anlık çözünürlük tepkisi doğrulanmalı. |
 | **PuhuTV** | `puhutv.com` | `PuhuTvAdapter` (Tier 1) | Video.js VHS kalite listesi, DYG Video API kancası ile Akamai'den MNCDN `1080p.smil` FHD akışına geçiş, hız, ses ve filtreler. | MNCDN geçişinde tampon yenileme (smooth switch) performansı farklı dizilerde test edilmeli. |
 | **YouTube** | `youtube.com` | `YouTubeAdapter` (Tier 2) | `movie_player` API üzerinden kalite okuma/değiştirme, 0.25x–3.0x hız, %300 ses güçlendirici, Stereo/Mono, görüntü filtreleri, harici `.srt/.vtt` altyazı. | YouTube arayüz güncellemelerinde kalite API'sinin (`setPlaybackQualityRange`) davranış tutarlılığı izlenmeli. |

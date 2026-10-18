@@ -12,6 +12,7 @@ function section(start, end) {
   assert.ok(from >= 0 && to > from, 'Production source section must exist');
   return source.slice(from, to);
 }
+const localization = section('  const UI_MESSAGES', '  // END UI LOCALIZATION');
 const diagnostics = section('  const DIAGNOSTIC_LOG_BUFFER', '  function getActiveContainer');
 const report = section('  function diagnosticChoice', '  function showPermissionsGuideModal');
 
@@ -23,6 +24,9 @@ class Element {
     if (this.children['pvc-report-problem']) this.children['pvc-report-problem'].value = 'unspecified';
     if (this.children['pvc-user-feedback-input']) this.children['pvc-user-feedback-input'].disabled = true;
   }
+  setAttribute(name, value) { (this.attributes ||= {})[name] = value; }
+  getAttribute(name) { return this.attributes?.[name] ?? null; }
+  hasAttribute(name) { return Object.hasOwn(this.attributes || {}, name); }
   querySelector(selector) { return this.children[selector.slice(1)] || null; }
   addEventListener(type, callback) { (this.listeners[type] ||= []).push(callback); }
   emit(type) { for (const callback of this.listeners[type] || []) callback({ target: this, stopPropagation() {} }); }
@@ -42,6 +46,7 @@ function harness(options = {}) {
   const context = vm.createContext({
     performance: { now: () => options.now ?? 15000 },
     navigator: {
+      language: 'tr',
       userAgent: 'Mozilla/5.0 PRIVATE_DEVICE Firefox/150.1',
       clipboard: { writeText: async text => {
         if (options.clipboardFailure) throw new Error('denied');
@@ -59,8 +64,9 @@ function harness(options = {}) {
     findVideoAndPlayer: () => ({ video, playerType: options.playerType || 'native-html5' }),
     deepFindMediaElements: () => video ? [{ video }] : [],
     detectDrmStatus: () => ({ isDrm: options.drm || false, keySystem: 'PRIVATE_DRM_STRING' }),
-    ALL_ADAPTERS: [ { name: 'GenericAdapter', tier: 3 }, { name: 'KickAdapter', tier: 1 }, { name: 'TrtAdapter', tier: 1 } ],
+    ALL_ADAPTERS: [ { name: 'GenericAdapter', tier: 3 }, { name: 'KickAdapter', tier: 1 }, { name: 'TrtAdapter', tier: 1 }, { name: 'DashJsAdapter', tier: 2 } ],
     currentActiveAdapterName: options.adapter || 'GenericAdapter',
+    userForcedAdapterName: options.forcedAdapter || '', trtRateGuards: new WeakMap(),
     adapterHealthStatus: 'healthy',
     cachedDiscoveredQualities: [{ id: 'private-id', label: 'PRIVATE_TITLE', height: 720 }],
     activeForcedQualityId: 'private-id', targetEnforcedPlaybackRate: 2,
@@ -71,12 +77,12 @@ function harness(options = {}) {
     customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleLoadStatus: 'loaded', subtitleRenderStatus: 'no-active-cue', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
     findLibraryPlayer: () => options.hls || null,
     observedHlsPlayers: new WeakMap(options.hls ? [[options.hls, { manifestObserved: true, declaredLevelCount: options.hls.levels.length }]] : []),
-    EXTENSION_VERSION: '0.5.5', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
+    EXTENSION_VERSION: '0.5.7', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
     GITHUB_REPO_URL: 'https://github.com/NOkrep/NOk-video-controller',
     DEVELOPER_EMAIL: 'developer@example.invalid',
     fetch: () => { throw new Error('Report must not make network requests'); }
   });
-  vm.runInContext(diagnostics + report, context);
+  vm.runInContext(localization + diagnostics + report, context);
   const run = code => vm.runInContext(code, context);
   const payload = () => JSON.parse(run('JSON.stringify(buildDiagnosticPayload("USER_MANUAL_DIAGNOSTIC"))'));
   const open = () => { run('reportAnonymousError("USER_MANUAL_DIAGNOSTIC")'); return output.modal; };
@@ -147,6 +153,14 @@ test('no-video report preselects detection and user can change it', () => {
   assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).problem, 'detection');
   select.value = 'hud'; select.emit('change');
   assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).problem, 'hud');
+});
+
+test('no-video forced Dash selection is recorded as a request, never an active media adapter', () => {
+  const p = harness({ video: null, adapter: 'DashJsAdapter', forcedAdapter: 'DashJsAdapter' }).payload();
+  assert.equal(p.activeAdapter, 'none');
+  assert.equal(p.adapterTier, null);
+  assert.equal(p.forcedAdapter, 'DashJsAdapter');
+  assert.equal(p.forcedAdapterStatus, 'no-video');
 });
 
 test('unready video differs from absent video; blob UUIDs are excluded', () => {
@@ -239,6 +253,27 @@ test('problem selection is allowlisted and opted-in comments are bounded', () =>
   const textarea = modal.querySelector('#pvc-user-feedback-input');
   textarea.value = 'a'.repeat(900); textarea.emit('input');
   assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).userComments.length, 500);
+});
+
+test('deletion request is opt-in, reaches both drafts as fixed text and never exports comments in URLs', () => {
+  const h = harness(); const modal = h.open();
+  const checkbox = modal.querySelector('#pvc-request-deletion');
+  const preview = modal.querySelector('#pvc-modal-code-block');
+  assert.equal(JSON.parse(preview.textContent).deleteAfterResolutionRequested, undefined);
+  checkbox.checked = true; checkbox.emit('change');
+  assert.equal(JSON.parse(preview.textContent).deleteAfterResolutionRequested, true);
+  modal.querySelector('#pvc-include-comment').checked = true; modal.querySelector('#pvc-include-comment').emit('change');
+  modal.querySelector('#pvc-user-feedback-input').value = 'PRIVATE_DELETE_COMMENT';
+  modal.querySelector('#pvc-user-feedback-input').emit('input');
+  for (const selector of ['#pvc-send-mail-link', '#pvc-open-github-link']) {
+    const href = modal.querySelector(selector).href;
+    assert.match(decodeURIComponent(href), /I request deletion of this issue \/ report after the problem is resolved/);
+    assert.equal(href.includes('PRIVATE_DELETE_COMMENT'), false);
+    assert.equal(href.includes('reportSchemaVersion'), false);
+  }
+  checkbox.checked = false; checkbox.emit('change');
+  assert.equal(JSON.parse(preview.textContent).deleteAfterResolutionRequested, undefined);
+  assert.equal(modal.querySelector('#pvc-open-github-link').href.includes('body='), false);
 });
 
 test('clipboard success matches preview; rejection never claims success', async () => {
