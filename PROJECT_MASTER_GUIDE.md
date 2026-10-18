@@ -309,6 +309,13 @@ Hata veya beklenmeyen durum olduğunda:
 - Logo `draggable=false` ile başlık sürüklemesini bozmaz; dosya bulunamaz veya sayfa CSP'si engellerse `error` olayında kendini kaldırır.
 - Logo saydam arka planlıdır (HUD'un koyu zemini üzerinde beyaz kutu olmadan görünür). Dosya, kaynak görselin (1672x941, beyaz zeminli) kırpılmış, saydamlaştırılmış 512 px genişlikli sürümünü SVG içine gömülü PNG olarak taşır; gerçek vektör çizim değildir.
 
+### 4.13 HUD Arayüz Düzeni (v0.5.2)
+- **Sade Başlık:** Başlıkta yalnızca logo ve düğmeler (PiP, kısayollar, küçült, kapat) bulunur; "NOkrep vX" rozeti ve "NOk Controller" yazısı kaldırıldı, sürüm bilgisi logonun tooltip'indedir. Logo yüklenemezse yedek olarak "NOk" yazısı görünür.
+- **Varsayılan Açık Bölümler:** Yalnızca "Oynatma Hızı & Sarma" ve "Ses Seviyesi & Kanallar" açık başlar; "Akış Paket Kaliteleri", "Görüntü Filtreleri" ve "Harici Altyazı" kapalı başlar (akordeonlar bağımsızdır, birden fazlası açık kalabilir).
+- **Kalite Rozetleri:** Kalite seçenekleri büyük tam genişlikli butonlar yerine küçük hap rozetlerdir (`1080p`, `720p` ...); parantez içindeki açıklama (`FHD`, `HD`) rozetten çıkarılmış, tam etiket tooltip'te kalmıştır.
+- **Sığma Düzeltmeleri:** Sarma düğmeleri (`+10s`, `+30s`) kırpılmadan sığar; Stereo/Mono düğmeleri ses ön ayarlarının altına sarılır; başlık düğmeleri (`flex-shrink: 0`) sağda kesilmez.
+- **Bilinçli Olarak Yapılmayanlar:** Çözünürlük ve adaptör kutularının tek şeritte birleştirilmesi şimdilik istenmedi (askıda).
+
 ---
 
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
@@ -320,6 +327,7 @@ Hata veya beklenmeyen durum olduğunda:
 - **%300 Ses Booster, Gain Renk Geçişi & Çift Tıkla Sıfırlama:** Ses üst sınırı %300 olarak yapılandırıldı; dinamik slider renk geçişi ve çift tıkla sıfırlama eklendi.
 - **Mıknatıslı Kenar Hizalama, Küçültülmüş Detaylı Bar & PiP:** 2D mıknatıslı sürükleme, viewport sınır koruması, küçültülmüş özet bar ve doğrudan PiP kontrolü eklendi.
 - **Sürükleme Hatası Düzeltmesi & Ray Konumlandırma:** HUD'un fareye yapışıp kalması giderildi; normal modda sağ ray (dikey), tam ekranda serbest hareket geri getirildi.
+- **Arayüz Sadeleştirme:** Sade başlık (yalnızca logo), küçük kalite rozetleri, varsayılan olarak yalnızca hız ve ses bölümleri açık; kırpılan düğmeler düzeltildi (bkz. 4.13).
 - **NOkrep Logosu:** HUD başlığına `icons/nok-logo.svg` eklendi (DOM API ile, yüklenemezse otomatik gizlenir, saydam arka plan).
 - **Firefox & Chromium Ortak Manifest:** `background` içinde `service_worker` + `scripts` birlikte tanımlandı; `strict_min_version` `121.0` yapıldı.
 - **Reddit:** `shreddit-player` Web Component'i Shadow DOM tarayıcısının özel host listesine eklendi.
@@ -364,7 +372,10 @@ Gelecekteki geliştiricilerin veya dil modellerinin bilmesi gereken teknik hassa
    - Bu nedenle `MutationObserver` ve `setInterval(detectActiveVideo, 1500)` mekanizması sürekli tetikte kalarak yeni videoyu anında tespit eder ve ses grafiğini ona bağlar.
 5. **Firefox PiP API Farkı:**
    - Chromium tarayıcılar `video.requestPictureInPicture()` API'sini desteklerken, Firefox bu standart JS metodunu web sayfalarına açmayabilir; kodda güvenli kontrol (`typeof video.requestPictureInPicture === 'function'`) mevcuttur. Güncel durumu MDN'den doğrulayın.
-6. **Cross-Browser Test Sınırı:** Geliştirme Firefox'ta, Chrome testi ise ayrı bir geliştirici tarafından yapılmaktadır; bir özellik her iki tarayıcıda doğrulanmadan `SITE_COMPATIBILITY.md` içinde "Tam Çalışıyor" yapılmaz.
+6. **Firefox'ta PiP:** `video.requestPictureInPicture` Firefox'ta mevcut değilse HUD'daki PiP düğmesi, "videonun üzerindeki yerleşik PiP düğmesini kullanın" uyarısı gösterir. Güncel durumu MDN'den doğrulayın.
+7. **Tam Ekranda HUD Görünürlüğü:** HUD, `document.fullscreenElement` içine taşınır. Tam ekran elemanı doğrudan `<video>` ise (bazı sitelerde/yerel kontrollerde) alt öğeler çizilmediğinden HUD görünmeyebilir; bu durum henüz çözülmemiş bilinen bir sınırdır.
+8. **Firefox Slider İzi:** `::-moz-range-track` saydam bırakılır ki slider'ın kendi arka planı (kazanç dolgusu) görünsün; Firefox'ta görsel olarak doğrulanmalıdır (geliştirme ortamında Firefox çalıştırılamadı).
+9. **Cross-Browser Test Sınırı:** Geliştirme Firefox'ta, Chrome testi ise ayrı bir geliştirici tarafından yapılmaktadır; bir özellik her iki tarayıcıda doğrulanmadan `SITE_COMPATIBILITY.md` içinde "Tam Çalışıyor" yapılmaz.
 
 ---
 

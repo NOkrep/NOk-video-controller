@@ -1707,7 +1707,11 @@
         video.webkitSetPresentationMode(mode);
         showToast(`🖼️ PiP Modu: ${mode}`);
       } else {
-        showToast('Tarayıcınız bu videoda PiP API desteklemiyor');
+        if (/firefox/i.test(navigator.userAgent)) {
+          showToast('Firefox: PiP için videonun üzerindeki yerleşik PiP düğmesini kullanın');
+        } else {
+          showToast('Tarayıcınız bu videoda PiP API desteklemiyor');
+        }
       }
     } catch (err) {
       addDiagnosticLog('WARN', '[PiP] PiP geçiş hatası:', err.message);
@@ -2231,8 +2235,8 @@
       const btn = document.createElement('button');
       const isCurrentActive = activeForcedQualityId === q.id || activeForcedQualityLabel === q.label;
       btn.className = `pvc-quality-chip-btn ${isCurrentActive ? 'pvc-active' : ''}`;
-      btn.textContent = q.label;
-      btn.title = `${q.label} • ${q.height ? q.height + 'p' : ''}`;
+      btn.textContent = String(q.label).replace(/\s*\(.*\)\s*$/, '') || q.label;
+      btn.title = `${q.label}${q.height ? ' • ' + q.height + 'p' : ''}`;
 
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -2812,9 +2816,8 @@
 
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Kenarlara 16px yaklaşınca mıknatıslı hizalanır)">
-        <div class="pvc-menu-brand">
-          <span class="pvc-menu-badge" title="NOk Video Controller v${EXTENSION_VERSION}">NOkrep v${EXTENSION_VERSION}</span>
-          <span class="pvc-menu-title">NOk Controller</span>
+        <div class="pvc-menu-brand" title="NOk Video Controller v${EXTENSION_VERSION}">
+          <span id="pvc-brand-text" class="pvc-menu-title">NOk</span>
         </div>
         <div class="pvc-header-actions">
           <button id="pvc-pip-btn" class="pvc-icon-btn" title="Resim İçinde Resim (PiP) Aç/Kapat (Alt+P)" aria-label="Resim İçinde Resim">🖼️</button>
@@ -2920,8 +2923,8 @@
             <input type="range" id="pvc-volume-slider" min="0" max="300" step="5" value="100" class="pvc-range-slider pvc-gain-normal" title="Ses (%0-%300 Güçlendirici) • Çift tıklayarak %100'e sıfırlayın" />
             <span class="pvc-slider-bound" style="color: #f43f5e;" title="Maksimum %300 Ses Güçlendirici">%300 🚀</span>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <div class="pvc-quick-speed-buttons" style="flex: 1; margin-right: 6px;">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; margin-top: 4px;">
+            <div class="pvc-quick-speed-buttons" style="flex: 1 1 100%;">
               <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="0">%0</button>
               <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="100">%100</button>
               <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="200">%200</button>
@@ -2936,7 +2939,7 @@
       </div>
 
       <!-- 3. BÖLÜM: Akış Paket Kaliteleri -->
-      <div class="pvc-menu-section" id="pvc-section-quality">
+      <div class="pvc-menu-section pvc-section-collapsed" id="pvc-section-quality">
         <div class="pvc-section-header" data-target="pvc-content-quality">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
@@ -2945,7 +2948,7 @@
           <span id="pvc-quality-count-badge" class="pvc-val-badge">Paketler...</span>
         </div>
         <div id="pvc-content-quality" class="pvc-section-content">
-          <div id="pvc-dynamic-quality-container" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;"></div>
+          <div id="pvc-dynamic-quality-container" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;"></div>
         </div>
       </div>
 
@@ -3024,6 +3027,7 @@
         logoImg.className = 'pvc-brand-logo';
         logoImg.alt = 'NOk';
         logoImg.draggable = false; // Başlıktaki mousedown sürüklemesini tarayıcının yerel resim sürüklemesi bozmasın
+        logoImg.addEventListener('load', () => { const t = popup.querySelector('#pvc-brand-text'); if (t) t.style.display = 'none'; });
         logoImg.addEventListener('error', () => logoImg.remove());
         logoImg.src = NOK_LOGO_URL;
         brandEl.insertBefore(logoImg, brandEl.firstChild);

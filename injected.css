@@ -140,11 +140,12 @@
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
+  min-width: 0 !important;
   pointer-events: none !important;
 }
 
 .pvc-brand-logo {
-  height: 20px !important;
+  height: 24px !important;
   width: auto !important;
   display: inline-block !important;
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.35)) !important;
@@ -172,6 +173,7 @@
 .pvc-header-actions {
   display: flex !important;
   align-items: center !important;
+  flex-shrink: 0 !important;
   gap: 3px !important;
 }
 
@@ -344,6 +346,13 @@
   transition: background 0.2s ease, box-shadow 0.2s ease !important;
 }
 
+/* Firefox: yerel iz (track) görünümü slider'ın kendi arka planını (kazanç dolgusu) örtmesin */
+.pvc-range-slider::-moz-range-track {
+  background: transparent !important;
+  border: none !important;
+  height: 6px !important;
+}
+
 /* Ses Kazanç (Gain) Renk Geçiş Sınıfları (%0-100 Cyan, %101-200 Amber, %201-300 Rose) */
 .pvc-range-slider.pvc-gain-normal {
   --pvc-thumb-color: #38bdf8;
@@ -416,9 +425,9 @@
   background: rgba(255, 255, 255, 0.06) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #e2e8f0 !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   font-weight: 600 !important;
-  padding: 6px 8px !important;
+  padding: 6px 2px !important;
   border-radius: 6px !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
@@ -446,22 +455,19 @@
 }
 
 .pvc-quality-chip-btn {
-  flex: 1 1 calc(50% - 6px) !important;
-  min-width: 80px !important;
-  max-width: 100% !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
   background: rgba(255, 255, 255, 0.07) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: #cbd5e1 !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   font-weight: 700 !important;
-  padding: 6px 8px !important;
-  border-radius: 6px !important;
+  padding: 3px 7px !important;
+  border-radius: 999px !important;
   cursor: pointer !important;
   text-align: center !important;
   transition: all 0.15s ease !important;
   white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
   display: inline-block !important;
   box-sizing: border-box !important;
 }
