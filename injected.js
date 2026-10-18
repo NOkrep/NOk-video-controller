@@ -32,6 +32,7 @@
     } else if (event.data.type === 'PVC_OPEN_POPUP') {
       const popup = document.getElementById('pvc-controller-popup') || buildPvcPopup();
       popup.style.display = 'block';
+      resetPopupToDefaultPosition(popup);
       clampPopupToViewport(popup);
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
@@ -2651,6 +2652,21 @@
   // =========================================================================
   const SNAP_THRESHOLD = 16;
   const EDGE_MARGIN = 12;
+  const HUD_DEFAULT_TOP = 16;   // Araç çubuğu simgesinin hemen altı (sayfa içeriğinin üst kenarı)
+  const HUD_RAIL_RIGHT = 16;    // Normal modda sağ ray: sağ kenardan boşluk
+
+  function isFullscreenMode() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  // Normal modda: sağ rayda, simgenin altında. Tam ekranda mevcut konum korunur (serbest hareket).
+  function resetPopupToDefaultPosition(popup) {
+    if (!popup || isFullscreenMode()) return;
+    popup.style.setProperty('top', `${HUD_DEFAULT_TOP}px`, 'important');
+    popup.style.setProperty('right', `${HUD_RAIL_RIGHT}px`, 'important');
+    popup.style.setProperty('left', 'auto', 'important');
+    popup.style.setProperty('bottom', 'auto', 'important');
+  }
 
   function clampPopupToViewport(popup) {
     const target = popup || document.getElementById('pvc-controller-popup');
@@ -2661,6 +2677,18 @@
     const rect = target.getBoundingClientRect();
     const w = rect.width || target.offsetWidth || 320;
     const h = rect.height || target.offsetHeight || 200;
+
+    // Normal mod: sağ ray (yalnızca dikey sınır koruması)
+    if (!isFullscreenMode()) {
+      let railTop = rect.top;
+      if (railTop < EDGE_MARGIN) railTop = EDGE_MARGIN;
+      if (railTop + h > vh - EDGE_MARGIN) railTop = Math.max(EDGE_MARGIN, vh - h - EDGE_MARGIN);
+      target.style.setProperty('top', `${Math.round(railTop)}px`, 'important');
+      target.style.setProperty('right', `${HUD_RAIL_RIGHT}px`, 'important');
+      target.style.setProperty('left', 'auto', 'important');
+      target.style.setProperty('bottom', 'auto', 'important');
+      return;
+    }
 
     let newLeft = rect.left;
     let newTop = rect.top;
@@ -2682,28 +2710,30 @@
   });
 
   function makeDraggable(popup, header) {
-    let isDragging = false;
-    let startClientX = 0;
-    let startClientY = 0;
-    let startLeft = 0;
-    let startTop = 0;
-
+    // Not: HUD üzerindeki olay izolasyonu (stopPropagation) 'mouseup' olayını document'a ulaştırmaz.
+    // Bu yüzden bırakma olayları window üzerinde YAKALAMA (capture) aşamasında dinlenir; böylece HUD fareye yapışıp kalmaz.
     header.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
       if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT') return;
-      
-      isDragging = true;
+
+      e.preventDefault(); // Yerel metin/resim sürüklemesini engelle
       resetIdleTimer(popup);
 
+      const fullscreen = isFullscreenMode();
       const rect = popup.getBoundingClientRect();
-      startClientX = e.clientX;
-      startClientY = e.clientY;
-      startLeft = rect.left;
-      startTop = rect.top;
+      const startClientX = e.clientX;
+      const startClientY = e.clientY;
+      const startLeft = rect.left;
+      const startTop = rect.top;
+      let ended = false;
 
       document.body.style.userSelect = 'none';
+      popup.classList.add('pvc-dragging');
 
       const onMouseMove = (moveEvent) => {
-        if (!isDragging) return;
+        if (ended) return;
+        // Fare düğmesi başka bir yerde (pencere dışı, sekme değişimi vb.) bırakıldıysa sürüklemeyi bitir
+        if (moveEvent.buttons === 0) { endDrag(); return; }
         resetIdleTimer(popup);
 
         const vw = window.innerWidth || document.documentElement.clientWidth;
@@ -2711,19 +2741,10 @@
         const w = popup.offsetWidth || 320;
         const h = popup.offsetHeight || 200;
 
-        let candidateLeft = startLeft + (moveEvent.clientX - startClientX);
         let candidateTop = startTop + (moveEvent.clientY - startClientY);
         let snapped = false;
 
-        // Mıknatıslı Kenar Yakalama (Sol / Sağ / Üst / Alt 16px eşiği)
-        if (Math.abs(candidateLeft - EDGE_MARGIN) <= SNAP_THRESHOLD) {
-          candidateLeft = EDGE_MARGIN;
-          snapped = true;
-        } else if (Math.abs((vw - w - EDGE_MARGIN) - candidateLeft) <= SNAP_THRESHOLD) {
-          candidateLeft = vw - w - EDGE_MARGIN;
-          snapped = true;
-        }
-
+        // Dikey mıknatıslı kenar yakalama (üst / alt)
         if (Math.abs(candidateTop - EDGE_MARGIN) <= SNAP_THRESHOLD) {
           candidateTop = EDGE_MARGIN;
           snapped = true;
@@ -2731,28 +2752,50 @@
           candidateTop = vh - h - EDGE_MARGIN;
           snapped = true;
         }
-
-        // Viewport Clamping
-        candidateLeft = Math.max(EDGE_MARGIN, Math.min(vw - w - EDGE_MARGIN, candidateLeft));
         candidateTop = Math.max(EDGE_MARGIN, Math.min(vh - h - EDGE_MARGIN, candidateTop));
+        popup.style.setProperty('top', `${Math.round(candidateTop)}px`, 'important');
+        popup.style.setProperty('bottom', 'auto', 'important');
+
+        if (fullscreen) {
+          // Tam ekran: 2D serbest hareket + yatay mıknatıslı kenar yakalama
+          let candidateLeft = startLeft + (moveEvent.clientX - startClientX);
+          if (Math.abs(candidateLeft - EDGE_MARGIN) <= SNAP_THRESHOLD) {
+            candidateLeft = EDGE_MARGIN;
+            snapped = true;
+          } else if (Math.abs((vw - w - EDGE_MARGIN) - candidateLeft) <= SNAP_THRESHOLD) {
+            candidateLeft = vw - w - EDGE_MARGIN;
+            snapped = true;
+          }
+          candidateLeft = Math.max(EDGE_MARGIN, Math.min(vw - w - EDGE_MARGIN, candidateLeft));
+          popup.style.setProperty('left', `${Math.round(candidateLeft)}px`, 'important');
+          popup.style.setProperty('right', 'auto', 'important');
+        } else {
+          // Normal mod: sağ raya sabit, yalnızca dikey (yukarı/aşağı) kayma
+          popup.style.setProperty('right', `${HUD_RAIL_RIGHT}px`, 'important');
+          popup.style.setProperty('left', 'auto', 'important');
+        }
 
         popup.classList.toggle('pvc-snapped-edge', snapped);
-        popup.style.setProperty('left', `${Math.round(candidateLeft)}px`, 'important');
-        popup.style.setProperty('top', `${Math.round(candidateTop)}px`, 'important');
-        popup.style.setProperty('right', 'auto', 'important');
-        popup.style.setProperty('bottom', 'auto', 'important');
       };
 
-      const onMouseUp = () => {
-        isDragging = false;
+      const endDrag = () => {
+        if (ended) return;
+        ended = true;
+        popup.classList.remove('pvc-dragging');
         setTimeout(() => popup.classList.remove('pvc-snapped-edge'), 350);
         document.body.style.userSelect = '';
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
+        window.removeEventListener('mousemove', onMouseMove, true);
+        window.removeEventListener('mouseup', endDrag, true);
+        window.removeEventListener('pointerup', endDrag, true);
+        window.removeEventListener('pointercancel', endDrag, true);
+        window.removeEventListener('blur', endDrag, true);
       };
 
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
+      window.addEventListener('mousemove', onMouseMove, true);
+      window.addEventListener('mouseup', endDrag, true);
+      window.addEventListener('pointerup', endDrag, true);
+      window.addEventListener('pointercancel', endDrag, true);
+      window.addEventListener('blur', endDrag, true);
     });
   }
 
@@ -3296,6 +3339,7 @@
     syncFullscreenElements();
     popup.style.display = wasClosed ? 'block' : 'none';
     if (popup.style.display === 'block') {
+      if (wasClosed) resetPopupToDefaultPosition(popup);
       clampPopupToViewport(popup);
       resetIdleTimer(popup);
       renderDynamicQualityButtons();

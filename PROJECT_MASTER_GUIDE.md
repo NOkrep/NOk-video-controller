@@ -299,6 +299,8 @@ Hata veya beklenmeyen durum olduğunda:
 ### 4.11 Mıknatıslı Kenar Hizalama, Küçültülmüş Özet Bar & Doğrudan PiP (v0.5.2)
 - **Magnetic Edge Snapping:** HUD sürüklenirken pencere kenarlarına `16px` (`SNAP_THRESHOLD`) yaklaştığında kenara mıknatıslı yapışır ve `clampPopupToViewport` ile ekran dışına taşması engellenir.
 - **Küçültülmüş (Collapsed) Özet Bar:** Panel küçültüldüğünde (`#pvc-collapsed-summary-bar`) anlık çözünürlük, hız, ses, adaptör bilgisi ve `-10s`, `Oynat/Duraklat`, `+10s`, `PiP` hızlı butonları gösterilir.
+- **Konumlandırma (Ray Modeli):** Normal modda HUD toolbar simgesinin hemen altında (üst `16px`, sağ `16px`) **sağ rayda** açılır ve yalnızca dikey (yukarı/aşağı) hareket eder; HUD her açılışta bu varsayılan konuma döner. Tam ekranda (`document.fullscreenElement`) 2D serbest hareket + 4 kenar mıknatıslı yakalama kullanılır; tam ekrandan çıkınca HUD sağ raya döner (`isFullscreenMode`, `resetPopupToDefaultPosition`, rayı gözeten `clampPopupToViewport`).
+- **Sürükleme Güvenliği:** HUD üzerindeki olay izolasyonu `mouseup` yayılımını durdurduğu için bırakma olayları `window` üzerinde **capture** aşamasında (`mouseup`, `pointerup`, `pointercancel`, `blur`) dinlenir; ayrıca `mousemove` sırasında `buttons === 0` ise sürükleme bitirilir. (Önceki sürümde bırakma olayı `document`'e ulaşmadığı için HUD fare imlecine yapışık kalıyordu.)
 - **Doğrudan PiP Kontrolü:** Kontrolcüyü PiP penceresine taşımadan, mevcut penceredeki HUD üzerinden `requestPictureInPicture` / `exitPictureInPicture` yönetilir.
 
 ### 4.12 NOkrep Logosu (HUD Başlığı) (v0.5.2)
@@ -317,6 +319,7 @@ Hata veya beklenmeyen durum olduğunda:
 - **Bellek İçi Harici Altyazı Motoru:** `.srt`/`.vtt` RAM içi ayrıştırıcı ve `±100ms` senkronizasyon eklendi.
 - **%300 Ses Booster, Gain Renk Geçişi & Çift Tıkla Sıfırlama:** Ses üst sınırı %300 olarak yapılandırıldı; dinamik slider renk geçişi ve çift tıkla sıfırlama eklendi.
 - **Mıknatıslı Kenar Hizalama, Küçültülmüş Detaylı Bar & PiP:** 2D mıknatıslı sürükleme, viewport sınır koruması, küçültülmüş özet bar ve doğrudan PiP kontrolü eklendi.
+- **Sürükleme Hatası Düzeltmesi & Ray Konumlandırma:** HUD'un fareye yapışıp kalması giderildi; normal modda sağ ray (dikey), tam ekranda serbest hareket geri getirildi.
 - **NOkrep Logosu:** HUD başlığına `icons/nok-logo.svg` eklendi (DOM API ile, yüklenemezse otomatik gizlenir, saydam arka plan).
 - **Firefox & Chromium Ortak Manifest:** `background` içinde `service_worker` + `scripts` birlikte tanımlandı; `strict_min_version` `121.0` yapıldı.
 - **Reddit:** `shreddit-player` Web Component'i Shadow DOM tarayıcısının özel host listesine eklendi.

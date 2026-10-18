@@ -7,8 +7,8 @@
 /* 1. Gezdirilebilir & Yüzen Ana Kontrol HUD Paneli */
 #pvc-controller-popup {
   position: fixed !important;
-  top: 60px !important;
-  right: 24px !important;
+  top: 16px !important;
+  right: 16px !important;
   bottom: auto !important;
   left: auto !important;
   width: 332px !important;
@@ -31,6 +31,12 @@
   box-sizing: border-box !important;
   opacity: 1 !important;
   transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease, box-shadow 0.25s ease !important;
+}
+
+/* Sürükleme sırasında geçişleri kapat ve tutma imlecini göster */
+#pvc-controller-popup.pvc-dragging {
+  cursor: grabbing !important;
+  transition: none !important;
 }
 
 /* Mıknatıslı Kenar Hizalama (Magnetic Snap) Görsel Geri Bildirimi */
