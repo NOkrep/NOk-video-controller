@@ -37,11 +37,26 @@
   } else {
     // Kullanıcı ikona tekrar tıkladıysa popup'ı aç/kapat
     window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');
+    return;
+  }
+
+  // Yalnızca sabit bir açma sinyali aşağıya iletilir; adres veya rapor verisi taşınmaz.
+  function openEmbeddedPlayers() {
+    document.querySelectorAll('iframe, frame').forEach(frame => {
+      try { frame.contentWindow?.postMessage({ type: 'NOK_FRAME_OPEN' }, '*'); } catch (_) {}
+    });
   }
 
   // Main World ile mesajlaşma dinleyicisi
   window.addEventListener('message', (event) => {
-    if (event.source !== window || !event.data || !event.data.type) return;
+    if (!event.data || !event.data.type) return;
+    if (window.parent !== window && event.source === window.parent && event.data.type === 'NOK_FRAME_OPEN') {
+      window.postMessage({ type: 'PVC_OPEN_IF_MEDIA' }, '*');
+      openEmbeddedPlayers();
+      return;
+    }
+    if (event.source !== window) return;
+    if (event.data.type === 'PVC_OPEN_IN_CHILD_FRAMES') openEmbeddedPlayers();
 
     if (event.data.type === 'PVC_RE_INJECT_REQUEST') {
       injectMainWorldScript();

@@ -68,8 +68,8 @@ function harness(options = {}) {
     audioGainNodeInstance: { gain: { value: 2 } },
     audioContextInstance: { state: 'running' },
     audioSourceElementMap: new WeakMap(),
-    customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], isMediaInShadowDom: false,
-    EXTENSION_VERSION: '0.5.3', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
+    customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleLoadStatus: 'loaded', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
+    EXTENSION_VERSION: '0.5.4', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
     GITHUB_REPO_URL: 'https://github.com/NOkrep/NOk-video-controller',
     DEVELOPER_EMAIL: 'developer@example.invalid',
     fetch: () => { throw new Error('Report must not make network requests'); }
@@ -134,6 +134,17 @@ test('no-video and inaccessible frames remain diagnosable without frame addresse
   assert.equal(p.adapterSelectionStatus, 'no-video');
   assert.equal(p.frame.inaccessibleFrameCount, '2-4');
   assert.equal(p.videoCandidateCount, '0');
+  assert.equal(p.problem, 'detection');
+  assert.equal(p.quality.cachedOptionCount, '0');
+});
+
+test('no-video report preselects detection and user can change it', () => {
+  const h = harness({ video: null }); const modal = h.open();
+  const select = modal.querySelector('#pvc-report-problem');
+  assert.equal(select.value, 'detection');
+  assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).problem, 'detection');
+  select.value = 'hud'; select.emit('change');
+  assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).problem, 'hud');
 });
 
 test('unready video differs from absent video; blob UUIDs are excluded', () => {

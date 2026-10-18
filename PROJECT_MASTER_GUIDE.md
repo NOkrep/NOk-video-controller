@@ -1,9 +1,9 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.3 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
+> **Sürüm:** v0.5.4 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.3 (Gizlilik odaklı teşhis şeması v2, sabit olay kodları, güvenli metin önizlemesi ve isteğe bağlı açıklama)
+> **Son Güncelleme:** v0.5.4 (TRT/oynatıcı instance seçimi, altyazı ayrıştırması, iframe panel sinyali, HTTP ölçümü ve otomatik sorun seçimi)
 
 ---
 
@@ -230,7 +230,7 @@ Sistem artık statik bir adaptör listesi yerine, 3 kademeli hiyerarşik ve kend
   - `VideoJsAdapter`: `player.qualityLevels()`, `player.playbackRate()`.
   - `HlsJsAdapter`: `hls.levels`, `hls.currentLevel` ve `hls.loadLevel`.
   - `ShakaPlayerAdapter`: `shaka.getVariantTracks()`, `shaka.selectVariantTrack()`, ABR bypass.
-  - `DashJsAdapter`: `dashjs.MediaPlayer` bitrate seçimi.
+  - `DashJsAdapter`: Yeri korunur ancak kalite API'si henüz uygulanmamıştır; aktif eşleşme ve kalite seçimi sunmaz.
 - **Tier 3 (Evrensel HTML5 & Shadow DOM):**
   - `GenericAdapter`: Standart veya Shadow DOM içindeki her `<video>` elemanı için 0.25x-3.0x oynatma hızı, ses düzeyi, 4 kademeli sarma (-30s, -10s, +10s, +30s) ve gerçek çözünürlük ölçümü.
 
@@ -275,8 +275,8 @@ Sistem artık statik bir adaptör listesi yerine, 3 kademeli hiyerarşik ve kend
 - **Medya durumu:** `readyState`, `networkState`, çözünürlük sınıfı (SD/HD/FHD/QHD/UHD), kaynak türü (adres içermeyen `blob/http/media-object/none/other`), canlı/VOD/bilinmiyor, duraklatma/sessizlik, istenen ve videodan okunan hız/ses, mevcut ses grafiği durumu, DRM ve altyazı-var/yok bayrakları. Canlı/VOD değeri `duration` üzerinden bir çıkarımdır; süre rapora girmez ve bu sınıflama her akışta kesin değildir. Gain değeri yalnızca seçili video için kaynak oluşturulmuşsa gösterilir; duyulabilir ses kanıtı değildir.
 - **Video bulma:** Video adedi ve mevcut belgedeki iframe/erişilemeyen iframe adetleri yalnızca `0`, `1`, `2-4`, `5+` aralıklarıyla belirtilir; iframe adresi okunmaz. Ana sayfa raporu diğer kökendeki iframe motorunun çalıştığını kanıtlamaz.
 - **Olay tamponu:** `addDiagnosticLog(level, event, details)` yalnızca `DIAGNOSTIC_EVENT_FIELDS` içindeki sabit olay kodlarını ve olay başına izin verilen sınırlı sayıları kabul eder. Serbest metin, hata nesnesi, iç içe nesne veya bilinmeyen alan tutulmaz. En fazla 40 olay bellekte, son 20 olay raporda; olay yaşı 5 saniye aralıklarıyla ve en fazla 3600 saniye olarak aktarılır.
-- **Sonuçların anlamı:** `SPEED_REQUESTED`, `VOLUME_REQUESTED`, `QUALITY_REQUESTED`, `SEEK_REQUESTED` yalnızca isteği belirtir. Kick `reactInvoked/ivsInvoked` alanları çağrının yapıldığını gösterir; UI eşleşmesi veya oynatıcı tarafından kabul edildiği kanıtlanmaz. Kalite `verification` her zaman `not-verified` kalır. Generic/Shaka/Dash adaptörlerinin şu an sabit seçenek sunması `quality.control: not-implemented` olarak belirtilir. Bu sürüm bu adaptörlerin kalite uygulama davranışını değiştirmez.
-- **Salt okunur rapor:** `buildDiagnosticPayload` rapor oluştururken ağ isteği, kalite uygulaması, yeni ses grafiği veya `getQualities` çağrısı yapmaz. Mevcut CDN ping özelliği ayrı çalışmaya devam eder; bu açıklama eklentinin tamamının ağ kullanmadığı anlamına gelmez.
+- **Sonuçların anlamı:** `SPEED_REQUESTED`, `VOLUME_REQUESTED`, `QUALITY_REQUESTED`, `SEEK_REQUESTED` yalnızca isteği belirtir. Kick `reactInvoked/ivsInvoked` alanları çağrının yapıldığını gösterir; UI eşleşmesi veya oynatıcı tarafından kabul edildiği kanıtlanmaz. Kalite `verification` her zaman `not-verified` kalır. Generic/Dash kalite kontrolü sunmaz (`not-implemented`); v0.5.4'te Shaka gerçek instance/track API'si üzerinden çalışır. Kalite listesi artık eski video/adaptör önbelleğine geri düşmez; video yoksa rapor seçenek adedini `0` gösterir.
+- **Salt okunur rapor:** `buildDiagnosticPayload` rapor oluştururken ağ isteği, kalite uygulaması, yeni ses grafiği veya `getQualities` çağrısı yapmaz. `cdnMeasurementStatus` yalnızca sabit durum kodu taşır; adres/zamanlama örneği dışa aktarılmaz. v0.5.4'te otomatik CDN güncellemeleri yalnızca mevcut kaynak zamanlamasını okur. Manuel düğme gerektiğinde `credentials: omit` ve `referrerPolicy: no-referrer` ile, yönlendirme kabul etmeyen, 4 saniye sınırlı HEAD isteği yapabilir. Bu seçenekler akış adresinin kendi sorgu parametrelerini silmez; mevcut medya adresi manuel ölçümde CDN'e tekrar gider, rapora girmez.
 - **Arayüz ve paylaşım:** Mevcut modal düzeni korunur. Sorun türü sabit listeden seçilebilir. Serbest açıklama varsayılan kapalıdır; kullanıcı açıkça seçerse en fazla 500 karakter eklenir ve otomatik anonimleştirilmediği belirtilir. Seçim kapatılınca açıklama temizlenir. JSON yalnızca `textContent` ile önizlenir. Clipboard Promise başarısızlığında başarı bildirimi verilmez. Mail/GitHub bağlantıları raporu veya açıklamayı URL'ye gömmez; kullanıcı JSON'u kopyalayıp taslağa kendisi ekler. Otomatik gönderim yoktur.
 - **Anonimlik sınırı:** Panel MAIN world/sayfa DOM'unda çalışır; sayfa betikleri paneldeki verileri okuyabilir veya değiştirebilir. Not alanı gizli iletişim kanalı değildir. Kullanıcının notu kişisel bilgi içerebilir, e-posta/GitHub paylaşımı hesap kimliğiyle ilişkilendirilebilir. Kullanıcının kopyaladığı rapor panoda veya paylaşılan hizmette kalabilir; sıfır depolama ilkesi eklentinin kendi durumuna ilişkindir.
 
@@ -291,7 +291,7 @@ Sistem artık statik bir adaptör listesi yerine, 3 kademeli hiyerarşik ve kend
 | Diziyou v0.5.0 | Seçili video `0x0`, `readyState: 0`, `networkState: 0`; buna rağmen sarma/hız bildirimleri var. | Hazır olmayan/yanlış video olasılığı; oynatma başarısı kanıtlanmıyor. |
 | Kick v0.5.2 | Kullanıcı kalite UI eşleşmesinin çalıştığını, hız/ses UI eşleşmesinin çalışmadığını bildirmiş. | Yeni istenen/okunan değerler ve çağrı olayları sonraki incelemeyi destekler; UI sorunu bu sürümde düzeltilmedi. |
 
-Ham raporlar, tokenlar, adresler ve kullanıcıya özgü bilgiler repoya kopyalanmaz. `tests/diagnostics.test.cjs` üretim fonksiyonlarını izole Node/DOM taklidi ortamında çalıştırır; gizli örnek dizelerin dışa çıkmamasını, güvenli önizlemeyi, açıklama seçimini, tampon sınırlarını ve kopyalama hatalarını denetler. Çalıştırma: `node --test tests/diagnostics.test.cjs`. Bu testler gerçek tarayıcı/site doğrulaması değildir.
+Ham raporlar, tokenlar, adresler ve kullanıcıya özgü bilgiler repoya kopyalanmaz. `tests/diagnostics.test.cjs` üretim fonksiyonlarını izole Node/DOM taklidi ortamında çalıştırır; gizli örnek dizelerin dışa çıkmamasını, güvenli önizlemeyi, açıklama seçimini, tampon sınırlarını ve kopyalama hatalarını denetler. Video yoksa veya `NO_VIDEO_FOUND` ise rapor `problem: detection` ile açılır; seçim kullanıcı tarafından değiştirilebilir. Bu testler gerçek tarayıcı/site doğrulaması değildir.
 
 ---
 
@@ -331,7 +331,25 @@ Ham raporlar, tokenlar, adresler ve kullanıcıya özgü bilgiler repoya kopyala
 
 ---
 
+### 4.14 v0.5.4 — Yeni Firefox Raporlarına Göre Düzeltmeler
+
+- **Somut kaynak hataları:** SRT/VTT bitiş zamanının başındaki boşluk `split` öncesinde temizlenmediği için standart dosyalarda tüm satırlar eleniyordu. Artık BOM, CRLF, VTT cue ayarları ve NOTE/STYLE/REGION blokları ele alınır; bozuk/ters zamanlar elenir, cue'lar zamana göre sıralanır. Sıfır cue başarı sayılmaz, önceki geçerli altyazı korunur. Okuma/ayrıştırma durumu rapora yalnızca `subtitleLoadStatus` sabit seçeneğiyle girer; dosya adı/metni rapora girmez. Gizleme, native track'i de devre dışı bırakır.
+- **Gerçek instance ilişkisi:** Hls `attachMedia`, Shaka `attach/load` kancaları ve Shaka UI `getControls().getLocalPlayer()/getPlayer()` ile ulaşılan instance seçili videoyla doğrulanır (`media` / `getMediaElement()`). Video.js parent/global aramasında ilk rastgele player seçilmez, seçili medya ilişkisi aranır. Salt `window.Hls`/`window.shaka.Player` varlığı artık instance kanıtı sayılmaz. Kancalar SCRIPT load yakalama ve mevcut SDK kontrol döngüsünde kurulur; her tıklamada React ağacı taranmaz. `updateRealtimeResolutionBadge` artık bulunan player'ı adaptöre geçirir.
+- **Kalite:** Tier 1/2/3 sırası ve `probeAdapterHealth` korunur. TRT önce bağlı Shaka/Hls/Video.js kalite seçeneklerine yönlendirir. Shaka'da mevcut ses dili/audioId korunarak gerçek variant listesi kullanılır; `configure({abr:{enabled:false}})` ardından `selectVariantTrack(track,true)` çağrılır. TRT ağ fallback'i yalnızca tanınan eski master rotası görülmüşse ve DRM yoksa sunulur. Generic/Dash sabit, işlevsiz çözünürlük düğmeleri kaldırılır. Başarısız seçim aktif kalite veya "uygulandı" durumuna geçirilmez; bekleyen çözünürlük metin yerine sayısal yükseklikle karşılaştırılır. Çağrı yapılması gerçek görüntü kalitesi değiştiğini kanıtlamaz.
+- **TRT hız:** Ulaşılabilen Shaka instance'ında `trickPlay(rate,false)` ile oynatıcının hız denetleyicisine de istek iletilir. TRT için yalnızca açık kullanıcı hız isteğinden sonra `ratechange` koruması kurulur; 1x'e geri dönüşte 200ms gecikmeyle en fazla 5 kez tekrar uygular, sonra `TRT_RATE_GAVE_UP` kaydeder. Buffering için 0x, başka bir hız değeri, çıkarılmış/bitmiş video veya `emptied` olayında zorlamaz. 1x isteği korumayı kapatır. Kick reklam/hook önbelleği davranışı değiştirilmez.
+- **iframe:** İçerik betiği stilleri manifest'ten tüm çerçevelere yüklenir. Panel açılırken erişilebilir video yoksa content bridge çocuk çerçevelere yalnızca `NOK_FRAME_OPEN` sabit sinyalini yollar; onlar da yerel motorlarında hazır medya varsa HUD açar ve sinyali alt çerçevelere iletir. Top frame raporu iframe'in özel verisini toplamaz. Bu mekanizma Same-Origin Policy/CSP/korumalı tarayıcı sayfalarını aşmaz ve iframe'de çalışan motor/izin gerektirir. Content/Main world tekrar enjeksiyonu yeni mesaj dinleyicisi eklemez.
+- **CDN ölçümü:** Duraklatma manuel ölçümü engellemez. Son gerçek medya isteğinin `requestStart/responseStart` bilgisi açıksa pasif HTTP yanıt süresi kullanılır; JavaScript/IVS worker gibi kaynaklar CDN videosu sanılmaz. Zamanlama yoksa otomatik döngü ağ isteği yapmaz. Manuel ölçümde yalnızca HEAD vardır; eski GET/no-cors fallback'i kaldırılmıştır. Sonuç ICMP ping değildir; CORS/TAO, HEAD reddi, kaynak eksikliği ve zaman aşımı ölçümü engelleyebilir.
+- **Doğrulama sınırı:** `node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs` ile üretim fonksiyonlarında regresyon/gizlilik sınanır; tüm motorun bootstrap/tekrar enjeksiyon smoke testi de vardır. Gerçek Firefox/Chromium, TRT/CDN ve gömülü oynatıcıların uçtan uca testi henüz yapılmadı; v0.5.3 kullanıcı raporları v0.5.4 başarı kanıtı değildir. Eklenti yeniden yüklenmeli ve medya sayfaları yenilenmelidir.
+
+API kaynakları: [Shaka Player API](https://shaka-project.github.io/shaka-player/docs/api/shaka.Player.html), [Shaka UI Controls](https://shaka-project.github.io/shaka-player/docs/api/shaka.ui.Controls.html), [Hls attachMedia](https://hlsjs.video-dev.org/api-docs/hls.js.hls.attachmedia).
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
+
+### v0.5.4 (Geliştirme — Canlı Test Bekliyor)
+- Otomatik "Video bulma" sorun seçimi, SRT/VTT ayrıştırma ve sıfır-cue hata bildirimi.
+- Videoya bağlı Shaka/Hls/Video.js instance seçimi, TRT kalite delegasyonu ve sınırlı hız koruması.
+- İşlevsiz kalite listelerinin kaldırılması, iframe panel açma sinyali, pasif HTTP zamanlaması ve manuel güvenli HEAD ölçümü.
+- Kaynak/Node regresyon testleri; gerçek tarayıcı ve site doğrulaması beklenmektedir.
 
 ### v0.5.3 (Geliştirme — Canlı Test Bekliyor)
 - Gizlilik odaklı rapor şeması v2; serbest metin/URL/alan adı/kesin saat/konsol toplama kaldırıldı.
@@ -429,7 +447,8 @@ NOk-video-controller/
 ├── injected.js                # Main World Engine (HUD, Adaptörler, Web Audio, Filtre, Altyazı, Kısayollar)
 ├── injected.css               # HUD arayüz stilleri (Glassmorphism, Gain renkleri, Mini-Bar, Mıknatıs efekti, Logo)
 ├── tests/
-│   └── diagnostics.test.cjs    # Bağımlılıksız Node gizlilik/rapor sınırı testleri
+│   ├── diagnostics.test.cjs    # Bağımlılıksız Node gizlilik/rapor sınırı testleri
+│   └── player-controls.test.cjs # Altyazı, instance/kalite/hız, iframe ve HTTP regresyonları
 ├── README.md                  # Hızlı kurulum ve proje özeti
 ├── SITE_COMPATIBILITY.md      # Katı kurallı site uyumluluk ve durum takip tablosu
 └── PROJECT_MASTER_GUIDE.md    # BU DOSYA (Eksiksiz mimari, geçmiş, felsefe ve devir kılavuzu)
@@ -443,7 +462,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.3; canlı tarayıcı/site testi bekliyor).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.4; canlı tarayıcı/site testi bekliyor).
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

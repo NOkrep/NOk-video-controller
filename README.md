@@ -1,4 +1,4 @@
-# NOk Video Controller (v0.5.3 — geliştirme)
+# NOk Video Controller (v0.5.4 — geliştirme)
 
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
@@ -38,4 +38,6 @@
 
 ## Geliştirme Doğrulaması
 
-`node --test tests/diagnostics.test.cjs` gizlilik sınırını, güvenli metin önizlemesini, açıklama seçimini ve kopyalama davranışını Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.3 için canlı doğrulama beklenmektedir.
+`node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs` gizlilik sınırını, sorun seçimini, SRT/VTT ayrıştırmasını, seçili videoya ait oynatıcı/kalite çağrılarını, TRT hız korumasını, iframe sinyallerini ve HTTP ölçümünü Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.4 için canlı doğrulama beklenmektedir.
+
+v0.5.4'te gerçek kalite API'si bulunmayan oynatıcılarda göstermelik çözünürlük seçenekleri sunulmaz. TRT'de ulaşılabilen Shaka instance'ı üzerinden kalite/hız isteği iletilir. Standart SRT/VTT dosyalarındaki `-->` sonrası boşluk hatası giderildi. Eklentiyi yeniden yükledikten sonra açık medya sayfalarını da yenileyin; erken instance kancaları ve iframe stilleri ancak yeni sayfa yüklemesinde devreye girer.

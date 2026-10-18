@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.5.3 (Main World Engine)
+ * injected.js - NOk Video Controller v0.5.4 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,19 +17,30 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.5.3';
+  const EXTENSION_VERSION = '0.5.4';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.5.4', notes: 'Video bulunamıyor raporunda otomatik sorun seçimi; SRT/VTT boşluk ayrıştırma düzeltmesi; seçili videoya bağlı Shaka/Hls.js/Video.js instance seçimi; TRT Shaka kalite/hız desteği ve sınırlı hız koruması; göstermelik kalite seçeneklerinin kaldırılması; gömülü çerçevelerde panel açma sinyali; pasif HTTP zamanlaması ve manuel HEAD ölçümü. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.3', notes: 'Gizlilik odaklı teşhis şeması v2: URL/alan adı/kesin saat/konsol toplama kaldırıldı; sınırlı teknik durum ve sabit olay kodları, istenen/okunan hız-ses değerleri, isteğe bağlı açıklama ve güvenli metin önizlemesi. Canlı site ve tarayıcı doğrulaması bekliyor.' },
     { version: 'v0.5.2', notes: 'İzole klavye kısayolları motoru, görüntü filtreleri ve gece kalkanı modülü, bellek içi .srt/.vtt harici altyazı yükleyici ve ±100ms senkronizasyon, doğrudan PiP kontrolü, küçültülmüş detaylı bilgi barı, %300 ses booster + dinamik renk geçişi + çift tıkla sıfırlama, mıknatıslı kenar hizalama (magnetic edge snapping) ve Manifest V3 service_worker düzeltmesi.' },
     { version: 'v0.5.1', notes: 'Evrensel medya tespiti, Shadow DOM ve Web Component derin BFS tarayıcısı, Widevine/FairPlay DRM korumalı akış güvenli modu (%100 ses kilit koruması), 3-kademeli basamaklı adaptör mimarisi (Cascade Strategy Pipeline), manuel adaptör seçici ve tek tıkla geliştiriciye anonim teşhis bildirme motoru.' },
     { version: 'v0.5.0', notes: 'Kick.com %0/Mute ve tüm ses seviyelerinde (%50/%100/%150) kesintisiz Radix UI & React Slider eşitlemesi, Kick VOD oynatma hızı 2-kademeli açılır pencere (popover submenu) otomasyonu, TRT 1 / TRT İzle HUD tıklama ve olay yakalama izolasyonu.' }
   ];
 
+  if (window.__NOK_VIDEO_CONTROLLER_INJECTED__) {
+    window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');
+    return;
+  }
+  window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
+
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
     if (event.data.type === 'PVC_TOGGLE_POPUP' || event.data.type === 'PVC_TOGGLE_UI' || event.data.type === 'NOK_CONTROLLER_TOGGLE') {
       togglePvcPopup();
+    } else if (event.data.type === 'PVC_OPEN_IF_MEDIA') {
+      if (deepFindMediaElements().some(item => item.video.readyState > 0)) {
+        window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
+      }
     } else if (event.data.type === 'PVC_OPEN_POPUP') {
       const popup = document.getElementById('pvc-controller-popup') || buildPvcPopup();
       popup.style.display = 'block';
@@ -38,15 +49,10 @@
       resetIdleTimer(popup);
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
+      if (!findVideoAndPlayer().video) window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
       showToast(`NOk Video Controller Aktif (v${EXTENSION_VERSION})`);
     }
   });
-
-  if (window.__NOK_VIDEO_CONTROLLER_INJECTED__) {
-    togglePvcPopup();
-    return;
-  }
-  window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
 
   console.log(`[NOkrep] NOk Video Controller v${EXTENSION_VERSION} aktif.`);
 
@@ -61,6 +67,7 @@
   let activeForcedQualityId = '';
   let activeForcedQualityLabel = '';
   let pendingQualityLabel = '';
+  let pendingQualityHeight = 0;
   let pendingTimeoutTimer = null;
   let lastObservedResolution = 'Ölçülüyor...';
   let cachedDiscoveredQualities = [];
@@ -100,9 +107,93 @@
   let subtitleOffsetMs = 0;
   let subtitleFileName = '';
   let subtitleOverlayEnabled = true;
+  let subtitleLoadStatus = 'not-loaded';
 
   // Amazon IVS Player Global Kanca
   let globalCapturedIvsPlayer = null;
+
+  // Yalnızca seçili video ile ilişkilendirilmiş gerçek instance'lar kullanılır.
+  const mediaLibraryBindings = new WeakMap();
+  const hookedLibraryMethods = new WeakSet();
+
+  function rememberMediaLibrary(video, kind, player) {
+    if (video?.tagName !== 'VIDEO') return;
+    const bindings = mediaLibraryBindings.get(video) || {};
+    bindings[kind] = player;
+    mediaLibraryBindings.set(video, bindings);
+    video[kind === 'hls' ? '__nokHlsPlayer' : '__nokShakaPlayer'] = player;
+  }
+
+  function hookMediaLibraries() {
+    const wrap = (prototype, method, kind) => {
+      const original = prototype?.[method];
+      if (typeof original !== 'function' || hookedLibraryMethods.has(original)) return;
+      const wrapped = function (...args) {
+        const result = original.apply(this, args);
+        try {
+          const media = kind === 'hls' ? (args[0]?.media || args[0])
+            : method === 'attach' ? args[0] : this.getMediaElement?.();
+          rememberMediaLibrary(media, kind, this);
+        } catch (_) {}
+        return result;
+      };
+      try { prototype[method] = wrapped; hookedLibraryMethods.add(wrapped); } catch (_) {}
+    };
+    wrap(window.Hls?.prototype, 'attachMedia', 'hls');
+    wrap(window.shaka?.Player?.prototype, 'attach', 'shaka');
+    wrap(window.shaka?.Player?.prototype, 'load', 'shaka');
+  }
+
+  function findLibraryPlayer(video, kind, hint) {
+    if (!video) return null;
+    const bound = mediaLibraryBindings.get(video)?.[kind];
+    const candidates = [bound, hint, kind === 'hls' ? video.hls : video._shakaPlayer,
+      kind === 'hls' ? video.__nokHlsPlayer : video.__nokShakaPlayer];
+    // Shaka UI kendisine ait oynatıcıyı dışa açar; başka videonun instance'ı alınmaz.
+    for (let node = video, depth = 0; node && depth < 6; node = node.parentElement, depth++) {
+      candidates.push(kind === 'hls' ? node.hls : node._shakaPlayer);
+      if (kind === 'shaka') {
+        try {
+          const controls = node.ui?.getControls?.();
+          candidates.push(controls?.getLocalPlayer?.() || controls?.getPlayer?.());
+        } catch (_) {}
+      }
+    }
+    const view = video.ownerDocument?.defaultView || window;
+    if (kind === 'hls' && Array.isArray(view.Hls?.instances)) candidates.push(...view.Hls.instances);
+    for (const candidate of candidates) {
+      try {
+        if (kind === 'hls' && candidate?.media === video && Array.isArray(candidate.levels)) return candidate;
+        if (kind === 'shaka' && typeof candidate?.getVariantTracks === 'function'
+            && candidate.getMediaElement?.() === video) return candidate;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function findVideoJsPlayer(video, hint) {
+    if (!video) return null;
+    const candidates = [hint, video.player, video.vjsPlayer, video.parentElement?.player];
+    const view = video.ownerDocument?.defaultView || window;
+    try { candidates.push(...(view.videojs?.getAllPlayers?.() || [])); } catch (_) {}
+    for (const candidate of candidates) {
+      if (!candidate || typeof candidate !== 'object' || typeof candidate.currentTime !== 'function'
+          || typeof candidate.playbackRate !== 'function') continue;
+      try {
+        const element = candidate.el?.();
+        if (element?.contains(video) || candidate.tech_?.el_ === video
+            || candidate === video.player || candidate === video.vjsPlayer
+            || candidate === video.parentElement?.player) return candidate;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  // SCRIPT load yakalama, SDK yüklenmesi ile ilk attach arasındaki aralığı kapsar.
+  document.addEventListener('load', event => {
+    if (event.target?.tagName === 'SCRIPT') hookMediaLibraries();
+  }, true);
+  hookMediaLibraries();
 
   function hookIvsInstance(player) {
     if (!player || typeof player !== 'object') return player;
@@ -122,6 +213,7 @@
 
   try {
     const hookIvsSdk = () => {
+      hookMediaLibraries();
       if (window.IVSPlayer && typeof window.IVSPlayer.create === 'function' && !window.IVSPlayer.__nokHooked) {
         window.IVSPlayer.__nokHooked = true;
         const origCreate = window.IVSPlayer.create;
@@ -209,7 +301,7 @@
       if (url.includes('.m3u8') || url.includes('.ts')) {
         lastCapturedTrtStreamUrl = url;
       }
-      if (targetTrtQualitySuffix && (url.includes('master') || url.includes('.m3u8') || url.includes('.ts'))) {
+      if (targetTrtQualitySuffix && !activeDrmState.isDrm && (url.includes('master') || url.includes('.m3u8') || url.includes('.ts'))) {
         const regex = /master(1080p|720p|576p|480p|360p|240p)?/i;
         if (regex.test(url)) {
           return url.replace(regex, `master${targetTrtQualitySuffix}`);
@@ -268,7 +360,9 @@
     QUALITY_REQUESTED: ['height'],
     KICK_SPEED_SYNC: ['reactInvoked', 'ivsInvoked'],
     KICK_VOLUME_SYNC: ['reactInvoked', 'ivsInvoked'],
-    KICK_SYNC_FAILED: []
+    KICK_SYNC_FAILED: [], QUALITY_REJECTED: [],
+    TRT_RATE_REAPPLIED: ['rate'], TRT_RATE_GAVE_UP: [],
+    SUBTITLE_LOADED: [], SUBTITLE_PARSE_EMPTY: [], SUBTITLE_READ_FAILED: []
   });
 
   function diagnosticNumber(value, min, max, step = 1) {
@@ -569,6 +663,9 @@
 
     let player = null;
     let playerType = bestCandidate.isShadow ? 'shadow-html5' : 'native-html5';
+    const shaka = findLibraryPlayer(selectedVideo, 'shaka');
+    const hls = findLibraryPlayer(selectedVideo, 'hls');
+    const vjs = findVideoJsPlayer(selectedVideo);
 
     if (HOSTNAME.includes('youtube.com')) {
       playerType = 'youtube-player';
@@ -576,27 +673,15 @@
     } else if (selectedVideo.__ivsPlayer || globalCapturedIvsPlayer) {
       player = selectedVideo.__ivsPlayer || globalCapturedIvsPlayer;
       playerType = 'amazon-ivs';
-    } else if (selectedVideo.player) {
-      player = selectedVideo.player;
-      playerType = 'videojs-attached';
-    } else if (selectedVideo.vjsPlayer) {
-      player = selectedVideo.vjsPlayer;
-      playerType = 'vjsPlayer';
-    } else if (selectedVideo.parentElement && selectedVideo.parentElement.player) {
-      player = selectedVideo.parentElement.player;
-      playerType = 'videojs-parent';
-    } else if (window.videojs && typeof window.videojs.getAllPlayers === 'function') {
-      const players = window.videojs.getAllPlayers();
-      if (players && players.length > 0) {
-        player = players[0];
-        playerType = 'videojs-global';
-      }
-    } else if (selectedVideo.hls || (selectedVideo.parentElement && selectedVideo.parentElement.hls) || window.Hls) {
-      playerType = 'hlsjs';
-      player = selectedVideo.hls || (selectedVideo.parentElement && selectedVideo.parentElement.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]) || null;
-    } else if (selectedVideo._shakaPlayer || (window.shaka && window.shaka.Player)) {
+    } else if (shaka) {
+      player = shaka;
       playerType = 'shaka-player';
-      player = selectedVideo._shakaPlayer || null;
+    } else if (hls) {
+      player = hls;
+      playerType = 'hlsjs';
+    } else if (vjs) {
+      player = vjs;
+      playerType = 'videojs-attached';
     }
 
     return { 
@@ -1265,7 +1350,15 @@
       } catch (e) {}
     },
     syncTrtUiSpeed() {},
-    getQualities() {
+    getQualities(video, player) {
+      for (const adapter of [ShakaPlayerAdapter, HlsJsAdapter, VideoJsAdapter]) {
+        if (adapter.matches(video, player)) {
+          const qualities = adapter.getQualities(video, player);
+          if (qualities.length) return qualities;
+        }
+      }
+      // Yalnızca bilinen eski TRT manifest rotasında ağ fallback'i gösterilir.
+      if (detectDrmStatus(video).isDrm || !/\/master(?:1080p|720p|576p|480p|360p|240p)?[_.]/i.test(lastCapturedTrtStreamUrl)) return [];
       return [
         { id: 'trt_1080', label: '1080p (FHD)', height: 1080, suffix: '1080p' },
         { id: 'trt_720', label: '720p (HD)', height: 720, suffix: '720p' },
@@ -1274,7 +1367,15 @@
         { id: 'trt_360', label: '360p (Düşük)', height: 360, suffix: '360p' }
       ];
     },
-    applyQuality(targetItem, video) {
+    applyQuality(targetItem, video, player) {
+      const providers = { shaka_: ShakaPlayerAdapter, hls_: HlsJsAdapter, vjs_: VideoJsAdapter };
+      for (const [prefix, adapter] of Object.entries(providers)) {
+        if (String(targetItem.id).startsWith(prefix)) {
+          targetTrtQualitySuffix = null;
+          return adapter.applyQuality(targetItem, video, player);
+        }
+      }
+      if (!this.getQualities(video, player).some(item => item.id === targetItem.id)) return false;
       if (targetItem.suffix) targetTrtQualitySuffix = targetItem.suffix;
       if (video && video.currentTime > 0) {
         try { video.currentTime = Math.max(0, video.currentTime + 0.001); } catch (e) {}
@@ -1287,10 +1388,10 @@
   const HlsJsAdapter = {
     name: 'HlsJsAdapter',
     matches(video, player) {
-      return !!(video && video.hls) || !!(player && player.hls) || !!(window.Hls && window.Hls.instances && window.Hls.instances.length > 0);
+      return !!findLibraryPlayer(video, 'hls', player);
     },
     getQualities(video, player) {
-      const hls = (video && video.hls) || (player && player.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]);
+      const hls = findLibraryPlayer(video, 'hls', player);
       const results = [];
       if (hls && hls.levels && hls.levels.length > 0) {
         hls.levels.forEach((lvl, idx) => {
@@ -1300,8 +1401,8 @@
       return results.sort((a, b) => (b.height || 0) - (a.height || 0));
     },
     applyQuality(targetItem, video, player) {
-      const hls = (video && video.hls) || (player && player.hls) || (window.Hls && window.Hls.instances && window.Hls.instances[0]);
-      if (hls && hls.levels && targetItem.index !== undefined) {
+      const hls = findLibraryPlayer(video, 'hls', player);
+      if (hls && Number.isInteger(targetItem.index) && hls.levels[targetItem.index]) {
         hls.currentLevel = targetItem.index;
         showToast(`HLS.js: ${targetItem.label}`);
         return true;
@@ -1363,10 +1464,10 @@
     tier: 2,
     displayName: 'Video.js Kütüphanesi (Tier 2)',
     matches(video, player) {
-      return !!player || !!(video && (video.player || video.vjsPlayer)) || !!(window.videojs && typeof window.videojs.getAllPlayers === 'function' && window.videojs.getAllPlayers().length > 0) || !!document.querySelector('.video-js, .vjs-tech');
+      return !!findVideoJsPlayer(video, player);
     },
     getQualities(video, player) {
-      const vjs = player || (video && (video.player || video.vjsPlayer)) || (window.videojs && window.videojs.getAllPlayers && window.videojs.getAllPlayers()[0]);
+      const vjs = findVideoJsPlayer(video, player);
       if (vjs && typeof vjs.qualityLevels === 'function') {
         try {
           const ql = vjs.qualityLevels();
@@ -1383,11 +1484,11 @@
       return GenericAdapter.getQualities();
     },
     applyQuality(targetItem, video, player) {
-      const vjs = player || (video && (video.player || video.vjsPlayer)) || (window.videojs && window.videojs.getAllPlayers && window.videojs.getAllPlayers()[0]);
+      const vjs = findVideoJsPlayer(video, player);
       if (vjs && typeof vjs.qualityLevels === 'function') {
         try {
           const ql = vjs.qualityLevels();
-          if (ql && ql.length > 0) {
+          if (ql && ql.length > 0 && Number.isInteger(targetItem.index) && ql[targetItem.index]) {
             for (let i = 0; i < ql.length; i++) ql[i].enabled = (targetItem.index === i);
             showToast(`Video.js: ${targetItem.label}`);
             return true;
@@ -1402,12 +1503,30 @@
     name: 'ShakaPlayerAdapter',
     tier: 2,
     displayName: 'Shaka Player (Tier 2)',
-    matches(video) {
-      return !!(video && video._shakaPlayer) || !!(window.shaka && window.shaka.Player);
+    matches(video, player) {
+      return !!findLibraryPlayer(video, 'shaka', player);
     },
-    getQualities() { return GenericAdapter.getQualities(); },
-    applyQuality(targetItem) {
-      showToast(`Shaka Player: ${targetItem.label}`);
+    getQualities(video, player) {
+      const shaka = findLibraryPlayer(video, 'shaka', player);
+      if (!shaka) return [];
+      const tracks = shaka.getVariantTracks();
+      const active = tracks.find(track => track.active);
+      const heights = new Set();
+      return tracks.filter(track => {
+        if (!(track.height > 0) || (active?.language && track.language !== active.language)
+            || (active?.audioId != null && track.audioId !== active.audioId) || heights.has(track.height)) return false;
+        heights.add(track.height);
+        return true;
+      }).map(track => ({ id: `shaka_${track.id}`, label: `${track.height}p`, height: track.height, trackId: track.id }))
+        .sort((a, b) => b.height - a.height);
+    },
+    applyQuality(targetItem, video, player) {
+      const shaka = findLibraryPlayer(video, 'shaka', player);
+      const track = shaka?.getVariantTracks().find(item => item.id === targetItem.trackId);
+      if (!track || typeof shaka.configure !== 'function' || typeof shaka.selectVariantTrack !== 'function') return false;
+      if (shaka.configure({ abr: { enabled: false } }) === false) return false;
+      shaka.selectVariantTrack(track, true);
+      showToast(`Shaka: ${targetItem.label} istendi`);
       return true;
     }
   };
@@ -1416,12 +1535,9 @@
     name: 'DashJsAdapter',
     tier: 2,
     displayName: 'Dash.js (Tier 2)',
-    matches() { return !!(window.dashjs && window.dashjs.MediaPlayer); },
-    getQualities() { return GenericAdapter.getQualities(); },
-    applyQuality(targetItem) {
-      showToast(`Dash.js: ${targetItem.label}`);
-      return true;
-    }
+    matches() { return false; },
+    getQualities() { return []; },
+    applyQuality() { return false; }
   };
 
   const GenericAdapter = {
@@ -1429,19 +1545,8 @@
     tier: 3,
     displayName: 'Evrensel HTML5 & Shadow DOM (Tier 3)',
     matches() { return true; },
-    getQualities() {
-      return [
-        { id: '1080', label: '1080p (FHD)', height: 1080 },
-        { id: '720', label: '720p (HD)', height: 720 },
-        { id: '576', label: '576p (PAL)', height: 576 },
-        { id: '480', label: '480p (SD)', height: 480 },
-        { id: '360', label: '360p (Düşük)', height: 360 }
-      ];
-    },
-    applyQuality(targetItem) {
-      showToast(`Kalite Seçildi: ${targetItem.label}`);
-      return true;
-    }
+    getQualities() { return []; },
+    applyQuality() { return false; }
   };
 
   PuhuTvAdapter.tier = 1; PuhuTvAdapter.displayName = 'PuhuTV (Tier 1)';
@@ -1524,7 +1629,8 @@
     const { video, player } = findVideoAndPlayer();
     const adapter = getActiveAdapter(video, player);
 
-    if (typeof adapter.getQualities === 'function') {
+    cachedDiscoveredQualities = [];
+    if (video && typeof adapter.getQualities === 'function') {
       try {
         const found = adapter.getQualities(video, player);
         if (found && found.length > 0) {
@@ -1534,11 +1640,7 @@
       } catch (e) {}
     }
 
-    if (adapter.name !== 'GenericAdapter' && cachedDiscoveredQualities.length > 0) {
-      return cachedDiscoveredQualities;
-    }
-
-    return GenericAdapter.getQualities();
+    return [];
   }
 
   // =========================================================================
@@ -1562,7 +1664,7 @@
   }
 
   function updateRealtimeResolutionBadge() {
-    const { video } = findVideoAndPlayer();
+    const { video, player } = findVideoAndPlayer();
     const badge = document.getElementById('pvc-realtime-res-badge');
     if (!badge) return;
 
@@ -1580,8 +1682,7 @@
       lastObservedResolution = `${w}x${h} (${label})`;
 
       if (pendingQualityLabel) {
-        const cleanPending = pendingQualityLabel.replace(/p\d+/, '').replace(/\s+/g, '');
-        if (lastObservedResolution.includes(cleanPending)) {
+        if (pendingQualityHeight > 0 && h === pendingQualityHeight) {
           pendingQualityLabel = '';
           clearTimeout(pendingTimeoutTimer);
           badge.textContent = `🎬 Gerçek: ${lastObservedResolution}`;
@@ -1605,7 +1706,7 @@
     }
     if (video) {
       updateDrmHudBadge(video);
-      const adapter = getActiveAdapter(video);
+      const adapter = getActiveAdapter(video, player);
       updateAdapterHudBadge(adapter);
       applyVideoFiltersToElement(video);
     }
@@ -1748,26 +1849,22 @@
   // 💬 BELLEK İÇİ HARİCİ ALTYAZI (.SRT / .VTT) VE SENKRON MOTORU (MADDE 4)
   // =========================================================================
   function parseTimecodeToSeconds(tc) {
-    if (!tc) return 0;
-    const clean = tc.trim().replace(',', '.');
-    const parts = clean.split(':');
-    if (parts.length === 3) {
-      return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
-    } else if (parts.length === 2) {
-      return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-    }
-    return 0;
+    if (typeof tc !== 'string') return NaN;
+    const match = tc.trim().match(/^(?:(\d+):)?(\d{2}):(\d{2})[,.](\d{3})$/);
+    if (!match || Number(match[2]) >= 60 || Number(match[3]) >= 60) return NaN;
+    return Number(match[1] || 0) * 3600 + Number(match[2]) * 60 + Number(match[3]) + Number(match[4]) / 1000;
   }
 
   function parseSrtOrVttContent(rawText) {
     if (!rawText || typeof rawText !== 'string') return [];
-    const normalized = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const normalized = rawText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const blocks = normalized.split(/\n\s*\n/);
     const cues = [];
 
     for (const block of blocks) {
       const lines = block.trim().split('\n');
       if (lines.length === 0) continue;
+      if (/^(NOTE(?:\s|$)|STYLE(?:\s|$)|REGION(?:\s|$))/.test(lines[0])) continue;
 
       let timeLineIdx = -1;
       for (let i = 0; i < lines.length; i++) {
@@ -1782,14 +1879,14 @@
       if (timeParts.length < 2) continue;
 
       const startSec = parseTimecodeToSeconds(timeParts[0]);
-      const endSec = parseTimecodeToSeconds(timeParts[1].split(/\s+/)[0]);
+      const endSec = parseTimecodeToSeconds(timeParts[1].trim().split(/\s+/)[0]);
       const textLines = lines.slice(timeLineIdx + 1).join('\n').replace(/<[^>]+>/g, '').trim();
 
-      if (textLines && endSec > startSec) {
+      if (textLines && Number.isFinite(startSec) && Number.isFinite(endSec) && endSec > startSec) {
         cues.push({ start: startSec, end: endSec, text: textLines });
       }
     }
-    return cues;
+    return cues.sort((a, b) => a.start - b.start);
   }
 
   function ensureSubtitleOverlayElement() {
@@ -1829,7 +1926,7 @@
         track = video.addTextTrack('subtitles', 'NOk Harici Altyazı', 'tr');
         video.__nokSubtitleTrack = track;
       }
-      track.mode = subtitleOverlayEnabled ? 'hidden' : 'showing';
+      track.mode = subtitleOverlayEnabled ? 'hidden' : 'disabled';
       while (track.cues && track.cues.length > 0) {
         track.removeCue(track.cues[0]);
       }
@@ -1864,6 +1961,42 @@
   // ⚡ HIZ, %300 SES GÜÇLENDİRİCİ VE KAZANÇ (GAIN) RENK MOTORU (MADDE 8)
   // =========================================================================
   let targetEnforcedPlaybackRate = 1.0;
+  const trtRateGuards = new WeakMap();
+
+  function armTrtRateGuard(video, rate) {
+    let state = trtRateGuards.get(video);
+    if (!state) {
+      state = { rate, attempts: 0, timer: null, active: false };
+      trtRateGuards.set(video, state);
+      video.addEventListener('ratechange', () => {
+        if (!state.active || state.timer !== null || video.isConnected === false || video.ended
+            || video.readyState < 2 || Math.abs(video.playbackRate - state.rate) < 0.01
+            || video.playbackRate !== 1) return;
+        if (state.attempts >= 5) {
+          state.active = false;
+          addDiagnosticLog('WARN', 'TRT_RATE_GAVE_UP');
+          return;
+        }
+        state.timer = setTimeout(() => {
+          state.timer = null;
+          if (!state.active || video.isConnected === false || video.ended || video.readyState < 2
+              || video.playbackRate !== 1 || Math.abs(state.rate - 1) < 0.01) return;
+          state.attempts++;
+          try {
+            video.playbackRate = state.rate;
+            addDiagnosticLog('INFO', 'TRT_RATE_REAPPLIED', { rate: state.rate });
+          } catch (_) { state.active = false; }
+        }, 200);
+      });
+      video.addEventListener('emptied', () => {
+        state.active = false;
+        clearTimeout(state.timer);
+        state.timer = null;
+      });
+    }
+    clearTimeout(state.timer);
+    Object.assign(state, { rate, attempts: 0, timer: null, active: rate !== 1 });
+  }
 
   function setSpeed(rate) {
     const { video, player } = findVideoAndPlayer();
@@ -1876,8 +2009,15 @@
       const validRate = Math.min(3.0, Math.max(0.25, parseFloat(rate.toFixed(2))));
       targetEnforcedPlaybackRate = validRate;
       addDiagnosticLog('INFO', 'SPEED_REQUESTED', { rate: validRate });
+      if (currentActiveAdapterName === 'TrtAdapter' || /(^|\.)(trt1\.com\.tr|trtizle\.com|trt\.com\.tr)$/.test(HOSTNAME)) {
+        armTrtRateGuard(video, validRate);
+      }
       video.playbackRate = validRate;
       video.defaultPlaybackRate = validRate;
+      const shaka = findLibraryPlayer(video, 'shaka', player);
+      if (shaka && typeof shaka.trickPlay === 'function') {
+        try { shaka.trickPlay(validRate, false); } catch (_) {}
+      }
       
       if (player && typeof player.playbackRate === 'function') {
         try { player.playbackRate(validRate); } catch (e) {}
@@ -2121,6 +2261,29 @@
     return false;
   }
 
+  function requestQuality(chosen, video, player) {
+    const adapter = getActiveAdapter(video, player);
+    addDiagnosticLog('INFO', 'QUALITY_REQUESTED', { height: chosen.height });
+    let accepted = false;
+    try { accepted = adapter.applyQuality(chosen, video, player) === true; } catch (_) {}
+    if (!accepted) {
+      addDiagnosticLog('WARN', 'QUALITY_REJECTED');
+      showToast('Bu oynatıcıda kalite seçimi uygulanamadı.');
+      return false;
+    }
+    activeForcedQualityId = chosen.id;
+    activeForcedQualityLabel = chosen.label;
+    pendingQualityLabel = chosen.label;
+    pendingQualityHeight = chosen.height || 0;
+    clearTimeout(pendingTimeoutTimer);
+    pendingTimeoutTimer = setTimeout(() => {
+      pendingQualityLabel = '';
+      pendingQualityHeight = 0;
+      updateRealtimeResolutionBadge();
+    }, 3500);
+    return true;
+  }
+
   function cycleNextQuality() {
     const qualities = discoverStreamQualities();
     if (!qualities || qualities.length === 0) return;
@@ -2129,12 +2292,8 @@
     const nextIdx = (currentIdx + 1) % qualities.length;
     const chosen = qualities[nextIdx];
 
-    activeForcedQualityId = chosen.id;
-    activeForcedQualityLabel = chosen.label;
     const { video, player } = findVideoAndPlayer();
-    const adapter = getActiveAdapter(video, player);
-    addDiagnosticLog('INFO', 'QUALITY_REQUESTED', { height: chosen.height });
-    adapter.applyQuality(chosen, video, player);
+    requestQuality(chosen, video, player);
     renderDynamicQualityButtons();
   }
 
@@ -2210,6 +2369,11 @@
     }
 
     container.innerHTML = '';
+    if (qualities.length === 0) {
+      const message = document.createElement('span');
+      message.textContent = 'Bu oynatıcıda kullanılabilir kalite kontrolü bulunamadı.';
+      container.appendChild(message);
+    }
 
     qualities.forEach(q => {
       const btn = document.createElement('button');
@@ -2220,27 +2384,10 @@
 
       btn.onclick = (e) => {
         e.stopPropagation();
-        activeForcedQualityId = q.id;
-        activeForcedQualityLabel = q.label;
-        pendingQualityLabel = q.label;
-        
-        clearTimeout(pendingTimeoutTimer);
-        pendingTimeoutTimer = setTimeout(() => {
-          pendingQualityLabel = '';
-          updateRealtimeResolutionBadge();
-        }, 3500);
-
         const { video, player } = findVideoAndPlayer();
-        const adapter = getActiveAdapter(video, player);
-        addDiagnosticLog('INFO', 'QUALITY_REQUESTED', { height: q.height });
-        adapter.applyQuality(q, video, player);
+        requestQuality(q, video, player);
         renderDynamicQualityButtons();
-        
-        const badge = document.getElementById('pvc-realtime-res-badge');
-        if (badge) {
-          badge.textContent = `⏳ ${q.label} Uygulandı`;
-          badge.style.color = '#f59e0b';
-        }
+        updateRealtimeResolutionBadge();
       };
 
       container.appendChild(btn);
@@ -2273,33 +2420,24 @@
   }
 
   let periodicPingTimer = null;
+  let lastPingStatus = 'not-tested';
 
   async function testCdnPing(silent = false) {
     const { video, player } = findVideoAndPlayer();
     if (!video) {
+      lastPingStatus = 'no-video';
       if (!silent) showToast('Video bulunamadı');
       return null;
     }
-
-    let targetUrl = (player && typeof player.currentSrc === 'function') ? player.currentSrc() : '';
-    if (!targetUrl || targetUrl.startsWith('blob:')) targetUrl = video.currentSrc || video.src || '';
-
-    if (!targetUrl || targetUrl.startsWith('blob:')) {
-      const resources = performance.getEntriesByType('resource');
-      const mediaEntry = [...resources].reverse().find(r => 
-        r.name.includes('.ts') || r.name.includes('.m4s') || r.name.includes('.m3u8') || r.name.includes('mncdn') || r.name.includes('akamaized') || r.name.includes('kick') || r.name.includes('ivs') || r.name.includes('ercdn')
-      );
-      if (mediaEntry) targetUrl = mediaEntry.name;
-    }
-
-    if (!targetUrl) {
-      if (!silent) showToast('Ping için aktif CDN akışı bulunamadı');
-      return null;
-    }
-
-    let hostDisplay = 'CDN';
-    try { hostDisplay = new URL(targetUrl).hostname; } catch (e) {}
-
+    const mediaUrl = value => {
+      try {
+        const url = new URL(value);
+        return /^https?:$/.test(url.protocol) && /\.(m3u8|mpd|ts|m4s|mp4|webm)(?:$|\/)/i.test(url.pathname);
+      } catch (_) { return false; }
+    };
+    const perf = video.ownerDocument?.defaultView?.performance || performance;
+    const entries = perf.getEntriesByType('resource').filter(entry => mediaUrl(entry.name));
+    const latest = entries[entries.length - 1];
     const updatePingBadge = (ms) => {
       const pingBtn = document.getElementById('pvc-ping-btn');
       if (pingBtn) {
@@ -2307,27 +2445,46 @@
         pingBtn.style.color = ms <= 50 ? '#34d399' : (ms <= 120 ? '#38bdf8' : '#f59e0b');
       }
     };
-
+    // Hazır kaynak zamanlaması varsa ek ağ isteği yapmadan HTTP yanıt süresi gösterilir.
+    if (latest && latest.requestStart > 0 && latest.responseStart >= latest.requestStart) {
+      const ms = Math.round(latest.responseStart - latest.requestStart);
+      lastPingStatus = 'resource-timing';
+      updatePingBadge(ms);
+      if (!silent) showToast(`📡 Medya HTTP yanıtı: ${ms} ms (son istek)`);
+      return { ms, method: 'resource-timing' };
+    }
+    if (silent) { lastPingStatus = 'timing-unavailable'; return null; }
+    let targetUrl = video.currentSrc || video.src || '';
+    if (!mediaUrl(targetUrl)) targetUrl = latest?.name || '';
+    if (!targetUrl) {
+      lastPingStatus = 'no-source';
+      showToast('CDN ölçümü için erişilebilir medya isteği bulunamadı.');
+      return null;
+    }
+    // Manuel ölçüm: yalnızca HEAD, kimlik bilgisi/referrer yok, GET fallback yok.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
     try {
       const startTime = performance.now();
-      await fetch(targetUrl, { method: 'HEAD', cache: 'no-store', mode: 'cors' });
-      const ms = Math.round(performance.now() - startTime);
-      updatePingBadge(ms);
-      if (!silent) showToast(`📡 ${ms} ms (${hostDisplay})`);
-      return { ms, host: hostDisplay };
-    } catch (err) {
-      try {
-        const startTime = performance.now();
-        await fetch(targetUrl, { method: 'GET', cache: 'no-store', mode: 'no-cors' });
-        const ms = Math.round(performance.now() - startTime);
-        updatePingBadge(ms);
-        if (!silent) showToast(`📡 ${ms} ms (${hostDisplay})`);
-        return { ms, host: hostDisplay };
-      } catch (innerErr) {
-        if (!silent) showToast(`Ping ölçülemedi (${hostDisplay})`);
+      const response = await fetch(targetUrl, {
+        method: 'HEAD', cache: 'no-store', mode: 'cors', credentials: 'omit',
+        referrerPolicy: 'no-referrer', redirect: 'error', signal: controller.signal
+      });
+      if (!response.ok) {
+        lastPingStatus = 'http-rejected';
+        showToast('CDN, HEAD ölçümünü kabul etmedi.');
         return null;
       }
-    }
+      const ms = Math.round(performance.now() - startTime);
+      lastPingStatus = 'head';
+      updatePingBadge(ms);
+      showToast(`📡 Medya HTTP yanıtı: ${ms} ms (HEAD)`);
+      return { ms, method: 'head' };
+    } catch (err) {
+      lastPingStatus = controller.signal.aborted ? 'timeout' : 'blocked';
+      showToast(controller.signal.aborted ? 'CDN yanıt ölçümü zaman aşımına uğradı.' : 'CDN yanıtı tarayıcı veya sunucu kısıtı nedeniyle ölçülemedi.');
+      return null;
+    } finally { clearTimeout(timeout); }
   }
 
   function startPeriodicPingEngine() {
@@ -2401,8 +2558,8 @@
       : /chrom(e|ium)|edg\//i.test(navigator.userAgent) ? 'chromium'
       : /safari/i.test(navigator.userAgent) ? 'safari' : 'other';
     const quality = cachedDiscoveredQualities.find(item => item.id === activeForcedQualityId);
-    // Bu adaptörler şu an sabit kalite seçenekleri sunuyor; gerçek kalite API'si değiller.
-    const qualityControl = !adapter || ['GenericAdapter', 'ShakaPlayerAdapter', 'DashJsAdapter'].includes(adapter.name)
+    // Uygulanmamış adaptörler kalite kontrolü sunmaz; istekler başarı kanıtı değildir.
+    const qualityControl = !video || !adapter || ['GenericAdapter', 'DashJsAdapter'].includes(adapter.name)
       ? 'not-implemented' : 'requires-runtime-verification';
     return {
       reportSchemaVersion: 2,
@@ -2436,17 +2593,20 @@
         audioMode: diagnosticChoice(currentAudioMode, ['stereo', 'mono']),
         drmDetected: detectDrmStatus(video).isDrm === true,
         isShadowDom: isMediaInShadowDom === true,
-        subtitleLoaded: customSubtitleCues.length > 0
+        subtitleLoaded: customSubtitleCues.length > 0,
+        subtitleLoadStatus: diagnosticChoice(subtitleLoadStatus, ['not-loaded', 'loaded', 'empty', 'read-error'])
       } : null,
       quality: {
         control: qualityControl,
         requestedHeight: qualityControl === 'not-implemented' ? null : diagnosticNumber(quality?.height, 0, 4320),
-        cachedOptionCount: diagnosticCount(cachedDiscoveredQualities.length),
+        cachedOptionCount: diagnosticCount(video ? cachedDiscoveredQualities.length : 0),
         // getQualities() ve applyQuality() burada çağrılmaz; rapor salt okunurdur.
         verification: 'not-verified'
       },
+      cdnMeasurementStatus: diagnosticChoice(lastPingStatus,
+        ['not-tested', 'no-video', 'no-source', 'timing-unavailable', 'resource-timing', 'head', 'http-rejected', 'timeout', 'blocked']),
       recentEvents: collectDiagnosticEvents(),
-      problem: 'unspecified'
+      problem: !video || errorCode === 'NO_VIDEO_FOUND' ? 'detection' : 'unspecified'
     };
   }
 
@@ -2521,6 +2681,8 @@
     const mailLink = modal.querySelector('#pvc-send-mail-link');
     const ghLink = modal.querySelector('#pvc-open-github-link');
     const includeComment = modal.querySelector('#pvc-include-comment');
+    modal.querySelector('#pvc-report-problem').value = diagnosticChoice(payload.problem,
+      ['unspecified', 'detection', 'quality', 'speed', 'volume', 'subtitles', 'pip', 'hud'], 'unspecified');
 
     const refreshLinks = () => {
       const updatedJson = updatePayloadJson();
@@ -3291,7 +3453,21 @@
       reader.onload = (loadEvt) => {
         const content = loadEvt.target && loadEvt.target.result;
         if (typeof content === 'string') {
-          customSubtitleCues = parseSrtOrVttContent(content);
+          const parsedCues = parseSrtOrVttContent(content);
+          subFileInput.value = '';
+          if (parsedCues.length === 0) {
+            subtitleLoadStatus = 'empty';
+            addDiagnosticLog('WARN', 'SUBTITLE_PARSE_EMPTY');
+            if (subStatusText) {
+              subStatusText.textContent = 'Geçerli altyazı satırı okunamadı. SRT/VTT biçimini kontrol edin.';
+              subStatusText.style.color = '#f43f5e';
+            }
+            showToast('Altyazı yüklenemedi: geçerli zamanlanmış satır bulunamadı.');
+            return;
+          }
+          customSubtitleCues = parsedCues;
+          subtitleLoadStatus = 'loaded';
+          addDiagnosticLog('INFO', 'SUBTITLE_LOADED');
           subtitleFileName = file.name;
           subtitleOffsetMs = 0;
           const badge = document.getElementById('pvc-sub-offset-badge');
@@ -3308,6 +3484,16 @@
           showToast(`💬 Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
         }
       };
+      reader.onerror = () => {
+        subtitleLoadStatus = 'read-error';
+        addDiagnosticLog('WARN', 'SUBTITLE_READ_FAILED');
+        subFileInput.value = '';
+        if (subStatusText) {
+          subStatusText.textContent = 'Altyazı dosyası okunamadı.';
+          subStatusText.style.color = '#f43f5e';
+        }
+        showToast('Altyazı dosyası okunamadı.');
+      };
       reader.readAsText(file, 'UTF-8');
     });
 
@@ -3317,7 +3503,10 @@
       subToggleBtn.classList.toggle('pvc-active', subtitleOverlayEnabled);
       subToggleBtn.textContent = subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli';
       const { video } = findVideoAndPlayer();
-      if (video) renderCustomSubtitleCue(video);
+      if (video) {
+        injectNativeTextTrackCues(video);
+        renderCustomSubtitleCue(video);
+      }
     };
 
     popup.querySelector('#pvc-sub-sync-m100').onclick = (e) => { e.stopPropagation(); shiftSubtitleSync(-100); };
@@ -3428,6 +3617,7 @@
       testCdnPing(true);
 
       const { video } = findVideoAndPlayer();
+      if (!video) window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
       if (video) {
         monitorVideoResolution(video);
         const slider = popup.querySelector('#pvc-speed-slider');
