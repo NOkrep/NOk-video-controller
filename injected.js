@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.5.7 (Main World Engine)
+ * injected.js - NOk Video Controller v0.5.8 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,9 +17,10 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.5.7';
+  const EXTENSION_VERSION = '0.5.8';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.5.8', notes: 'İngilizce varsayılan dil; Player/Picture/Subtitles/Settings sekmeleri; bellekte paneli açık tutma, büyük yazı, yüksek kontrast ve hareket azaltma seçenekleri. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.7', notes: 'Bellek içi Türkçe/English arayüz, sabit dil sinyalleriyle çerçeve eşitlemesi, isteğe bağlı çözüm sonrası silme talebi; klavye akordeonu, slider adları ve kaynak temelli HMI değerlendirmesi. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.6', notes: 'Çerçeveler arasında tek çalışan HUD dalı; TRT elemente özel geri alınabilir hız kilidi ve sınırlı frekanslı fallback; Video.js VHS representations kalite yolu; Kick Radix ses handler önbelleği ve gerçek hız menüsü fallback; çift sentetik click düzeltmesi; elle istenen ve aktif adaptör ayrımı. Canlı Firefox/site doğrulaması bekliyor.' },
     { version: 'v0.5.5', notes: 'Altyazı display:none!important görünürlük hatası giderildi; videoya konumlandırma, native fullscreen/PiP track yolu ve sınırlı çizim durumu eklendi. Hls.js boş p etiketleri kaldırıldı, manifest/oynatılan çözünürlük ayrıldı, geç gelen seviye listesi olaylarla yenileniyor. Tek seviye tüm kaynağın tek kalite sunduğu kanıtı sayılmıyor. Canlı Firefox doğrulaması bekliyor.' },
@@ -39,6 +40,17 @@
   // UI-only gettext catalogue. No page content, subtitle cues or report JSON is translated.
   // Language and original DOM text live only in this frame's RAM.
   const UI_MESSAGES = {
+    'Kontrol grupları': 'Control groups',
+    'Oynatıcı': 'Player',
+    'Görüntü': 'Picture',
+    'Ayarlar': 'Settings',
+    'Erişilebilirlik': 'Accessibility',
+    'Paneli açık tut': 'Keep panel visible',
+    'Büyük yazı ve kontroller': 'Larger text and controls',
+    'Yüksek kontrast': 'High contrast',
+    'Panel animasyonlarını azalt': 'Reduce panel motion',
+    'Bu tercihler sayfa yenilenince sıfırlanır.': 'These preferences reset when the page reloads.',
+    'Klavye Kısayolları Devre Dışı (Açmak için tıklayın)': 'Keyboard shortcuts off (click to turn on)',
     'NOk Video Controller Denetim Masası': 'NOk Video Controller panel',
     'Dil': 'Language',
     'Dil seçimi yalnızca bu sayfa açıkken tutulur.': 'The language choice lasts only for this page.',
@@ -245,7 +257,7 @@
     'Video henüz bulunamadı': 'No video found yet',
     'Ölçülüyor...': 'Measuring…'
   };
-  let uiLanguage = /^tr(?:-|$)/i.test(navigator.language || '') ? 'tr' : 'en';
+  let uiLanguage = 'en';
   const uiOriginalText = new WeakMap();
   const uiOriginalAttributes = new WeakMap();
   const normalizeUiMessage = value => String(value).trim().replace(/\s+/g, ' ');
@@ -314,6 +326,118 @@
     if (announce) window.postMessage({ type: language === 'tr' ? 'PVC_LANGUAGE_TR' : 'PVC_LANGUAGE_EN' }, '*');
   }
   // END UI LOCALIZATION
+
+  // Presentation preferences are kept in this frame only; never added to diagnostics.
+  const hudAccessibility = {
+    keepVisible: false, largeText: false, highContrast: false,
+    reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+  };
+  function applyUiAccessibility(root) {
+    if (!root) return;
+    for (const [key, className] of Object.entries({
+      largeText: 'pvc-a11y-large-text', highContrast: 'pvc-a11y-contrast', reduceMotion: 'pvc-a11y-reduce-motion'
+    })) root.classList.toggle(className, hudAccessibility[key]);
+    if (root.id === 'pvc-quick-toast') root.style.setProperty('transition', hudAccessibility.reduceMotion
+      ? 'none' : 'opacity 0.2s ease, transform 0.2s ease', 'important');
+  }
+  function refreshUiAccessibility(popup) {
+    for (const id of ['pvc-controller-popup', 'pvc-error-modal', 'pvc-permissions-modal', 'pvc-adapter-modal', 'pvc-drm-modal', 'pvc-quick-toast']) {
+      applyUiAccessibility(document.getElementById(id));
+    }
+    resetIdleTimer(popup);
+    clampPopupToViewport(popup);
+  }
+  // END HUD ACCESSIBILITY
+
+  function setupHudNavigation(popup) {
+    const navigation = document.createElement('div');
+    navigation.className = 'pvc-hud-tabs pvc-hide-on-collapse';
+    navigation.setAttribute('role', 'tablist');
+    setUiAttribute(navigation, 'aria-label', 'Kontrol grupları');
+    const groups = [
+      { id: 'player', label: 'Oynatıcı', nodes: ['#pvc-section-speed', '#pvc-section-audio', '#pvc-section-quality'] },
+      { id: 'picture', label: 'Görüntü', nodes: ['#pvc-section-filters'] },
+      { id: 'subtitles', label: 'Altyazı', nodes: ['#pvc-section-subtitles'] },
+      { id: 'settings', label: 'Ayarlar', nodes: ['.pvc-language-row', '#pvc-adapter-bar', '#pvc-menu-footer'] }
+    ];
+    const panels = [], tabs = [];
+    popup.insertBefore(navigation, popup.querySelector('#pvc-section-speed'));
+    for (const group of groups) {
+      const tab = document.createElement('button');
+      tab.type = 'button'; tab.id = `pvc-tab-${group.id}`; tab.className = 'pvc-hud-tab';
+      tab.setAttribute('role', 'tab'); tab.setAttribute('aria-controls', `pvc-panel-${group.id}`);
+      setUiText(tab, group.label); navigation.appendChild(tab); tabs.push(tab);
+      const panel = document.createElement('div');
+      panel.id = `pvc-panel-${group.id}`; panel.className = 'pvc-hud-panel pvc-hide-on-collapse';
+      panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id);
+      // Every panel has a focus stop, including Settings whose first item is a label.
+      panel.tabIndex = 0;
+      for (const selector of group.nodes) {
+        const node = popup.querySelector(selector);
+        if (node) panel.appendChild(node); // Move existing controls; retain values, state and listeners.
+      }
+      popup.appendChild(panel); panels.push(panel);
+      if (group.id === 'picture' || group.id === 'subtitles') {
+        panel.querySelector('.pvc-menu-section')?.classList.remove('pvc-section-collapsed');
+        panel.querySelector('.pvc-section-header')?.setAttribute('aria-expanded', 'true');
+      }
+    }
+    function activate(index, moveFocus = false) {
+      tabs.forEach((tab, i) => {
+        tab.setAttribute('aria-selected', String(i === index));
+        tab.tabIndex = i === index ? 0 : -1;
+        panels[i].hidden = i !== index;
+      });
+      if (moveFocus) tabs[index].focus();
+      resetIdleTimer(popup); clampPopupToViewport(popup);
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', e => { e.stopPropagation(); activate(index); });
+      tab.addEventListener('keydown', e => {
+        let next;
+        if (e.key === 'ArrowRight') next = (index + 1) % tabs.length;
+        if (e.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+        if (e.key === 'Home') next = 0;
+        if (e.key === 'End') next = tabs.length - 1;
+        if (next === undefined) return;
+        e.preventDefault(); e.stopPropagation(); activate(next, true);
+      });
+    });
+    const settings = panels[3];
+    const accessibility = document.createElement('details');
+    accessibility.id = 'pvc-accessibility'; accessibility.className = 'pvc-accessibility';
+    const summary = document.createElement('summary');
+    setUiText(summary, 'Erişilebilirlik'); accessibility.appendChild(summary);
+    const options = [
+      ['keepVisible', 'Paneli açık tut'], ['largeText', 'Büyük yazı ve kontroller'],
+      ['highContrast', 'Yüksek kontrast'], ['reduceMotion', 'Panel animasyonlarını azalt']
+    ];
+    for (const [key, label] of options) {
+      const row = document.createElement('label'); row.className = 'pvc-setting-row';
+      const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
+      checkbox.id = `pvc-a11y-${key}`; checkbox.checked = hudAccessibility[key];
+      const caption = document.createElement('span'); setUiText(caption, label);
+      row.appendChild(checkbox); row.appendChild(caption); accessibility.appendChild(row);
+      checkbox.addEventListener('change', e => {
+        e.stopPropagation(); hudAccessibility[key] = checkbox.checked;
+        refreshUiAccessibility(popup);
+      });
+    }
+    const shortcutRow = document.createElement('div'); shortcutRow.className = 'pvc-setting-row';
+    const shortcutLabel = document.createElement('span'); setUiText(shortcutLabel, 'Klavye Kısayolları');
+    shortcutRow.appendChild(shortcutLabel);
+    const shortcutButton = popup.querySelector('#pvc-hotkeys-toggle-btn');
+    shortcutButton.setAttribute('aria-pressed', String(hotkeysEnabled));
+    shortcutRow.appendChild(shortcutButton); accessibility.appendChild(shortcutRow);
+    const note = document.createElement('p'); note.className = 'pvc-settings-note';
+    setUiText(note, 'Bu tercihler sayfa yenilenince sıfırlanır.');
+    accessibility.appendChild(note);
+    settings.insertBefore(accessibility, settings.querySelector('#pvc-adapter-bar'));
+    accessibility.addEventListener('toggle', () => { resetIdleTimer(popup); clampPopupToViewport(popup); });
+    applyUiAccessibility(popup);
+    activate(0);
+  }
+  // END HUD NAVIGATION
 
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
@@ -807,6 +931,7 @@
 
       const container = getActiveContainer();
       container.appendChild(toast);
+      applyUiAccessibility(toast);
 
       setTimeout(() => {
         if (toast.parentElement) {
@@ -3232,6 +3357,7 @@
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
+    applyUiAccessibility(modal);
 
     ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keyup'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
@@ -3326,6 +3452,7 @@
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
+    applyUiAccessibility(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         if (e.target === modal) modal.remove();
@@ -3383,6 +3510,7 @@
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
+    applyUiAccessibility(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         if (e.target === modal) modal.remove();
@@ -3435,6 +3563,7 @@
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
+    applyUiAccessibility(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         if (e.target === modal) modal.remove();
@@ -3452,6 +3581,7 @@
 
     clearTimeout(idleTimerStep1);
     clearTimeout(idleTimerStep2);
+    if (hudAccessibility.keepVisible) return;
 
     idleTimerStep1 = setTimeout(() => {
       if (!popup.matches(':hover') && !popup.contains(document.activeElement)) {
@@ -3929,6 +4059,9 @@
       resetIdleTimer(popup);
       hotkeysEnabled = !hotkeysEnabled;
       hkBtn.classList.toggle('pvc-btn-active', hotkeysEnabled);
+      hkBtn.setAttribute('aria-pressed', String(hotkeysEnabled));
+      setUiAttribute(hkBtn, 'title', hotkeysEnabled ? 'Klavye Kısayolları Aktif (Kapatmak için tıklayın)'
+        : 'Klavye Kısayolları Devre Dışı (Açmak için tıklayın)');
       showToast(hotkeysEnabled ? '⌨️ Klavye Kısayolları Aktif' : '🔇 Klavye Kısayolları Devre Dışı');
     };
 
@@ -4200,6 +4333,7 @@
       clampPopupToViewport(popup);
     };
 
+    setupHudNavigation(popup);
     renderDynamicQualityButtons();
     updateCollapsedSummaryBar();
     return popup;

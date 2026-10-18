@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "author": "NOkrep",

@@ -43,11 +43,13 @@ function harness(language = 'en-US', roots = {}) {
   return { context, signals, run: code => vm.runInContext(code, context) };
 }
 
-test('browser language chooses Turkish only for tr; unsupported languages use English', () => {
-  for (const [language, expected] of [['tr-TR', 'tr'], ['TR', 'tr'], ['en-GB', 'en'], ['de-DE', 'en'], ['', 'en']]) {
+test('every browser language starts in English; Turkish remains an explicit choice', () => {
+  for (const [language, expected] of [['tr-TR', 'en'], ['TR', 'en'], ['en-GB', 'en'], ['de-DE', 'en'], ['', 'en']]) {
     assert.equal(harness(language).run('uiLanguage'), expected);
   }
-  const h = harness('en');
+  const h = harness('tr-TR');
+  h.run('setUiLanguage("tr", false)'); assert.equal(h.run('uiLanguage'), 'tr');
+  h.run('setUiLanguage("en", false)');
   h.run('setUiLanguage("invalid")'); assert.equal(h.run('uiLanguage'), 'en'); assert.equal(h.signals.length, 0);
 });
 
@@ -97,7 +99,7 @@ test('main panel English text and accessible names contain no untranslated Turki
   const start = source.indexOf('    popup.innerHTML = `');
   const end = source.indexOf('\n    `;', start);
   const literal = source.slice(start + '    popup.innerHTML = '.length, end + '\n    `'.length);
-  const h = harness(); h.context.EXTENSION_VERSION = '0.5.7';
+  const h = harness(); h.context.EXTENSION_VERSION = '0.5.8';
   h.context.root = parseMarkup(h.run(literal)); h.run('localizeUi(root)');
   const remaining = [];
   function inspect(node) {
@@ -111,7 +113,7 @@ test('main panel English text and accessible names contain no untranslated Turki
 
 test('all dialog templates translate privacy, deletion and shortcut explanations', () => {
   const h = harness();
-  Object.assign(h.context, { EXTENSION_VERSION: '0.5.7', HOSTNAME: 'example.invalid', drm: { keySystem: 'Widevine' }, optionsHtml: '' });
+  Object.assign(h.context, { EXTENSION_VERSION: '0.5.8', HOSTNAME: 'example.invalid', drm: { keySystem: 'Widevine' }, optionsHtml: '' });
   const templates = [...source.matchAll(/modal\.innerHTML = (`[\s\S]*?`);/g)];
   assert.equal(templates.length, 4);
   for (const template of templates) {

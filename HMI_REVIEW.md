@@ -1,6 +1,8 @@
 # NOk Video Controller — HMI değerlendirmesi
 
-19 Ekim 2026 · v0.5.7 geliştirme sürümü
+19 Ekim 2026 · v0.5.8 geliştirme sürümü
+
+İlk bulgular v0.5.7 yerleşimine aittir; v0.5.8 değişiklikleri ve kalan öneriler aşağıda ayrıca belirtilmiştir.
 
 Bu değerlendirme `injected.js`, `injected.css` ve mevcut kullanıcı raporlarına dayalı bir kullanılabilirlik incelemesidir. Canlı tarayıcıda görsel denetim, ekran okuyucu testi, görev süresi ölçümü veya kullanıcı araştırması yapılmadı. Aşağıdaki öncelikler ürün değerlendirmesidir; bir WCAG uygunluk belgesi değildir.
 
@@ -35,7 +37,7 @@ Akordeon için Enter/Space, `aria-expanded` ve `aria-controls`; dialog için oda
 
 Üstte marka, açık bir oynat/duraklat kontrolü, küçültme ve kapatma; hemen altında hız, ses ve gerçek oynatma durumu. Kalite, altyazı ve görüntü ayarları mevcut açılır bölümlerde kalabilir. Dil seçimi görünür bir metinli kontrol olmalı; bayrak kullanmak gerekmiyor. Adaptör seçimi, teknik ayrıntılar, HTTP ölçümü ve rapor gelişmiş/yardım alanında gruplanabilir. Bu düzen henüz uygulanmadı.
 
-Dil seçimi v0.5.7'de `Türkçe / English` olarak ayrı satırda eklendi. Tarayıcı dili Türkçeyse Türkçe, diğer durumlarda İngilizce başlar. Seçim sayfa belleğinde kalır, yenilemede sıfırlanır. Dil değişimi paneli yeniden kurmaz; açıklama, kutu seçimi, kaydırıcı değerleri ve açık bölümler korunur. Altyazı metni, dosya adı ve teşhis JSON'u çevrilmez.
+Dil seçimi v0.5.7'de `Türkçe / English` olarak ayrı satırda eklendi. v0.5.8 itibarıyla tarayıcı dilinden bağımsız İngilizce başlar; dil Settings alanındadır. Seçim sayfa belleğinde kalır, yenilemede sıfırlanır. Dil değişimi paneli yeniden kurmaz; açıklama, kutu seçimi, kaydırıcı değerleri ve açık bölümler korunur. Altyazı metni, dosya adı ve teşhis JSON'u çevrilmez.
 
 ## Canlı doğrulama için kabul ölçütleri
 
@@ -46,3 +48,26 @@ Dil seçimi v0.5.7'de `Türkçe / English` olarak ayrı satırda eklendi. Taray�
 5. Silme kutusu kapalıyken talep alanının olmaması; açıkken önizleme ve taslakta talebin bulunması; hiçbir durumda özel açıklama veya JSON'un URL'ye eklenmemesi.
 
 Node testleri çeviri, durum koruma, sabit dil sinyalleri ve rapor sınırını denetler. Yazı okunaklılığı, kontrast, gerçek hedef boyutları, ekran okuyucu duyuruları ve canlı oynatıcı geri bildirimleri ayrıca tarayıcıda sınanmalıdır.
+
+
+## v0.5.8 ile uygulanan düzen
+
+Player, Picture, Subtitles ve Settings sekmeleri eklendi. Hız/ses/kalite ana sekmede, filtreler ve altyazı ayrı sekmelerde; dil, adaptör ve yardım Settings içindedir. Kısayol düğmesi kapalı başlayan Accessibility alanına taşındı. Yeni alan otomatik gizlemeyi durdurma, büyük yazı/kontroller, yüksek kontrast ve panel hareketlerini azaltmayı içerir. Yalnızca seçili panel görünür; sekme geçişi kontrol/dosya durumunu korur. Bu adımlar üstteki gruplama ve gizlenme sorunlarını ele alır; görsel/yardımcı teknoloji doğrulaması beklenir. Açılır pencerelerdeki odak yönetimi, istenen/gözlenen değer ayrımı ve diğer bulgular henüz açık.
+
+Ek erişilebilirlik adayları: klavye kısayollarını yeniden atama; altyazı yazı boyutu, arka planı ve konumunu ayarlama; daha büyük dokunma hedefleri ve ayarlanabilir arayüz ölçeği; kaydırıcı yanında sayısal giriş; odak geri verme/Escape/Tab çevrimi; renkle birlikte yazılı durum. Bunlar öneridir, bu sürümde uygulanmadı.
+
+## Okunabilirlik için renk yönü ve örnek kaynaklar
+
+Önerim mat koyu gri, daha az parlama/gölge ve tek mavi vurgu. Sürekli beyaz olmayan kırık beyaz ana metin, yeterince açık ikincil metin; yeşil/kehribar/kırmızı yalnızca durumlarda ve metin/simgeyle beraber kullanılmalı. Varsayılan tema, görsel yön seçimi beklenirken korunmuştur; yüksek kontrast isteğe bağlıdır.
+
+| Rol | Önerilen renk |
+| --- | --- |
+| Ana zemin | `#111827` |
+| Kart/kontrol zemini | `#1F2937` |
+| Ana metin | `#F3F4F6` |
+| İkincil metin | `#CBD5E1` |
+| Etkin kontrol/vurgu | `#60A5FA` |
+
+Önerilen opak renk çiftlerinde hesaplanan kontrast: ana metin/ana zemin 16.12:1, ikincil metin/kart zemini 9.89:1, vurgu/kart zemini 5.77:1. Normal metinde en az 4.5:1 kontrast hedeflenmeli; bu yalnızca renk çiftinin hesabıdır, gerçek HUD'daki saydamlık, odak, hover ve devre dışı durumları ayrıca ölçülmelidir. [W3C kontrast açıklaması](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html).
+
+İncelenebilecek kaynaklar: [Mobbin](https://mobbin.com/) gerçek ürün ekranları ve ayar akışları; [Dribbble — browser extension](https://dribbble.com/search/browser-extension) eklenti tasarım konseptleri; [Dark Mode Design](https://www.darkmodedesign.com/) koyu tema renk/boşluk/okunabilirlik örnekleri. Konsept görselleri tek başına kullanılabilirlik veya erişilebilirlik kanıtı değildir. Arama için “browser extension”, “media player”, “settings panel”, “compact controls” kullanılabilir.

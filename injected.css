@@ -1,5 +1,5 @@
 /**
- * injected.css - NOk Video Controller v0.5.7
+ * injected.css - NOk Video Controller v0.5.8
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -818,4 +818,86 @@
   background: rgba(56, 189, 248, 0.18) !important;
   border-color: #38bdf8 !important;
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* Task navigation: hidden panels must not be restored by host-page display rules. */
+#pvc-controller-popup .pvc-hud-panel[hidden] { display: none !important; }
+#pvc-controller-popup .pvc-hud-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 3px !important;
+  margin: 0 0 10px !important;
+  padding: 3px !important;
+  background: #0f172a !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+}
+#pvc-controller-popup .pvc-hud-tab {
+  min-width: 0 !important;
+  min-height: 32px !important;
+  padding: 5px 2px !important;
+  border: 1px solid transparent !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  font: 600 12px/1.4 system-ui, sans-serif !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  cursor: pointer !important;
+}
+#pvc-controller-popup .pvc-hud-tab[aria-selected="true"] {
+  background: #1e3a5f !important;
+  color: #f8fafc !important;
+  border-bottom: 3px solid #7dd3fc !important;
+}
+#pvc-controller-popup.pvc-collapsed .pvc-hud-tabs,
+#pvc-controller-popup.pvc-collapsed .pvc-hud-panel { display: none !important; }
+#pvc-controller-popup .pvc-accessibility {
+  margin: 0 0 10px !important;
+  padding: 8px !important;
+  border: 1px solid #64748b !important;
+  border-radius: 8px !important;
+  color: #f1f5f9 !important;
+}
+#pvc-controller-popup .pvc-accessibility summary {
+  min-height: 28px !important;
+  font: 600 13px/1.5 system-ui, sans-serif !important;
+  cursor: pointer !important;
+}
+#pvc-controller-popup .pvc-setting-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  min-height: 32px !important;
+  margin: 5px 0 !important;
+  font: 400 13px/1.5 system-ui, sans-serif !important;
+}
+#pvc-controller-popup .pvc-setting-row input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px !important;
+  accent-color: #38bdf8 !important;
+}
+#pvc-controller-popup .pvc-settings-note {
+  font: 400 12px/1.5 system-ui, sans-serif !important;
+  color: #cbd5e1 !important;
+}
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-large-text :is(span, button, select, input, p, label, summary, textarea, pre) {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-large-text :is(button, select) { min-height: 32px !important; }
+#pvc-controller-popup.pvc-a11y-large-text .pvc-section-header {
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-contrast { background: #080c14 !important; border-color: #cbd5e1 !important; }
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-contrast :is(span, p, label, summary, button, select, input, textarea, pre, a) { color: #f8fafc !important; }
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-contrast :is(button, select, textarea) { background: #182235 !important; border-color: #94a3b8 !important; }
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-contrast :focus-visible { outline-color: #fde047 !important; }
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-reduce-motion, :is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
 }

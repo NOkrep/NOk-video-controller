@@ -1,9 +1,9 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.7 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
+> **Sürüm:** v0.5.8 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.7 (Türkçe/English UI, bellek içi dil seçimi, isteğe bağlı silme talebi ve HMI incelemesi)
+> **Son Güncelleme:** v0.5.8 (İngilizce başlangıç, görev sekmeleri ve bellek içi erişilebilirlik tercihleri)
 
 ---
 
@@ -377,7 +377,21 @@ Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-st
 - **HMI:** Bölüm başlıklarına Tab, Enter/Space, `aria-expanded`/`aria-controls`; beş range kontrolüne ad; tüm pencerelere focus-visible stili eklendi. HUD focusin/focusout ile görünür olur; önceki odak içindeyken gizlenmeme koşulu korunur. SELECT ve diğer form kontrolleri sürükleme başlatmaz; HUD klavye olayları da sayfaya kabarcıklanmaz. HTTP ölçümü “CDN yanıtı” adıyla sunulur. DRM anahtar adı HTML yerine metin olarak yazılır. Açılır pencerelerin odak yönetimi ve diğer HMI önerileri halen açık; `HMI_REVIEW.md` canlı test veya uygunluk belgesi değildir.
 - **Doğrulama:** Çeviri kataloğu/parametreleri, panel ve dört pencerenin İngilizce metinleri, dil değişiminde form/JSON/altyazı koruması, kardeş/yeni çerçeve sinyalleri, silme talebi ve özel metnin URL'ye girmemesi Node testleriyle sınanır. 59 Node testi geçti; sözdizimi ve diff kontrolleri temiz. Gerçek Firefox/Chromium yerleşim, ekran okuyucu ve site testi beklenir.
 
+### 4.18 v0.5.8 — İngilizce Başlangıç, Sekmeler ve Erişilebilirlik
+
+- **İngilizce başlangıç:** `uiLanguage = 'en'` sabittir; v0.5.7'deki `navigator.language` varsayılanı kaldırılmıştır. Yeni sayfa her zaman İngilizcedir. Kullanıcının Türkçe seçimi sayfa belleğinde korunur, dil sinyalleri önceki protokolle çerçeveler arasında eşitlenir. Eklenti yönetim açıklaması tarayıcının yerel ayar sistemini kullanmaya devam eder.
+- **Görev sekmeleri:** `setupHudNavigation` Player (hız/ses/kalite), Picture (filtreler), Subtitles (yükleme/senkron), Settings (dil/erişilebilirlik/adaptör/yardım) oluşturur. Var olan düğümler appendChild ile taşınır; yeniden innerHTML kurulmaz. Değerler, dosya girdisi ve handler kimlikleri korunur. Görüntü/altyazı bölümleri kendi sekmelerinde açık başlar. Adaptör ve yardım erişilebilirlik altında yanlış gruplanmaz; Settings içinde ayrı kalır. Ana durum, DRM ve video bulamama uyarıları sekmelerin dışında kalır.
+- **Sekme klavyesi:** tablist/tab/tabpanel, aria-controls/labelledby/selected, roving tabindex; tıklama ve yatay oklar/Home/End seçimi. Seçili olmayan panelin `hidden` niteliğini koruyan önemli CSS kuralı ve mini modda sekme/panel gizleme vardır. Seçim oynatıcı API'sini çağırmaz. Olay izolasyonu korunur.
+- **Sunum tercihleri:** `hudAccessibility` çerçeve RAM'inde keepVisible/largeText/highContrast/reduceMotion tutar. Native details alanı başlangıçta kapalıdır; native label/checkbox kullanılır. Kısayol düğmesi buraya taşınır ve aria-pressed/title güncellenir. keepVisible açıkken fade timer kurulmaz; açma/kapama önceki timer'ları temizler. Büyük metin/kontrast/hareket sınıfları HUD, açık ve sonradan açılan pencereler ve toast'a uygulanır. CSS özgüllüğü mevcut önemli kuralları aşacak şekilde kök ID'lere bağlıdır. Hareket azaltma başlangıç değeri `prefers-reduced-motion`; elle kapatılabilir. Medya filtreleri ve DRM ses yolu değiştirilmez.
+- **Gizlilik:** Bu yeni sunum tercihleri rapora eklenmez, ağdan okunmaz, kalıcı yazılmaz ve çerçeveler arasında gönderilmez. Her yeni çerçeve kendi varsayılanıyla başlar; dil eşitlemesi bundan ayrıdır. Panel kapatma/açma aynı DOM ve RAM'i korur, sayfa yenileme sıfırlar.
+- **Doğrulama:** `tests/hud-navigation.test.cjs` gerçek kaynak fonksiyonlarını DOM/olay modeliyle sınar: ilk sekme ve gizleme, klavye/odak seçimi, slider/file/handler kimliği, timer iptali, odak içindeyken görünürlük, sunum sınıfları/varsayılanları ve dil değişiminde seçimin korunması. Toplam 64 Node testi geçti; sözdizimi/diff kontrolleri temiz. Bu testler CSS piksel yerleşimi, fullscreen/PiP ve ekran okuyucu sonucu değildir; canlı Firefox/Chromium doğrulaması beklenir. `HMI_REVIEW.md` güncel tasarım önerilerini içerir.
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
+
+### v0.5.8 (Geliştirme — Canlı Test Bekliyor)
+- Tarayıcı dilinden bağımsız İngilizce başlangıç ve dört görev sekmesi.
+- Kapalı erişilebilirlik alanı: açık tutma, büyük metin/kontroller, yüksek kontrast, azaltılmış hareket ve kısayol düğmesi.
+- Sunum tercihleri çerçeve RAM'inde, rapordan ayrı; gerçek tarayıcı testi bekleniyor.
 
 ### v0.5.7 (Geliştirme — Canlı Test Bekliyor)
 - Türkçe/English UI ve çerçeveler arasında yalnızca RAM'de dil tercihi.
@@ -501,6 +515,7 @@ NOk-video-controller/
 │   ├── diagnostics.test.cjs    # Bağımlılıksız Node gizlilik/rapor sınırı testleri
 │   ├── player-controls.test.cjs # Altyazı, instance/kalite/hız, iframe ve HTTP regresyonları
 │   ├── frame-coordination.test.cjs # Kardeş/iç içe iframe HUD koordinasyonu
+│   ├── hud-navigation.test.cjs # Sekmeler, durum koruma ve erişilebilirlik tercihleri
 │   ├── localization.test.cjs   # Dil/DOM durum koruma ve çeviri testleri
 │   ├── kick-ui.test.cjs        # Radix ses handler ve hız menüsü regresyonları
 │   └── ui-preview-server.cjs   # Localhost sentetik altyazı/HLS manuel önizlemesi
@@ -518,7 +533,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.7; canlı tarayıcı/site testi bekliyor).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.8; canlı tarayıcı/site testi bekliyor).
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:
