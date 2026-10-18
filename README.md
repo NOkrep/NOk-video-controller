@@ -1,4 +1,4 @@
-# NOk Video Controller (v0.5.4 — geliştirme)
+# NOk Video Controller (v0.5.5 — geliştirme)
 
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
@@ -38,6 +38,10 @@
 
 ## Geliştirme Doğrulaması
 
-`node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs` gizlilik sınırını, sorun seçimini, SRT/VTT ayrıştırmasını, seçili videoya ait oynatıcı/kalite çağrılarını, TRT hız korumasını, iframe sinyallerini ve HTTP ölçümünü Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.4 için canlı doğrulama beklenmektedir.
+`node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs` gizlilik sınırını, sorun seçimini, altyazı ayrıştırma/çizim komutlarını, HLS etiket/envanterini, oynatıcı/kalite çağrılarını, TRT hız korumasını, iframe sinyallerini ve HTTP ölçümünü Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.5 için canlı doğrulama beklenmektedir.
 
 v0.5.4'te gerçek kalite API'si bulunmayan oynatıcılarda göstermelik çözünürlük seçenekleri sunulmaz. TRT'de ulaşılabilen Shaka instance'ı üzerinden kalite/hız isteği iletilir. Standart SRT/VTT dosyalarındaki `-->` sonrası boşluk hatası giderildi. Eklentiyi yeniden yükledikten sonra açık medya sayfalarını da yenileyin; erken instance kancaları ve iframe stilleri ancak yeni sayfa yüklemesinde devreye girer.
+
+v0.5.5'te altyazıyı gizli tutan CSS önceliği düzeltildi; metin seçili videoya konumlandırılır. HLS çözünürlük metadatası eksikse boş `p` gösterilmez: örneğin `720p · oynatılan` yalnızca videodan ölçülen değerdir. Tek seviye görülmesi, kaynakta başka kalite olmadığı garantisi değildir. Yeni manifest/seviye olaylarında liste yenilenir; rapor yalnızca sınırlı adet ve durum kodları içerir.
+
+İsteğe bağlı sentetik manuel önizleme: `node tests/ui-preview-server.cjs`, ardından yerel tarayıcıda `http://127.0.0.1:4817/`. Örnek düğmeler sahte HLS metadatası ve üretilmiş SRT kullanır; gerçek site/HLS entegrasyon testi değildir. Otomatik tarayıcı önizlemesi bu ortamda doğrulanamadı.

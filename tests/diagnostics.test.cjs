@@ -68,8 +68,10 @@ function harness(options = {}) {
     audioGainNodeInstance: { gain: { value: 2 } },
     audioContextInstance: { state: 'running' },
     audioSourceElementMap: new WeakMap(),
-    customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleLoadStatus: 'loaded', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
-    EXTENSION_VERSION: '0.5.4', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
+    customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleLoadStatus: 'loaded', subtitleRenderStatus: 'no-active-cue', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
+    findLibraryPlayer: () => options.hls || null,
+    observedHlsPlayers: new WeakMap(options.hls ? [[options.hls, { manifestObserved: true, declaredLevelCount: options.hls.levels.length }]] : []),
+    EXTENSION_VERSION: '0.5.5', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
     GITHUB_REPO_URL: 'https://github.com/NOkrep/NOk-video-controller',
     DEVELOPER_EMAIL: 'developer@example.invalid',
     fetch: () => { throw new Error('Report must not make network requests'); }
@@ -176,6 +178,24 @@ test('generic quality placeholders are never reported as verified control', () =
   assert.equal(trt.quality.requestedHeight, 720);
   assert.equal(trt.videoState.resolutionClass, 'fhd');
   assert.equal(trt.quality.verification, 'not-verified');
+});
+
+test('Hls report distinguishes player inventory from resolution metadata without leaking manifest data', () => {
+  const h = harness({ hls: { levels: [{ height: 0, url: 'https://PRIVATE_MANIFEST/SECRET' }] } });
+  const p = h.payload();
+  assert.equal(p.quality.inventoryScope, 'bound-hls-player');
+  assert.equal(p.quality.playerLevelCount, '1');
+  assert.equal(p.quality.knownResolutionCount, '0');
+  assert.equal(p.quality.manifestObserved, true);
+  assert.equal(p.quality.declaredLevelCount, '1');
+  assert.equal(JSON.stringify(p).includes('PRIVATE_MANIFEST'), false);
+  assert.equal(JSON.stringify(p).includes('SECRET'), false);
+});
+
+test('subtitle render status exposes cue gap without exporting subtitles or timestamps', () => {
+  const p = harness().payload();
+  assert.equal(p.videoState.subtitleRenderStatus, 'no-active-cue');
+  assert.equal(JSON.stringify(p).includes('PRIVATE_SUBTITLE'), false);
 });
 
 test('unexpected player/error strings are dropped', () => {

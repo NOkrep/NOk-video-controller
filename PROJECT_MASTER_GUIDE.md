@@ -1,9 +1,9 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.4 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
+> **Sürüm:** v0.5.5 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.4 (TRT/oynatıcı instance seçimi, altyazı ayrıştırması, iframe panel sinyali, HTTP ölçümü ve otomatik sorun seçimi)
+> **Son Güncelleme:** v0.5.5 (Altyazı görünürlüğü ve video konumu, HLS çözünürlük kaynağı/envanter olayları)
 
 ---
 
@@ -343,7 +343,24 @@ Ham raporlar, tokenlar, adresler ve kullanıcıya özgü bilgiler repoya kopyala
 
 API kaynakları: [Shaka Player API](https://shaka-project.github.io/shaka-player/docs/api/shaka.Player.html), [Shaka UI Controls](https://shaka-project.github.io/shaka-player/docs/api/shaka.ui.Controls.html), [Hls attachMedia](https://hlsjs.video-dev.org/api-docs/hls.js.hls.attachmedia).
 
+### 4.15 v0.5.5 — Altyazı Görünürlüğü ve HLS Envanteri
+
+- **Kullanıcı kanıtı:** v0.5.4 Firefox raporu bağlı HlsJsAdapter, `subtitleLoaded: true`, `subtitleLoadStatus: loaded` ve bir HLS seviyesi gösteriyor; kullanıcı metnin görünmediğini ve düğmede yalnızca `p` yazdığını bildirdi. Bu rapor altyazının ekranda çizildiğini veya site genelinde tek kalite olduğunu kanıtlamaz.
+- **Görünürlük hatası:** CSS'te `#pvc-subtitle-overlay { display:none!important }` bulunurken JS yalnızca normal `style.display='block'` veriyordu. Gösterme/gizleme artık inline `setProperty(...,'important')` kullanır. Yükleme sırasında seçili video mutlaka `monitorVideoResolution` ile izlenir. Normal katman videonun görünür alanına yerleştirilir; erişilebilir iframe koordinatları üst pencereye çevrilir. Doğrudan video fullscreen/standart PiP durumunda varsa native TextTrack `showing` yapılır, overlay gizlenir; çıkışta native track `hidden` ve overlay etkin olur. Firefox'un yerleşik PiP'inde bu standart olayların çalışması garanti edilmez.
+- **Gizlilik odaklı çizim durumu:** `subtitleRenderStatus` yalnızca `not-loaded`, `disabled`, `no-video`, `no-active-cue`, `overlay-requested`, `native-requested`, `video-offscreen` değerlerinden biridir. İstek durumu gerçek piksel görünürlüğünü kanıtlamaz. Cue metni, zamanları, dosya adı, video konumu ve ekran boyutu rapora girmez. Altyazı mevcut konumda eşleşmiyorsa durum `no-active-cue` olur; bu eşleşmeme yükleme hatası değildir.
+- **HLS etiketi:** Öncelik `level.height`, ardından `attrs.RESOLUTION` değeridir. Eksikse yalnızca oynatılan seviyede video yüksekliği `720p · oynatılan` gibi gösterilebilir; bu ölçüm manifest yüksekliği olarak kaydedilmez (`height: 0`, raporda `requestedHeight: null`). Diğer seviyelere aktif videonun boyutu kopyalanmaz. Çözünürlük bilinmiyorsa gerçek bitrate veya `Seviye N` kullanılır. Boş `p`, `undefinedp`, keyfi NAME/URL etiketleri ve hayali çözünürlükler üretilmez.
+- **Envanterin sınırı:** `quality.inventoryScope` bağlı HLS oynatıcısını belirtir; `playerLevelCount`, `knownResolutionCount`, `declaredLevelCount` yalnızca adet aralıklarıdır. `manifestObserved` mevcut kancanın MANIFEST_LOADED olayını görüp görmediğini belirtir; olayın kaçırılması kaynakta kalite olmadığı anlamına gelmez. `adaptiveMode` yalnızca `manualLevel` değerinden `auto/manual/unknown` olarak çıkarılır. `inventoryCompleteness: not-verified` sabittir: tek kayıt tüm sitede tek kalite bulunduğunu veya otomatiğin çalıştığını kanıtlamaz. Yeni ağ isteği veya manifest indirmesi yapılmaz; kaynak URL/metni rapora eklenmez.
+- **Geç gelen seviyeler:** `hlsManifestLoading`, `hlsManifestLoaded`, `hlsManifestParsed`, `hlsLevelsUpdated`, `hlsLevelSwitched` olayları gözlenir. Yükleme başlangıcı önceki manifest adet bilgisini sıfırlar. 100ms birleştirilmiş yenileme yalnızca seçili videonun düğmelerini günceller; aynı instance'a tekrar dinleyici eklenmez. Tek seviyede arayüz yalnızca "oynatıcı 1 seviye bildiriyor" der; kaynağın tek kalite sunduğunu iddia etmez.
+- **Doğrulama:** 38 Node testi; HLS eksik metadata/sonradan gelen seviyeler, CSS önceliği için inline çizim komutu, cue boşluğu, native track geçişi ve rapor gizliliği kapsanır. Gerçek layout/Firefox testi değildir. `tests/ui-preview-server.cjs` localhost üzerinde gerçek CSS/üretim betiğiyle sentetik HLS ve örnek SRT sunar. Bu ortamın tarayıcısı localhost'a ulaşamadı; bağımsız `data:` önizlemesi de URL güvenlik politikasıyla reddedildi. Başka bir tarayıcı yolu denenmedi; otomatik görsel doğrulama tamamlanmadı. Önizleme sunucusu durduruldu.
+
+API kaynakları: [Hls Level metadatası](https://hlsjs.video-dev.org/api-docs/hls.js.level), [Hls olayları](https://hlsjs.video-dev.org/api-docs/hls.js.events).
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
+
+### v0.5.5 (Geliştirme — Canlı Test Bekliyor)
+- Altyazı `display:none!important` öncelik hatası, videoya konumlandırma ve native track geçişi.
+- HLS manifest/oynatılan çözünürlük ayrımı; geç seviye olayları, sınırlı envanter ve çizim durumları.
+- Tek seviyeden kaynak genelinde tek kalite sonucu çıkarılmaz. 38 Node testi geçti; otomatik görsel/gerçek Firefox doğrulaması tamamlanmadı.
 
 ### v0.5.4 (Geliştirme — Canlı Test Bekliyor)
 - Otomatik "Video bulma" sorun seçimi, SRT/VTT ayrıştırma ve sıfır-cue hata bildirimi.
@@ -448,7 +465,8 @@ NOk-video-controller/
 ├── injected.css               # HUD arayüz stilleri (Glassmorphism, Gain renkleri, Mini-Bar, Mıknatıs efekti, Logo)
 ├── tests/
 │   ├── diagnostics.test.cjs    # Bağımlılıksız Node gizlilik/rapor sınırı testleri
-│   └── player-controls.test.cjs # Altyazı, instance/kalite/hız, iframe ve HTTP regresyonları
+│   ├── player-controls.test.cjs # Altyazı, instance/kalite/hız, iframe ve HTTP regresyonları
+│   └── ui-preview-server.cjs   # Localhost sentetik altyazı/HLS manuel önizlemesi
 ├── README.md                  # Hızlı kurulum ve proje özeti
 ├── SITE_COMPATIBILITY.md      # Katı kurallı site uyumluluk ve durum takip tablosu
 └── PROJECT_MASTER_GUIDE.md    # BU DOSYA (Eksiksiz mimari, geçmiş, felsefe ve devir kılavuzu)
@@ -462,7 +480,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.4; canlı tarayıcı/site testi bekliyor).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.5; canlı tarayıcı/site testi bekliyor).
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

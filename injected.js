@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.5.4 (Main World Engine)
+ * injected.js - NOk Video Controller v0.5.5 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,9 +17,10 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.5.4';
+  const EXTENSION_VERSION = '0.5.5';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.5.5', notes: 'Altyazı display:none!important görünürlük hatası giderildi; videoya konumlandırma, native fullscreen/PiP track yolu ve sınırlı çizim durumu eklendi. Hls.js boş p etiketleri kaldırıldı, manifest/oynatılan çözünürlük ayrıldı, geç gelen seviye listesi olaylarla yenileniyor. Tek seviye tüm kaynağın tek kalite sunduğu kanıtı sayılmıyor. Canlı Firefox doğrulaması bekliyor.' },
     { version: 'v0.5.4', notes: 'Video bulunamıyor raporunda otomatik sorun seçimi; SRT/VTT boşluk ayrıştırma düzeltmesi; seçili videoya bağlı Shaka/Hls.js/Video.js instance seçimi; TRT Shaka kalite/hız desteği ve sınırlı hız koruması; göstermelik kalite seçeneklerinin kaldırılması; gömülü çerçevelerde panel açma sinyali; pasif HTTP zamanlaması ve manuel HEAD ölçümü. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.3', notes: 'Gizlilik odaklı teşhis şeması v2: URL/alan adı/kesin saat/konsol toplama kaldırıldı; sınırlı teknik durum ve sabit olay kodları, istenen/okunan hız-ses değerleri, isteğe bağlı açıklama ve güvenli metin önizlemesi. Canlı site ve tarayıcı doğrulaması bekliyor.' },
     { version: 'v0.5.2', notes: 'İzole klavye kısayolları motoru, görüntü filtreleri ve gece kalkanı modülü, bellek içi .srt/.vtt harici altyazı yükleyici ve ±100ms senkronizasyon, doğrudan PiP kontrolü, küçültülmüş detaylı bilgi barı, %300 ses booster + dinamik renk geçişi + çift tıkla sıfırlama, mıknatıslı kenar hizalama (magnetic edge snapping) ve Manifest V3 service_worker düzeltmesi.' },
@@ -108,6 +109,7 @@
   let subtitleFileName = '';
   let subtitleOverlayEnabled = true;
   let subtitleLoadStatus = 'not-loaded';
+  let subtitleRenderStatus = 'not-loaded';
 
   // Amazon IVS Player Global Kanca
   let globalCapturedIvsPlayer = null;
@@ -115,6 +117,34 @@
   // Yalnızca seçili video ile ilişkilendirilmiş gerçek instance'lar kullanılır.
   const mediaLibraryBindings = new WeakMap();
   const hookedLibraryMethods = new WeakSet();
+  const observedHlsPlayers = new WeakMap();
+
+  function observeHlsPlayer(hls, video) {
+    if (observedHlsPlayers.has(hls)) { observedHlsPlayers.get(hls).video = video; return; }
+    if (typeof hls.on !== 'function') return;
+    const state = { video, manifestObserved: false, declaredLevelCount: null };
+    observedHlsPlayers.set(hls, state);
+    let pendingRefresh = false;
+    const refresh = () => {
+      if (pendingRefresh || state.video.isConnected === false) return;
+      pendingRefresh = true;
+      setTimeout(() => {
+        pendingRefresh = false;
+        if (state.video.isConnected !== false && findVideoAndPlayer().video === state.video) renderDynamicQualityButtons();
+      }, 100);
+    };
+    hls.on('hlsManifestLoading', () => {
+      state.manifestObserved = false;
+      state.declaredLevelCount = null;
+      refresh();
+    });
+    hls.on('hlsManifestLoaded', (_event, data) => {
+      state.manifestObserved = true;
+      state.declaredLevelCount = Array.isArray(data?.levels) ? data.levels.length : null;
+      refresh();
+    });
+    for (const event of ['hlsManifestParsed', 'hlsLevelsUpdated', 'hlsLevelSwitched']) hls.on(event, refresh);
+  }
 
   function rememberMediaLibrary(video, kind, player) {
     if (video?.tagName !== 'VIDEO') return;
@@ -122,6 +152,7 @@
     bindings[kind] = player;
     mediaLibraryBindings.set(video, bindings);
     video[kind === 'hls' ? '__nokHlsPlayer' : '__nokShakaPlayer'] = player;
+    if (kind === 'hls') observeHlsPlayer(player, video);
   }
 
   function hookMediaLibraries() {
@@ -163,7 +194,10 @@
     if (kind === 'hls' && Array.isArray(view.Hls?.instances)) candidates.push(...view.Hls.instances);
     for (const candidate of candidates) {
       try {
-        if (kind === 'hls' && candidate?.media === video && Array.isArray(candidate.levels)) return candidate;
+        if (kind === 'hls' && candidate?.media === video && Array.isArray(candidate.levels)) {
+          observeHlsPlayer(candidate, video);
+          return candidate;
+        }
         if (kind === 'shaka' && typeof candidate?.getVariantTracks === 'function'
             && candidate.getMediaElement?.() === video) return candidate;
       } catch (_) {}
@@ -435,6 +469,10 @@
 
     if (subOverlay && subOverlay.parentElement !== activeTarget) {
       activeTarget.appendChild(subOverlay);
+    }
+    if (customSubtitleCues.length) {
+      const { video } = findVideoAndPlayer();
+      if (video) renderCustomSubtitleCue(video);
     }
   }
 
@@ -1395,7 +1433,19 @@
       const results = [];
       if (hls && hls.levels && hls.levels.length > 0) {
         hls.levels.forEach((lvl, idx) => {
-          results.push({ id: `hls_${idx}`, index: idx, label: `${lvl.height || lvl.name}p`, height: lvl.height, bitrate: lvl.bitrate, raw: lvl });
+          const resolution = typeof lvl.attrs?.RESOLUTION === 'string'
+            ? lvl.attrs.RESOLUTION.match(/^(\d+)x(\d+)$/i) : null;
+          const declaredHeight = diagnosticNumber(lvl.height, 1, 4320)
+            || (resolution ? diagnosticNumber(Number(resolution[2]), 1, 4320) : null);
+          const current = hls.currentLevel === idx || (hls.levels.length === 1 && video.readyState >= 2);
+          const observedHeight = current ? diagnosticNumber(video.videoHeight, 1, 4320) : null;
+          const bitrate = diagnosticNumber(lvl.bitrate, 1, 1000000000);
+          const label = declaredHeight ? `${declaredHeight}p`
+            : observedHeight ? `${observedHeight}p · oynatılan`
+            : bitrate ? `${(bitrate / 1000000).toFixed(1)} Mb/sn` : `Seviye ${idx + 1}`;
+          results.push({ id: `hls_${idx}`, index: idx, label, height: declaredHeight || 0,
+            resolutionSource: declaredHeight ? 'manifest' : observedHeight ? 'observed-video' : 'unknown',
+            bitrate: bitrate || 0, raw: lvl });
         });
       }
       return results.sort((a, b) => (b.height || 0) - (a.height || 0));
@@ -1734,8 +1784,14 @@
       }
       renderCustomSubtitleCue(video);
     });
-    video.addEventListener('enterpictureinpicture', () => updatePipButtonsState(true));
-    video.addEventListener('leavepictureinpicture', () => updatePipButtonsState(false));
+    video.addEventListener('enterpictureinpicture', () => {
+      updatePipButtonsState(true);
+      renderCustomSubtitleCue(video);
+    });
+    video.addEventListener('leavepictureinpicture', () => {
+      updatePipButtonsState(false);
+      renderCustomSubtitleCue(video);
+    });
 
     applyVideoFiltersToElement(video);
     handleResize();
@@ -1902,7 +1958,8 @@
   function renderCustomSubtitleCue(video) {
     const overlay = document.getElementById('pvc-subtitle-overlay');
     if (!video || !subtitleOverlayEnabled || customSubtitleCues.length === 0) {
-      if (overlay) overlay.style.display = 'none';
+      subtitleRenderStatus = !subtitleOverlayEnabled ? 'disabled' : customSubtitleCues.length === 0 ? 'not-loaded' : 'no-video';
+      if (overlay) overlay.style.setProperty('display', 'none', 'important');
       return;
     }
 
@@ -1912,9 +1969,46 @@
 
     if (activeCue) {
       targetOverlay.textContent = activeCue.text;
-      targetOverlay.style.display = 'block';
+      const nativeMode = document.fullscreenElement === video || video.ownerDocument?.pictureInPictureElement === video;
+      if (video.__nokSubtitleTrack) video.__nokSubtitleTrack.mode = nativeMode ? 'showing' : 'hidden';
+      if (nativeMode && video.__nokSubtitleTrack) {
+        targetOverlay.style.setProperty('display', 'none', 'important');
+        subtitleRenderStatus = 'native-requested';
+        return;
+      }
+      // Altyazıyı sayfanın altına değil, seçili videonun görünür alanına yerleştir.
+      const rect = video.getBoundingClientRect();
+      let left = rect.left, top = rect.top, width = rect.width, height = rect.height;
+      let view = video.ownerDocument?.defaultView;
+      try {
+        while (view && view !== window && view.frameElement) {
+          const frame = view.frameElement;
+          const bounds = frame.getBoundingClientRect();
+          const scaleX = frame.offsetWidth ? bounds.width / frame.offsetWidth : 1;
+          const scaleY = frame.offsetHeight ? bounds.height / frame.offsetHeight : 1;
+          left = bounds.left + (left + (frame.clientLeft || 0)) * scaleX;
+          top = bounds.top + (top + (frame.clientTop || 0)) * scaleY;
+          width *= scaleX; height *= scaleY;
+          view = view.parent;
+        }
+      } catch (_) {}
+      const visibleLeft = Math.max(0, left), visibleRight = Math.min(window.innerWidth, left + width);
+      const visibleTop = Math.max(0, top), visibleBottom = Math.min(window.innerHeight, top + height);
+      if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
+        targetOverlay.style.setProperty('display', 'none', 'important');
+        subtitleRenderStatus = 'video-offscreen';
+        return;
+      }
+      targetOverlay.style.setProperty('left', `${(visibleLeft + visibleRight) / 2}px`, 'important');
+      targetOverlay.style.setProperty('top', `${visibleBottom - Math.min(40, (visibleBottom - visibleTop) * 0.08)}px`, 'important');
+      targetOverlay.style.setProperty('bottom', 'auto', 'important');
+      targetOverlay.style.setProperty('transform', 'translate(-50%, -100%)', 'important');
+      targetOverlay.style.setProperty('max-width', `${(visibleRight - visibleLeft) * 0.92}px`, 'important');
+      targetOverlay.style.setProperty('display', 'block', 'important');
+      subtitleRenderStatus = 'overlay-requested';
     } else {
-      targetOverlay.style.display = 'none';
+      targetOverlay.style.setProperty('display', 'none', 'important');
+      subtitleRenderStatus = 'no-active-cue';
     }
   }
 
@@ -2365,10 +2459,18 @@
     const qualities = discoverStreamQualities();
     const countBadge = document.getElementById('pvc-quality-count-badge');
     if (countBadge) {
-      countBadge.textContent = `${qualities.length} Paket Hazır`;
+      countBadge.textContent = `${qualities.length} seviye`;
     }
 
     container.innerHTML = '';
+    if (currentActiveAdapterName === 'HlsJsAdapter' || qualities.some(q => q.id.startsWith('hls_'))) {
+      const note = document.createElement('span');
+      note.className = 'pvc-quality-inventory-note';
+      note.textContent = qualities.length === 1
+        ? 'Oynatıcı 1 seviye bildiriyor; kaynakta başka kalite olup olmadığı doğrulanmadı.'
+        : 'Oynatıcının bildirdiği seviyeler. “Oynatılan” etiketi anlık görüntü ölçümüdür.';
+      container.appendChild(note);
+    }
     if (qualities.length === 0) {
       const message = document.createElement('span');
       message.textContent = 'Bu oynatıcıda kullanılabilir kalite kontrolü bulunamadı.';
@@ -2380,7 +2482,9 @@
       const isCurrentActive = activeForcedQualityId === q.id || activeForcedQualityLabel === q.label;
       btn.className = `pvc-quality-chip-btn ${isCurrentActive ? 'pvc-active' : ''}`;
       btn.textContent = String(q.label).replace(/\s*\(.*\)\s*$/, '') || q.label;
-      btn.title = `${q.label}${q.height ? ' • ' + q.height + 'p' : ''}`;
+      btn.title = q.resolutionSource === 'observed-video'
+        ? 'Çözünürlük akışta belirtilmemiş; değer oynatılan videodan ölçüldü. Başka bir kalite seçeneği anlamına gelmez.'
+        : `${q.label}${q.height ? ' • ' + q.height + 'p' : ''}`;
 
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -2552,7 +2656,8 @@
   }
 
   function buildDiagnosticPayload(errorCode) {
-    const { playerType, video } = findVideoAndPlayer();
+    const { playerType, video, player } = findVideoAndPlayer();
+    const hls = findLibraryPlayer(video, 'hls', player);
     const adapter = ALL_ADAPTERS.find(item => item.name === currentActiveAdapterName);
     const browserFamily = /firefox/i.test(navigator.userAgent) ? 'firefox'
       : /chrom(e|ium)|edg\//i.test(navigator.userAgent) ? 'chromium'
@@ -2594,14 +2699,24 @@
         drmDetected: detectDrmStatus(video).isDrm === true,
         isShadowDom: isMediaInShadowDom === true,
         subtitleLoaded: customSubtitleCues.length > 0,
-        subtitleLoadStatus: diagnosticChoice(subtitleLoadStatus, ['not-loaded', 'loaded', 'empty', 'read-error'])
+        subtitleLoadStatus: diagnosticChoice(subtitleLoadStatus, ['not-loaded', 'loaded', 'empty', 'read-error']),
+        subtitleRenderStatus: diagnosticChoice(subtitleRenderStatus,
+          ['not-loaded', 'disabled', 'no-video', 'no-active-cue', 'overlay-requested', 'native-requested', 'video-offscreen'])
       } : null,
       quality: {
         control: qualityControl,
-        requestedHeight: qualityControl === 'not-implemented' ? null : diagnosticNumber(quality?.height, 0, 4320),
+        requestedHeight: qualityControl === 'not-implemented' ? null : diagnosticNumber(quality?.height, 1, 4320),
         cachedOptionCount: diagnosticCount(video ? cachedDiscoveredQualities.length : 0),
         // getQualities() ve applyQuality() burada çağrılmaz; rapor salt okunurdur.
-        verification: 'not-verified'
+        verification: 'not-verified',
+        inventoryScope: hls ? 'bound-hls-player' : 'adapter',
+        inventoryCompleteness: 'not-verified',
+        adaptiveMode: hls ? hls.manualLevel === -1 ? 'auto' : Number.isInteger(hls.manualLevel) && hls.manualLevel >= 0 ? 'manual' : 'unknown' : 'unknown',
+        playerLevelCount: hls ? diagnosticCount(hls.levels.length) : null,
+        knownResolutionCount: hls ? diagnosticCount(hls.levels.filter(level => level.height > 0 || /^\d+x\d+$/i.test(level.attrs?.RESOLUTION || '')).length) : null,
+        manifestObserved: hls ? observedHlsPlayers.get(hls)?.manifestObserved === true : false,
+        declaredLevelCount: hls && Number.isInteger(observedHlsPlayers.get(hls)?.declaredLevelCount)
+          ? diagnosticCount(observedHlsPlayers.get(hls).declaredLevelCount) : null
       },
       cdnMeasurementStatus: diagnosticChoice(lastPingStatus,
         ['not-tested', 'no-video', 'no-source', 'timing-unavailable', 'resource-timing', 'head', 'http-rejected', 'timeout', 'blocked']),
@@ -3478,6 +3593,7 @@
           }
           const { video } = findVideoAndPlayer();
           if (video) {
+            monitorVideoResolution(video);
             injectNativeTextTrackCues(video);
             renderCustomSubtitleCue(video);
           }

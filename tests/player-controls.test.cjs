@@ -45,7 +45,8 @@ function harness(host = 'example.invalid') {
   });
   vm.runInContext(section('  const mediaLibraryBindings', '  function hookIvsInstance')
     + section('  const TrtAdapter', '  function updateCollapsedSummaryBar')
-    + section('  function parseTimecodeToSeconds', '  function ensureSubtitleOverlayElement')
+    + section('  function parseTimecodeToSeconds', '  function shiftSubtitleSync')
+    + section('  function diagnosticNumber', '  function addDiagnosticLog')
     + section('  let targetEnforcedPlaybackRate', '  function initAudioGraphForVideo')
     + section('  function requestQuality', '  function cycleNextQuality')
     + section('  let periodicPingTimer', '  function startPeriodicPingEngine'), context);
@@ -112,6 +113,102 @@ test('Hls attach hook preserves return value, captures instance and is idempoten
   assert.equal(h.run('findLibraryPlayer(video, "hls")'), instance);
   instance.media = null;
   assert.equal(h.run('findLibraryPlayer(video, "hls")'), null);
+});
+
+test('Hls single unknown resolution uses observed label without inventing manifest height', () => {
+  const h = harness(); h.video.videoHeight = 720;
+  const hls = { media: h.video, currentLevel: 0, levels: [{ height: 0, name: '', attrs: {} }] };
+  h.video.hls = hls;
+  const qualities = h.json('HlsJsAdapter.getQualities(video, null)');
+  assert.equal(qualities.length, 1);
+  assert.equal(qualities[0].label, '720p · oynatılan');
+  assert.equal(qualities[0].height, 0);
+  assert.equal(qualities[0].resolutionSource, 'observed-video');
+});
+
+test('Hls labels prefer declared resolution and do not copy active dimensions to other levels', () => {
+  const h = harness(); h.video.videoHeight = 720;
+  h.video.hls = { media: h.video, currentLevel: 0, levels: [
+    { height: 0 }, { height: 0, attrs: { RESOLUTION: '1920x1080' } },
+    { height: 0, name: 'PRIVATE_NAME' }, { height: 0, bitrate: 2500000 }
+  ] };
+  const qualities = h.json('HlsJsAdapter.getQualities(video, null)');
+  assert.deepEqual(qualities.map(q => q.label), ['1080p', '720p · oynatılan', 'Seviye 3', '2.5 Mb/sn']);
+  assert.equal(qualities.filter(q => q.resolutionSource === 'observed-video').length, 1);
+  assert.equal(qualities.some(q => q.label === 'p' || q.label === 'undefinedp' || q.label.includes('PRIVATE_NAME')), false);
+});
+
+test('Hls late manifest events refresh inventory once, and loading resets observed count', () => {
+  const h = harness(); const events = {}; let refreshes = 0;
+  h.context.renderDynamicQualityButtons = () => { refreshes++; };
+  const hls = { media: h.video, currentLevel: 0, levels: [{ height: 0 }],
+    on: (event, handler) => { (events[event] ||= []).push(handler); } };
+  h.video.hls = hls;
+  h.run('findLibraryPlayer(video, "hls")'); h.run('findLibraryPlayer(video, "hls")');
+  assert.equal(events.hlsManifestLoaded.length, 1);
+  hls.levels = [{ height: 720 }, { height: 1080 }];
+  events.hlsManifestLoaded[0]('hlsManifestLoaded', { levels: hls.levels });
+  events.hlsLevelsUpdated[0](); h.flush();
+  assert.equal(refreshes, 1);
+  assert.equal(h.json('HlsJsAdapter.getQualities(video, null)').length, 2);
+  assert.equal(h.run('observedHlsPlayers.get(video.hls).declaredLevelCount'), 2);
+  events.hlsManifestLoading[0]();
+  assert.equal(h.run('observedHlsPlayers.get(video.hls).manifestObserved'), false);
+  assert.equal(h.run('observedHlsPlayers.get(video.hls).declaredLevelCount'), null);
+});
+
+function subtitleHarness() {
+  const h = harness(); const overlays = new Map();
+  h.window.innerWidth = 1200; h.window.innerHeight = 800;
+  h.video.getBoundingClientRect = () => ({ left: 100, top: 100, width: 640, height: 360 });
+  h.context.customSubtitleCues = [{ start: 1, end: 5, text: '<img onerror=SECRET> düz metin' }];
+  h.context.subtitleOffsetMs = 0; h.context.subtitleOverlayEnabled = true;
+  h.context.subtitleRenderStatus = 'not-loaded'; h.video.currentTime = 2;
+  h.context.document.getElementById = id => overlays.get(id) || null;
+  h.context.document.createElement = () => {
+    const priorities = {};
+    const element = { style: { setProperty(key, value, priority) { this[key] = value; priorities[key] = priority; },
+      getPropertyPriority: key => priorities[key] } };
+    Object.defineProperty(element, 'innerHTML', { set() { throw new Error('Subtitle must be plain text'); } });
+    return element;
+  };
+  h.context.getActiveContainer = () => ({ appendChild: element => overlays.set(element.id, element) });
+  return { ...h, overlays };
+}
+
+test('active subtitle overrides production important hide rule and is anchored to video', () => {
+  const h = subtitleHarness(); h.run('renderCustomSubtitleCue(video)');
+  const overlay = h.overlays.get('pvc-subtitle-overlay');
+  const css = readFileSync(join(__dirname, '..', 'injected.css'), 'utf8');
+  assert.match(css.match(/#pvc-subtitle-overlay\s*\{[^}]+\}/)[0], /display:\s*none\s*!important/);
+  assert.equal(overlay.style.display, 'block');
+  assert.equal(overlay.style.getPropertyPriority('display'), 'important');
+  assert.equal(overlay.textContent, '<img onerror=SECRET> düz metin');
+  assert.equal(overlay.style.left, '420px');
+  assert.ok(parseFloat(overlay.style.top) > 100 && parseFloat(overlay.style.top) < 460);
+  assert.equal(h.run('subtitleRenderStatus'), 'overlay-requested');
+});
+
+test('subtitle gaps and disabled captions hide the overlay and report distinct safe states', () => {
+  const h = subtitleHarness(); h.run('renderCustomSubtitleCue(video)');
+  h.video.currentTime = 9; h.run('renderCustomSubtitleCue(video)');
+  const overlay = h.overlays.get('pvc-subtitle-overlay');
+  assert.equal(overlay.style.display, 'none');
+  assert.equal(h.run('subtitleRenderStatus'), 'no-active-cue');
+  h.context.subtitleOverlayEnabled = false; h.run('renderCustomSubtitleCue(video)');
+  assert.equal(h.run('subtitleRenderStatus'), 'disabled');
+});
+
+test('native fullscreen uses showing TextTrack; normal mode restores overlay without duplicates', () => {
+  const h = subtitleHarness(); h.video.__nokSubtitleTrack = { mode: 'hidden' };
+  h.context.document.fullscreenElement = h.video;
+  h.run('renderCustomSubtitleCue(video)');
+  assert.equal(h.video.__nokSubtitleTrack.mode, 'showing');
+  assert.equal(h.overlays.get('pvc-subtitle-overlay').style.display, 'none');
+  assert.equal(h.run('subtitleRenderStatus'), 'native-requested');
+  h.context.document.fullscreenElement = null; h.run('renderCustomSubtitleCue(video)');
+  assert.equal(h.video.__nokSubtitleTrack.mode, 'hidden');
+  assert.equal(h.overlays.get('pvc-subtitle-overlay').style.display, 'block');
 });
 
 function shakaPlayer(h, tracks) {
