@@ -1,5 +1,5 @@
 /**
- * injected.css - NOk Video Controller v0.5.2
+ * injected.css - NOk Video Controller v0.5.3
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -676,6 +676,51 @@
   color: #94a3b8 !important;
   margin: 0 0 10px 0 !important;
   line-height: 1.5 !important;
+}
+
+/* Rapor paneli küçük ekranlarda da kaydırılabilir; önizleme seçilip kopyalanabilir. */
+#pvc-error-modal .pvc-modal-card {
+  max-height: calc(100vh - 24px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#pvc-error-modal .pvc-modal-body {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+#pvc-error-modal .pvc-modal-header,
+#pvc-error-modal .pvc-modal-footer {
+  flex-shrink: 0 !important;
+  flex-wrap: wrap !important;
+}
+
+#pvc-error-modal .pvc-modal-code {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  user-select: text !important;
+}
+
+#pvc-error-modal .pvc-report-field {
+  display: block !important;
+  margin: 8px 0 !important;
+  font-size: 12px !important;
+  color: #cbd5e1 !important;
+}
+
+#pvc-error-modal select {
+  margin-left: 8px !important;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+
+#pvc-error-modal textarea {
+  box-sizing: border-box !important;
+  user-select: text !important;
 }
 
 .pvc-modal-code {

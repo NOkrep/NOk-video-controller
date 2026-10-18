@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Evrensel medya tespiti, Shadow DOM derin tarayıcısı, DRM korumalı akış güvenli modu ve basamaklı adaptör mimarisi ile her web sitesinde video kontrolü.",
   "author": "NOkrep",
   "icons": {

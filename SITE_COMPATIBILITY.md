@@ -1,6 +1,6 @@
 # 🌐 NOk Video Controller — Site Uyumluluk ve Durum Takip Tablosu (`SITE_COMPATIBILITY.md`)
 
-> **Son Güncelleme:** v0.5.2  
+> **Son Güncelleme:** v0.5.3 (geliştirme; teşhis şeması v2)
 > **Yönetim Kuralı (Katı Protokol):**
 > 1. **✅ Tam Çalışıyor:** Bu bölüme **yalnızca geliştiricilerin açık testi ve onayı/talebi** ile site eklenebilir. Yapay zeka kendi inisiyatifiyle bu bölüme site ekleyemez.
 > 2. **🟡 Yarı Çalışıyor (Test / Geliştirme Aşamasında):** Siteye özel bir adaptör/değişiklik yazıldığında, siteye dair herhangi bir değişiklik yapıldığında veya mevcut basamaklı adaptör mimarisinin (Tier 1 / Tier 2 / Tier 3) sitede çalışacağı öngörüldüğünde eklenir.
@@ -21,6 +21,8 @@
 ## 🟡 2. Yarı Çalışıyor / Kısıtlı (Geliştirme & Test Aşamasında)
 
 Bu listedeki siteler için özel adaptörler (Tier 1/2) veya evrensel tarayıcı (Tier 3 / DRM Güvenli Mod) geliştirmeleri mevcuttur; uçtan uca geliştirici onayı beklenmektedir.
+
+v0.5.3 yalnızca raporlama ve rapor arayüzünü iyileştirir; eski site hatalarının giderildiği veya uyumluluğun arttığı anlamına gelmez. Yeni raporlar kaynak adreslerini ve özel alan adlarını içermez. Geçmiş raporların teknik değerlendirmesi `PROJECT_MASTER_GUIDE.md` Bölüm 4.7'de tutulur.
 
 | Platform / Site | Alan Adı (Domain) | Aktif Adaptör & Kademe | Çalışan / Beklenen Özellikler | Bilinen Kısıtlar veya Test Edilecekler |
 | :--- | :--- | :--- | :--- | :--- |

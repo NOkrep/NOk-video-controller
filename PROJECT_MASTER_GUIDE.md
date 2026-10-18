@@ -1,9 +1,9 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.2  
+> **Sürüm:** v0.5.3 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.2 (İzole Klavye Kısayolları, Görüntü Filtreleri & Gece Kalkanı, Bellek İçi Harici Altyazı & Senkron, Doğrudan PiP Kontrolü, Küçültülmüş Detaylı Bilgi Barı, %300 Ses Booster + Gain Renk Geçişi, Mıknatıslı Kenar Hizalama, NOkrep Logosu, Firefox/Chromium Ortak Manifest)
+> **Son Güncelleme:** v0.5.3 (Gizlilik odaklı teşhis şeması v2, sabit olay kodları, güvenli metin önizlemesi ve isteğe bağlı açıklama)
 
 ---
 
@@ -24,7 +24,7 @@
    - **Tier 1 (Siteye Özel):** Kick.com, TRT 1 / TRT İzle, Now TV, PuhuTV.
    - **Tier 2 (Oynatıcı Kütüphaneleri):** YouTube (`movie_player`), Video.js, Hls.js, Shaka Player, Dash.js.
    - **Tier 3 (Evrensel Standart):** HTML5 & Shadow DOM doğrudan denetimi.
-   - Canlı sağlık kontrolü (`probeAdapterHealth`), HUD üzerinden tek tıkla manuel adaptör değiştirme ve tek tıkla Sıfır-PII anonim JSON teşhis kopyalama.
+   - Canlı sağlık kontrolü (`probeAdapterHealth`), HUD üzerinden manuel adaptör değiştirme ve kullanıcı kontrollü, gizlilik odaklı JSON teşhis kopyalama.
 4. **Ağ Seviyesinde HLS / SMIL / BVR Kalite Kilitleri:**
    - TRT 1 & TRT İzle (`cdn-v.pr.trt.com.tr` üzerinde HLS `master1080p`, `720p`, `576p`, `480p`, `360p` yönlendirmesi).
    - Now TV / Fox (ErCDN BVR segment bant genişliği zorlaması `bvr_bw=...`).
@@ -49,8 +49,8 @@
     - 2 saniye hareketsizlikte %88 yarı-saydamlık (`opacity: 0.12`), ek 2 saniye sonra tam görünmezlik (`opacity: 0`). Fare hareketinde veya üzerine gelindiğinde anında %100 netlik.
     - Ekran kenarlarına 16px yaklaşıldığında mıknatıslı yapışma (`pvc-snapped-edge`) ve viewport sınır koruması (`clampPopupToViewport`).
     - Küçültülmüş (Collapsed) modda çözünürlük, hız, ses, adaptör ve hızlı kontrol tuşlarını gösteren detaylı özet bar.
-11. **Sıfır Kişisel Veri (Zero-PII) Teşhis & Hata Raporlama:**
-    - Stream URL'lerindeki tüm güvenlik tokenlarını ve imzaları maskeleyen (`sanitizeStreamUrl`), bellek içi 40 kayıttan oluşan log tamponu, son 3 sürüm geçmişi ve tek tıkla kopyalanabilir/gönderilebilir hata paneli.
+11. **Gizlilik Odaklı Teşhis & Hata Raporlama (v0.5.3):**
+    - URL ve konsol metni toplamayan sabit olay şeması; bellekte en fazla 40 olay, raporda son 20 olay. Önizleme, isteğe bağlı açıklama ve kullanıcı kontrollü kopyalama; otomatik gönderim ve mutlak anonimlik iddiası yoktur.
 
 ---
 
@@ -266,19 +266,32 @@ Sistem artık statik bir adaptör listesi yerine, 3 kademeli hiyerarşik ve kend
 
 ---
 
-### 4.7 Sıfır Kişisel Veri (Zero-PII) Teşhis ve Hata Raporlama
-Hata veya beklenmeyen durum olduğunda:
-1. Son 40 konsol ve adaptör log kaydı bellek içi dizide (`DIAGNOSTIC_LOG_BUFFER`) saklanır.
-2. `sanitizeStreamUrl` fonksiyonu ile URL'lerdeki tokenlar (`hdnts`, `token`, `auth`, `signature`, `expires`, `hmac`) silinir veya `[TOKEN_MASKED]` haline getirilir.
-3. Teşhis paketi oluşturulur:
-   - Tarayıcı User-Agent bilgisi
-   - Aktif alan adı (Domain)
-   - Oynatıcı tipi ve adaptör adı
-   - Video boyutu, mevcut ses ve hız durumu
-   - CDN telemetrisi ve son ping süresi
-   - **Son 3 sürüm geçmişi** (JSON şişmesini önlemek için sadeleştirildi)
-   - Kullanıcının yazdığı serbest not
-4. Kullanıcıya şık bir modal içinde JSON'u kopyalama veya doğrudan geliştiriciye (`ihsanartrk07@gmail.com`) e-posta hazırlama bağlantısı (`mailto:`) sunulur.
+### 4.7 Gizlilik Odaklı Teşhis ve Hata Raporlama (v0.5.3 / Şema v2)
+
+**Öncelik:** Kullanıcı anonimliği, gizliliği ve güvenliği teşhis ayrıntısından önce gelir. Eski "Sıfır Kişisel Veri" iddiası kaldırılmıştır; maskeleme listesine yeni token adları eklemek yerine gereksiz veriler hiç toplanmaz.
+
+- **Kaydedilmeyenler:** Tam URL, URL yolu/sorgusu, `blob:` kimliği, ham alan adı ve alt alan adı, IP, hesap/kanal/içerik kimliği, altyazı metni/dosya adı, kesin tarih-saat, tam User-Agent/işletim sistemi, ekran/viewport boyutu, izleme konumu ve içerik süresi. Sayfanın `console.warn/error` fonksiyonları artık sarılmaz.
+- **Sabit şema:** `reportSchemaVersion: 2`, eklenti sürümü, sınırlı hata kodu, tarayıcı ailesi, oynatıcı/adaptör türü ve adaptör seçim durumu. `adapterSelectionStatus` mevcut seçim değişkeninin anlık değeridir; rapor yeni bir sağlık kontrolü yapmaz ve elle seçilen adaptörün çalıştığını kanıtlamaz. Bilinen platform alan adları yalnızca sabit platform etiketine çevrilir; özel/bilinmeyen alan adları `other` olur. Hash veya kalıcı rapor/kullanıcı kimliği üretilmez.
+- **Medya durumu:** `readyState`, `networkState`, çözünürlük sınıfı (SD/HD/FHD/QHD/UHD), kaynak türü (adres içermeyen `blob/http/media-object/none/other`), canlı/VOD/bilinmiyor, duraklatma/sessizlik, istenen ve videodan okunan hız/ses, mevcut ses grafiği durumu, DRM ve altyazı-var/yok bayrakları. Canlı/VOD değeri `duration` üzerinden bir çıkarımdır; süre rapora girmez ve bu sınıflama her akışta kesin değildir. Gain değeri yalnızca seçili video için kaynak oluşturulmuşsa gösterilir; duyulabilir ses kanıtı değildir.
+- **Video bulma:** Video adedi ve mevcut belgedeki iframe/erişilemeyen iframe adetleri yalnızca `0`, `1`, `2-4`, `5+` aralıklarıyla belirtilir; iframe adresi okunmaz. Ana sayfa raporu diğer kökendeki iframe motorunun çalıştığını kanıtlamaz.
+- **Olay tamponu:** `addDiagnosticLog(level, event, details)` yalnızca `DIAGNOSTIC_EVENT_FIELDS` içindeki sabit olay kodlarını ve olay başına izin verilen sınırlı sayıları kabul eder. Serbest metin, hata nesnesi, iç içe nesne veya bilinmeyen alan tutulmaz. En fazla 40 olay bellekte, son 20 olay raporda; olay yaşı 5 saniye aralıklarıyla ve en fazla 3600 saniye olarak aktarılır.
+- **Sonuçların anlamı:** `SPEED_REQUESTED`, `VOLUME_REQUESTED`, `QUALITY_REQUESTED`, `SEEK_REQUESTED` yalnızca isteği belirtir. Kick `reactInvoked/ivsInvoked` alanları çağrının yapıldığını gösterir; UI eşleşmesi veya oynatıcı tarafından kabul edildiği kanıtlanmaz. Kalite `verification` her zaman `not-verified` kalır. Generic/Shaka/Dash adaptörlerinin şu an sabit seçenek sunması `quality.control: not-implemented` olarak belirtilir. Bu sürüm bu adaptörlerin kalite uygulama davranışını değiştirmez.
+- **Salt okunur rapor:** `buildDiagnosticPayload` rapor oluştururken ağ isteği, kalite uygulaması, yeni ses grafiği veya `getQualities` çağrısı yapmaz. Mevcut CDN ping özelliği ayrı çalışmaya devam eder; bu açıklama eklentinin tamamının ağ kullanmadığı anlamına gelmez.
+- **Arayüz ve paylaşım:** Mevcut modal düzeni korunur. Sorun türü sabit listeden seçilebilir. Serbest açıklama varsayılan kapalıdır; kullanıcı açıkça seçerse en fazla 500 karakter eklenir ve otomatik anonimleştirilmediği belirtilir. Seçim kapatılınca açıklama temizlenir. JSON yalnızca `textContent` ile önizlenir. Clipboard Promise başarısızlığında başarı bildirimi verilmez. Mail/GitHub bağlantıları raporu veya açıklamayı URL'ye gömmez; kullanıcı JSON'u kopyalayıp taslağa kendisi ekler. Otomatik gönderim yoktur.
+- **Anonimlik sınırı:** Panel MAIN world/sayfa DOM'unda çalışır; sayfa betikleri paneldeki verileri okuyabilir veya değiştirebilir. Not alanı gizli iletişim kanalı değildir. Kullanıcının notu kişisel bilgi içerebilir, e-posta/GitHub paylaşımı hesap kimliğiyle ilişkilendirilebilir. Kullanıcının kopyaladığı rapor panoda veya paylaşılan hizmette kalabilir; sıfır depolama ilkesi eklentinin kendi durumuna ilişkindir.
+
+**Geçmiş raporlardan değerlendirme (yeniden test edilmedi):**
+
+| Rapor | Kaynakta görülen durum | Sonuç / hâlâ gereken kanıt |
+| :--- | :--- | :--- |
+| TRT v0.4.8 | 720p isteğine karşın 1080 sınıfı görüntü; kullanıcı hız ve kalite işlemediğini, ses UI'sının eşleşmediğini bildirmiş. | Sonraki sürümlerde düzeltme notları var; güncel canlı test olmadan çözülmüş sayılmaz. |
+| Kişisel sunucu v0.5.0 | Video hazır; yalnızca "çalışmıyor" açıklaması ve işlem bildirimleri var. | Hangi kontrolün başarısız olduğu kanıtlanamıyor. Özel sunucu adresi bu belgeye taşınmadı. |
+| HDfilmcehennemi v0.5.1 | `NO_VIDEO_FOUND`, `playerType: none`, video durumu yok. | Başlatılmamış oynatıcı/iframe/başka bir neden ayrımı rapordan yapılamıyor. |
+| Nepu v0.5.1 | `hlsjs` algısı, GenericAdapter ve sabit kalite listesi; gerçek seçim kanıtı yok. | Kütüphane varlığı çalışan instance/kalite API'si anlamına gelmez. |
+| Diziyou v0.5.0 | Seçili video `0x0`, `readyState: 0`, `networkState: 0`; buna rağmen sarma/hız bildirimleri var. | Hazır olmayan/yanlış video olasılığı; oynatma başarısı kanıtlanmıyor. |
+| Kick v0.5.2 | Kullanıcı kalite UI eşleşmesinin çalıştığını, hız/ses UI eşleşmesinin çalışmadığını bildirmiş. | Yeni istenen/okunan değerler ve çağrı olayları sonraki incelemeyi destekler; UI sorunu bu sürümde düzeltilmedi. |
+
+Ham raporlar, tokenlar, adresler ve kullanıcıya özgü bilgiler repoya kopyalanmaz. `tests/diagnostics.test.cjs` üretim fonksiyonlarını izole Node/DOM taklidi ortamında çalıştırır; gizli örnek dizelerin dışa çıkmamasını, güvenli önizlemeyi, açıklama seçimini, tampon sınırlarını ve kopyalama hatalarını denetler. Çalıştırma: `node --test tests/diagnostics.test.cjs`. Bu testler gerçek tarayıcı/site doğrulaması değildir.
 
 ---
 
@@ -320,7 +333,13 @@ Hata veya beklenmeyen durum olduğunda:
 
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
 
-### v0.5.2 (Mevcut Kararlı Sürüm)
+### v0.5.3 (Geliştirme — Canlı Test Bekliyor)
+- Gizlilik odaklı rapor şeması v2; serbest metin/URL/alan adı/kesin saat/konsol toplama kaldırıldı.
+- İstenen ve okunan hız/ses, hazır olma/iframe durumu ve sınırlı Kick çağrı olayları eklendi; kalite doğrulamasının yapılmadığı açıkça belirtilir.
+- Rapor `textContent` ile gösterilir; açıklama isteğe bağlıdır, paylaşım adresleri JSON içermez, kopyalama hataları ele alınır.
+- Bağımlılıksız Node gizlilik/rapor testleri eklendi. Canlı Firefox, Chromium ve site testleri beklenmektedir; site uyumluluk onayı verilmedi.
+
+### v0.5.2 (Önceki Kararlı Sürüm)
 - **İzole Klavye Kısayolları Motoru:** Yazı alanlarını dışlayan ve `e.stopPropagation()` ile izole edilen kısayol sistemi eklendi.
 - **Görüntü Filtreleri & Gece Kalkanı:** Parlaklık, kontrast, doygunluk, gece modu ve ters renk kontrolleri eklendi.
 - **Bellek İçi Harici Altyazı Motoru:** `.srt`/`.vtt` RAM içi ayrıştırıcı ve `±100ms` senkronizasyon eklendi.
@@ -409,6 +428,8 @@ NOk-video-controller/
 ├── content.js                 # Isolated World köprüsü (Main World injected.js enjektörü, logo adresi aktarımı)
 ├── injected.js                # Main World Engine (HUD, Adaptörler, Web Audio, Filtre, Altyazı, Kısayollar)
 ├── injected.css               # HUD arayüz stilleri (Glassmorphism, Gain renkleri, Mini-Bar, Mıknatıs efekti, Logo)
+├── tests/
+│   └── diagnostics.test.cjs    # Bağımlılıksız Node gizlilik/rapor sınırı testleri
 ├── README.md                  # Hızlı kurulum ve proje özeti
 ├── SITE_COMPATIBILITY.md      # Katı kurallı site uyumluluk ve durum takip tablosu
 └── PROJECT_MASTER_GUIDE.md    # BU DOSYA (Eksiksiz mimari, geçmiş, felsefe ve devir kılavuzu)
@@ -422,7 +443,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut kararlı sürüm: v0.5.2).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.3; canlı tarayıcı/site testi bekliyor).
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

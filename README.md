@@ -1,4 +1,4 @@
-# NOk Video Controller (v0.5.2)
+# NOk Video Controller (v0.5.3 — geliştirme)
 
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
@@ -33,4 +33,9 @@
 
 - **Sıfır Depolama (Zero Storage):** Çerez, `localStorage`, `sessionStorage` veya `chrome.storage` kullanılmaz; %100 bellek içi (in-memory stateless) çalışır.
 - **Minimum İzinler:** Yalnızca `activeTab` ve `scripting` izinleri kullanılır; `host_permissions` talep edilmez.
-- **Sıfır Kişisel Veri (Zero-PII):** Teşhis ve hata raporlama paneli tüm kimlik doğrulama tokenlarını maskeler.
+- **Gizlilik Odaklı Teşhis:** Rapor şeması v2 tam URL, alan adı/IP, kesin saat, izleme konumu ve sayfa konsolu metni içermez. Desteklenen siteler yalnızca sabit platform adıyla, diğer siteler `other` olarak belirtilir. Tarayıcı ailesi, sınırlı oynatıcı durumu ve sabit olay kodları kullanılır.
+- **Kullanıcı Kontrollü Paylaşım:** Otomatik rapor gönderimi yoktur. Açıklama varsayılan olarak kapalıdır; kullanıcı eklerse bu metin otomatik anonimleştirilmez. Rapor önce önizlenir, ardından kullanıcı isterse kopyalayıp paylaşır. E-posta/GitHub hesabı ve sayfa içi panel nedeniyle mutlak anonimlik garantisi verilmez.
+
+## Geliştirme Doğrulaması
+
+`node --test tests/diagnostics.test.cjs` gizlilik sınırını, güvenli metin önizlemesini, açıklama seçimini ve kopyalama davranışını Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.3 için canlı doğrulama beklenmektedir.
