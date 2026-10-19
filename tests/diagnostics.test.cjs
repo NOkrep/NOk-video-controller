@@ -60,7 +60,7 @@ function harness(options = {}) {
       createElement: () => new Element()
     },
     getActiveContainer: () => ({ appendChild: element => { output.modal = element; } }),
-    applyUiAccessibility() {},
+    applyUiAccessibility() {}, decorateUiComponents() {},
     showToast: message => output.toasts.push(message),
     findVideoAndPlayer: () => ({ video, playerType: options.playerType || 'native-html5' }),
     deepFindMediaElements: () => video ? [{ video }] : [],
@@ -78,7 +78,7 @@ function harness(options = {}) {
     customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleLoadStatus: 'loaded', subtitleRenderStatus: 'no-active-cue', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
     findLibraryPlayer: () => options.hls || null,
     observedHlsPlayers: new WeakMap(options.hls ? [[options.hls, { manifestObserved: true, declaredLevelCount: options.hls.levels.length }]] : []),
-    EXTENSION_VERSION: '0.5.9', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
+    EXTENSION_VERSION: '0.5.10', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
     GITHUB_REPO_URL: 'https://github.com/NOkrep/NOk-video-controller',
     DEVELOPER_EMAIL: 'developer@example.invalid',
     fetch: () => { throw new Error('Report must not make network requests'); }
@@ -98,7 +98,7 @@ test('default export excludes identifiers, URLs, viewing position and device det
   const json = JSON.stringify(payload);
   for (const secret of ['UNIQUE_SECRET', 'PRIVATE_', 'personal.', '192-0-2', 'secret.example',
     'currentTime', 'duration', 'displaySize', 'timestamp', 'sampleUrl', 'userComments', 'domain', 'networkTelemetry',
-    'uiLanguage', 'hudAccessibility', 'keepVisible', 'largeText', 'highContrast', 'reduceMotion']) {
+    'uiLanguage', 'currentUiThemeId', 'themeId', 'hudAccessibility', 'keepVisible', 'largeText', 'highContrast', 'reduceMotion']) {
     assert.equal(json.includes(secret), false, secret);
   }
   assert.equal(payload.platform, 'other');

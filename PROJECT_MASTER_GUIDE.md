@@ -1,9 +1,9 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.9 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
+> **Sürüm:** v0.5.10 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.9 (Üç dikey sol sekme, Player adaptörü, Settings görüntü kontrolleri ve petrol/mavi tema)
+> **Son Güncelleme:** v0.5.10 (20 yerel tema, Uiverse kontrol uyarlamaları ve tasarım/kaynak kaydı)
 
 ---
 
@@ -394,7 +394,21 @@ Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-st
 - **Tema:** Kullanıcı referansından örneklenen #0A1418 ana zemin, #1B2A33 kart, #6099B9 mavi vurgu. Metin #EDF2F3, ikincil #A2B6C0, küçük vurgu metni #92BFD5. UI köklerine bağlı `--pvc-*` değişkenleri CSS ve JS inline renkleri için ortaktır. Opak zemin, düşük parlama; yeşil/kehribar/kırmızı işlevsel durumlar korunur. Altyazı overlay stili ve video filtre hesapları değiştirilmez. High contrast kendi değişkenlerini ezer ve seçili sol sekmede açık dolgu/koyu metin çiftini korur. Yeni ağ/font/kütüphane, depolama, izin veya rapor alanı eklenmedi.
 - **Doğrulama:** Dikey yön/oklar, üç panel, adaptör/filtre ebeveyni, filtre katlanması, kontrol kimliği/durumları ve normal/high-contrast opak renk çiftleri Node test kapsamındadır. Matematiksel renk oranları: text/bg 16.51:1, muted/elevated 7.01:1, accent-ink/elevated 7.46:1, bg/accent 6.00:1. Bunlar gerçek piksel kontrastı veya tüm UI erişilebilirliği onayı değildir; kaynak/renk hesabı ile canlı tarayıcı sonucu ayrıdır.
 
+### 4.20 v0.5.10 — 20 Tema ve Kullanıcı Bileşen Referansları
+
+- **Katalog:** SevenGrid sayfası tarayıcıda açılıp tema bandındaki 20 ad ve CSSOM renk değişkenleri incelendi. `UI_THEME_DEFINITIONS` yerel sayısal renk sabitleridir; site script/font/görseli alınmaz. 7 standart/koyu, 7 açık, 6 OLED. `UI_THEMES` aynı aile sırasıyla native optgroup ve Previous/Next için ortak sıralamadır; başlangıç Atlas. Kaynak/uyarlama karşılaştırması `THEME_EVALUATION.md`.
+- **Kontrast:** Bir kez katalog kurulumunda opak üç yüzey için metin/ikincil/vurgu/durum 4.5:1, kenarlık 3:1 hedefine en küçük %1 RGB karışım adımı hesaplanır. Ana yüzeyler ve ana action rengi korunur. Seçili dolgu için siyah/beyazdan yüksek kontrastlı yazı seçilir. Bu matematik alpha/hover/focus/gerçek layout onayı değildir. Dekor ve durum dolguları color-mix ile tema değişkenlerini kullanır; bağımsız altyazı stili/medya filtre hesapları değişmez.
+- **Seçim ve durum:** Settings içinde kapalı Themes alanı, gruplanmış native select, Önceki/Sonraki, ad/sayaç ve renk örnekleri. `currentUiThemeId` yalnızca çerçeve RAM'inde; `setUiTheme` bilinen ID'leri kabul eder. Düğüm/handler/input yeniden kurulmadan UI köklerine CSS değişkenleri uygulanır; medya API'si veya kalite taraması tetiklenmez. Yeni modal/toast `applyUiAccessibility` üzerinden temayı devralır. High contrast değişkenleri !important ile inline normal tema değişkenlerini ezer; seçim saklanır ve açıklama görünür olur. Native color-scheme açık temaları izler. Dil çevirisi optgroup label niteliğini de kapsar. Tema çerçeveler arasında aktarılmaz ve rapora eklenmez.
+- **Bileşenler:** Voxybuns düğme hissi mevcut native eylemlere sınıf ekleyerek; WhiteNervosa/mrhyddenn check geometrisi raporun iki kutusuna; gharsh11032000 switch erişilebilirlik tercihlerine; eslam-hany input görünümü isteğe bağlı açıklamaya; Nawsome beş kare loader gerçek CDN ölçüm süresine uyarlandı. Input'lar display:none olmaz; native değer, checked/change, etiket ve klavye davranışı korunur. Ölçüm aria-busy/disabled ile sınırlandırılır; başarı/başarısızlıkta loader ve busy kaldırılır. Hareket azaltma animasyon ve düğme yolculuğunu kapatır. Namespace'ler pvc-*.
+- **Kaynak kaydı:** `DESIGN_REFERENCES.md` sekiz URL'nin kullanıldığı/ertelendiği yerleri tutar. Radio ve tooltip sayfaları okundu, aynı örneklerin kodu Galaxy arşivinde bulunamadı; uygulanmadı. Formun checkout örneği incelendi ve uygun yerel form tasarımı için ayrıldı. Kullanılan beş örneğin HTML/CSS'i resmî Uiverse Galaxy arşivinden okunarak uyarlandı; doğrudan indirme engeli aşılmadı. MIT yazar/bildirimleri `THIRD_PARTY_NOTICES.md` içinde. Yeni runtime ağı/kütüphanesi, kalıcı depolama veya izin yoktur.
+- **Doğrulama:** Node testleri tüm 20 katalog girdisini, aile/sıra tutarlılığını, türetilmiş renk çiftlerini, native seçici/ileri-geri, geçersiz ID reddi, mevcut/sonradan açılan kökler, kontrol/input kimliği, dil, high contrast öncelik kaydı, async loader cleanup ve dekorasyon idempotence'ını sınar. Gerçek Firefox/Chromium, küçük ekran, fullscreen, ekran okuyucu ve hareket/kontrast piksel doğrulaması beklenir.
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
+
+### v0.5.10 (Geliştirme — Canlı Test Bekliyor)
+- Kaynakları incelenen 20 SevenGrid paleti; yerel tema seçici, kontrast uyarlaması ve high contrast önceliği.
+- Beş Uiverse kontrol uyarlaması; native davranış ve gizlilik sınırı korunur.
+- Kullanılan/ertelenen tasarımlar ve MIT bildirimleri proje içinde kayıtlı; canlı doğrulama beklenir.
 
 ### v0.5.9 (Geliştirme — Canlı Test Bekliyor)
 - Simge ve kısa adlarla üç dikey sol sekme; Player adaptörü, Settings görüntü kontrolleri.
@@ -532,6 +546,9 @@ NOk-video-controller/
 │   ├── localization.test.cjs   # Dil/DOM durum koruma ve çeviri testleri
 │   ├── kick-ui.test.cjs        # Radix ses handler ve hız menüsü regresyonları
 │   └── ui-preview-server.cjs   # Localhost sentetik altyazı/HLS manuel önizlemesi
+├── DESIGN_REFERENCES.md       # Kullanılan/ertelenen sekiz kullanıcı tasarım kaynağı
+├── THEME_EVALUATION.md        # 20 paletin kaynak ve HUD değerlendirmesi
+├── THIRD_PARTY_NOTICES.md     # Uyarlanan Uiverse bileşenlerinin MIT bildirimleri
 ├── HMI_REVIEW.md              # Kaynak temelli kullanılabilirlik bulguları ve canlı kabul ölçütleri
 ├── README.md                  # Hızlı kurulum ve proje özeti
 ├── SITE_COMPATIBILITY.md      # Katı kurallı site uyumluluk ve durum takip tablosu
@@ -546,7 +563,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.9; canlı tarayıcı/site testi bekliyor).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.10; canlı tarayıcı/site testi bekliyor).
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

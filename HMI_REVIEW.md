@@ -1,6 +1,6 @@
 # NOk Video Controller — HMI değerlendirmesi
 
-19 Ekim 2026 · v0.5.9 geliştirme sürümü
+19 Ekim 2026 · v0.5.10 geliştirme sürümü
 
 İlk bulgular v0.5.7 yerleşimine aittir; v0.5.8/v0.5.9 değişiklikleri ve kalan öneriler aşağıda ayrıca belirtilmiştir.
 
@@ -89,3 +89,12 @@ Ek erişilebilirlik adayları: klavye kısayollarını yeniden atama; altyazı y
 - [Dark Mode Design](https://www.darkmodedesign.com/): üyelik gerektirmeden gezilebilen koyu tema örnekleri.
 
 Bunlar örnek incelemek için önerilir. Uiverse dışındaki galerilerde gösterilen tasarımların kaynakları/kullanım lisanslarının ücretsiz olduğu iddia edilmez. Önceki Mobbin/Curated gibi kaynaklarda ücretli alanlar bulunabildiğinden kullanıcının ücretsiz inceleme isteği için bu liste tercih edilmiştir.
+
+
+## v0.5.10 — Tema denemeleri ve referans bileşenler
+
+Settings → Themes içinde kaynakta görülen 20 temanın tamamı vardır. Seçim, Previous/Next, kısa ad/sayaç ve renk örnekleriyle denemeye uygundur; seçilmiş finalist yoktur. Atlas varsayılanı ve çerçeve RAM'i korunur. Tüm sayfayı/siteyi boyamak yerine yalnızca HUD/pencere/toast kökleri güncellenir. High contrast ayrı önceliğini açıklayan görünür not taşır.
+
+Küçük HUD metinleri için kaynak renkler kontrast hesabıyla uyarlanır; bu nedenle görünen ikincil metin siteyle tam aynı tonda olmayabilir. Açık temalar için sabit koyu yüzeyler tema değişkenlerine çevrilmiştir. Önceki tek Atlas renk değerlendirmesi artık başlangıç karşılaştırmasıdır; güncel tablo [THEME_EVALUATION.md](./THEME_EVALUATION.md) içindedir.
+
+Düğme, checkbox, switch, input ve loader referansları uygun yerlere uyarlandı. Native kontrol, etiket, focus ve değer korunur; görsel input katmanı klavyeden gizlenmez. Loader gerçek işlemle sınırlıdır; hareket azaltma seçimi yeni animasyonlara da uygulanır. Radio, form ve tooltip sonraki uygun kullanım için [DESIGN_REFERENCES.md](./DESIGN_REFERENCES.md) içinde ayrılmıştır. Bu değişiklikler halen açık modal odak yönetimi ve istenen/gözlenen oynatıcı değeri bulgularını çözülmüş saymaz. Gerçek tarayıcı/yardımcı teknoloji testi gereklidir.

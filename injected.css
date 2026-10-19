@@ -1,5 +1,5 @@
 /**
- * injected.css - NOk Video Controller v0.5.9
+ * injected.css - NOk Video Controller v0.5.10
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -14,7 +14,12 @@
   --pvc-muted: #a2b6c0;
   --pvc-accent: #6099b9;
   --pvc-accent-ink: #92bfd5;
-  color-scheme: dark;
+  --pvc-scheme: dark;
+  --pvc-accent-on: #0a1418;
+  --pvc-success: #34d399;
+  --pvc-warning: #f59e0b;
+  --pvc-danger: #f43f5e;
+  color-scheme: var(--pvc-scheme, dark) !important;
 }
 
 /* 1. Gezdirilebilir & Yüzen Ana Kontrol HUD Paneli */
@@ -33,7 +38,7 @@
   background: var(--pvc-bg) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border: 1px solid rgba(96, 153, 185, 0.35) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-accent) 35%, transparent) !important;
   border-radius: 14px !important;
   padding: 12px !important;
   color: var(--pvc-text, #edf2f3) !important;
@@ -54,14 +59,14 @@
 
 /* Mıknatıslı Kenar Hizalama (Magnetic Snap) Görsel Geri Bildirimi */
 #pvc-controller-popup.pvc-snapped-edge {
-  border-color: rgba(96, 153, 185, 0.75) !important;
+  border-color: color-mix(in srgb, var(--pvc-accent) 75%, transparent) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* 2-Kademeli Akıllı Transparanlık */
 #pvc-controller-popup.pvc-idle-semi {
   opacity: 0.12 !important;
-  border-color: rgba(96, 153, 185, 0.15) !important;
+  border-color: color-mix(in srgb, var(--pvc-accent) 15%, transparent) !important;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -76,7 +81,7 @@
 #pvc-controller-popup.pvc-idle-semi:hover {
   opacity: 1 !important;
   pointer-events: auto !important;
-  border-color: rgba(96, 153, 185, 0.5) !important;
+  border-color: color-mix(in srgb, var(--pvc-accent) 50%, transparent) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
 }
 
@@ -111,8 +116,8 @@
   align-items: center !important;
   justify-content: space-between !important;
   gap: 4px !important;
-  background: rgba(20, 33, 39, 0.85) !important;
-  border: 1px solid rgba(96, 153, 185, 0.22) !important;
+  background: var(--pvc-surface) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-accent) 22%, transparent) !important;
   border-radius: 8px !important;
   padding: 5px 8px !important;
   font-size: 10.5px !important;
@@ -210,13 +215,13 @@
 }
 
 .pvc-icon-btn.pvc-btn-active {
-  background: rgba(96, 153, 185, 0.18) !important;
-  border-color: rgba(96, 153, 185, 0.45) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 18%, transparent) !important;
+  border-color: color-mix(in srgb, var(--pvc-accent) 45%, transparent) !important;
   color: var(--pvc-accent-ink, #92bfd5) !important;
 }
 
 .pvc-icon-btn.pvc-close:hover {
-  background: rgba(239, 68, 68, 0.25) !important;
+  background: color-mix(in srgb, var(--pvc-danger) 25%, transparent) !important;
   color: #f87171 !important;
 }
 
@@ -279,10 +284,10 @@
   font-size: 11px !important;
   font-weight: 800 !important;
   color: var(--pvc-accent-ink, #92bfd5) !important;
-  background: rgba(96, 153, 185, 0.12) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 12%, transparent) !important;
   padding: 2px 6px !important;
   border-radius: 4px !important;
-  border: 1px solid rgba(96, 153, 185, 0.25) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-accent) 25%, transparent) !important;
   white-space: nowrap !important;
   text-overflow: ellipsis !important;
   overflow: hidden !important;
@@ -304,7 +309,7 @@
 }
 
 .pvc-audio-mode-btn.pvc-audio-active {
-  background: rgba(96, 153, 185, 0.2) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 20%, transparent) !important;
   border-color: var(--pvc-accent-ink, #92bfd5) !important;
   color: var(--pvc-accent-ink, #92bfd5) !important;
 }
@@ -343,7 +348,7 @@
   border-radius: 50% !important;
   background: var(--pvc-thumb-color, var(--pvc-accent-ink, #92bfd5)) !important;
   border: 2px solid var(--pvc-text, #edf2f3) !important;
-  box-shadow: 0 0 8px var(--pvc-thumb-glow, rgba(96, 153, 185, 0.8)) !important;
+  box-shadow: 0 0 8px var(--pvc-thumb-glow, color-mix(in srgb, var(--pvc-accent) 80%, transparent)) !important;
   cursor: pointer !important;
   transition: background 0.2s ease, box-shadow 0.2s ease !important;
 }
@@ -354,7 +359,7 @@
   border-radius: 50% !important;
   background: var(--pvc-thumb-color, var(--pvc-accent-ink, #92bfd5)) !important;
   border: 2px solid var(--pvc-text, #edf2f3) !important;
-  box-shadow: 0 0 8px var(--pvc-thumb-glow, rgba(96, 153, 185, 0.8)) !important;
+  box-shadow: 0 0 8px var(--pvc-thumb-glow, color-mix(in srgb, var(--pvc-accent) 80%, transparent)) !important;
   cursor: pointer !important;
   transition: background 0.2s ease, box-shadow 0.2s ease !important;
 }
@@ -369,17 +374,17 @@
 /* Ses Kazanç (Gain) Renk Geçiş Sınıfları (%0-100 Cyan, %101-200 Amber, %201-300 Rose) */
 .pvc-range-slider.pvc-gain-normal {
   --pvc-thumb-color: var(--pvc-accent-ink, #92bfd5);
-  --pvc-thumb-glow: rgba(96, 153, 185, 0.85);
+  --pvc-thumb-glow: color-mix(in srgb, var(--pvc-accent) 85%, transparent);
 }
 
 .pvc-range-slider.pvc-gain-warm {
-  --pvc-thumb-color: #f59e0b;
-  --pvc-thumb-glow: rgba(245, 158, 11, 0.9);
+  --pvc-thumb-color: var(--pvc-warning);
+  --pvc-thumb-glow: color-mix(in srgb, var(--pvc-warning) 90%, transparent);
 }
 
 .pvc-range-slider.pvc-gain-hot {
-  --pvc-thumb-color: #f43f5e;
-  --pvc-thumb-glow: rgba(244, 63, 94, 0.95);
+  --pvc-thumb-color: var(--pvc-danger);
+  --pvc-thumb-glow: color-mix(in srgb, var(--pvc-danger) 95%, transparent);
 }
 
 /* 4. Buton Grupları ve Gridler */
@@ -409,13 +414,13 @@
 }
 
 .pvc-chip-btn:hover {
-  background: rgba(96, 153, 185, 0.3) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 30%, transparent) !important;
   border-color: var(--pvc-accent-ink, #92bfd5) !important;
   color: var(--pvc-text, #edf2f3) !important;
 }
 
 .pvc-chip-btn.pvc-chip-active {
-  background: rgba(96, 153, 185, 0.22) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 22%, transparent) !important;
   border-color: var(--pvc-accent-ink, #92bfd5) !important;
   color: var(--pvc-accent-ink, #92bfd5) !important;
 }
@@ -455,7 +460,7 @@
 }
 
 .pvc-action-btn.pvc-active {
-  background: rgba(96, 153, 185, 0.22) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 22%, transparent) !important;
   border-color: var(--pvc-accent-ink, #92bfd5) !important;
   color: var(--pvc-accent-ink, #92bfd5) !important;
 }
@@ -486,7 +491,7 @@
 }
 
 .pvc-quality-chip-btn:hover {
-  background: rgba(96, 153, 185, 0.25) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 25%, transparent) !important;
   border-color: var(--pvc-accent-ink, #92bfd5) !important;
   color: var(--pvc-text, #edf2f3) !important;
 }
@@ -495,7 +500,7 @@
   background: var(--pvc-elevated, #1b2a33) !important;
   border-color: #60a5fa !important;
   color: var(--pvc-text, #edf2f3) !important;
-  box-shadow: 0 0 10px rgba(96, 153, 185, 0.5) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--pvc-accent) 50%, transparent) !important;
 }
 
 /* 5. Harici Altyazı Overlay Katmanı */
@@ -557,35 +562,35 @@
 }
 
 .pvc-btn-emerald {
-  background: rgba(16, 185, 129, 0.15) !important;
-  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  background: color-mix(in srgb, var(--pvc-success) 15%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-success) 30%, transparent) !important;
   color: #34d399 !important;
 }
 
 .pvc-btn-emerald:hover {
-  background: rgba(16, 185, 129, 0.3) !important;
+  background: color-mix(in srgb, var(--pvc-success) 30%, transparent) !important;
   color: #ffffff !important;
 }
 
 .pvc-btn-sky {
-  background: rgba(56, 189, 248, 0.15) !important;
-  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 15%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent) !important;
   color: #38bdf8 !important;
 }
 
 .pvc-btn-sky:hover {
-  background: rgba(56, 189, 248, 0.3) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 30%, transparent) !important;
   color: #ffffff !important;
 }
 
 .pvc-btn-amber {
-  background: rgba(245, 158, 11, 0.15) !important;
-  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  background: color-mix(in srgb, var(--pvc-warning) 15%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-warning) 30%, transparent) !important;
   color: #fbbf24 !important;
 }
 
 .pvc-btn-amber:hover {
-  background: rgba(245, 158, 11, 0.3) !important;
+  background: color-mix(in srgb, var(--pvc-warning) 30%, transparent) !important;
   color: #ffffff !important;
 }
 
@@ -597,9 +602,9 @@
   top: 24px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
-  background: rgba(20, 33, 39, 0.96) !important;
+  background: var(--pvc-surface) !important;
   color: var(--pvc-accent-ink, #92bfd5) !important;
-  border: 1px solid rgba(96, 153, 185, 0.45) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-accent) 45%, transparent) !important;
   padding: 8px 20px !important;
   border-radius: 24px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
@@ -637,7 +642,7 @@
 
 .pvc-perm-card {
   background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(96, 153, 185, 0.2) !important;
+  border: 1px solid color-mix(in srgb, var(--pvc-accent) 20%, transparent) !important;
   border-radius: 8px !important;
   padding: 10px 12px !important;
   margin-bottom: 8px !important;
@@ -746,7 +751,7 @@
 }
 
 .pvc-modal-code {
-  background: #020617 !important;
+  background: var(--pvc-bg) !important;
   border: 1px solid var(--pvc-elevated, #1b2a33) !important;
   border-radius: 8px !important;
   padding: 10px !important;
@@ -760,7 +765,7 @@
 
 .pvc-modal-footer {
   padding: 10px 16px !important;
-  background: #090d16 !important;
+  background: var(--pvc-elevated) !important;
   border-top: 1px solid var(--pvc-elevated, #1b2a33) !important;
   display: flex !important;
   gap: 8px !important;
@@ -768,8 +773,8 @@
 }
 
 .pvc-modal-btn-secondary {
-  background: var(--pvc-border, #3d5661) !important;
-  color: white !important;
+  background: var(--pvc-elevated) !important;
+  color: var(--pvc-text) !important;
   border: none !important;
   padding: 6px 12px !important;
   border-radius: 6px !important;
@@ -779,7 +784,7 @@
 }
 
 .pvc-modal-btn-primary {
-  color: white !important;
+  color: var(--pvc-text) !important;
   text-decoration: none !important;
   padding: 6px 12px !important;
   border-radius: 6px !important;
@@ -797,7 +802,7 @@
 #pvc-drm-modal :focus-visible {
   outline: 2px solid var(--pvc-accent-ink, #92bfd5) !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 3px rgba(96, 153, 185, 0.35) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pvc-accent) 35%, transparent) !important;
 }
 
 .pvc-language-row {
@@ -819,18 +824,18 @@
   color: var(--pvc-text, #edf2f3) !important;
   font: inherit !important;
   cursor: pointer !important;
-  color-scheme: dark !important;
+  color-scheme: var(--pvc-scheme, dark) !important;
 }
 
 .pvc-adapter-option:hover {
-  background: rgba(96, 153, 185, 0.1) !important;
-  border-color: rgba(96, 153, 185, 0.4) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 10%, transparent) !important;
+  border-color: color-mix(in srgb, var(--pvc-accent) 40%, transparent) !important;
 }
 
 .pvc-adapter-selected {
-  background: rgba(96, 153, 185, 0.18) !important;
+  background: color-mix(in srgb, var(--pvc-accent) 18%, transparent) !important;
   border-color: var(--pvc-accent-ink, #92bfd5) !important;
-  box-shadow: 0 0 12px rgba(96, 153, 185, 0.25) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--pvc-accent) 25%, transparent) !important;
 }
 
 /* Task navigation: hidden panels must not be restored by host-page display rules. */
@@ -874,7 +879,7 @@
 #pvc-controller-popup .pvc-tab-icon svg { width: 20px !important; height: 20px !important; }
 #pvc-controller-popup .pvc-hud-tab[aria-selected="true"] {
   background: var(--pvc-accent) !important;
-  color: var(--pvc-bg) !important;
+  color: var(--pvc-accent-on, #0a1418) !important;
   border-color: var(--pvc-accent-ink) !important;
   box-shadow: inset 3px 0 0 var(--pvc-accent-ink) !important;
 }
@@ -944,14 +949,331 @@
 }
 
 :is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast).pvc-a11y-contrast {
-  --pvc-bg: #080c14;
-  --pvc-surface: #111d26;
-  --pvc-elevated: #182b37;
-  --pvc-border: #b9ced8;
-  --pvc-text: #ffffff;
-  --pvc-muted: #e2edf2;
-  --pvc-accent: #92bfd5;
-  --pvc-accent-ink: #bfe8ff;
+  --pvc-bg: #080c14 !important;
+  --pvc-accent-on: #080c14 !important;
+  --pvc-scheme: dark !important;
+  --pvc-success: #6ee7b7 !important;
+  --pvc-warning: #fbbf24 !important;
+  --pvc-danger: #fda4af !important;
+  --pvc-surface: #111d26 !important;
+  --pvc-elevated: #182b37 !important;
+  --pvc-border: #b9ced8 !important;
+  --pvc-text: #ffffff !important;
+  --pvc-muted: #e2edf2 !important;
+  --pvc-accent: #92bfd5 !important;
+  --pvc-accent-ink: #bfe8ff !important;
 }
 #pvc-controller-popup.pvc-a11y-contrast .pvc-hud-tab[aria-selected="true"],
-#pvc-controller-popup.pvc-a11y-contrast .pvc-hud-tab[aria-selected="true"] span { color: var(--pvc-bg) !important; background: var(--pvc-accent) !important; }
+#pvc-controller-popup.pvc-a11y-contrast .pvc-hud-tab[aria-selected="true"] span { color: var(--pvc-accent-on, #0a1418) !important; background: var(--pvc-accent) !important; }
+
+/* Uiverse adaptations: original authors and MIT notices in THIRD_PARTY_NOTICES.md. */
+#pvc-controller-popup .pvc-themes { margin-bottom: 10px !important; padding: 8px !important; border: 1px solid var(--pvc-border) !important; border-radius: 8px !important; }
+#pvc-controller-popup .pvc-themes summary { cursor: pointer !important; min-height: 28px !important; font: 600 13px/1.5 system-ui !important; color: var(--pvc-text) !important; }
+#pvc-controller-popup #pvc-theme-name { float: right !important; color: var(--pvc-accent-ink) !important; }
+#pvc-controller-popup .pvc-theme-field { display: grid !important; gap: 6px !important; margin: 8px 0 !important; color: var(--pvc-muted) !important; font: 12px/1.5 system-ui !important; }
+#pvc-controller-popup #pvc-theme-select { min-width: 0 !important; width: 100% !important; min-height: 34px !important; padding: 5px !important; border: 1px solid var(--pvc-border) !important; border-radius: 6px !important; background: var(--pvc-surface) !important; color: var(--pvc-text) !important; font: inherit !important; color-scheme: var(--pvc-scheme) !important; }
+#pvc-controller-popup .pvc-theme-controls { display: flex !important; flex-wrap: wrap !important; align-items: center !important; gap: 6px !important; }
+#pvc-controller-popup #pvc-theme-position { color: var(--pvc-muted) !important; font: 11px/1.5 system-ui !important; }
+#pvc-controller-popup .pvc-theme-swatches { display: flex !important; gap: 4px !important; margin-top: 10px !important; }
+#pvc-controller-popup .pvc-theme-swatches span { width: 22px !important; height: 14px !important; border: 1px solid var(--pvc-border) !important; border-radius: 4px !important; }
+#pvc-controller-popup #pvc-theme-contrast-note[hidden] { display: none !important; }
+
+/* Voxybuns/lucky-fireant-71: raised outline and pressed travel, without replacing button text nodes. */
+:is(#pvc-controller-popup, #pvc-error-modal) .pvc-raised-button {
+  border: 1px solid var(--pvc-border) !important; border-radius: 8px !important;
+  color: var(--pvc-text) !important; background: var(--pvc-elevated) !important;
+  box-shadow: 0 3px 0 var(--pvc-border) !important; transform: translateY(-2px) !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+:is(#pvc-controller-popup, #pvc-error-modal) .pvc-raised-button:hover { transform: translateY(-3px) !important; border-color: var(--pvc-accent-ink) !important; }
+:is(#pvc-controller-popup, #pvc-error-modal) .pvc-raised-button:active { transform: translateY(1px) !important; box-shadow: 0 0 0 var(--pvc-border) !important; }
+#pvc-controller-popup .pvc-raised-button:is(.pvc-active, .pvc-chip-active) { border-color: var(--pvc-accent-ink) !important; color: var(--pvc-accent-ink) !important; }
+
+/* gharsh11032000/brave-pug-20: outlined pill switch. Native input remains focusable and clickable. */
+#pvc-controller-popup .pvc-switch { position: relative !important; flex: 0 0 44px !important; width: 44px !important; height: 26px !important; }
+#pvc-controller-popup .pvc-switch input[type="checkbox"] { position: absolute !important; inset: 0 !important; margin: 0 !important; width: 44px !important; height: 26px !important; opacity: 0 !important; z-index: 1 !important; cursor: pointer !important; }
+#pvc-controller-popup .pvc-switch-track { position: absolute !important; inset: 0 !important; border: 2px solid var(--pvc-border) !important; border-radius: 50px !important; background: var(--pvc-surface) !important; transition: border-color 0.2s ease !important; }
+#pvc-controller-popup .pvc-switch-track::before { content: "" !important; position: absolute !important; width: 16px !important; height: 16px !important; left: 3px !important; top: 3px !important; border-radius: 50% !important; background: var(--pvc-text) !important; transition: transform 0.2s ease !important; }
+#pvc-controller-popup .pvc-switch input:checked + .pvc-switch-track { border-color: var(--pvc-accent-ink) !important; }
+#pvc-controller-popup .pvc-switch input:checked + .pvc-switch-track::before { transform: translateX(18px) !important; background: var(--pvc-accent-ink) !important; }
+#pvc-controller-popup .pvc-switch input:focus-visible + .pvc-switch-track { outline: 2px solid var(--pvc-accent-ink) !important; outline-offset: 3px !important; }
+
+/* WhiteNervosa/green-donkey-82, variation of mrhyddenn: circular stroke/check animation. */
+#pvc-error-modal .pvc-check-input { position: absolute !important; width: 20px !important; height: 20px !important; opacity: 0 !important; cursor: pointer !important; }
+#pvc-error-modal .pvc-check-visual { display: inline-block !important; width: 20px !important; height: 20px !important; vertical-align: middle !important; margin-right: 6px !important; pointer-events: none !important; }
+#pvc-error-modal .pvc-check-visual svg { width: 20px !important; height: 20px !important; fill: none !important; stroke: var(--pvc-muted) !important; stroke-width: 1.5 !important; stroke-linecap: round !important; stroke-linejoin: round !important; }
+#pvc-error-modal .pvc-check-visual path { stroke-dasharray: 60 !important; stroke-dashoffset: 0 !important; }
+#pvc-error-modal .pvc-check-visual polyline { stroke-dasharray: 22 !important; stroke-dashoffset: 66 !important; }
+#pvc-error-modal .pvc-check-input:checked + .pvc-check-visual svg { stroke: var(--pvc-accent-ink) !important; }
+#pvc-error-modal .pvc-check-input:checked + .pvc-check-visual path { stroke-dashoffset: 60 !important; transition: stroke-dashoffset 0.3s linear !important; }
+#pvc-error-modal .pvc-check-input:checked + .pvc-check-visual polyline { stroke-dashoffset: 42 !important; transition: stroke-dashoffset 0.2s linear !important; }
+#pvc-error-modal .pvc-check-input:focus-visible + .pvc-check-visual { outline: 2px solid var(--pvc-accent-ink) !important; outline-offset: 3px !important; }
+
+/* eslam-hany/strange-goose-48: offset outline and focus underline; visible labels retained. */
+#pvc-error-modal .pvc-feedback-field { border: 2px solid var(--pvc-border) !important; border-radius: 7px !important; box-shadow: 3px 3px 0 var(--pvc-border) !important; background: var(--pvc-surface) !important; color: var(--pvc-text) !important; transition: box-shadow 0.2s ease !important; }
+#pvc-error-modal .pvc-feedback-field:focus { box-shadow: none !important; border-bottom-color: var(--pvc-accent-ink) !important; }
+#pvc-error-modal .pvc-feedback-field:disabled { box-shadow: none !important; cursor: not-allowed !important; }
+/* From Uiverse.io by Nawsome - Tags: loader */
+.pvc-loading-grid {
+  --square: 4px;
+  --offset: 5px;
+  --duration: 2.4s;
+  --delay: 0.2s;
+  --timing-function: ease-in-out;
+  --in-duration: 0.4s;
+  --in-delay: 0.1s;
+  --in-timing-function: ease-out;
+  width: calc( 3 * var(--offset) + var(--square));
+  height: calc( 2 * var(--offset) + var(--square));
+  padding: 0px;
+  margin-left: 3px;
+  margin-right: 3px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  position: relative;
+}
+
+.pvc-loading-grid i {
+  display: inline-block;
+  background: var(--pvc-accent-ink);
+    /*background: var(--text-color);*/
+    /*box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.4);*/
+  border: none;
+  border-radius: 2px;
+  width: var(--square);
+  height: var(--square);
+  position: absolute;
+  padding: 0px;
+  margin: 0px;
+  font-size: 6pt;
+  color: var(--pvc-text);
+}
+
+.pvc-loading-grid i:nth-child(1) {
+  left: calc( 0 * var(--offset) );
+  top: calc( 0 * var(--offset) );
+  animation: pvc-square1 var(--duration) var(--delay) var(--timing-function) infinite,
+               pvc-squarefadein var(--in-duration) calc(1 * var(--in-delay)) var(--in-timing-function) both;
+}
+
+.pvc-loading-grid i:nth-child(2) {
+  left: calc( 0 * var(--offset) );
+  top: calc( 1 * var(--offset) );
+  animation: pvc-square2 var(--duration) var(--delay) var(--timing-function) infinite,
+              pvc-squarefadein var(--in-duration) calc(1 * var(--in-delay)) var(--in-timing-function) both;
+}
+
+.pvc-loading-grid i:nth-child(3) {
+  left: calc( 1 * var(--offset) );
+  top: calc( 1 * var(--offset) );
+  animation: pvc-square3 var(--duration) var(--delay) var(--timing-function) infinite,
+               pvc-squarefadein var(--in-duration) calc(2 * var(--in-delay)) var(--in-timing-function) both;
+}
+
+.pvc-loading-grid i:nth-child(4) {
+  left: calc( 2 * var(--offset) );
+  top: calc( 1 * var(--offset) );
+  animation: pvc-square4 var(--duration) var(--delay) var(--timing-function) infinite,
+               pvc-squarefadein var(--in-duration) calc(3 * var(--in-delay)) var(--in-timing-function) both;
+}
+
+.pvc-loading-grid i:nth-child(5) {
+  left: calc( 3 * var(--offset) );
+  top: calc( 1 * var(--offset) );
+  animation: pvc-square5 var(--duration) var(--delay) var(--timing-function) infinite,
+               pvc-squarefadein var(--in-duration) calc(4 * var(--in-delay)) var(--in-timing-function) both;
+}
+
+@keyframes pvc-square1 {
+  0% {
+    left: calc( 0 * var(--offset) );
+    top: calc( 0 * var(--offset) );
+  }
+
+  8.333% {
+    left: calc( 0 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  100% {
+    left: calc( 0 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+}
+
+@keyframes pvc-square2 {
+  0% {
+    left: calc( 0 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  8.333% {
+    left: calc( 0 * var(--offset) );
+    top: calc( 2 * var(--offset) );
+  }
+
+  16.67% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 2 * var(--offset) );
+  }
+
+  25.00% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  83.33% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  91.67% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 0 * var(--offset) );
+  }
+
+  100% {
+    left: calc( 0 * var(--offset) );
+    top: calc( 0 * var(--offset) );
+  }
+}
+
+@keyframes pvc-square3 {
+  0%,100% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  16.67% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  25.00% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 0 * var(--offset) );
+  }
+
+  33.33% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 0 * var(--offset) );
+  }
+
+  41.67% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  66.67% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  75.00% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 2 * var(--offset) );
+  }
+
+  83.33% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 2 * var(--offset) );
+  }
+
+  91.67% {
+    left: calc( 1 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+}
+
+@keyframes pvc-square4 {
+  0% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  33.33% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  41.67% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 2 * var(--offset) );
+  }
+
+  50.00% {
+    left: calc( 3 * var(--offset) );
+    top: calc( 2 * var(--offset) );
+  }
+
+  58.33% {
+    left: calc( 3 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  100% {
+    left: calc( 3 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+}
+
+@keyframes pvc-square5 {
+  0% {
+    left: calc( 3 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  50.00% {
+    left: calc( 3 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  58.33% {
+    left: calc( 3 * var(--offset) );
+    top: calc( 0 * var(--offset) );
+  }
+
+  66.67% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 0 * var(--offset) );
+  }
+
+  75.00% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+
+  100% {
+    left: calc( 2 * var(--offset) );
+    top: calc( 1 * var(--offset) );
+  }
+}
+
+@keyframes pvc-squarefadein {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.0;
+  }
+
+  100% {
+    transform: scale(1.0);
+    opacity: 1.0;
+  }
+}
+
+.pvc-loading-grid { display: inline-block; vertical-align: middle; }
+#pvc-controller-popup .pvc-btn-emerald { color: var(--pvc-success) !important; }
+#pvc-controller-popup .pvc-btn-sky { color: var(--pvc-accent-ink) !important; }
+#pvc-controller-popup .pvc-btn-amber { color: var(--pvc-warning) !important; }
+#pvc-controller-popup :is(.pvc-btn-emerald, .pvc-btn-sky, .pvc-btn-amber):hover { color: var(--pvc-text) !important; background: var(--pvc-elevated) !important; }
+#pvc-controller-popup .pvc-icon-btn.pvc-close:hover { color: var(--pvc-danger) !important; }
+:is(#pvc-controller-popup, #pvc-error-modal).pvc-a11y-reduce-motion .pvc-raised-button { transform: none !important; transition: none !important; }
+#pvc-controller-popup.pvc-a11y-reduce-motion .pvc-switch-track::before,
+#pvc-controller-popup.pvc-a11y-reduce-motion .pvc-switch-track,
+#pvc-error-modal.pvc-a11y-reduce-motion .pvc-check-visual path,
+#pvc-error-modal.pvc-a11y-reduce-motion .pvc-check-visual polyline { transition: none !important; }
+#pvc-controller-popup.pvc-a11y-reduce-motion .pvc-loading-grid { display: none !important; }
+#pvc-controller-popup .pvc-val-badge,
+#pvc-controller-popup #pvc-active-adapter-badge { background: var(--pvc-surface) !important; }
+#pvc-controller-popup .pvc-audio-mode-btn.pvc-audio-active,
+#pvc-controller-popup .pvc-icon-btn.pvc-btn-active { background: var(--pvc-accent) !important; color: var(--pvc-accent-on) !important; }

@@ -1,4 +1,4 @@
-# NOk Video Controller (v0.5.9 — geliştirme)
+# NOk Video Controller (v0.5.10 — geliştirme)
 
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
@@ -38,7 +38,7 @@
 
 ## Geliştirme Doğrulaması
 
-`node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs tests/frame-coordination.test.cjs tests/kick-ui.test.cjs tests/localization.test.cjs tests/hud-navigation.test.cjs` gizlilik sınırını, altyazıları, kalite/hız çağrılarını, çok çerçeveli HUD koordinasyonunu ve Kick UI işleyicilerini Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.9 için canlı doğrulama beklenmektedir.
+`node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs tests/frame-coordination.test.cjs tests/kick-ui.test.cjs tests/localization.test.cjs tests/hud-navigation.test.cjs` gizlilik sınırını, altyazıları, kalite/hız çağrılarını, çok çerçeveli HUD koordinasyonunu ve Kick UI işleyicilerini Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.10 için canlı doğrulama beklenmektedir.
 
 v0.5.4'te gerçek kalite API'si bulunmayan oynatıcılarda göstermelik çözünürlük seçenekleri sunulmaz. TRT'de ulaşılabilen Shaka instance'ı üzerinden kalite/hız isteği iletilir. Standart SRT/VTT dosyalarındaki `-->` sonrası boşluk hatası giderildi. Eklentiyi yeniden yükledikten sonra açık medya sayfalarını da yenileyin; erken instance kancaları ve iframe stilleri ancak yeni sayfa yüklemesinde devreye girer.
 
@@ -49,7 +49,7 @@ v0.5.5'te altyazıyı gizli tutan CSS önceliği düzeltildi; metin seçili vide
 v0.5.6'da çalışan iframe paneli seçildiğinde üstteki boş panel ve diğer dallar kapanır. TRT hız kilidi yalnızca seçili video elementindeki otomatik 1x yazımlarını yönlendirir; **panelden 1x seçmek veya hız çubuğuna çift tıklamak kilidi kapatır**. Video.js'te kalite eklentisi yoksa VHS'nin kendi temsil listesi kullanılır. Kick'te Radix ses işleyicisi önbelleğe alınır; hız için gerektiğinde gerçek menü seçeneği kullanılır. Bu yolların çağrılması canlı arayüzün eşleştiğini kanıtlamaz. Eklentiyi yeniden yükleyin ve sayfaları yenileyin.
 
 
-## Türkçe / English arayüz (v0.5.9)
+## Türkçe / English arayüz (v0.5.10)
 
 Panelin **Settings → Language** alanından Türkçe veya English seçilebilir. Her yeni sayfada ilk dil **İngilizcedir**, tarayıcı dili bunu değiştirmez. Seçim yalnızca sayfa belleğinde tutulur; panel kapatılıp açıldığında korunur, sayfa yenilenince sıfırlanır. Çocuk/ebeveyn çerçevelere yalnızca sabit dil sinyalleri gider. Site metni, dosya adları, altyazılar ve teşhis JSON kodları çevrilmez; rapora dil/yerel ayar alanı eklenmez. Tarayıcının eklenti yönetim ekranındaki açıklama kendi tarayıcı dilini kullanır.
 
@@ -73,3 +73,18 @@ Tema kullanıcı referansındaki koyu petrol **#0A1418**, kart **#1B2A33**, mavi
 **Erişilebilirlik** alanı varsayılan olarak kapalıdır: paneli açık tutma, büyük yazı/kontroller, yüksek kontrast ve panel hareketlerini azaltma seçenekleri içerir. Kısayol düğmesi de buradadır. Hareket azaltma başlangıç değeri `prefers-reduced-motion` tercihine uyar; panelden değiştirilebilir. Sunum tercihleri yalnızca çerçeve belleğinde tutulur; rapora veya diğer çerçevelere aktarılmaz, yenilemede sıfırlanır. Dil, önceki sabit sinyalli eşitlemeyi korur.
 
 **English:** Three vertical tabs on the left: Player (including adapter selection), Subtitles, Settings (including picture controls). Use Up/Down/Home/End while a tab is focused. Petrol surfaces and a muted blue accent follow the supplied references. Existing controls, inputs and listeners are moved intact. Preferences remain temporary; live Firefox/Chromium layout and screen-reader testing are pending.
+
+
+## 20 tema ve bileşenler (v0.5.10)
+
+**Settings → Themes** alanında SevenGrid'in herkese açık demosunda incelenen 20 tema bulunur: 7 standart/koyu, 7 açık, 6 OLED. Aileye göre seçici, Previous/Next ve renk örnekleriyle karşılaştırılabilir. Başlangıç **Atlas**; seçim yalnızca mevcut çerçevenin RAM'inde tutulur. Paneli kapat/aç korur, sayfa yenileme Atlas'a döner. Kullanıcı finalist beş temayı henüz seçmedi; tüm adaylar korunur.
+
+Seçim HUD, açık pencereler ve toast'a uygulanır; sonradan açılan pencereler de seçimi kullanır. Yüksek kontrast ayrı önceliğini korur ve tema alanı bunu açıklar. Tema adı rapora eklenmez; tema için uzak çağrı veya ek izin yoktur. SevenGrid'in ana yüzeyleri/vurgusu korunur, küçük metin, durum renkleri ve kenarlıklar HUD için kontrast hedefine uyarlanır. Renk hesabı gerçek tarayıcı doğrulaması değildir.
+
+Seçilen Uiverse örneklerinden düğme, rapor checkbox'ı, erişilebilirlik switch'i, açıklama input'u ve gerçek CDN ölçümünün beş kareli loader'ı uyarlandı. Native kontrol davranışları ve kullanıcı kontrollü rapor paylaşımı korunur. Hareket azaltmada basılma yer değiştirmesi/animasyon devre dışıdır. Radio, form ve tooltip örnekleri sonraki uygun kullanım için kaydedildi.
+
+- [DESIGN_REFERENCES.md](./DESIGN_REFERENCES.md): sekiz referans, kullanıldığı yer, ertelenenler ve gerekçeleri.
+- [THEME_EVALUATION.md](./THEME_EVALUATION.md): 20 temanın kaynak ve HUD renk değerlendirmesi, karşılaştırma notları.
+- [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): kullanılan bileşenlerin MIT bildirimleri ve yazarları.
+
+**English:** Settings → Themes includes all 20 inspected SevenGrid palettes. Atlas is the default; Previous/Next cycles the grouped list. The preference is temporary, local to the frame, omitted from diagnostics and reset on reload. High contrast overrides the palette without discarding the selection. Component provenance and deferred designs are recorded in the linked documents. Live layout and assistive-technology checks are still pending.

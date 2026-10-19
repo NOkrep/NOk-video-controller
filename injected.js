@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.5.9 (Main World Engine)
+ * injected.js - NOk Video Controller v0.5.10 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,9 +17,10 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.5.9';
+  const EXTENSION_VERSION = '0.5.10';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.5.10', notes: 'SevenGrid kaynaklı 20 yerel tema, kontrast uyarlaması ve bellek içi seçici; seçilen Uiverse düğme/checkbox/switch/input/loader uyarlamaları; kaynak/lisans ve sonraki tasarım kayıtları. Canlı tarayıcı doğrulaması bekliyor.' },
     { version: 'v0.5.9', notes: 'Solda üç dikey sekme, Player içinde adaptör, Settings içinde görüntü kontrolleri; referans görselden koyu petrol/mavi tema ve ortak renk değişkenleri. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.8', notes: 'İngilizce varsayılan dil; Player/Picture/Subtitles/Settings sekmeleri; bellekte paneli açık tutma, büyük yazı, yüksek kontrast ve hareket azaltma seçenekleri. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.7', notes: 'Bellek içi Türkçe/English arayüz, sabit dil sinyalleriyle çerçeve eşitlemesi, isteğe bağlı çözüm sonrası silme talebi; klavye akordeonu, slider adları ve kaynak temelli HMI değerlendirmesi. Canlı tarayıcı/site doğrulaması bekliyor.' },
@@ -41,6 +42,9 @@
   // UI-only gettext catalogue. No page content, subtitle cues or report JSON is translated.
   // Language and original DOM text live only in this frame's RAM.
   const UI_MESSAGES = {
+    'Temalar': 'Themes', 'Tema seç': 'Choose a theme', 'Standart / koyu': 'Standard / dark', 'Açık': 'Light',
+    'Önceki': 'Previous', 'Sonraki': 'Next', 'Tema {0} / {1}': 'Theme {0} / {1}',
+    'Yüksek kontrast açıkken tema renkleri geçici olarak geçersiz kılınır.': 'High contrast temporarily overrides theme colours.',
     'Kontrol grupları': 'Control groups',
     'Oynatıcı': 'Player',
     'Görüntü': 'Picture',
@@ -305,7 +309,7 @@
       return;
     }
     if (root.hasAttribute?.('data-pvc-i18n-skip')) return;
-    for (const name of ['title', 'aria-label', 'placeholder']) {
+    for (const name of ['title', 'aria-label', 'placeholder', 'label']) {
       if (root.hasAttribute?.(name)) {
         const originals = uiOriginalAttributes.get(root);
         setUiAttribute(root, name, originals?.[name] ?? root.getAttribute(name));
@@ -328,6 +332,152 @@
   }
   // END UI LOCALIZATION
 
+  // Palette facts inspected on sevengrid.app, 2026-10-19. No site scripts/assets are bundled.
+  // id, family, scheme, background, surface, elevated, border, text, muted, action
+  const UI_THEME_DEFINITIONS = [
+    ['aurora', 'standard', 'dark', '#0A0F12', '#11181D', '#1A2228', '#2A3338', '#F5F7F8', '#8B9499', '#1DC7B7'],
+    ['daylight', 'light', 'light', '#FBFAF7', '#F2F0EA', '#E9E6DD', '#D7D3C8', '#1A1C1E', '#5C6063', '#0A6E63'],
+    ['daybreak', 'light', 'light', '#FEF9F6', '#FCEDE4', '#F5E3D7', '#E4CFC2', '#1F1C1A', '#615F5D', '#A34F1E'],
+    ['cream', 'light', 'light', '#F9F6EA', '#F1ECD9', '#E9E3CB', '#D7D0B6', '#1D1C18', '#605F5C', '#6B4423'],
+    ['sage', 'light', 'light', '#F6FCF6', '#E8F3E8', '#DCEADB', '#C7D8C7', '#1A1D1A', '#5E605E', '#2F6B47'],
+    ['glacier', 'light', 'light', '#F5FBFF', '#E5F2FC', '#D8E9F5', '#C3D6E4', '#1A1D1F', '#5D6061', '#2F6B8F'],
+    ['paper', 'light', 'light', '#FAFAFA', '#F0F0F0', '#E6E6E6', '#D3D3D3', '#1C1C1C', '#5F5F5F', '#4F46E5'],
+    ['blossom', 'light', 'light', '#FFF9FB', '#FDECF2', '#F7E1E8', '#E6CDD5', '#1F1B1C', '#625F60', '#8E2F73'],
+    ['mocha', 'standard', 'dark', '#15110D', '#1E1812', '#2A2118', '#3A2F22', '#F1ECE2', '#9A8E7E', '#B5876F'],
+    ['forge', 'standard', 'dark', '#06171E', '#0F1F26', '#14262E', '#2A3D46', '#E8EEF1', '#9AA8AE', '#FD7D00'],
+    ['ember', 'standard', 'dark', '#0F1014', '#15171B', '#1C1E23', '#2A2D33', '#F0EFEC', '#8A8985', '#D4AF37'],
+    ['pine', 'standard', 'dark', '#0C1611', '#14201A', '#1C2922', '#2E3C34', '#F0EFE8', '#8B9387', '#5BA66E'],
+    ['atlas', 'standard', 'dark', '#0A1418', '#131F25', '#1B2A33', '#2C3C46', '#ECEFF2', '#8A95A0', '#5F99B9'],
+    ['plum', 'standard', 'dark', '#150D14', '#1E1421', '#291828', '#3A2A39', '#F2EAEF', '#998796', '#C084FC'],
+    ['cinder', 'oled', 'dark', '#000000', '#0A0A0A', '#141414', '#1F1F1F', '#EDEDED', '#8A8A8A', '#C98F6B'],
+    ['onyx', 'oled', 'dark', '#000000', '#0A0A0A', '#141414', '#1F1F1F', '#EDEDED', '#8A8A8A', '#D4AF37'],
+    ['obsidian', 'oled', 'dark', '#000000', '#0A0A0A', '#141414', '#1F1F1F', '#EDEDED', '#8A8A8A', '#5BA66E'],
+    ['eclipse', 'oled', 'dark', '#000000', '#0A0A0A', '#141414', '#1F1F1F', '#EDEDED', '#8A8A8A', '#1DC7B7'],
+    ['midnight', 'oled', 'dark', '#000000', '#0A0A0A', '#141414', '#1F1F1F', '#EDEDED', '#8A8A8A', '#A5B4FC'],
+    ['nocturne', 'oled', 'dark', '#000000', '#0A0A0A', '#141414', '#1F1F1F', '#EDEDED', '#8A8A8A', '#C084FC']
+  ];
+  function uiColorLuminance(hex) {
+    const rgb = hex.slice(1).match(/../g).map(part => parseInt(part, 16) / 255)
+      .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  }
+  function uiColorContrast(a, b) {
+    const x = uiColorLuminance(a), y = uiColorLuminance(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+  function uiReadableColor(color, backgrounds, minimum = 4.5) {
+    const target = uiColorLuminance(backgrounds[0]) < 0.3 ? '#ffffff' : '#000000';
+    const rgb = value => value.slice(1).match(/../g).map(part => parseInt(part, 16));
+    const start = rgb(color), end = rgb(target);
+    for (let step = 0; step <= 100; step++) {
+      const mixed = '#' + start.map((value, i) => Math.round(value + (end[i] - value) * step / 100).toString(16).padStart(2, '0')).join('');
+      if (backgrounds.every(background => uiColorContrast(mixed, background) >= minimum)) return mixed;
+    }
+    return target;
+  }
+  const UI_THEMES = ['standard', 'light', 'oled'].flatMap(family => UI_THEME_DEFINITIONS.filter(theme => theme[1] === family))
+    .map(([id, family, scheme, bg, surface, elevated, border, text, muted, accent]) => {
+    const backgrounds = [bg, surface, elevated];
+    return { id, family, scheme, name: id[0].toUpperCase() + id.slice(1), colors: {
+      bg, surface, elevated, text, accent,
+      border: uiReadableColor(border, backgrounds, 3),
+      muted: uiReadableColor(muted, backgrounds),
+      'accent-ink': uiReadableColor(accent, backgrounds),
+      'accent-on': uiColorContrast('#111111', accent) >= uiColorContrast('#ffffff', accent) ? '#111111' : '#ffffff',
+      success: uiReadableColor('#34d399', backgrounds), warning: uiReadableColor('#f59e0b', backgrounds),
+      danger: uiReadableColor('#f43f5e', backgrounds)
+    } };
+  });
+  let currentUiThemeId = 'atlas';
+  const UI_ROOT_IDS = ['pvc-controller-popup', 'pvc-error-modal', 'pvc-permissions-modal', 'pvc-adapter-modal', 'pvc-drm-modal', 'pvc-quick-toast'];
+  function applyUiTheme(root) {
+    if (!root) return;
+    const theme = UI_THEMES.find(item => item.id === currentUiThemeId);
+    root.setAttribute('data-pvc-theme', theme.id);
+    for (const [key, value] of Object.entries(theme.colors)) root.style.setProperty(`--pvc-${key}`, value);
+    root.style.setProperty('--pvc-scheme', theme.scheme);
+  }
+  function updateThemeControls() {
+    const theme = UI_THEMES.find(item => item.id === currentUiThemeId);
+    const select = document.getElementById('pvc-theme-select');
+    if (select) select.value = theme.id;
+    setUiText(document.getElementById('pvc-theme-name'), theme.name);
+    setUiText(document.getElementById('pvc-theme-position'), `Tema ${UI_THEMES.indexOf(theme) + 1} / ${UI_THEMES.length}`);
+    const note = document.getElementById('pvc-theme-contrast-note');
+    if (note) note.hidden = !hudAccessibility.highContrast;
+  }
+  function setUiTheme(id) {
+    if (!UI_THEMES.some(theme => theme.id === id)) return false;
+    currentUiThemeId = id;
+    UI_ROOT_IDS.forEach(rootId => applyUiTheme(document.getElementById(rootId)));
+    updateThemeControls();
+    const popup = document.getElementById('pvc-controller-popup');
+    if (popup) { resetIdleTimer(popup); clampPopupToViewport(popup); }
+    return true;
+  }
+  function createThemePicker(settings, popup) {
+    const details = document.createElement('details'); details.id = 'pvc-themes'; details.className = 'pvc-themes';
+    const summary = document.createElement('summary');
+    const title = document.createElement('span'); setUiText(title, 'Temalar'); summary.appendChild(title);
+    const name = document.createElement('span'); name.id = 'pvc-theme-name'; summary.appendChild(name); details.appendChild(summary);
+    const label = document.createElement('label'); label.className = 'pvc-theme-field';
+    const caption = document.createElement('span'); setUiText(caption, 'Tema seç'); label.appendChild(caption);
+    const select = document.createElement('select'); select.id = 'pvc-theme-select';
+    for (const [family, name] of [['standard', 'Standart / koyu'], ['light', 'Açık'], ['oled', 'OLED']]) {
+      const group = document.createElement('optgroup'); setUiAttribute(group, 'label', name);
+      for (const theme of UI_THEMES.filter(item => item.family === family)) {
+        const option = document.createElement('option'); option.value = theme.id; setUiText(option, theme.name); group.appendChild(option);
+      }
+      select.appendChild(group);
+    }
+    label.appendChild(select); details.appendChild(label);
+    select.addEventListener('change', e => { e.stopPropagation(); setUiTheme(select.value); });
+    const controls = document.createElement('div'); controls.className = 'pvc-theme-controls';
+    for (const [delta, text] of [[-1, 'Önceki'], [1, 'Sonraki']]) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'pvc-action-btn';
+      button.id = delta === -1 ? 'pvc-theme-previous' : 'pvc-theme-next'; setUiText(button, text);
+      button.addEventListener('click', e => {
+        e.stopPropagation(); const index = UI_THEMES.findIndex(theme => theme.id === currentUiThemeId);
+        setUiTheme(UI_THEMES[(index + delta + UI_THEMES.length) % UI_THEMES.length].id);
+      }); controls.appendChild(button);
+    }
+    const position = document.createElement('span'); position.id = 'pvc-theme-position'; position.setAttribute('aria-live', 'polite'); controls.appendChild(position);
+    details.appendChild(controls);
+    const swatches = document.createElement('div'); swatches.className = 'pvc-theme-swatches'; swatches.setAttribute('aria-hidden', 'true');
+    for (const color of ['bg', 'surface', 'elevated', 'text', 'accent']) {
+      const swatch = document.createElement('span'); swatch.style.background = `var(--pvc-${color})`; swatches.appendChild(swatch);
+    }
+    details.appendChild(swatches);
+    const note = document.createElement('p'); note.id = 'pvc-theme-contrast-note'; note.className = 'pvc-settings-note';
+    setUiText(note, 'Yüksek kontrast açıkken tema renkleri geçici olarak geçersiz kılınır.'); details.appendChild(note);
+    settings.insertBefore(details, settings.querySelector('#pvc-accessibility'));
+    details.addEventListener('toggle', () => { resetIdleTimer(popup); clampPopupToViewport(popup); });
+    updateThemeControls();
+  }
+  // END UI THEMES
+
+  // Adapted from the user-selected MIT components; see THIRD_PARTY_NOTICES.md.
+  function decorateUiComponents(root) {
+    for (const button of root.querySelectorAll?.('.pvc-action-btn, .pvc-chip-btn, .pvc-modal-btn-secondary, .pvc-modal-btn-primary') || []) {
+      button.classList.add('pvc-raised-button');
+    }
+    const feedback = root.querySelector?.('#pvc-user-feedback-input');
+    if (feedback) feedback.classList.add('pvc-feedback-field');
+    for (const checkbox of root.querySelectorAll?.('.pvc-report-field input[type="checkbox"]') || []) {
+      if (checkbox.classList.contains('pvc-check-input')) continue;
+      checkbox.classList.add('pvc-check-input');
+      const visual = document.createElement('span'); visual.className = 'pvc-check-visual'; visual.setAttribute('aria-hidden', 'true');
+      visual.innerHTML = '<svg viewBox="0 0 18 18"><path d="M1 9c0-5 3-8 8-8 5 0 8 4 8 8 0 4-4 8-8 8-4 0-8-4-8-8Z"/><polyline points="1 9 7 14 15 4"/></svg>';
+      checkbox.after(visual);
+    }
+  }
+  function appendUiLoader(button) {
+    const loader = document.createElement('span'); loader.className = 'pvc-loading-grid'; loader.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 5; i++) loader.appendChild(document.createElement('i'));
+    button.appendChild(loader);
+  }
+  // END UI COMPONENTS
+
   // Presentation preferences are kept in this frame only; never added to diagnostics.
   const hudAccessibility = {
     keepVisible: false, largeText: false, highContrast: false,
@@ -335,6 +485,7 @@
   };
   function applyUiAccessibility(root) {
     if (!root) return;
+    applyUiTheme(root);
     for (const [key, className] of Object.entries({
       largeText: 'pvc-a11y-large-text', highContrast: 'pvc-a11y-contrast', reduceMotion: 'pvc-a11y-reduce-motion'
     })) root.classList.toggle(className, hudAccessibility[key]);
@@ -345,6 +496,7 @@
     for (const id of ['pvc-controller-popup', 'pvc-error-modal', 'pvc-permissions-modal', 'pvc-adapter-modal', 'pvc-drm-modal', 'pvc-quick-toast']) {
       applyUiAccessibility(document.getElementById(id));
     }
+    updateThemeControls();
     resetIdleTimer(popup);
     clampPopupToViewport(popup);
   }
@@ -427,7 +579,11 @@
       const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
       checkbox.id = `pvc-a11y-${key}`; checkbox.checked = hudAccessibility[key];
       const caption = document.createElement('span'); setUiText(caption, label);
-      row.appendChild(checkbox); row.appendChild(caption); accessibility.appendChild(row);
+      const control = document.createElement('span'); control.className = 'pvc-switch';
+      const track = document.createElement('span'); track.className = 'pvc-switch-track'; track.setAttribute('aria-hidden', 'true');
+      checkbox.setAttribute('role', 'switch');
+      control.appendChild(checkbox); control.appendChild(track);
+      row.appendChild(caption); row.appendChild(control); accessibility.appendChild(row);
       checkbox.addEventListener('change', e => {
         e.stopPropagation(); hudAccessibility[key] = checkbox.checked;
         refreshUiAccessibility(popup);
@@ -444,6 +600,8 @@
     accessibility.appendChild(note);
     settings.insertBefore(accessibility, settings.querySelector('#pvc-section-filters'));
     accessibility.addEventListener('toggle', () => { resetIdleTimer(popup); clampPopupToViewport(popup); });
+    createThemePicker(settings, popup);
+    decorateUiComponents(popup);
     applyUiAccessibility(popup);
     activate(0);
   }
@@ -922,9 +1080,9 @@
         top: 24px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        background: rgba(20, 33, 39, 0.96) !important;
+        background: var(--pvc-surface) !important;
         color: var(--pvc-accent-ink, #92bfd5) !important;
-        border: 1px solid rgba(96, 153, 185, 0.45) !important;
+        border: 1px solid color-mix(in srgb, var(--pvc-accent) 45%, transparent) !important;
         padding: 8px 22px !important;
         border-radius: 24px !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
@@ -2272,7 +2430,7 @@
           badge.style.color = 'var(--pvc-accent-ink, #92bfd5)';
         } else {
           setUiText(badge, `⏳ ${pendingQualityLabel} Uygulanıyor (${label})`);
-          badge.style.color = '#f59e0b';
+          badge.style.color = 'var(--pvc-warning, #f59e0b)';
         }
       } else {
         setUiText(badge, `🎬 Gerçek: ${lastObservedResolution}`);
@@ -2791,10 +2949,10 @@
     let activeColor = 'var(--pvc-accent-ink, #92bfd5)';
     if (percent > 200) {
       slider.classList.add('pvc-gain-hot');
-      activeColor = '#f43f5e';
+      activeColor = 'var(--pvc-danger, #f43f5e)';
     } else if (percent > 100) {
       slider.classList.add('pvc-gain-warm');
-      activeColor = '#f59e0b';
+      activeColor = 'var(--pvc-warning, #f59e0b)';
     } else {
       slider.classList.add('pvc-gain-normal');
       activeColor = 'var(--pvc-accent-ink, #92bfd5)';
@@ -2854,7 +3012,7 @@
       }
       if (hdrBadge) {
         setUiText(hdrBadge, `${validPercent}%`);
-        hdrBadge.style.color = validPercent > 200 ? '#f43f5e' : (validPercent > 100 ? '#fbbf24' : 'var(--pvc-accent-ink, #92bfd5)');
+        hdrBadge.style.color = validPercent > 200 ? 'var(--pvc-danger, #f43f5e)' : (validPercent > 100 ? 'var(--pvc-warning, #fbbf24)' : 'var(--pvc-accent-ink, #92bfd5)');
       }
 
       updateCollapsedSummaryBar();
@@ -3116,9 +3274,9 @@
     const latest = entries[entries.length - 1];
     const updatePingBadge = (ms) => {
       const pingBtn = document.getElementById('pvc-ping-btn');
-      if (pingBtn) {
+      if (pingBtn && pingBtn.getAttribute('aria-busy') !== 'true') {
         setUiText(pingBtn, `📡 ${ms} ms`);
-        pingBtn.style.color = ms <= 50 ? '#34d399' : (ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : '#f59e0b');
+        pingBtn.style.color = ms <= 50 ? 'var(--pvc-success, #34d399)' : (ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-warning, #f59e0b)');
       }
     };
     // Hazır kaynak zamanlaması varsa ek ağ isteği yapmadan HTTP yanıt süresi gösterilir.
@@ -3347,7 +3505,7 @@
           </label>
           <div style="margin-bottom: 12px;">
             <label class="pvc-report-field"><input id="pvc-include-comment" type="checkbox"> Kendi açıklamamı rapora ekle (isteğe bağlı)</label>
-            <textarea id="pvc-user-feedback-input" disabled maxlength="500" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; height: 56px; background: var(--pvc-surface, #142127); border: 1px solid rgba(96, 153, 185, 0.3); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: none;"></textarea>
+            <textarea id="pvc-user-feedback-input" disabled maxlength="500" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; height: 56px; background: var(--pvc-surface, #142127); border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: none;"></textarea>
             <p class="pvc-modal-desc">Açıklamanız otomatik anonimleştirilmez. Paylaşmadan önce aşağıdaki raporu kontrol edin.
               Bu panel sayfanın içinde çalışır; yazdığınız açıklama sayfanın betiklerinden gizlenmez.
               E-posta gönderen adresinizi, GitHub ise hesabınızı paylaşımınıza bağlayabilir.</p>
@@ -3368,6 +3526,7 @@
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
     applyUiAccessibility(modal);
+    decorateUiComponents(modal);
 
     ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keyup'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
@@ -3463,6 +3622,7 @@
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
     applyUiAccessibility(modal);
+    decorateUiComponents(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         if (e.target === modal) modal.remove();
@@ -3492,7 +3652,7 @@
     ].map(opt => {
       const isSelected = (!userForcedAdapterName && opt.name === '') || (userForcedAdapterName === opt.name);
       return `
-        <div class="pvc-adapter-option ${isSelected ? 'pvc-adapter-selected' : ''}" data-adapter="${opt.name}" style="padding: 10px 12px; background: ${isSelected ? 'rgba(96, 153, 185, 0.15)' : 'rgba(255, 255, 255, 0.03)'}; border: 1px solid ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
+        <div class="pvc-adapter-option ${isSelected ? 'pvc-adapter-selected' : ''}" data-adapter="${opt.name}" style="padding: 10px 12px; background: ${isSelected ? 'color-mix(in srgb, var(--pvc-accent) 15%, transparent)' : 'rgba(255, 255, 255, 0.03)'}; border: 1px solid ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
             <span style="font-weight: 700; font-size: 13px; color: ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-text, #edf2f3)'};">${opt.label}</span>
             <span class="pvc-val-badge" style="font-size: 10px;">${opt.tier}</span>
@@ -3521,6 +3681,7 @@
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
     applyUiAccessibility(modal);
+    decorateUiComponents(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         if (e.target === modal) modal.remove();
@@ -3556,7 +3717,7 @@
     modal.innerHTML = `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span style="color: #fbbf24;">🛡️ DRM / EME Korumalı Akış Bilgilendirmesi</span>
+          <span style="color: var(--pvc-warning, #fbbf24);">🛡️ DRM / EME Korumalı Akış Bilgilendirmesi</span>
           <button id="pvc-close-drm-btn">✕</button>
         </div>
         <div class="pvc-modal-body">
@@ -3574,6 +3735,7 @@
     modal.setAttribute('lang', uiLanguage);
     localizeUi(modal);
     applyUiAccessibility(modal);
+    decorateUiComponents(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         if (e.target === modal) modal.remove();
@@ -3794,7 +3956,7 @@
         <div class="pvc-mini-metrics-row">
           <span id="pvc-mini-res-val" style="color: var(--pvc-accent-ink, #92bfd5);">🎬 ---</span>
           <span id="pvc-mini-speed-val" style="color: var(--pvc-text, #edf2f3);">⚡ 1.0x</span>
-          <span id="pvc-mini-vol-val" style="color: #34d399;">🔊 %100 (S)</span>
+          <span id="pvc-mini-vol-val" style="color: var(--pvc-success, #34d399);">🔊 %100 (S)</span>
           <span id="pvc-mini-adapter-val" style="color: var(--pvc-accent-ink, #92bfd5); font-size: 9.5px;">Generic</span>
         </div>
         <div class="pvc-mini-quick-controls">
@@ -3806,7 +3968,7 @@
       </div>
 
       <!-- Canlı Render Çözünürlüğü Rozeti -->
-      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(96, 153, 185, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 6px;" title="Oynatıcıda o an işlenen video piksel boyutu">
+      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid color-mix(in srgb, var(--pvc-accent) 20%, transparent); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 6px;" title="Oynatıcıda o an işlenen video piksel boyutu">
         <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: var(--pvc-accent-ink, #92bfd5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite">
           🎬 Gerçek: Ölçülüyor...
         </span>
@@ -3814,21 +3976,21 @@
       </div>
 
       <!-- Basamaklı Adaptör Durumu & Manuel Seçici Barı -->
-      <div id="pvc-adapter-bar" style="padding: 5px 10px; background: rgba(27, 42, 51, 0.7); border: 1px solid rgba(96, 153, 185, 0.25); border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+      <div id="pvc-adapter-bar" style="padding: 5px 10px; background: rgba(27, 42, 51, 0.7); border: 1px solid color-mix(in srgb, var(--pvc-accent) 25%, transparent); border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
         <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
           <span style="font-size: 10.5px; color: var(--pvc-muted, #a2b6c0);">Adaptör:</span>
-          <span id="pvc-active-adapter-badge" style="font-size: 10.5px; font-weight: 700; color: var(--pvc-accent-ink, #92bfd5); background: rgba(96, 153, 185, 0.12); padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(96, 153, 185, 0.3);">Otomatik</span>
+          <span id="pvc-active-adapter-badge" style="font-size: 10.5px; font-weight: 700; color: var(--pvc-accent-ink, #92bfd5); background: color-mix(in srgb, var(--pvc-accent) 12%, transparent); padding: 1px 5px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent);">Otomatik</span>
         </div>
         <button id="pvc-change-adapter-btn" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--pvc-muted, #a2b6c0); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;" title="Adaptör Listesini Aç ve Değiştir">Değiştir ▾</button>
       </div>
 
       <!-- DRM Koruma Rozeti -->
-      <div id="pvc-drm-status-badge" style="display: none; padding: 5px 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; margin-bottom: 6px; color: #fbbf24; font-size: 10.5px; font-weight: 600; cursor: pointer;">
+      <div id="pvc-drm-status-badge" style="display: none; padding: 5px 10px; background: color-mix(in srgb, var(--pvc-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-warning) 40%, transparent); border-radius: 6px; margin-bottom: 6px; color: var(--pvc-warning, #fbbf24); font-size: 10.5px; font-weight: 600; cursor: pointer;">
         <span>🛡️ DRM Korumalı Akış (Güvenli Mod)</span>
       </div>
 
       <!-- Video Bulunamadı Uyarısı -->
-      <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: #fca5a5;">
+      <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: color-mix(in srgb, var(--pvc-danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-danger) 35%, transparent); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: var(--pvc-danger, #fca5a5);">
         <div style="font-weight: 700; margin-bottom: 2px;">⚠️ Aktif Oynatıcı Bekleniyor</div>
         <div style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px;">Sayfadaki video henüz başlamadı veya farklı bir çerçeve içinde.</div>
         <div style="display: flex; gap: 6px;">
@@ -3875,7 +4037,7 @@
             <span class="pvc-label">🔊 Ses Seviyesi & Kanallar</span>
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: var(--pvc-accent-ink, #92bfd5); background: rgba(96, 153, 185, 0.12); border-color: rgba(96, 153, 185, 0.3);">STEREO</span>
+            <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: var(--pvc-accent-ink, #92bfd5); background: color-mix(in srgb, var(--pvc-accent) 12%, transparent); border-color: color-mix(in srgb, var(--pvc-accent) 30%, transparent);">STEREO</span>
             <span id="pvc-hdr-volume-badge" class="pvc-val-badge">100%</span>
           </div>
         </div>
@@ -3883,7 +4045,7 @@
           <div class="pvc-slider-row">
             <span class="pvc-slider-bound">%0</span>
             <input type="range" id="pvc-volume-slider" aria-label="Ses" min="0" max="300" step="5" value="100" class="pvc-range-slider pvc-gain-normal" title="Ses (%0-%300 Güçlendirici) • Çift tıklayarak %100'e sıfırlayın" />
-            <span class="pvc-slider-bound" style="color: #f43f5e;" title="Maksimum %300 Ses Güçlendirici">%300 🚀</span>
+            <span class="pvc-slider-bound" style="color: var(--pvc-danger, #f43f5e);" title="Maksimum %300 Ses Güçlendirici">%300 🚀</span>
           </div>
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; margin-top: 4px;">
             <div class="pvc-quick-speed-buttons" style="flex: 1 1 100%;">
@@ -4206,7 +4368,7 @@
             addDiagnosticLog('WARN', 'SUBTITLE_PARSE_EMPTY');
             if (subStatusText) {
               setUiText(subStatusText, 'Geçerli altyazı satırı okunamadı. SRT/VTT biçimini kontrol edin.');
-              subStatusText.style.color = '#f43f5e';
+              subStatusText.style.color = 'var(--pvc-danger, #f43f5e)';
             }
             showToast('Altyazı yüklenemedi: geçerli zamanlanmış satır bulunamadı.');
             return;
@@ -4220,7 +4382,7 @@
           if (badge) setUiText(badge, '0ms');
           if (subStatusText) {
             setUiText(subStatusText, `✅ ${subtitleFileName} (${customSubtitleCues.length} satır RAM'de)`);
-            subStatusText.style.color = '#34d399';
+            subStatusText.style.color = 'var(--pvc-success, #34d399)';
           }
           const { video } = findVideoAndPlayer();
           if (video) {
@@ -4237,7 +4399,7 @@
         subFileInput.value = '';
         if (subStatusText) {
           setUiText(subStatusText, 'Altyazı dosyası okunamadı.');
-          subStatusText.style.color = '#f43f5e';
+          subStatusText.style.color = 'var(--pvc-danger, #f43f5e)';
         }
         showToast('Altyazı dosyası okunamadı.');
       };
@@ -4310,9 +4472,20 @@
 
     popup.querySelector('#pvc-ping-btn').onclick = async function (e) {
       e.stopPropagation();
+      this.disabled = true;
+      this.setAttribute('aria-busy', 'true');
       setUiText(this, 'Ölçülüyor...');
-      const res = await testCdnPing(false);
-      setUiText(this, (res && res.ms !== undefined) ? `📡 ${res.ms} ms` : '📡 CDN yanıtı');
+      appendUiLoader(this);
+      try {
+        const res = await testCdnPing(false);
+        setUiText(this, (res && res.ms !== undefined) ? `📡 ${res.ms} ms` : '📡 CDN yanıtı');
+      } catch (_) {
+        setUiText(this, '📡 CDN yanıtı');
+      } finally {
+        this.querySelector('.pvc-loading-grid')?.remove();
+        this.disabled = false;
+        this.setAttribute('aria-busy', 'false');
+      }
     };
 
     popup.querySelector('#pvc-perms-btn').onclick = (e) => {
