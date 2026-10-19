@@ -99,7 +99,7 @@ test('main panel English text and accessible names contain no untranslated Turki
   const start = source.indexOf('    popup.innerHTML = `');
   const end = source.indexOf('\n    `;', start);
   const literal = source.slice(start + '    popup.innerHTML = '.length, end + '\n    `'.length);
-  const h = harness(); h.context.EXTENSION_VERSION = '0.5.8';
+  const h = harness(); h.context.EXTENSION_VERSION = '0.5.9';
   h.context.root = parseMarkup(h.run(literal)); h.run('localizeUi(root)');
   const remaining = [];
   function inspect(node) {
@@ -113,7 +113,7 @@ test('main panel English text and accessible names contain no untranslated Turki
 
 test('all dialog templates translate privacy, deletion and shortcut explanations', () => {
   const h = harness();
-  Object.assign(h.context, { EXTENSION_VERSION: '0.5.8', HOSTNAME: 'example.invalid', drm: { keySystem: 'Widevine' }, optionsHtml: '' });
+  Object.assign(h.context, { EXTENSION_VERSION: '0.5.9', HOSTNAME: 'example.invalid', drm: { keySystem: 'Widevine' }, optionsHtml: '' });
   const templates = [...source.matchAll(/modal\.innerHTML = (`[\s\S]*?`);/g)];
   assert.equal(templates.length, 4);
   for (const template of templates) {

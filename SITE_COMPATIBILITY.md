@@ -1,6 +1,6 @@
 # 🌐 NOk Video Controller — Site Uyumluluk ve Durum Takip Tablosu (`SITE_COMPATIBILITY.md`)
 
-> **Son Güncelleme:** v0.5.8 (geliştirme; canlı doğrulama bekliyor)
+> **Son Güncelleme:** v0.5.9 (geliştirme; canlı doğrulama bekliyor)
 > **Yönetim Kuralı (Katı Protokol):**
 > 1. **✅ Tam Çalışıyor:** Bu bölüme **yalnızca geliştiricilerin açık testi ve onayı/talebi** ile site eklenebilir. Yapay zeka kendi inisiyatifiyle bu bölüme site ekleyemez.
 > 2. **🟡 Yarı Çalışıyor (Test / Geliştirme Aşamasında):** Siteye özel bir adaptör/değişiklik yazıldığında, siteye dair herhangi bir değişiklik yapıldığında veya mevcut basamaklı adaptör mimarisinin (Tier 1 / Tier 2 / Tier 3) sitede çalışacağı öngörüldüğünde eklenir.
@@ -31,6 +31,8 @@ v0.5.5 kullanıcı raporlarında çift HUD (üst panel boş, iframe paneli çal�
 v0.5.7 Türkçe/İngilizce arayüz, sabit sinyalli çerçeve dil eşitlemesi ve isteğe bağlı çözüm sonrası rapor silme talebi ekler. Bunlar site uyumluluğu onayı değildir; iki dilde Firefox/Chromium yerleşimi, klavye kullanımı ve çalışan iframe paneli canlı test bekler. Kaynak temelli arayüz değerlendirmesi `HMI_REVIEW.md` içindedir.
 
 v0.5.8 her sayfada İngilizce başlar; Player/Picture/Subtitles/Settings sekmeleri ve açılır erişilebilirlik alanı ekler. Büyük yazı, yüksek kontrast, açık tutma ve hareket azaltma tercihleri RAM'dedir. Sekme/dil değişiminde kontrollerin durumu Node modelinde korunur; gerçek yerleşim, fullscreen ve ekran okuyucu testi beklenir. Site çalışma durumları değiştirilmedi.
+
+v0.5.9 solda Player/Subtitles/Settings sekmeleri, Player'a taşınan adaptör ve Settings içindeki görüntü kontrolleriyle referans temayı uygular. Oynatıcı/adaptör mantığı ve site onayları değiştirilmedi. Dikey klavye gezinmesi ve opak renk çiftleri Node test kapsamındadır; gerçek Firefox/Chromium, zoom, fullscreen ve ekran okuyucu doğrulaması beklenir.
 
 | Platform / Site | Alan Adı (Domain) | Aktif Adaptör & Kademe | Çalışan / Beklenen Özellikler | Bilinen Kısıtlar veya Test Edilecekler |
 | :--- | :--- | :--- | :--- | :--- |

@@ -83,23 +83,31 @@ function harness(reducedMotion = false) {
 test('only Player is shown initially; task groups retain existing controls and handlers', () => {
   const h = harness();
   assert.equal(h.find('pvc-panel-player').hidden, false);
-  for (const id of ['picture', 'subtitles', 'settings']) assert.equal(h.find('pvc-panel-' + id).hidden, true);
+  assert.equal(h.find('pvc-tab-picture'), null);
+  assert.equal(h.popup.querySelector('.pvc-hud-tabs').getAttribute('aria-orientation'), 'vertical');
+  assert.equal(h.find('pvc-panel-player').querySelector('#pvc-adapter-bar'), h.find('pvc-adapter-bar'));
+  assert.equal(h.find('pvc-panel-settings').querySelector('#pvc-section-filters'), h.find('pvc-section-filters'));
+  assert.equal(h.find('pvc-section-filters').classList.contains('pvc-section-collapsed'), true);
+  for (const id of ['subtitles', 'settings']) assert.equal(h.find('pvc-panel-' + id).hidden, true);
   assert.equal(h.find('pvc-panel-player').querySelector('#pvc-speed-slider'), h.slider);
   assert.equal(h.find('pvc-panel-settings').querySelector('#pvc-hotkeys-toggle-btn'), h.hotkeys);
   h.hotkeys.emit('click'); assert.equal(h.hotkeys.retainedListener, true);
   assert.equal(h.find('pvc-accessibility').hasAttribute('open'), false);
 });
 
-test('click and arrow/Home/End navigation maintain selection, focus, values and loaded subtitle input', () => {
+test('click and vertical arrow/Home/End navigation maintain selection, focus, values and loaded subtitle input', () => {
   const h = harness();
   h.find('pvc-tab-subtitles').emit('click'); assert.equal(h.find('pvc-panel-subtitles').hidden, false);
   assert.equal(h.find('pvc-panel-player').hidden, true);
-  h.find('pvc-tab-subtitles').emit('keydown', { key: 'ArrowRight' });
+  h.find('pvc-tab-subtitles').emit('keydown', { key: 'ArrowDown' });
   assert.equal(h.find('pvc-tab-settings').getAttribute('aria-selected'), 'true');
   assert.equal(h.find('pvc-tab-settings').focused, true);
   assert.equal(h.find('pvc-tab-settings').tabIndex, 0); assert.equal(h.find('pvc-tab-player').tabIndex, -1);
-  h.find('pvc-tab-settings').emit('keydown', { key: 'ArrowRight' });
+  h.find('pvc-tab-settings').emit('keydown', { key: 'ArrowDown' });
   assert.equal(h.find('pvc-panel-player').hidden, false);
+  h.find('pvc-tab-player').emit('keydown', { key: 'ArrowUp' });
+  assert.equal(h.find('pvc-panel-settings').hidden, false);
+  h.find('pvc-tab-settings').emit('keydown', { key: 'Home' });
   h.find('pvc-tab-player').emit('keydown', { key: 'End' }); assert.equal(h.find('pvc-panel-settings').hidden, false);
   h.find('pvc-tab-settings').emit('keydown', { key: 'Home' }); assert.equal(h.find('pvc-panel-player').hidden, false);
   assert.equal(h.slider.value, '1.5'); assert.equal(h.file.value, 'PRIVATE_SUBTITLE.srt');
@@ -139,4 +147,23 @@ test('translated navigation and accessibility choices do not reset the selected 
   assert.equal(h.find('pvc-tab-settings').getAttribute('aria-selected'), 'true');
   h.run('setUiLanguage("en", false)'); assert.equal(h.find('pvc-tab-settings').textContent, 'Settings');
   assert.equal(h.find('pvc-panel-settings').hidden, false);
+});
+
+test('normal and high-contrast palette text and selected-tab pairs retain at least 4.5:1 contrast', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'injected.css'), 'utf8');
+  const palettes = [...css.matchAll(/\{([^{}]*--pvc-bg:[^{}]*)\}/g)];
+  assert.equal(palettes.length, 2);
+  const luminance = hex => {
+    const rgb = hex.slice(1).match(/../g).map(value => parseInt(value, 16) / 255)
+      .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  };
+  for (const block of palettes) {
+    const colors = Object.fromEntries([...block[1].matchAll(/--pvc-([\w-]+):\s*(#[\da-f]{6})/g)].map(m => [m[1], m[2]]));
+    for (const [a, b] of [['text', 'bg'], ['muted', 'elevated'], ['accent-ink', 'elevated'], ['bg', 'accent']]) {
+      const x = luminance(colors[a]), y = luminance(colors[b]);
+      assert.ok((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05) >= 4.5, `${a} on ${b}`);
+    }
+  }
+  // Color-pair math only; opacity, hover, focus, layout and real rendering require browser testing.
 });

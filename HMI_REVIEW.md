@@ -1,8 +1,8 @@
 # NOk Video Controller — HMI değerlendirmesi
 
-19 Ekim 2026 · v0.5.8 geliştirme sürümü
+19 Ekim 2026 · v0.5.9 geliştirme sürümü
 
-İlk bulgular v0.5.7 yerleşimine aittir; v0.5.8 değişiklikleri ve kalan öneriler aşağıda ayrıca belirtilmiştir.
+İlk bulgular v0.5.7 yerleşimine aittir; v0.5.8/v0.5.9 değişiklikleri ve kalan öneriler aşağıda ayrıca belirtilmiştir.
 
 Bu değerlendirme `injected.js`, `injected.css` ve mevcut kullanıcı raporlarına dayalı bir kullanılabilirlik incelemesidir. Canlı tarayıcıda görsel denetim, ekran okuyucu testi, görev süresi ölçümü veya kullanıcı araştırması yapılmadı. Aşağıdaki öncelikler ürün değerlendirmesidir; bir WCAG uygunluk belgesi değildir.
 
@@ -71,3 +71,21 @@ Ek erişilebilirlik adayları: klavye kısayollarını yeniden atama; altyazı y
 Önerilen opak renk çiftlerinde hesaplanan kontrast: ana metin/ana zemin 16.12:1, ikincil metin/kart zemini 9.89:1, vurgu/kart zemini 5.77:1. Normal metinde en az 4.5:1 kontrast hedeflenmeli; bu yalnızca renk çiftinin hesabıdır, gerçek HUD'daki saydamlık, odak, hover ve devre dışı durumları ayrıca ölçülmelidir. [W3C kontrast açıklaması](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html).
 
 İncelenebilecek kaynaklar: [Mobbin](https://mobbin.com/) gerçek ürün ekranları ve ayar akışları; [Dribbble — browser extension](https://dribbble.com/search/browser-extension) eklenti tasarım konseptleri; [Dark Mode Design](https://www.darkmodedesign.com/) koyu tema renk/boşluk/okunabilirlik örnekleri. Konsept görselleri tek başına kullanılabilirlik veya erişilebilirlik kanıtı değildir. Arama için “browser extension”, “media player”, “settings panel”, “compact controls” kullanılabilir.
+
+
+## v0.5.9 — Kullanıcı referanslarına göre güncelleme
+
+Üç sekme solda: **Player**, **Subtitles**, **Settings**. İlk görselden dar dikey şerit, sade çizgi simgeler ve belirgin etkin yüzey yaklaşımı alındı; simgelerin yanında kısa ad da korunur. Adaptör Player içindedir. Picture kaldırıldı; video renk kontrolleri Settings'te katlanmış bölüm olarak yer alır. Dikey yön için ↑/↓/Home/End kullanılır. Kontroller yeniden oluşturulmaz; dosya ve ayar durumu korunur.
+
+İkinci görselde örneklenen ana/kart/vurgu renkleri **#0A1418 / #1B2A33 / #6099B9**. Okunabilirlik için ana metin **#EDF2F3**, ikincil **#A2B6C0**, küçük mavi metin **#92BFD5** kullanılır. Böylece önceki palet önerisi bu kullanıcı seçimiyle güncellenmiştir. Panel zemini opak, parlama daha azdır; tema videonun renklerini değiştirmez. Opak çiftlerin hesaplanan oranları sırasıyla ana metin/zemin **16.51:1**, ikincil/kart **7.01:1**, küçük vurgu/kart **7.46:1**, koyu metin/seçili mavi dolgu **6.00:1**. High contrast çiftleri de ayrı sınanır; bunlar gerçek tarayıcı piksel ölçümü değildir.
+
+Şerit yerleşimi için HUD 388px'e çıktı; içerik daralmamasını gözeten 64px şerit kullanılır. Dar viewport'ta şerit 56px, sarma düğmeleri iki sütundur. Mini mod 310px olarak korunur. 200% zoom, büyük yazı, iki dil, dar iframe ve fullscreen gerçek tarayıcıda incelenmelidir. Açılır pencerelerdeki odak yönetimi ve istenen/gözlenen değer ayrımı halen açık bulgulardır.
+
+### Ücret ödemeden örnek inceleme
+
+- [Navbar Gallery](https://www.navbar.gallery/): halka açık menü galerisi; özellikle Side Bar Menu ve Tabs örnekleri bu düzenle ilgilidir.
+- [Uiverse](https://uiverse.io/): ücretsiz/açık kaynak düğme, switch, checkbox, kart ve diğer UI öğeleri. Site kişisel/ticari kullanım için ücretsiz olduğunu belirtir.
+- [Httpster](https://httpster.net/): halka açık tasarım arşivi; Dark, Minimal ve Application / Software filtreleriyle inceleme yapılabilir.
+- [Dark Mode Design](https://www.darkmodedesign.com/): üyelik gerektirmeden gezilebilen koyu tema örnekleri.
+
+Bunlar örnek incelemek için önerilir. Uiverse dışındaki galerilerde gösterilen tasarımların kaynakları/kullanım lisanslarının ücretsiz olduğu iddia edilmez. Önceki Mobbin/Curated gibi kaynaklarda ücretli alanlar bulunabildiğinden kullanıcının ücretsiz inceleme isteği için bu liste tercih edilmiştir.

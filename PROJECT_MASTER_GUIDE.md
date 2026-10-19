@@ -1,9 +1,9 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.8 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
+> **Sürüm:** v0.5.9 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.8 (İngilizce başlangıç, görev sekmeleri ve bellek içi erişilebilirlik tercihleri)
+> **Son Güncelleme:** v0.5.9 (Üç dikey sol sekme, Player adaptörü, Settings görüntü kontrolleri ve petrol/mavi tema)
 
 ---
 
@@ -386,7 +386,20 @@ Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-st
 - **Gizlilik:** Bu yeni sunum tercihleri rapora eklenmez, ağdan okunmaz, kalıcı yazılmaz ve çerçeveler arasında gönderilmez. Her yeni çerçeve kendi varsayılanıyla başlar; dil eşitlemesi bundan ayrıdır. Panel kapatma/açma aynı DOM ve RAM'i korur, sayfa yenileme sıfırlar.
 - **Doğrulama:** `tests/hud-navigation.test.cjs` gerçek kaynak fonksiyonlarını DOM/olay modeliyle sınar: ilk sekme ve gizleme, klavye/odak seçimi, slider/file/handler kimliği, timer iptali, odak içindeyken görünürlük, sunum sınıfları/varsayılanları ve dil değişiminde seçimin korunması. Toplam 64 Node testi geçti; sözdizimi/diff kontrolleri temiz. Bu testler CSS piksel yerleşimi, fullscreen/PiP ve ekran okuyucu sonucu değildir; canlı Firefox/Chromium doğrulaması beklenir. `HMI_REVIEW.md` güncel tasarım önerilerini içerir.
 
+### 4.19 v0.5.9 — Sol Şerit ve Referans Renkleri
+
+- **Üç sekme:** Player hız/ses/kalite/adaptör, Subtitles dosya/senkron, Settings dil/erişilebilirlik/görüntü kontrolleri/yardım. Picture sekmesi kaldırıldı; filtreler Settings içinde varsayılan katlanmış akordeon olarak taşınır. Kontrol düğümleri ve handler'lar korunur; oynatıcı ve medya durumuna dokunulmaz.
+- **Dikey gezinme:** `pvc-hud-body` iki sütunlu gövde, `pvc-hud-tabs` sol şerit, `pvc-hud-content` mevcut panellerin konak alanıdır. tablist aria-orientation vertical; ↑/↓/Home/End, roving tabindex, aria-selected/controls/labelledby korunur. Üç sabit SVG geometrisi aria-hidden span içinde, yanında çevrilebilir görünür adla yer alır. SVG içine kullanıcı/site metni girmez. Mini mod tüm gövdeyi gizler.
+- **Alan dengesi:** Normal panel 388px, şerit 64px; viewport max-width/max-height sınırı korunur. 380px altındaki viewport'ta şerit 56px ve sarma düğmeleri iki sütundur. Metinler ve başlıklar sarılabilir. Bu ölçüler kaynak kararıdır, gerçek küçük ekran/200% zoom testi beklenir.
+- **Tema:** Kullanıcı referansından örneklenen #0A1418 ana zemin, #1B2A33 kart, #6099B9 mavi vurgu. Metin #EDF2F3, ikincil #A2B6C0, küçük vurgu metni #92BFD5. UI köklerine bağlı `--pvc-*` değişkenleri CSS ve JS inline renkleri için ortaktır. Opak zemin, düşük parlama; yeşil/kehribar/kırmızı işlevsel durumlar korunur. Altyazı overlay stili ve video filtre hesapları değiştirilmez. High contrast kendi değişkenlerini ezer ve seçili sol sekmede açık dolgu/koyu metin çiftini korur. Yeni ağ/font/kütüphane, depolama, izin veya rapor alanı eklenmedi.
+- **Doğrulama:** Dikey yön/oklar, üç panel, adaptör/filtre ebeveyni, filtre katlanması, kontrol kimliği/durumları ve normal/high-contrast opak renk çiftleri Node test kapsamındadır. Matematiksel renk oranları: text/bg 16.51:1, muted/elevated 7.01:1, accent-ink/elevated 7.46:1, bg/accent 6.00:1. Bunlar gerçek piksel kontrastı veya tüm UI erişilebilirliği onayı değildir; kaynak/renk hesabı ile canlı tarayıcı sonucu ayrıdır.
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
+
+### v0.5.9 (Geliştirme — Canlı Test Bekliyor)
+- Simge ve kısa adlarla üç dikey sol sekme; Player adaptörü, Settings görüntü kontrolleri.
+- Referansa dayalı koyu petrol/mavi tema ve ortak UI renk değişkenleri; yüksek kontrast korunur.
+- Kontrol kimliği, dikey klavye gezinmesi ve renk çifti hesabı sınanır; canlı yerleşim testi beklenir.
 
 ### v0.5.8 (Geliştirme — Canlı Test Bekliyor)
 - Tarayıcı dilinden bağımsız İngilizce başlangıç ve dört görev sekmesi.
@@ -533,7 +546,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.8; canlı tarayıcı/site testi bekliyor).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.9; canlı tarayıcı/site testi bekliyor).
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

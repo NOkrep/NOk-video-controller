@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.5.8 (Main World Engine)
+ * injected.js - NOk Video Controller v0.5.9 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,9 +17,10 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.5.8';
+  const EXTENSION_VERSION = '0.5.9';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.5.9', notes: 'Solda üç dikey sekme, Player içinde adaptör, Settings içinde görüntü kontrolleri; referans görselden koyu petrol/mavi tema ve ortak renk değişkenleri. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.8', notes: 'İngilizce varsayılan dil; Player/Picture/Subtitles/Settings sekmeleri; bellekte paneli açık tutma, büyük yazı, yüksek kontrast ve hareket azaltma seçenekleri. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.7', notes: 'Bellek içi Türkçe/English arayüz, sabit dil sinyalleriyle çerçeve eşitlemesi, isteğe bağlı çözüm sonrası silme talebi; klavye akordeonu, slider adları ve kaynak temelli HMI değerlendirmesi. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.6', notes: 'Çerçeveler arasında tek çalışan HUD dalı; TRT elemente özel geri alınabilir hız kilidi ve sınırlı frekanslı fallback; Video.js VHS representations kalite yolu; Kick Radix ses handler önbelleği ve gerçek hız menüsü fallback; çift sentetik click düzeltmesi; elle istenen ve aktif adaptör ayrımı. Canlı Firefox/site doğrulaması bekliyor.' },
@@ -353,20 +354,29 @@
     const navigation = document.createElement('div');
     navigation.className = 'pvc-hud-tabs pvc-hide-on-collapse';
     navigation.setAttribute('role', 'tablist');
+    navigation.setAttribute('aria-orientation', 'vertical');
     setUiAttribute(navigation, 'aria-label', 'Kontrol grupları');
     const groups = [
-      { id: 'player', label: 'Oynatıcı', nodes: ['#pvc-section-speed', '#pvc-section-audio', '#pvc-section-quality'] },
-      { id: 'picture', label: 'Görüntü', nodes: ['#pvc-section-filters'] },
-      { id: 'subtitles', label: 'Altyazı', nodes: ['#pvc-section-subtitles'] },
-      { id: 'settings', label: 'Ayarlar', nodes: ['.pvc-language-row', '#pvc-adapter-bar', '#pvc-menu-footer'] }
+      { id: 'player', label: 'Oynatıcı', icon: '<path d="m9 5 10 7-10 7Z"/>', nodes: ['#pvc-section-speed', '#pvc-section-audio', '#pvc-section-quality', '#pvc-adapter-bar'] },
+      { id: 'subtitles', label: 'Altyazı', icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m2 0h4M7 14h7m2 0h1"/>', nodes: ['#pvc-section-subtitles'] },
+      { id: 'settings', label: 'Ayarlar', icon: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>', nodes: ['.pvc-language-row', '#pvc-section-filters', '#pvc-menu-footer'] }
     ];
     const panels = [], tabs = [];
-    popup.insertBefore(navigation, popup.querySelector('#pvc-section-speed'));
+    const body = document.createElement('div');
+    body.id = 'pvc-hud-body'; body.className = 'pvc-hud-body pvc-hide-on-collapse';
+    const content = document.createElement('div'); content.className = 'pvc-hud-content';
+    popup.insertBefore(body, popup.querySelector('#pvc-section-speed'));
+    body.appendChild(navigation); body.appendChild(content);
     for (const group of groups) {
       const tab = document.createElement('button');
       tab.type = 'button'; tab.id = `pvc-tab-${group.id}`; tab.className = 'pvc-hud-tab';
       tab.setAttribute('role', 'tab'); tab.setAttribute('aria-controls', `pvc-panel-${group.id}`);
-      setUiText(tab, group.label); navigation.appendChild(tab); tabs.push(tab);
+      const icon = document.createElement('span'); icon.className = 'pvc-tab-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      // Fixed, bundled geometry; no site/user data is interpolated into SVG markup.
+      icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">${group.icon}</svg>`;
+      const caption = document.createElement('span'); caption.className = 'pvc-tab-caption'; setUiText(caption, group.label);
+      tab.appendChild(icon); tab.appendChild(caption); navigation.appendChild(tab); tabs.push(tab);
       const panel = document.createElement('div');
       panel.id = `pvc-panel-${group.id}`; panel.className = 'pvc-hud-panel pvc-hide-on-collapse';
       panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id);
@@ -376,8 +386,8 @@
         const node = popup.querySelector(selector);
         if (node) panel.appendChild(node); // Move existing controls; retain values, state and listeners.
       }
-      popup.appendChild(panel); panels.push(panel);
-      if (group.id === 'picture' || group.id === 'subtitles') {
+      content.appendChild(panel); panels.push(panel);
+      if (group.id === 'subtitles') {
         panel.querySelector('.pvc-menu-section')?.classList.remove('pvc-section-collapsed');
         panel.querySelector('.pvc-section-header')?.setAttribute('aria-expanded', 'true');
       }
@@ -395,15 +405,15 @@
       tab.addEventListener('click', e => { e.stopPropagation(); activate(index); });
       tab.addEventListener('keydown', e => {
         let next;
-        if (e.key === 'ArrowRight') next = (index + 1) % tabs.length;
-        if (e.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+        if (e.key === 'ArrowDown') next = (index + 1) % tabs.length;
+        if (e.key === 'ArrowUp') next = (index + tabs.length - 1) % tabs.length;
         if (e.key === 'Home') next = 0;
         if (e.key === 'End') next = tabs.length - 1;
         if (next === undefined) return;
         e.preventDefault(); e.stopPropagation(); activate(next, true);
       });
     });
-    const settings = panels[3];
+    const settings = panels.find(panel => panel.id === 'pvc-panel-settings');
     const accessibility = document.createElement('details');
     accessibility.id = 'pvc-accessibility'; accessibility.className = 'pvc-accessibility';
     const summary = document.createElement('summary');
@@ -432,7 +442,7 @@
     const note = document.createElement('p'); note.className = 'pvc-settings-note';
     setUiText(note, 'Bu tercihler sayfa yenilenince sıfırlanır.');
     accessibility.appendChild(note);
-    settings.insertBefore(accessibility, settings.querySelector('#pvc-adapter-bar'));
+    settings.insertBefore(accessibility, settings.querySelector('#pvc-section-filters'));
     accessibility.addEventListener('toggle', () => { resetIdleTimer(popup); clampPopupToViewport(popup); });
     applyUiAccessibility(popup);
     activate(0);
@@ -912,15 +922,15 @@
         top: 24px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        background: rgba(15, 23, 42, 0.96) !important;
-        color: #38bdf8 !important;
-        border: 1px solid rgba(56, 189, 248, 0.45) !important;
+        background: rgba(20, 33, 39, 0.96) !important;
+        color: var(--pvc-accent-ink, #92bfd5) !important;
+        border: 1px solid rgba(96, 153, 185, 0.45) !important;
         padding: 8px 22px !important;
         border-radius: 24px !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         font-size: 12px !important;
         font-weight: 700 !important;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85), 0 0 16px rgba(56, 189, 248, 0.25) !important;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
         z-index: 2147483647 !important;
         pointer-events: none !important;
         display: block !important;
@@ -2259,18 +2269,18 @@
           pendingQualityLabel = '';
           clearTimeout(pendingTimeoutTimer);
           setUiText(badge, `🎬 Gerçek: ${lastObservedResolution}`);
-          badge.style.color = '#38bdf8';
+          badge.style.color = 'var(--pvc-accent-ink, #92bfd5)';
         } else {
           setUiText(badge, `⏳ ${pendingQualityLabel} Uygulanıyor (${label})`);
           badge.style.color = '#f59e0b';
         }
       } else {
         setUiText(badge, `🎬 Gerçek: ${lastObservedResolution}`);
-        badge.style.color = '#38bdf8';
+        badge.style.color = 'var(--pvc-accent-ink, #92bfd5)';
       }
     } else {
       setUiText(badge, '🎬 Çözünürlük: Bekleniyor...');
-      badge.style.color = '#94a3b8';
+      badge.style.color = 'var(--pvc-muted, #a2b6c0)';
     }
 
     const noVideoAlert = document.getElementById('pvc-no-video-alert');
@@ -2778,7 +2788,7 @@
     slider.classList.remove('pvc-gain-normal', 'pvc-gain-warm', 'pvc-gain-hot');
     const ratio = Math.min(100, Math.max(0, (percent / 300) * 100));
 
-    let activeColor = '#38bdf8';
+    let activeColor = 'var(--pvc-accent-ink, #92bfd5)';
     if (percent > 200) {
       slider.classList.add('pvc-gain-hot');
       activeColor = '#f43f5e';
@@ -2787,12 +2797,12 @@
       activeColor = '#f59e0b';
     } else {
       slider.classList.add('pvc-gain-normal');
-      activeColor = '#38bdf8';
+      activeColor = 'var(--pvc-accent-ink, #92bfd5)';
     }
 
     slider.style.setProperty(
       'background',
-      `linear-gradient(90deg, ${activeColor} 0%, ${activeColor} ${ratio}%, #1e293b ${ratio}%, #1e293b 100%)`,
+      `linear-gradient(90deg, ${activeColor} 0%, ${activeColor} ${ratio}%, var(--pvc-elevated, #1b2a33) ${ratio}%, var(--pvc-elevated, #1b2a33) 100%)`,
       'important'
     );
   }
@@ -2844,7 +2854,7 @@
       }
       if (hdrBadge) {
         setUiText(hdrBadge, `${validPercent}%`);
-        hdrBadge.style.color = validPercent > 200 ? '#f43f5e' : (validPercent > 100 ? '#fbbf24' : '#38bdf8');
+        hdrBadge.style.color = validPercent > 200 ? '#f43f5e' : (validPercent > 100 ? '#fbbf24' : 'var(--pvc-accent-ink, #92bfd5)');
       }
 
       updateCollapsedSummaryBar();
@@ -3108,7 +3118,7 @@
       const pingBtn = document.getElementById('pvc-ping-btn');
       if (pingBtn) {
         setUiText(pingBtn, `📡 ${ms} ms`);
-        pingBtn.style.color = ms <= 50 ? '#34d399' : (ms <= 120 ? '#38bdf8' : '#f59e0b');
+        pingBtn.style.color = ms <= 50 ? '#34d399' : (ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : '#f59e0b');
       }
     };
     // Hazır kaynak zamanlaması varsa ek ağ isteği yapmadan HTTP yanıt süresi gösterilir.
@@ -3337,7 +3347,7 @@
           </label>
           <div style="margin-bottom: 12px;">
             <label class="pvc-report-field"><input id="pvc-include-comment" type="checkbox"> Kendi açıklamamı rapora ekle (isteğe bağlı)</label>
-            <textarea id="pvc-user-feedback-input" disabled maxlength="500" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; height: 56px; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; color: #f8fafc; font-size: 11px; padding: 8px; resize: none;"></textarea>
+            <textarea id="pvc-user-feedback-input" disabled maxlength="500" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; height: 56px; background: var(--pvc-surface, #142127); border: 1px solid rgba(96, 153, 185, 0.3); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: none;"></textarea>
             <p class="pvc-modal-desc">Açıklamanız otomatik anonimleştirilmez. Paylaşmadan önce aşağıdaki raporu kontrol edin.
               Bu panel sayfanın içinde çalışır; yazdığınız açıklama sayfanın betiklerinden gizlenmez.
               E-posta gönderen adresinizi, GitHub ise hesabınızı paylaşımınıza bağlayabilir.</p>
@@ -3348,8 +3358,8 @@
         </div>
         <div class="pvc-modal-footer">
           <button id="pvc-copy-payload-btn" class="pvc-modal-btn-secondary">📋 JSON Kopyala</button>
-          <a id="pvc-send-mail-link" href="#" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:#2563eb;">✉️ E-posta</a>
-          <a id="pvc-open-github-link" href="#" target="_blank" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:#4f46e5;">🐙 GitHub Issue</a>
+          <a id="pvc-send-mail-link" href="#" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">✉️ E-posta</a>
+          <a id="pvc-open-github-link" href="#" target="_blank" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">🐙 GitHub Issue</a>
         </div>
       </div>
     `;
@@ -3482,12 +3492,12 @@
     ].map(opt => {
       const isSelected = (!userForcedAdapterName && opt.name === '') || (userForcedAdapterName === opt.name);
       return `
-        <div class="pvc-adapter-option ${isSelected ? 'pvc-adapter-selected' : ''}" data-adapter="${opt.name}" style="padding: 10px 12px; background: ${isSelected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isSelected ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
+        <div class="pvc-adapter-option ${isSelected ? 'pvc-adapter-selected' : ''}" data-adapter="${opt.name}" style="padding: 10px 12px; background: ${isSelected ? 'rgba(96, 153, 185, 0.15)' : 'rgba(255, 255, 255, 0.03)'}; border: 1px solid ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-            <span style="font-weight: 700; font-size: 13px; color: ${isSelected ? '#38bdf8' : '#f8fafc'};">${opt.label}</span>
+            <span style="font-weight: 700; font-size: 13px; color: ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-text, #edf2f3)'};">${opt.label}</span>
             <span class="pvc-val-badge" style="font-size: 10px;">${opt.tier}</span>
           </div>
-          <div style="font-size: 11px; color: #94a3b8;">${opt.desc}</div>
+          <div style="font-size: 11px; color: var(--pvc-muted, #a2b6c0);">${opt.desc}</div>
         </div>
       `;
     }).join('');
@@ -3782,10 +3792,10 @@
       <!-- Küçültülmüş (Collapsed Mini-Pill) Detaylı Bilgi ve Hızlı Kontrol Barı (Madde 6) -->
       <div id="pvc-collapsed-summary-bar">
         <div class="pvc-mini-metrics-row">
-          <span id="pvc-mini-res-val" style="color: #38bdf8;">🎬 ---</span>
-          <span id="pvc-mini-speed-val" style="color: #f8fafc;">⚡ 1.0x</span>
+          <span id="pvc-mini-res-val" style="color: var(--pvc-accent-ink, #92bfd5);">🎬 ---</span>
+          <span id="pvc-mini-speed-val" style="color: var(--pvc-text, #edf2f3);">⚡ 1.0x</span>
           <span id="pvc-mini-vol-val" style="color: #34d399;">🔊 %100 (S)</span>
-          <span id="pvc-mini-adapter-val" style="color: #a78bfa; font-size: 9.5px;">Generic</span>
+          <span id="pvc-mini-adapter-val" style="color: var(--pvc-accent-ink, #92bfd5); font-size: 9.5px;">Generic</span>
         </div>
         <div class="pvc-mini-quick-controls">
           <button id="pvc-mini-seek-m10" class="pvc-action-btn" title="10s Geri">⏮️ -10s</button>
@@ -3796,20 +3806,20 @@
       </div>
 
       <!-- Canlı Render Çözünürlüğü Rozeti -->
-      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 6px;" title="Oynatıcıda o an işlenen video piksel boyutu">
-        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: #38bdf8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite">
+      <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(96, 153, 185, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 6px;" title="Oynatıcıda o an işlenen video piksel boyutu">
+        <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: var(--pvc-accent-ink, #92bfd5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite">
           🎬 Gerçek: Ölçülüyor...
         </span>
-        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile">🔄</button>
+        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: var(--pvc-muted, #a2b6c0); font-size: 12px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile">🔄</button>
       </div>
 
       <!-- Basamaklı Adaptör Durumu & Manuel Seçici Barı -->
-      <div id="pvc-adapter-bar" style="padding: 5px 10px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+      <div id="pvc-adapter-bar" style="padding: 5px 10px; background: rgba(27, 42, 51, 0.7); border: 1px solid rgba(96, 153, 185, 0.25); border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
         <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          <span style="font-size: 10.5px; color: #94a3b8;">Adaptör:</span>
-          <span id="pvc-active-adapter-badge" style="font-size: 10.5px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">Otomatik</span>
+          <span style="font-size: 10.5px; color: var(--pvc-muted, #a2b6c0);">Adaptör:</span>
+          <span id="pvc-active-adapter-badge" style="font-size: 10.5px; font-weight: 700; color: var(--pvc-accent-ink, #92bfd5); background: rgba(96, 153, 185, 0.12); padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(96, 153, 185, 0.3);">Otomatik</span>
         </div>
-        <button id="pvc-change-adapter-btn" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;" title="Adaptör Listesini Aç ve Değiştir">Değiştir ▾</button>
+        <button id="pvc-change-adapter-btn" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--pvc-muted, #a2b6c0); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;" title="Adaptör Listesini Aç ve Değiştir">Değiştir ▾</button>
       </div>
 
       <!-- DRM Koruma Rozeti -->
@@ -3820,10 +3830,10 @@
       <!-- Video Bulunamadı Uyarısı -->
       <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: #fca5a5;">
         <div style="font-weight: 700; margin-bottom: 2px;">⚠️ Aktif Oynatıcı Bekleniyor</div>
-        <div style="font-size: 10px; color: #cbd5e1; margin-bottom: 6px;">Sayfadaki video henüz başlamadı veya farklı bir çerçeve içinde.</div>
+        <div style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px;">Sayfadaki video henüz başlamadı veya farklı bir çerçeve içinde.</div>
         <div style="display: flex; gap: 6px;">
-          <button id="pvc-rescan-btn" style="flex: 1; padding: 3px; background: #2563eb; color: #fff; border: none; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">🔄 Yeniden Tara</button>
-          <button id="pvc-quick-report-btn" style="flex: 1; padding: 3px; background: rgba(255,255,255,0.08); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; font-size: 10px; cursor: pointer;">📋 Teşhis Raporu</button>
+          <button id="pvc-rescan-btn" style="flex: 1; padding: 3px; background: var(--pvc-elevated, #1b2a33); color: var(--pvc-text, #edf2f3); border: none; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">🔄 Yeniden Tara</button>
+          <button id="pvc-quick-report-btn" style="flex: 1; padding: 3px; background: rgba(255, 255, 255, 0.08); color: var(--pvc-text, #edf2f3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; font-size: 10px; cursor: pointer;">📋 Teşhis Raporu</button>
         </div>
       </div>
 
@@ -3865,7 +3875,7 @@
             <span class="pvc-label">🔊 Ses Seviyesi & Kanallar</span>
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: #a78bfa; background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3);">STEREO</span>
+            <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: var(--pvc-accent-ink, #92bfd5); background: rgba(96, 153, 185, 0.12); border-color: rgba(96, 153, 185, 0.3);">STEREO</span>
             <span id="pvc-hdr-volume-badge" class="pvc-val-badge">100%</span>
           </div>
         </div>
@@ -3952,7 +3962,7 @@
             <button id="pvc-sub-load-btn" class="pvc-action-btn" title="RAM üzerinden .srt veya .vtt dosyası yükle">📂 .SRT / .VTT Yükle</button>
             <button id="pvc-sub-toggle-btn" class="pvc-action-btn pvc-active" title="Altyazı katmanını göster/gizle">👁️ Altyazı: Açık</button>
           </div>
-          <div id="pvc-sub-status-text" style="font-size: 10px; color: #94a3b8; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          <div id="pvc-sub-status-text" style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             Yüklü altyazı yok (Sıfır Depolama RAM Modu)
           </div>
           <div class="pvc-btn-grid-3">
