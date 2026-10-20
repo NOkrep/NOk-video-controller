@@ -14,7 +14,7 @@ function section(from, to) {
 function harness(host = 'example.invalid') {
   const listeners = {}, timers = new Map(), logs = [], toasts = [], requests = [];
   let timerId = 0;
-  const window = {};
+  const window = { addEventListener() {} };
   const video = {
     tagName: 'VIDEO', parentElement: null, readyState: 4, networkState: 2, isConnected: true,
     playbackRate: 1, defaultPlaybackRate: 1, currentTime: 90, videoHeight: 1080,
@@ -26,7 +26,7 @@ function harness(host = 'example.invalid') {
   const dummy = name => ({ name, tier: 1, matches: () => false, getQualities: () => [] });
   const context = vm.createContext({
     navigator: { language: 'tr' },
-    window, video, HOSTNAME: host, activePlayer: null,
+    window, video, HOSTNAME: host, activePlayer: null, remotePresentation: null, remoteSourceSession: null,
     document: { addEventListener() {}, querySelector: () => null, querySelectorAll: () => [], getElementById: () => null },
     performance: { now: () => 500, getEntriesByType: () => [] },
     URL, AbortController,
@@ -35,8 +35,9 @@ function harness(host = 'example.invalid') {
     showToast: text => toasts.push(text),
     addDiagnosticLog: (level, event, details) => logs.push({ level, event, details }),
     detectDrmStatus: media => ({ isDrm: media?.drm === true }),
-    findVideoAndPlayer: () => ({ video, player: context.activePlayer }),
+    findVideoAndPlayer: () => ({ video: context.selectedVideo === undefined ? video : context.selectedVideo, player: context.activePlayer }),
     updateCollapsedSummaryBar() {},
+    updateRealtimeResolutionBadge() {},
     PuhuTvAdapter: dummy('PuhuTvAdapter'), KickAdapter: dummy('KickAdapter'), NowTvAdapter: dummy('NowTvAdapter'),
     targetTrtQualitySuffix: null, lastCapturedTrtStreamUrl: '',
     userForcedAdapterName: '', currentActiveAdapterName: 'GenericAdapter', adapterHealthStatus: 'healthy',
@@ -51,6 +52,7 @@ function harness(host = 'example.invalid') {
     + section('  function diagnosticNumber', '  function addDiagnosticLog')
     + section('  let targetEnforcedPlaybackRate', '  function initAudioGraphForVideo')
     + section('  function requestQuality', '  function cycleNextQuality')
+    + section('  function renderDynamicQualityButtons', '  async function switchToPuhuMncdnDirectly')
     + section('  let periodicPingTimer', '  function startPeriodicPingEngine'), context);
   const run = code => vm.runInContext(code, context);
   const json = code => JSON.parse(run(`JSON.stringify(${code})`));
@@ -81,13 +83,14 @@ test('subtitle parser rejects empty/malformed/reversed timings and sorts cues', 
 
 test('Video.js parent instance survives cascade selection without global first-player fallback', () => {
   const h = harness();
-  const qualityLevels = [{ height: 720, enabled: true }, { height: 1080, enabled: true }];
+  const qualityLevels = [{ height: 720, enabled: true, label:'0-PRIVATE-PLAYLIST.m3u8' }, { height: 1080, enabled: true, label:'1-PRIVATE-PLAYLIST.m3u8' }];
   const player = { currentTime() {}, playbackRate() {}, qualityLevels: () => qualityLevels };
   h.video.parentElement = { player };
   h.context.activePlayer = player;
   assert.equal(h.run('getActiveAdapter(video, activePlayer).name'), 'VideoJsAdapter');
   const q = h.json('discoverStreamQualities()');
   assert.equal(q.length, 2);
+  assert.deepEqual(q.map(item=>item.label),['1080p','720p']);
   assert.equal(h.run('VideoJsAdapter.applyQuality({ index: 0 }, video, activePlayer)'), true);
   assert.deepEqual(qualityLevels.map(level => level.enabled), [true, false]);
   assert.equal(h.run('VideoJsAdapter.applyQuality({ index: 99 }, video, activePlayer)'), false);
@@ -213,6 +216,23 @@ test('native fullscreen uses showing TextTrack; normal mode restores overlay wit
   assert.equal(h.overlays.get('pvc-subtitle-overlay').style.display, 'block');
 });
 
+test('subtitle appearance controls clamp numeric input, reject arbitrary values and reposition actual cues', () => {
+  const h = subtitleHarness();
+  h.video.__nokSubtitleTrack = { cues: [{ line: 90, snapToLines: true }] };
+  assert.equal(h.run('setSubtitleAppearance("fontSize", 200)'), true);
+  assert.equal(h.run('setSubtitleAppearance("bottom", 25)'), true);
+  assert.equal(h.run('setSubtitleAppearance("background", 0)'), true);
+  assert.equal(h.run('setSubtitleAppearance("color", "yellow")'), true);
+  const overlay = h.overlays.get('pvc-subtitle-overlay');
+  assert.equal(overlay.style['font-size'], '48px'); assert.equal(overlay.style.top, '370px');
+  assert.equal(overlay.style.background, 'rgba(9, 13, 22, 0)'); assert.equal(overlay.style.color, '#fff176');
+  assert.equal(h.video.__nokSubtitleTrack.cues[0].line, 75);
+  assert.equal(h.video.__nokSubtitleTrack.cues[0].snapToLines, false);
+  assert.equal(h.run('setSubtitleAppearance("color", "url(PRIVATE)")'), false);
+  assert.equal(h.run('setSubtitleAppearance("fontSize", NaN)'), false);
+  assert.equal(h.run('setSubtitleAppearance("__proto__", 1)'), false);
+});
+
 function shakaPlayer(h, tracks) {
   const calls = [];
   const player = {
@@ -293,6 +313,192 @@ test('Video.js reads VHS representations without qualityLevels and applies a sta
   h.context.choice.representationId = 'missing';
   assert.equal(h.run('VideoJsAdapter.applyQuality(choice, video, activePlayer)'), false);
   assert.deepEqual(enabled, [true, false]);
+});
+test('Video.js manual choice signals a real enabled transition without ever disabling every rendition',()=>{
+  const h=harness(),enabled=[true,true,true],signals=[];
+  const levels=enabled.map((_,index)=>{
+    const level={height:[480,720,1080][index]};
+    Object.defineProperty(level,'enabled',{get:()=>enabled[index],set:value=>{
+      const previous=enabled[index];enabled[index]=value;assert.ok(enabled.some(Boolean),'all renditions disabled');
+      if(value&&!previous)signals.push(index);
+    }});return level;
+  });
+  const player={currentTime(){},playbackRate(){},qualityLevels:()=>levels};h.video.parentElement={player};h.context.activePlayer=player;
+  assert.equal(h.run('VideoJsAdapter.applyQuality({index:1,label:"720p"},video,activePlayer)'),true);
+  assert.deepEqual(enabled,[false,true,false]);assert.deepEqual(signals,[1]);
+  h.run('VideoJsAdapter.applyQuality({index:1,label:"720p"},video,activePlayer)');
+  assert.deepEqual(signals,[1],'sole active rendition must not be toggled off');
+});
+
+function qualityMenu(h, labels = ['1080p', '720p', '480p']) {
+  const calls = [];
+  const root = { closest: () => null, contains: node => nodes.includes(node),
+    querySelectorAll: selector => selector === 'video' ? [h.video] : nodes };
+  h.video.closest = () => root;
+  const nodes = labels.map(label => ({ textContent: label, isConnected: true, disabled: false,
+    attributes: {}, closest: () => root, getAttribute(name) { return this.attributes[name] || null; },
+    click() { calls.push(label); this.attributes['aria-checked'] = 'true'; } }));
+  return { root, nodes, calls };
+}
+
+test('a selected-video native quality menu exposes only strict numeric choices and uses one actual click', () => {
+  const h = harness(); const menu = qualityMenu(h, ['1080p', '720p HD', '480p', 'Auto', 'PRIVATE_1080', 'Watch 720p']);
+  assert.deepEqual(h.json('discoverStreamQualities().map(item => item.height)'), [1080, 720, 480]);
+  assert.equal(h.run('getActiveAdapter(video, null).name'), 'GenericAdapter');
+  assert.equal(h.run('requestQuality(cachedDiscoveredQualities[1], video, null)'), true);
+  assert.deepEqual(menu.calls, ['720p HD']);
+  assert.equal(h.run('qualityControlState.request.status'), 'rendition-confirmed');
+  h.video.videoHeight = 720; h.run('updateQualityVerification(video, null)');
+  assert.equal(h.run('qualityControlState.request.status'), 'confirmed');
+  assert.equal(h.requests.length, 0);
+});
+
+test('a shared or nested player layout cannot donate another video quality menu', () => {
+  const h = harness(); const menu = qualityMenu(h);
+  menu.root.querySelectorAll = () => [h.video, { closest: () => menu.root }];
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video)'), []);
+  menu.root.querySelectorAll = selector => selector === 'video' ? [h.video] : menu.nodes;
+  menu.nodes.forEach(node => { node.closest = () => ({}); });
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video)'), []);
+});
+
+test('one-level HLS inventory is augmented with the actual source menu without an extra observed-only option', () => {
+  const h = harness(); qualityMenu(h); h.video.videoHeight = 720;
+  const hls = { media: h.video, currentLevel: 0, levels: [{ height: 0 }] };
+  h.video.hls = hls; h.context.activePlayer = hls;
+  assert.deepEqual(h.json('discoverStreamQualities().map(item => item.height)'), [1080, 720, 480]);
+  assert.equal(h.run('currentActiveAdapterName'), 'HlsJsAdapter');
+  assert.equal(h.run('requestQuality(cachedDiscoveredQualities[2], video, activePlayer)'), true);
+});
+
+test('old choices cannot target another selected video, instance, manifest epoch or reordered level object', () => {
+  const h = harness();
+  const hls = { media: h.video, currentLevel: 0, levels: [{ height: 1080 }, { height: 720 }] };
+  h.video.hls = hls; h.context.activePlayer = hls;
+  h.run('discoverStreamQualities(); globalThis.oldChoice = cachedDiscoveredQualities[1]');
+  const second = { ...h.video, hls: null }; h.context.otherVideo = second;
+  assert.equal(h.run('requestQuality(oldChoice, otherVideo, activePlayer)'), false);
+  h.video.currentSrc = 'blob:REPLACED_PRIVATE_SOURCE';
+  assert.equal(h.run('requestQuality(oldChoice, video, activePlayer)'), false);
+  h.run('discoverStreamQualities(); globalThis.oldChoice = cachedDiscoveredQualities[1]');
+  h.video.emit('emptied');
+  assert.equal(h.run('requestQuality(oldChoice, video, activePlayer)'), false);
+  h.run('discoverStreamQualities(); globalThis.oldChoice = cachedDiscoveredQualities[1]');
+  hls.levels[1] = { height: 480 };
+  assert.equal(h.run('requestQuality(oldChoice, video, activePlayer)'), false);
+  assert.equal(hls.currentLevel, 0);
+});
+
+test('late player attachment and selection replacement clear old forced quality and inventory', () => {
+  const h = harness(); h.run('discoverStreamQualities()');
+  assert.equal(h.run('currentActiveAdapterName'), 'GenericAdapter');
+  const hls = { media: h.video, currentLevel: 0, levels: [{ height: 1080 }, { height: 720 }] };
+  h.video.hls = hls; h.context.activePlayer = hls;
+  h.run('discoverStreamQualities(); requestQuality(cachedDiscoveredQualities[1], video, activePlayer)');
+  assert.equal(h.run('qualityControlState.request.status'), 'rendition-confirmed');
+  h.context.selectedVideo = null; h.context.activePlayer = null;
+  assert.deepEqual(h.json('discoverStreamQualities()'), []);
+  assert.equal(h.run('qualityControlState.request'), null); assert.equal(h.run('activeForcedQualityId'), '');
+});
+
+test('Video.js enabling a rendition is pending until selectedIndex and decoded video supply separate evidence', () => {
+  const h = harness(); const levels = [{ height: 720, enabled: true }, { height: 1080, enabled: true }]; levels.selectedIndex = 1;
+  const player = { currentTime() {}, playbackRate() {}, qualityLevels: () => levels };
+  h.video.parentElement = { player }; h.context.activePlayer = player;
+  h.run('discoverStreamQualities(); requestQuality(cachedDiscoveredQualities.find(item => item.height === 720), video, activePlayer)');
+  assert.equal(h.run('qualityControlState.request.status'), 'pending');
+  levels.selectedIndex = 0; h.run('updateQualityVerification(video, activePlayer)');
+  assert.equal(h.run('qualityControlState.request.status'), 'rendition-confirmed');
+  h.video.videoHeight = 720; h.run('updateQualityVerification(video, activePlayer)');
+  assert.equal(h.run('qualityControlState.request.status'), 'confirmed');
+  assert.equal(h.timers.size, 0);
+});
+
+test('quality timeout is visible; a late decoded match can recover without another apply call', () => {
+  const h = harness(); const hls = { media: h.video, currentLevel: 0, levels: [{ height: 1080 }, { height: 720 }] };
+  h.video.hls = hls; h.context.activePlayer = hls;
+  h.run('discoverStreamQualities(); requestQuality(cachedDiscoveredQualities[1], video, activePlayer)'); h.flush();
+  assert.equal(h.run('readQualityDiagnostics(video, activePlayer).verification'), 'timed-out');
+  h.video.videoHeight = 720; h.run('updateQualityVerification(video, activePlayer)');
+  assert.equal(h.run('readQualityDiagnostics(video, activePlayer).verification'), 'confirmed');
+});
+
+test('SDK rejection does not mark quality active or leave an old pending timeout', () => {
+  const h = harness(); const hls = { media: h.video, levels: [{ height: 720 }] };
+  Object.defineProperty(hls, 'currentLevel', { get: () => 0, set() { throw new Error('PRIVATE_SDK_ERROR'); } });
+  h.video.hls = hls; h.context.activePlayer = hls;
+  h.run('discoverStreamQualities()');
+  assert.equal(h.run('requestQuality(cachedDiscoveredQualities[0], video, activePlayer)'), false);
+  assert.equal(h.run('qualityControlState.request.status'), 'rejected');
+  assert.equal(h.run('activeForcedQualityId'), ''); assert.equal(h.run('pendingQualityLabel'), '');
+  assert.equal(h.timers.size, 0); assert.equal(h.logs.some(log => JSON.stringify(log).includes('PRIVATE_SDK_ERROR')), false);
+});
+
+test('Video.js resolution-switcher source groups are distinct from VHS levels and preserve plugin-managed switching', () => {
+  const h = harness(); let selected = '720p'; const calls = [];
+  const player = { currentTime() {}, playbackRate() {}, qualityLevels: () => [{ height: 720 }],
+    getGroupedSrc: () => ({ label: { '720p': [{ res: 720, src: 'PRIVATE_SOURCE_720' }],
+      'PRIVATE_LABEL': [{ res: 1080, src: 'PRIVATE_SOURCE_1080' }], '480p': [{ res: 480 }], 'Auto': [{}] } }),
+    currentResolution(value) { if (value) { selected = value; calls.push(value); } return { label: selected }; } };
+  h.video.parentElement = { player }; h.context.activePlayer = player;
+  assert.deepEqual(h.json('discoverStreamQualities().map(item => item.label)'), ['1080p', '720p', '480p']);
+  assert.equal(h.run('requestQuality(cachedDiscoveredQualities[0], video, activePlayer)'), true);
+  assert.deepEqual(calls, ['PRIVATE_LABEL']);
+  assert.equal(h.run('qualityControlState.request.status'), 'confirmed');
+  assert.equal(h.requests.length, 0);
+});
+
+function qualityUi(h) {
+  class Node {
+    constructor(tag = 'div') { this.tagName = tag.toUpperCase(); this.childNodes = []; this.attributes = {}; this.nodeType = 1; this.className = ''; }
+    get textContent() { return this.childNodes.map(node => node.nodeType === 3 ? node.nodeValue : node.textContent).join(''); }
+    set textContent(value) { this.childNodes = [{ nodeType: 3, nodeValue: value }]; }
+    get firstChild() { return this.childNodes[0]; }
+    set innerHTML(value) { assert.equal(value, ''); this.childNodes = []; }
+    appendChild(child) { this.childNodes.push(child); }
+    contains(node) { return node === this || this.childNodes.some(child => child.nodeType === 1 && child.contains(node)); }
+    querySelectorAll(tag) { return this.childNodes.filter(node => node.tagName === tag.toUpperCase()); }
+    setAttribute(name, value) { this.attributes[name] = value; }
+    getAttribute(name) { return this.attributes[name] || null; }
+    hasAttribute(name) { return Object.hasOwn(this.attributes, name); }
+    focus() { h.context.document.activeElement = this; }
+    classList = { toggle: (name, force) => { const names = new Set(this.className.split(' ').filter(Boolean)); if (force) names.add(name); else names.delete(name); this.className = [...names].join(' '); } };
+  }
+  const container = new Node(), status = new Node(), count = new Node();
+  h.context.document.getElementById = id => ({ 'pvc-dynamic-quality-container': container, 'pvc-quality-status': status, 'pvc-quality-count-badge': count }[id] || null);
+  h.context.document.createElement = tag => new Node(tag);
+  return { container, status, count };
+}
+
+test('quality pending/confirmed updates retain focused button nodes and use separate pressed state', () => {
+  const h = harness(), ui = qualityUi(h);
+  const levels = [{ height: 720, enabled: true }, { height: 1080, enabled: true }]; levels.selectedIndex = 1;
+  const player = { currentTime() {}, playbackRate() {}, qualityLevels: () => levels };
+  h.video.parentElement = { player }; h.context.activePlayer = player;
+  h.run('renderDynamicQualityButtons()');
+  const button = ui.container.querySelectorAll('button')[1]; button.focus(); button.onclick({ stopPropagation() {} });
+  assert.equal(ui.container.querySelectorAll('button')[1], button);
+  assert.match(button.className, /pvc-requested/); assert.equal(button.getAttribute('aria-pressed'), 'false');
+  assert.match(ui.status.textContent, /Requested 720p · decoded 1080p · Pending/);
+  levels.selectedIndex = 0; h.video.videoHeight = 720; h.run('renderDynamicQualityButtons()');
+  assert.equal(ui.container.querySelectorAll('button')[1], button);
+  assert.equal(h.context.document.activeElement, button); assert.equal(button.getAttribute('aria-pressed'), 'true');
+  assert.match(ui.status.textContent, /Confirmed/);
+});
+
+test('quality status remains translatable after dynamic updates and partial evidence is labelled separately', () => {
+  const h = harness(), ui = qualityUi(h); qualityMenu(h);
+  h.run('discoverStreamQualities(); requestQuality(cachedDiscoveredQualities[1], video, null)');
+  h.video.videoHeight = 720;
+  h.run('setUiLanguage("tr", false); updateQualityVerification(video, null)');
+  assert.match(ui.status.textContent, /İstenen 720p · oynatılan 720p · Doğrulandı/);
+  h.run('setUiLanguage("en", false); updateQualityVerification(video, null)');
+  assert.match(ui.status.textContent, /Requested 720p · decoded 720p · Confirmed/);
+  h.video.closest = () => null;
+  // No menu-selected evidence is available now; decoded dimensions alone stay weaker evidence.
+  h.run('qualityControlState.request.choice = { id: "unknown", height: 720 }; updateQualityVerification(video, null)');
+  assert.equal(h.run('qualityControlState.request.status'), 'decoded-match');
+  assert.match(ui.status.textContent, /Decoded video matches/);
 });
 
 test('unmatched forced adapter cannot pretend to control a video', () => {
@@ -388,5 +594,5 @@ test('complete main engine boots and reinjection does not register another messa
   assert.equal(listeners.length, 1);
   vm.runInContext(source, context);
   assert.equal(listeners.length, 1);
-  assert.deepEqual(JSON.parse(JSON.stringify(posts)), [{ type: 'PVC_TOGGLE_POPUP' }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(posts)), [{ type: 'PVC_ENGINE_READY' }, { type: 'PVC_TOGGLE_POPUP' }]);
 });

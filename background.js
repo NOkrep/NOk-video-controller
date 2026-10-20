@@ -33,7 +33,7 @@ browserAPI.action.onClicked.addListener(async (tab) => {
     // 2. content.js dosyasını sekmeye enjekte et
     await browserAPI.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ['content.js']
+      files: ['frame-protocol.js', 'content.js']
     });
 
     console.log('[NOkrep] NOk Video Controller sekmeye başarıyla bağlandı.');

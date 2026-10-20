@@ -1,9 +1,11 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> **Sürüm:** v0.5.10 (geliştirme; canlı tarayıcı/site doğrulaması bekliyor)
+> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+
+> **Sürüm:** v0.7.0 (test adayı; kaynak/test aşamaları hazır, gerçek Firefox/site doğrulaması bekliyor)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** v0.5.10 (20 yerel tema, Uiverse kontrol uyarlamaları ve tasarım/kaynak kaydı)
+> **Son Güncelleme:** 20 Ekim 2026 — v0.7.0 (iframe sunumu, reklam yaşam döngüsü ve birleşik sentetik regresyon)
 
 ---
 
@@ -403,7 +405,54 @@ Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-st
 - **Kaynak kaydı:** `DESIGN_REFERENCES.md` sekiz URL'nin kullanıldığı/ertelendiği yerleri tutar. Radio ve tooltip sayfaları okundu, aynı örneklerin kodu Galaxy arşivinde bulunamadı; uygulanmadı. Formun checkout örneği incelendi ve uygun yerel form tasarımı için ayrıldı. Kullanılan beş örneğin HTML/CSS'i resmî Uiverse Galaxy arşivinden okunarak uyarlandı; doğrudan indirme engeli aşılmadı. MIT yazar/bildirimleri `THIRD_PARTY_NOTICES.md` içinde. Yeni runtime ağı/kütüphanesi, kalıcı depolama veya izin yoktur.
 - **Doğrulama:** Node testleri tüm 20 katalog girdisini, aile/sıra tutarlılığını, türetilmiş renk çiftlerini, native seçici/ileri-geri, geçersiz ID reddi, mevcut/sonradan açılan kökler, kontrol/input kimliği, dil, high contrast öncelik kaydı, async loader cleanup ve dekorasyon idempotence'ını sınar. Gerçek Firefox/Chromium, küçük ekran, fullscreen, ekran okuyucu ve hareket/kontrast piksel doğrulaması beklenir.
 
+### 4.21 v0.6.0 — İlk İyileştirme Aşaması
+
+- **Aşamalı kapsam:** Kullanıcının v0.5.10 raporları `RELEASE_ROADMAP.md` içinde teknik bulgu/kabul koşullarıyla ayrıldı. v0.6.0 ilk pakettir; v0.6.1 kalite/iframe dışı sunum, v0.7.0 reklam yaşam döngüsü ve birleşik doğrulama hedefidir. Bunlar tamamlanmış gibi sunulmaz. 20 tema kalır. Çok küçük dağıtım düzeltmelerinde dört sayısal bileşen (örn. 0.6.0.1) kullanılabilir; geçmiş 0.5.10 sürümü geriye çevrilmez. GitHub push/release yapılmadı.
+- **Filtre performansı:** Input handler'ları `scheduleVideoFilterUpdate` ile tek requestAnimationFrame'e birleşir. Callback son durumu tek seçime uygular; `appliedVideoFilters` WeakMap değişmeyen stili yazmaz. Nötr varsayılan CSS filter:none dayatmaz. Önceki inline filter/priority saklanır; reset veya video değişiminde yalnızca hâlâ eklentiye ait değer geri yüklenir. Site sonradan farklı yazmışsa üzerine reset uygulanmaz. Night shield filtre sırası korunur; brightness/contrast sepia üzerinden cebirsel olarak birleştirilmez. Canvas, video kopyası, will-change veya yeni GPU yüzeyi dayatılmaz. Modelde 200 input tek seçim/yazıma düşer; bu gerçek FPS/GPU kazancı ölçümü değildir.
+- **Keşif:** `getMediaCandidates` adayları en fazla 1000ms RAM'de tutar; detached video, playing/loadedmetadata ve sayfa childList değişimleri geçersiz kılar. Gözlem attributes/style izlemez ve pvc UI değişikliklerini yok sayar. Shadow DOM ve iframe için TTL tekrar taraması korunur. Her aday bir kez puanlanır; sort comparator içindeki tekrarlanan layout okumaları kaldırıldı. Player instance'ları bu önbelleğe alınmaz; cascade ve probeAdapterHealth korunur.
+- **HUD:** Pointer etkileşimiyle kalan focus, klavye etkileşiminin gizlenmeme korumasından ayrıldı. Hover/Keep visible ve klavye odağı koruması sürer. Normal mod artık yatay/dikey sürüklenebilir; açılış sağ üstte kalır. Cross-origin iframe içindeki HUD hâlâ frame sınırındadır; top-page sunum köprüsü açık iştir. Dış yerleşim çözüldü denmez.
+- **Altyazı:** Subtitles içinde kapalı görünüm details alanı: 12–48px yazı, %0–40 alt mesafe, %0–100 arka plan opaklığı, sabit white/yellow. Bilinmeyen anahtar/renk ve finite olmayan sayılar reddedilir. Overlay çizimi ve native VTTCue.line konumu güncellenir; native fullscreen/PiP font boyutu tarayıcı kontrolünde kalır. Yeni geçerli dosya yüklemek subtitleOverlayEnabled'i açar ve düğmeyi günceller; loaded+disabled durumu dosya okunmadı olarak yorumlanmaz. Ayarlar/cue metni/dosya adı RAM'dedir; görünüm tercihleri rapora eklenmez.
+- **Platform sınıflandırması:** `DIAGNOSTIC_PLATFORMS` fixed allowlist; player tanınıyorsa onun enum'u, değilse bilinen üst sayfanın enum'u kullanılır. Yeni ek alan `platformScope` yalnızca player/page/unlisted değerindedir; bilinmeyen site `other` kalır. content.js yalnızca allowlist'teki `NOK_PLATFORM_*` türlerini üstten alta, mevcut child WindowProxy'lerine iletir; geç frame request'i desteklenir. Domain/URL/hash/referrer/site başlığı aktarılmaz. Üst sayfa veya çocuk sayfa betikleri sayfa içi sinyalleri taklit edebilir; bu enum güvenlik yetkisi/medya komutu sağlamaz, sınıflandırma ipucudur.
+- **Animasyon kaydı:** Kaynak beş bileşen resmî Galaxy arşivinden tekrar okundu; süre/eğri/halo/glow/floating-label/iç kapak farkları `ANIMATION_DETAILS.md` içinde ayrıntılıdır. Önceki sadeleştirmeler tercihti; ölçülmüş performans zorunluluğu gibi sunulmaz. v0.6.0 yeni dekoratif animasyon eklemez.
+- **Doğrulama:** 82 Node testi; filtre input birleştirme/geri yükleme, candidate cache/invalidation, normal horizontal clamp, pointer-vs-keyboard idle, altyazı appearance validation/konum ve fixed platform propagation/scope dahil. JS syntax/diff kontrolü başarılıdır. Gerçek Firefox/Chromium, iframe/fullscreen/GPU yükü ve yardımcı teknoloji testi bekliyor. Site durumları yükseltilmedi.
+
+### 4.22 v0.6.1 — Kalite Bağlamı, Kaynak Menüsü ve Kanıt
+
+- `QUALITY_CONTROL.md` envanter yollarını, istisnaları ve kanıt sınırını ayrıntılandırır. `qualityControlState` / `qualityChoiceBindings` kalite seçeneğini video/player/source/epoch/generation'a bağlar. Detached/değişmiş video, yeni kaynak, manifest/media load veya yeniden sıralanmış seviye eski seçimi kullanamaz. Native kaynak menüsü / resolution-switcher için aynı video üzerinde sınırlı beklenen kaynak geçişi istisnası vardır; görüntü ayrıca doğrulanır.
+- Generic için seçili tek videonun sahip olduğu Plyr/Video.js/JW kalite menülerinden strict numeric seçenekler okunur. Tüm sayfada sayı/metin araması yapılmaz. Tier 2 envanterine aynı yükseklikleri yinelenmeden eklenir; tek HLS seviyesi tüm sitenin tek kalite sunduğu anlamına gelmez. Video.js resolution-switcher getGroupedSrc/currentResolution ek yolu, adres değiştirmeyi siteye bırakır. Raw source/label/level RAM'de kalır; URL tahmin edilmez. Cascade/probeAdapterHealth, DRM ve Kick setter cache korunur.
+- Request kabulü artık başarı değildir. pending/rendition-confirmed/decoded-match/confirmed/timed-out/rejected durumları; SDK seviye kimliği ile decoded video boyutu ayrı izlenir. 12s timeout görünürdür; geç gerçek eşleşme durumu düzeltebilir. HLS currentLevel/Video.js selectedIndex veya bir enabled bayrağı tek başına decoded başarı kanıtı sayılmaz. Düğme durumları yerinde güncellenir; gereksiz DOM yeniden kurma/aria-live tekrarları azaltıldı. Dinamik durum çevirisi iki dilde korunur.
+- Teşhis readQualityDiagnostics ile sadece eşleşen kaydı okur. Eski adapter/cache/request yeni video için gösterilmez; unknown/not-evaluated ve sıfır cached count kullanılır. Bounded verification enum'u ve boolean/null decodedMatch/renditionMatch eklenir; getQualities/uygulama/ağ tetiklenmez. Rapor schema v2 additive kalır.
+- Player → Video target kullanıcıya sıra/yükseklikle manuel video seçimi sunar; başlık/URL/DOM ID yoktur. Açık seçim daha yüksek puanlı başka videoya geçmez; hedef çıkarılınca serbest bırakılır. Görünür HUD'da 750ms kontrollü yenileme geç attach'i alır; idle-hidden durumunda geniş keşif durur, kapalı panelde timer sona erer. Mevcut rAF filtre optimizasyonu ve 20 tema korunur.
+- 97 Node testi: kalite/menü sahipliği, kaynak/epoch/instance reddi, Video.js kaynak grupları, request-vs-rendition-vs-decoded, timeout/recovery, odağın/düğümün korunması, hedef seçimi ve idle yenileme sınırı dahil. Canlı Firefox/Chromium site/iframe/fullscreen onayı değildir. Cross-origin top HUD sunumu ve reklam yaşam döngüsü açık; v0.7.0 hedefi tamamlanmadı.
+
+### 4.23 v0.7.0 — İframe Sunumu ve Reklam Yaşam Döngüsü (Test Adayı)
+
+- `frame-protocol.js`: Main/Isolated World ve seçili çocuk dalı arasında allowlist şeması. Yeni RAM oturumu/sahip/sayaç, stale komut reddi ve kapatmada pending istek temizliği. Medya kaynak çerçevededir; normal HUD üstte, ancestor iframe fullscreen'de kaynakta. Ayrıntı: FRAME_PRESENTATION.md.
+- Otomatik teknik durumda URL, içerik adı, izleme konumu, dosya adı veya altyazı metni yoktur. Altyazı yalnızca elle yüklenince cue komutu olarak kaynak dala iner. Teşhis yalnızca manuel istekle önizlemeye çıkar. Kalıcı depolama/izin eklenmedi.
+- İnaktif/idle-hidden üst sunumda kaynak kalite taraması/aktarımı durur. Kaynak medya filtreleri rAF/diff ve aday cache sınırlarını korur. Gerçek GPU maliyeti azaltılmış gibi sunulmaz.
+- Reklam yalnızca görünür tek videolu oyuncunun açık işaretiyle tespit edilir; 16x istenir, mute açılır, gerçek ve geri alınabilir en düşük kalite seçilir. Bitişte 1x/önceki ses-mute ve eşleşen kalite/ABR geri gelir. Kaynak/instance değişiminde eski kalite başka videoya uygulanmaz; Web Audio kurulmaz. AD_CONTROL.md.
+- Kick kalite listesi SDK'den gelir; tahmini fallback kaldırıldı. IVS video sahipliği ve wrapper değişimine dayanıklı değer kimliği eklendi. Setter cache ve cascade korunur; gerçek Kick arayüz eşleşmesi ayrıca doğrulanmalıdır.
+- 129 Node testi, JS syntax/diff kontrolü ve iki yerel kökende gerçek Edge ile 14 sentetik kontrol geçti. MediaStream 16x'i uygulamaz; yalnızca isteği sınar. Kurulu eklenti, nested gerçek tarayıcı, Firefox, gerçek reklam/site, ekran okuyucu, zoom, GPU/FPS açık kabul koşullarıdır. SITE_COMPATIBILITY durumu yükseltilmedi; push/tag/release yapılmadı.
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
+
+### v0.7.0 (Test Adayı — Kaynak ve Sentetik Regresyon Hazır)
+- Tek üst iframe HUD'u, kaynak medya komutları, kaynak fullscreen geçişi ve oturum/sahip/sayaç sınırları.
+- Reklam giriş/çıkışı, geri alınabilir gerçek en düşük kalite, 16x isteği/mute ve 1x/önceki ses-kalite dönüşü.
+- Kick gerçek kalite ve video sahipliği; 129 Node + 14 sentetik Edge kontrolü. Gerçek site/Firefox ve gerçek hızlanma onayı değildir.
+
+### v0.6.1 (Kalite Aşaması — Geliştirme, Canlı Test Bekliyor)
+- Kalite seçeneği video/player/source/epoch'a bağlı; eski cache/adapter rapordan dışlanır.
+- Seçili videonun native kaynak menüsü ve Video.js resolution-switcher kaynak grupları.
+- İstek/oynatıcı/görüntü ayrımı, görünür timeout, iki dilde durum ve odak koruması.
+- Çoklu video hedefi ve açık HUD ile sınırlı envanter yenileme. İframe dışı sunum/reklam işleri açık.
+
+### v0.6.0 (İlk Aşama — Geliştirme, Canlı Test Bekliyor)
+- Tek frame'de birleştirilen ve diff ile uygulanan filtreler, aday keşfi önbelleği.
+- Pointer/klavye odak ayrımıyla idle gizlenmesi ve normal modda yatay sürükleme.
+- Altyazı görünüm ayarları ve dosya yüklemede görünürlüğü açma.
+- Gizlilik sınırını koruyan platformScope ve bilinen üst sayfa enum'u.
+- v0.7.0 yol haritası ve ayrıntılı Uiverse animasyon karşılaştırması; eksik kalite/iframe dışı HUD/reklam işleri açık.
 
 ### v0.5.10 (Geliştirme — Canlı Test Bekliyor)
 - Kaynakları incelenen 20 SevenGrid paleti; yerel tema seçici, kontrast uyarlaması ve high contrast önceliği.
@@ -563,7 +612,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut geliştirme sürümü: v0.5.10; canlı tarayıcı/site testi bekliyor).
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut sürüm: v0.7.0 test adayı; Firefox yerel kurulu eklenti testi geçti; gerçek site kabulü bekliyor). RELEASE_ROADMAP.md kaynak aşamalarını ve açık canlı kabul koşullarını; FRAME_PRESENTATION.md iframe sınırlarını, AD_CONTROL.md reklam davranışını; QUALITY_CONTROL.md kalite kanıt sınırını, ANIMATION_DETAILS.md kaynak/uyarlama farklarını açıklar. 135 Node testi ve yerel Firefox/Edge kanıtı gerçek site onayı değildir; son Edge Video.js kalite zaman aşımı açıktır. RELEASE_NOTES_v0.7.0.md güncel paket kanıtıdır.
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

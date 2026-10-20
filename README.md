@@ -1,4 +1,6 @@
-# NOk Video Controller (v0.5.10 — geliştirme)
+# NOk Video Controller (v0.7.0 — test adayı)
+
+> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
 
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
@@ -38,13 +40,45 @@
 
 ## Geliştirme Doğrulaması
 
-`node --test tests/diagnostics.test.cjs tests/player-controls.test.cjs tests/frame-coordination.test.cjs tests/kick-ui.test.cjs tests/localization.test.cjs tests/hud-navigation.test.cjs` gizlilik sınırını, altyazıları, kalite/hız çağrılarını, çok çerçeveli HUD koordinasyonunu ve Kick UI işleyicilerini Node ortamında sınar. `node --check injected.js` sözdizimini denetler. Bu kontroller Firefox/Chromium veya gerçek sitelerde çalışma onayı değildir; v0.5.10 için canlı doğrulama beklenmektedir.
+`node --test tests/*.test.cjs` gizlilik sınırını, altyazıları, kalite/hız çağrılarını, çok çerçeveli HUD koordinasyonunu, filtre iş birleştirmesini ve Kick UI işleyicilerini Node ortamında sınar. `node --check injected.js` sözdizimini denetler. v0.7.0 için 135 test geçer. Firefox 158 kurulu geçici eklentiyle yerel nested iframe ve gerçek oynatıcı kütüphanelerini geçti. Edge temel sentetik kontrolleri geçti; son genişletilmiş Video.js kalite geçişi zaman aşımı açıktır. Bunlar gerçek site veya cihaz GPU/FPS onayı değildir.
+
+## v0.7.0 — Tek iframe paneli ve reklam yaşam döngüsü
+
+- Normal modda HUD üst sayfada sunulur; video, altyazı katmanı ve SDK işlemleri seçili iframe'de kalır. Fullscreen'de görünür panel kaynak çerçeveye geçer. Kapat/aç, eski oturum/sahip reddi ve bounded komutlar: [FRAME_PRESENTATION.md](./FRAME_PRESENTATION.md).
+- Görünür, seçili oynatıcıya bağlı açık reklam işaretinde 16x istenir, mute açılır, geri getirilebilir gerçek en düşük kalite seçilir. Bitişte 1x, önceki ses/mute ve güvenle eşleştirilen önceki kalite/otomatik mod geri gelir: [AD_CONTROL.md](./AD_CONTROL.md). İşaretsiz reklamlar tahmin edilmez; gerçek 16x destek garantisi yoktur.
+- Kick kalitesi gerçek SDK listesinden gelir; tahmini fallback kaldırıldı. Başka videoya bağlı IVS instance'ı kullanılamaz. SDK wrapper'larının yeniden oluşturulması/sıra değişimi yanlış kalite seçtirmez.
+- 20 tema, İngilizce başlangıç, Türkçe seçim, rapor önizlemesi/silme talebi ve sıfır kalıcı depolama korunur. Canlı kabul listesi [RELEASE_ROADMAP.md](./RELEASE_ROADMAP.md) içindedir.
+
+Sentetik tarayıcı testi mevcut Playwright paketi ve Chromium yürütülebilir dosyasını argüman olarak alır; kurulum veya indirme yapmaz:
+
+```powershell
+node tests/browser-integration.cjs --packages="C:/path/to/node_modules" --browser="C:/path/to/msedge.exe"
+```
+
+Geçici tarayıcı profili ve yalnızca iki yerel test sunucusu kullanılır; dış istekler engellenir. `tests/artifacts/iframe-browser/` altında sonuç JSON'u ve görseller üretilir. MediaStream fixture 16x isteğini kaydeder ama gerçek hızlanmayı doğrulamaz. Eklentiyi yeniden yükleyip açık video sayfalarını yenileyerek canlı test yapılmalıdır.
+
+## v0.6.1 — Kalite bağlamı ve doğrulaması
+
+- Kalite listesi seçili video, oynatıcı, kaynak ve medya yükleme nesline bağlıdır. Eski düğme yeni videonun/yeniden sıralanan seviyenin kontrolüne dönüşmez. Teşhis de eski adaptör/listeyi yeni video için raporlamaz.
+- Plyr, Video.js ve JW Player'ın belirli kalite menülerindeki gerçek sayısal seçenekler, tek videoya ait oldukları doğrulanabiliyorsa listeye eklenir. Video.js resolution-switcher kaynak grupları ayrı desteklenir; ham kaynak adresleri UI'ya/rapora çıkmaz. Her özel site menüsünün kapsandığı veya tüm kaynakların bulunduğu iddia edilmez.
+- Kalite isteği, oynatıcının seçimi ve decoded video eşleşmesi ayrıdır. 12s sonunda doğrulanamayan geçiş belirtilir. Başarı vurgusu için en az video boyutu eşleşmelidir; istek kabulü tek başına yeterli değildir. Kaynak değiştiren menüde işlemi sitenin kendi kontrolü yürütür; eklenti URL tahmin etmez.
+- Player → Video target, çoklu videoda açık seçim sağlar. Sayfa adresi/başlığı yerine yalnızca sıra ve video yüksekliği gösterilir. Gecikmeli envanter yalnızca açık HUD'da güncellenir; gizlenen HUD'da geniş tarama durur. Düğme kimliği ve klavye odağı doğrulama güncellemelerinde korunur.
+- Uygulama/kanıt sınırları [QUALITY_CONTROL.md](./QUALITY_CONTROL.md) içinde. Cross-origin HUD sunumu ve reklam yaşam döngüsü v0.7.0 test adayında uygulanmıştır; gerçek site kabulü açıktır.
+
+## v0.6.0 — İlk iyileştirme aşaması
+
+- Filtre kaydırıcıları aynı çizim turunda birleştirilir; değişmeyen CSS tekrar yazılmaz. Varsayılan filtre site stilini ezmez; sıfırlamada önceki inline stil/öncelik geri gelir.
+- Medya adayları bir saniyelik, medya/DOM olaylarında geçersizleşen RAM önbelleğindedir. Adaylar her seçimde yalnızca bir kez puanlanır. GPU filtre maliyeti ve gerçek video kare kaybı cihazda ayrıca ölçülmelidir.
+- Fare tıklaması sonrası kalan odak otomatik gizlenmeyi kilitlemez; klavye odağı ve “Paneli açık tut” korunur. Normal modda yatay sürükleme kullanılabilir.
+- Subtitles → Subtitle appearance: 12–48px, alt mesafe, arka plan opaklığı ve beyaz/sarı yazı. Yeni dosya yükleme altyazıyı açar. Yerel fullscreen/PiP yazı boyutunu tarayıcı yönetir.
+- Raporun `platformScope` alanı `player/page/unlisted` ayrımını gösterir. Tanınan üst sayfanın yalnızca sabit platform etiketi iframe'e iner; URL/alan adı taşınmaz. Listelenmeyen siteler gizlilik nedeniyle `other` kalır.
+- 20 tema korunur. Bu aşamanın ardından uygulanan iframe/reklam işleri ve kalan canlı kabul koşulları [RELEASE_ROADMAP.md](./RELEASE_ROADMAP.md); animasyon farkları [ANIMATION_DETAILS.md](./ANIMATION_DETAILS.md) içindedir.
 
 v0.5.4'te gerçek kalite API'si bulunmayan oynatıcılarda göstermelik çözünürlük seçenekleri sunulmaz. TRT'de ulaşılabilen Shaka instance'ı üzerinden kalite/hız isteği iletilir. Standart SRT/VTT dosyalarındaki `-->` sonrası boşluk hatası giderildi. Eklentiyi yeniden yükledikten sonra açık medya sayfalarını da yenileyin; erken instance kancaları ve iframe stilleri ancak yeni sayfa yüklemesinde devreye girer.
 
 v0.5.5'te altyazıyı gizli tutan CSS önceliği düzeltildi; metin seçili videoya konumlandırılır. HLS çözünürlük metadatası eksikse boş `p` gösterilmez: örneğin `720p · oynatılan` yalnızca videodan ölçülen değerdir. Tek seviye görülmesi, kaynakta başka kalite olmadığı garantisi değildir. Yeni manifest/seviye olaylarında liste yenilenir; rapor yalnızca sınırlı adet ve durum kodları içerir.
 
-İsteğe bağlı sentetik manuel önizleme: `node tests/ui-preview-server.cjs`, ardından yerel tarayıcıda `http://127.0.0.1:4817/`. Örnek düğmeler sahte HLS metadatası ve üretilmiş SRT kullanır; gerçek site/HLS entegrasyon testi değildir. Otomatik tarayıcı önizlemesi bu ortamda doğrulanamadı.
+İsteğe bağlı sentetik manuel önizleme: `node tests/ui-preview-server.cjs`, ardından yerel tarayıcıda `http://127.0.0.1:4817/`. Örnek düğmeler sahte HLS metadatası ve üretilmiş SRT kullanır; gerçek site/HLS entegrasyon testi değildir. v0.7.0'da ayrı `tests/browser-integration.cjs` sentetik Edge testi çalıştırıldı; ayrıntılar aşağıdadır.
 
 v0.5.6'da çalışan iframe paneli seçildiğinde üstteki boş panel ve diğer dallar kapanır. TRT hız kilidi yalnızca seçili video elementindeki otomatik 1x yazımlarını yönlendirir; **panelden 1x seçmek veya hız çubuğuna çift tıklamak kilidi kapatır**. Video.js'te kalite eklentisi yoksa VHS'nin kendi temsil listesi kullanılır. Kick'te Radix ses işleyicisi önbelleğe alınır; hız için gerektiğinde gerçek menü seçeneği kullanılır. Bu yolların çağrılması canlı arayüzün eşleştiğini kanıtlamaz. Eklentiyi yeniden yükleyin ve sayfaları yenileyin.
 

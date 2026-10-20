@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NOk Video Controller",
-  "version": "0.5.10",
+  "version": "0.7.0",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "author": "NOkrep",
@@ -28,7 +28,7 @@
       "matches": [
         "<all_urls>"
       ],
-      "js": ["content.js"],
+      "js": ["frame-protocol.js", "content.js"],
       "css": ["injected.css"],
       "run_at": "document_start",
       "all_frames": true
@@ -42,6 +42,7 @@
     {
       "resources": [
         "injected.js",
+        "frame-protocol.js",
         "injected.css",
         "icons/nok-logo.svg"
       ],

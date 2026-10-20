@@ -2,6 +2,8 @@
 
 Güncelleme: 19 Ekim 2026 · v0.5.10. Bu dosya proje kaydıdır; tarayıcı tercihleri yalnızca RAM'de tutulur. Kullanıcının seçtiği referanslar aşağıdadır. Kullanım durumu değişirse ilgili satır, sürüm ve uyarlama notu birlikte güncellenmelidir.
 
+20 Ekim 2026 / v0.6.0 ek notu: tüm temalar ve aşağıdaki kullanım durumları korunur. Kaynak animasyon süreleri, eğriler, taşınan ve taşınmayan parçalar ayrıntılı olarak [ANIMATION_DETAILS.md](./ANIMATION_DETAILS.md) içinde karşılaştırılmıştır. Bu aşamada yeni dekoratif animasyon eklenmedi.
+
 ## Uygulanan bileşenler
 
 | Referans | Durum / yer | Uyarlama |

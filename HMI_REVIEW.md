@@ -1,10 +1,16 @@
 # NOk Video Controller — HMI değerlendirmesi
 
-19 Ekim 2026 · v0.5.10 geliştirme sürümü
+20 Ekim 2026 · v0.7.0 test adayı
+
+v0.7.0 güncellemesi: normal iframe kontrolü üst belgede tek HUD olarak sunulur; fullscreen'de kaynak çerçeveye geçer. Sentetik Edge'de panelin iframe dışında kalması, ses/kalite, altyazı görünümü ve geçişte medya ayarlarının korunması sınandı. Gerçek Firefox, %200 zoom, ekran okuyucu ve canlı oynatıcı menüsü doğrulaması açık kalır. Tema/erişilebilirlik tercihleri çerçeveye özgüdür; fullscreen paneli bunları diğer belgeden henüz devralmaz. FRAME_PRESENTATION.md sınırları açıklar. Aşağıdaki v0.6.x notları ilgili önceki aşamayı anlatır.
 
 İlk bulgular v0.5.7 yerleşimine aittir; v0.5.8/v0.5.9 değişiklikleri ve kalan öneriler aşağıda ayrıca belirtilmiştir.
 
+v0.6.1 eklemesi: Player video hedefi seçimi adres/başlık kullanmadan sıra/yüksekliği gösterir. Kalitede istek, oynatıcı seçimi ve görüntü eşleşmesi ayrı metinlerdir; yalnızca kabul edilen isteğe başarı rengi verilmez. Doğrulama güncellemeleri mevcut kalite düğmelerini/odağı korur; envanter değişirse eşleşen düğmeye odak aktarılır. 12s timeout görünürdür. Bunlar model testlerinde sınanır; canlı ekran okuyucu/odak/renk/iframe doğrulaması hâlâ gereklidir.
+
 Bu değerlendirme `injected.js`, `injected.css` ve mevcut kullanıcı raporlarına dayalı bir kullanılabilirlik incelemesidir. Canlı tarayıcıda görsel denetim, ekran okuyucu testi, görev süresi ölçümü veya kullanıcı araştırması yapılmadı. Aşağıdaki öncelikler ürün değerlendirmesidir; bir WCAG uygunluk belgesi değildir.
+
+v0.6.0 eklemesi: pointer tıklamasıyla kalan odak otomatik gizlenmeyi engellemez; klavye etkileşimi odağı korur. Normal modda sağa kilitli sürükleme kaldırıldı. Subtitles içinde katlanmış yazı boyutu/alt mesafe/zemin opaklığı/renk alanı vardır; dosya yüklemek gizlenmiş altyazıyı yeniden açar. Çapraz kökenli iframe dışı yerleşim ve gerçek yardımcı teknoloji/zoom doğrulaması henüz tamamlanmadı. Tema sayısı 20 kalır. Animasyon farkları ve sonraki adımlar ANIMATION_DETAILS.md / RELEASE_ROADMAP.md içindedir.
 
 ## Genel değerlendirme
 

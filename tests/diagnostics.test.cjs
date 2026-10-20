@@ -15,6 +15,7 @@ function section(start, end) {
 const localization = section('  const UI_MESSAGES', '  // END UI LOCALIZATION');
 const diagnostics = section('  const DIAGNOSTIC_LOG_BUFFER', '  function getActiveContainer');
 const report = section('  function diagnosticChoice', '  function showPermissionsGuideModal');
+const qualityContext = section('  const qualityControlState', '  // END QUALITY CONTEXT');
 
 class Element {
   constructor(id = '') { this.id = id; this.listeners = {}; this.children = {}; this.value = ''; this.checked = false; }
@@ -53,7 +54,7 @@ function harness(options = {}) {
         output.writes.push(text);
       } }
     },
-    window,
+    window, remotePresentation: null,
     document: {
       querySelectorAll: () => options.frames || [],
       getElementById: () => output.modal?.removed ? null : output.modal,
@@ -63,6 +64,7 @@ function harness(options = {}) {
     applyUiAccessibility() {}, decorateUiComponents() {},
     showToast: message => output.toasts.push(message),
     findVideoAndPlayer: () => ({ video, playerType: options.playerType || 'native-html5' }),
+    selectedVideo: video,
     deepFindMediaElements: () => video ? [{ video }] : [],
     detectDrmStatus: () => ({ isDrm: options.drm || false, keySystem: 'PRIVATE_DRM_STRING' }),
     ALL_ADAPTERS: [ { name: 'GenericAdapter', tier: 3 }, { name: 'KickAdapter', tier: 1 }, { name: 'TrtAdapter', tier: 1 }, { name: 'DashJsAdapter', tier: 2 } ],
@@ -78,13 +80,16 @@ function harness(options = {}) {
     customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleLoadStatus: 'loaded', subtitleRenderStatus: 'no-active-cue', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
     findLibraryPlayer: () => options.hls || null,
     observedHlsPlayers: new WeakMap(options.hls ? [[options.hls, { manifestObserved: true, declaredLevelCount: options.hls.levels.length }]] : []),
-    EXTENSION_VERSION: '0.5.10', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
+    EXTENSION_VERSION: '0.6.1', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',
     GITHUB_REPO_URL: 'https://github.com/NOkrep/NOk-video-controller',
     DEVELOPER_EMAIL: 'developer@example.invalid',
     fetch: () => { throw new Error('Report must not make network requests'); }
   });
-  vm.runInContext(localization + diagnostics + report, context);
+  vm.runInContext(localization + diagnostics + qualityContext + report, context);
   const run = code => vm.runInContext(code, context);
+  run(`qualityControlState.context = selectedVideo ? { video: selectedVideo, player: undefined,
+    source: selectedVideo.currentSrc || '', epoch: 0, adapter: ALL_ADAPTERS.find(item => item.name === currentActiveAdapterName) } : null;
+    qualityControlState.request = { height: 720, status: 'not-verified' };`);
   const payload = () => JSON.parse(run('JSON.stringify(buildDiagnosticPayload("USER_MANUAL_DIAGNOSTIC"))'));
   const open = () => { run('reportAnonymousError("USER_MANUAL_DIAGNOSTIC")'); return output.modal; };
   return { run, payload, open, output, video };
@@ -119,6 +124,19 @@ test('events reject unknown fields, nested objects, invalid values and prototype
   assert.equal(events.length, 5);
   assert.deepEqual(events.slice(0, 4).map(e => e.details), [{}, {}, {}, {}]);
   assert.deepEqual(events[4].details, { percent: 125 });
+});
+
+test('platform scope distinguishes player, inherited page and unlisted without exposing hosts', () => {
+  const h = harness();
+  assert.equal(h.payload().platformScope, 'unlisted');
+  h.run('diagnosticPagePlatform = "trt"');
+  assert.equal(h.payload().platform, 'trt'); assert.equal(h.payload().platformScope, 'page');
+  h.run('diagnosticPagePlatform = "private.example"');
+  assert.equal(h.payload().platform, 'other');
+  const known = harness({ hostname: 'player.kick.com' }); known.run('diagnosticPagePlatform = "trt"');
+  assert.equal(known.payload().platform, 'kick'); assert.equal(known.payload().platformScope, 'player');
+  assert.equal(known.run('diagnosticPlatform("notkick.com")'), 'other');
+  assert.equal(known.run('diagnosticPlatform("kick.com.private.example")'), 'other');
 });
 
 test('ring buffer is bounded and exports coarse relative ages', () => {
@@ -206,6 +224,27 @@ test('Hls report distinguishes player inventory from resolution metadata without
   assert.equal(p.quality.declaredLevelCount, '1');
   assert.equal(JSON.stringify(p).includes('PRIVATE_MANIFEST'), false);
   assert.equal(JSON.stringify(p).includes('SECRET'), false);
+});
+
+test('diagnostics discard an old adapter, inventory and requested quality after a source change', () => {
+  const h = harness({ adapter: 'TrtAdapter' });
+  assert.equal(h.payload().activeAdapter, 'TrtAdapter');
+  h.video.currentSrc = 'blob:https://other.invalid/ANOTHER_PRIVATE_ID';
+  const p = h.payload();
+  assert.equal(p.activeAdapter, 'unknown'); assert.equal(p.adapterSelectionStatus, 'not-evaluated');
+  assert.equal(p.quality.cachedOptionCount, '0'); assert.equal(p.quality.requestedHeight, null);
+  assert.equal(p.quality.verification, 'not-verified');
+  assert.equal(JSON.stringify(p).includes('PRIVATE_ID'), false);
+});
+
+test('diagnostics report bounded verification evidence without fetching or applying a quality', () => {
+  const h = harness({ adapter: 'TrtAdapter' });
+  h.run('qualityControlState.request = { height: 720, status: "decoded-match", decodedMatch: true, renditionMatch: false }');
+  const p = h.payload();
+  assert.equal(p.quality.verification, 'decoded-match');
+  assert.equal(p.quality.decodedMatch, true); assert.equal(p.quality.renditionMatch, false);
+  h.run('qualityControlState.request.status = "PRIVATE_STATUS_URL"');
+  assert.equal(h.payload().quality.verification, 'not-verified');
 });
 
 test('subtitle render status exposes cue gap without exporting subtitles or timestamps', () => {

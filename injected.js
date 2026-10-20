@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.5.10 (Main World Engine)
+ * injected.js - NOk Video Controller v0.7.0 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,9 +17,12 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.5.10';
+  const EXTENSION_VERSION = '0.7.0';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.7.0', notes: 'Test adayı: çapraz kökenli iframe için üst sayfada tek HUD, sınırlı komut/durum köprüsü ve tam ekranda kaynak çerçeveye geçiş. Oynatıcıya bağlı reklam işaretinde 16x isteği, mute ve geri alınabilir en düşük kalite; bitişte 1x/önceki ses-kalite. Kick gerçek envanter ve video sahipliği. 135 Node testi; Firefox kurulu geçici eklentiyle yerel iframe, gerçek HLS/Video.js kalite ve dosya medyasında 16x doğrulandı. Edge Video.js kalite zaman aşımı ve gerçek site kabulü açık.' },
+    { version: 'v0.6.1', notes: 'Kalite seçenekleri video/oynatıcı/kaynağa bağlandı; native kaynak menüsü ve Video.js resolution-switcher desteği; istek/oynatıcı/görüntü doğrulaması ayrı, zaman aşımı görünür. Çoklu video hedef seçimi. İframe dışı sunum ve reklam aşaması açık; canlı doğrulama bekliyor.' },
+    { version: 'v0.6.0', notes: 'İlk iyileştirme aşaması: filtre input birleştirme ve tarama önbelleği, pointer/klavye odaklı gizlenme, normal modda yatay sürükleme, altyazı görünümü ve sabit platform kapsamı. Kalite/iframe dışı panel/reklam iyileştirmeleri açık; canlı doğrulama bekliyor.' },
     { version: 'v0.5.10', notes: 'SevenGrid kaynaklı 20 yerel tema, kontrast uyarlaması ve bellek içi seçici; seçilen Uiverse düğme/checkbox/switch/input/loader uyarlamaları; kaynak/lisans ve sonraki tasarım kayıtları. Canlı tarayıcı doğrulaması bekliyor.' },
     { version: 'v0.5.9', notes: 'Solda üç dikey sekme, Player içinde adaptör, Settings içinde görüntü kontrolleri; referans görselden koyu petrol/mavi tema ve ortak renk değişkenleri. Canlı tarayıcı/site doğrulaması bekliyor.' },
     { version: 'v0.5.8', notes: 'İngilizce varsayılan dil; Player/Picture/Subtitles/Settings sekmeleri; bellekte paneli açık tutma, büyük yazı, yüksek kontrast ve hareket azaltma seçenekleri. Canlı tarayıcı/site doğrulaması bekliyor.' },
@@ -42,6 +45,29 @@
   // UI-only gettext catalogue. No page content, subtitle cues or report JSON is translated.
   // Language and original DOM text live only in this frame's RAM.
   const UI_MESSAGES = {
+    'Gömülü oynatıcı bu isteği desteklemiyor.': 'The embedded player does not support this request.',
+    'Gömülü oynatıcı bu isteği uygulayamadı.': 'The embedded player could not apply this request.',
+    'Gömülü oynatıcı yanıt vermedi.': 'The embedded player did not respond.',
+    'Altyazı yüklü (oynatıcı çerçevesinde).': 'Subtitles loaded (in the player frame).',
+    'Altyazı dosyası gömülü oynatıcı için çok büyük.': 'The subtitle file is too large for the embedded player.',
+    'Altyazı aktarılıyor...': 'Transferring subtitles…',
+    'Video hedefi': 'Video target', 'Otomatik seçim': 'Automatic selection',
+    'Video {0} · {1}': 'Video {0} · {1}', 'Video seçimini yenile': 'Refresh video selection',
+    'Kalite isteği yok.': 'No quality requested.', 'Bekleniyor': 'Pending', 'Doğrulandı': 'Confirmed',
+    'Görüntü eşleşti': 'Decoded video matches', 'Oynatıcı seçti; görüntü bekleniyor': 'Player selected; waiting for video',
+    'Doğrulanamadı': 'Not confirmed', 'Reddedildi': 'Rejected',
+    'İstenen {0} · oynatılan {1} · Bekleniyor': 'Requested {0} · decoded {1} · Pending',
+    'İstenen {0} · oynatılan {1} · Doğrulandı': 'Requested {0} · decoded {1} · Confirmed',
+    'İstenen {0} · oynatılan {1} · Görüntü eşleşti': 'Requested {0} · decoded {1} · Decoded video matches',
+    'İstenen {0} · oynatılan {1} · Oynatıcı seçti; görüntü bekleniyor': 'Requested {0} · decoded {1} · Player selected; waiting for video',
+    'İstenen {0} · oynatılan {1} · Doğrulanamadı': 'Requested {0} · decoded {1} · Not confirmed',
+    'İstenen {0} · oynatılan {1} · Reddedildi': 'Requested {0} · decoded {1} · Rejected',
+    'Kalite listesi değişti; yeniden seçin.': 'The quality list changed; choose again.',
+    'Kaynak menüsü ve oynatıcı seviyeleri birlikte listelenir; tüm kaynakların bulunduğu doğrulanmadı.': 'Source-menu choices and player levels are listed together; completeness is not verified.',
+    'Altyazı görünümü': 'Subtitle appearance', 'Yazı boyutu': 'Font size', 'Alt kenardan uzaklık': 'Distance from bottom',
+    'Arka plan opaklığı': 'Background opacity', 'Yazı rengi': 'Text colour', 'Beyaz': 'White', 'Sarı': 'Yellow',
+    'Görünümü sıfırla': 'Reset appearance',
+    'Yazı boyutu katmanda uygulanır; yerel tam ekran/PiP yazısını tarayıcı yönetir.': 'Font size applies to the overlay; the browser controls native fullscreen/PiP text.',
     'Temalar': 'Themes', 'Tema seç': 'Choose a theme', 'Standart / koyu': 'Standard / dark', 'Açık': 'Light',
     'Önceki': 'Previous', 'Sonraki': 'Next', 'Tema {0} / {1}': 'Theme {0} / {1}',
     'Yüksek kontrast açıkken tema renkleri geçici olarak geçersiz kılınır.': 'High contrast temporarily overrides theme colours.',
@@ -291,7 +317,8 @@
   }
   function setUiText(element, source) {
     if (!element) return;
-    element.textContent = uiText(source);
+    const text = uiText(source);
+    if (element.textContent !== text || element.childNodes?.length !== 1 || element.firstChild?.nodeType !== 3) element.textContent = text;
     if (element.firstChild?.nodeType === 3) uiOriginalText.set(element.firstChild, String(source));
   }
   function setUiAttribute(element, name, source) {
@@ -509,7 +536,7 @@
     navigation.setAttribute('aria-orientation', 'vertical');
     setUiAttribute(navigation, 'aria-label', 'Kontrol grupları');
     const groups = [
-      { id: 'player', label: 'Oynatıcı', icon: '<path d="m9 5 10 7-10 7Z"/>', nodes: ['#pvc-section-speed', '#pvc-section-audio', '#pvc-section-quality', '#pvc-adapter-bar'] },
+      { id: 'player', label: 'Oynatıcı', icon: '<path d="m9 5 10 7-10 7Z"/>', nodes: ['#pvc-section-speed', '#pvc-section-audio', '#pvc-section-quality', '#pvc-adapter-bar', '.pvc-video-target-row'] },
       { id: 'subtitles', label: 'Altyazı', icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m2 0h4M7 14h7m2 0h1"/>', nodes: ['#pvc-section-subtitles'] },
       { id: 'settings', label: 'Ayarlar', icon: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>', nodes: ['.pvc-language-row', '#pvc-section-filters', '#pvc-menu-footer'] }
     ];
@@ -609,6 +636,21 @@
 
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
+    if (event.data.type === 'PVC_REMOTE_SOURCE_START') { startRemoteSource(event.data.payload?.session); return; }
+    if (event.data.type === 'PVC_REMOTE_CLEAR') { clearRemoteSession(); return; }
+    if (event.data.type === 'PVC_REMOTE_SOURCE_SUSPEND') { clearRemoteSession(false); return; }
+    if (event.data.type === 'PVC_REMOTE_STATE') { acceptRemoteState(event.data.payload); return; }
+    if (event.data.type === 'PVC_REMOTE_REPLY') { acceptRemoteReply(event.data.payload); return; }
+    if (event.data.type === 'PVC_EXEC_REMOTE_COMMAND') { executeRemoteCommand(event.data.payload); return; }
+    if (event.data.type === 'PVC_SOURCE_FULLSCREEN' && remoteSourceSession === event.data.payload?.session
+        && typeof event.data.payload?.value === 'boolean') {
+      remoteAncestorFullscreen = event.data.payload.value; syncRemoteFullscreen(); return;
+    }
+    if (typeof event.data.type === 'string' && event.data.type.startsWith('PVC_APPLY_PLATFORM_')) {
+      const platform = event.data.type.slice('PVC_APPLY_PLATFORM_'.length);
+      if (Object.hasOwn(DIAGNOSTIC_PLATFORMS, platform)) diagnosticPagePlatform = platform;
+      return;
+    }
     if (event.data.type === 'PVC_APPLY_LANGUAGE_TR' || event.data.type === 'PVC_APPLY_LANGUAGE_EN') {
       setUiLanguage(event.data.type === 'PVC_APPLY_LANGUAGE_TR' ? 'tr' : 'en', false);
       return;
@@ -623,11 +665,15 @@
       const popup = document.getElementById('pvc-controller-popup');
       if (popup) popup.style.display = 'none';
     } else if (event.data.type === 'PVC_OPEN_POPUP') {
+      if (frameProtocol && window.parent !== window && !isFullscreenMode() && !remoteSourceSession) {
+        window.postMessage({ type: 'PVC_REQUEST_TOP_TOGGLE' }, '*'); return;
+      }
       const popup = document.getElementById('pvc-controller-popup') || buildPvcPopup();
       popup.style.display = 'block';
       resetPopupToDefaultPosition(popup);
       clampPopupToViewport(popup);
       resetIdleTimer(popup);
+      startQualityWatch();
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
       window.postMessage({ type: findVideoAndPlayer().video ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
@@ -694,6 +740,275 @@
   // Amazon IVS Player Global Kanca
   let globalCapturedIvsPlayer = null;
 
+  // FRAME PRESENTATION: bounded UI state; media stays in its owning document.
+  const frameProtocol = globalThis.NOkFrameProtocol || null;
+  let remotePresentation = null, remotePresentationSession = null;
+  let remoteSourceSession = null, remoteSourceOwner = null, remoteAncestorFullscreen = false, remoteSourceActive = true;
+  let remoteSourceRevision = 0, remoteSourceSignature = '', remoteSourceQualities = [], remoteSourceCandidates = [];
+  let remoteRequestId = 0;
+  const remoteRequests = new Map(), retiredRemoteSessions = new Set(), remoteVideoTokens = new WeakMap();
+  let remoteVideoToken = 0;
+  function postHudSignal(type) {
+    const session = remoteSourceSession || remotePresentationSession;
+    window.postMessage(session ? { type, payload: { session } } : { type }, '*');
+  }
+  function clearRemoteSession(retire = true) {
+    const hadRemote = remotePresentation || remoteSourceSession;
+    if (retire) for (const session of [remotePresentationSession, remoteSourceSession]) if (session) retiredRemoteSessions.add(session);
+    while (retiredRemoteSessions.size > 8) retiredRemoteSessions.delete(retiredRemoteSessions.values().next().value);
+    for (const pending of remoteRequests.values()) { clearTimeout(pending.timer); pending.resolve({ ok: false, code: 'stale' }); }
+    remoteRequests.clear();
+    remotePresentation = null; remotePresentationSession = null; remoteSourceSession = null; remoteSourceOwner = null;
+    remoteAncestorFullscreen = false; remoteSourceQualities = []; remoteSourceCandidates = [];
+    remoteSourceActive = true;
+    if (hadRemote) {
+      stopAdWatch();
+      clearTimeout(qualityWatchTimer);
+      const popup = document.getElementById('pvc-controller-popup'); if (popup) popup.style.display = 'none';
+      for (const id of ['pvc-error-modal', 'pvc-adapter-modal', 'pvc-drm-modal']) document.getElementById(id)?.remove();
+    }
+  }
+  function remoteFullscreen() { return remoteAncestorFullscreen || isFullscreenMode(); }
+  function buildRemoteSourceState() {
+    if (!frameProtocol || !remoteSourceSession) return null;
+    const selection = findVideoAndPlayer(), { video, player } = selection;
+    const qualities = discoverStreamQualities(selection).slice(0, 128);
+    updateQualityVerification(video, player);
+    const candidates = getMediaCandidates().slice(0, 32).map(item => item.video);
+    for (const candidate of candidates) if (!remoteVideoTokens.has(candidate)) remoteVideoTokens.set(candidate, ++remoteVideoToken);
+    const signature = JSON.stringify([qualityControlState.generation, userForcedAdapterName,
+      qualities.map(item => [item.id, item.height, item.bitrate, item.sourceLabel, item.representationId]), candidates.map(item => remoteVideoTokens.get(item))]);
+    if (signature !== remoteSourceSignature) {
+      remoteSourceSignature = signature; remoteSourceRevision = (remoteSourceRevision + 1) % 2147483647;
+    }
+    remoteSourceQualities = qualities; remoteSourceCandidates = candidates;
+    const request = readQualityDiagnostics(video, player);
+    const bounded = (value, min, max, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+    return frameProtocol.cleanState({
+      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video, fullscreen: remoteFullscreen(),
+      paused: video?.paused !== false, muted: video?.muted === true,
+      width: Math.round(bounded(video?.videoWidth, 0, 16384)), height: Math.round(bounded(video?.videoHeight, 0, 8640)),
+      rate: bounded(video?.playbackRate, 0, 16), requestedRate: targetEnforcedPlaybackRate,
+      volume: bounded(video?.volume * 100, 0, 100), requestedVolume: currentAudioVolumePercent, audioMode: currentAudioMode,
+      adapter: video ? currentActiveAdapterName : 'none', forcedAdapter: userForcedAdapterName || 'none', drm: !!video && detectDrmStatus(video).isDrm,
+      qualities: qualities.map(item => ({ height: bounded(item.height, 0, 4320), bitrate: bounded(item.bitrate, 0, 1000000000) })),
+      verification: request.verification, requestedHeight: request.requestedHeight || 0,
+      requestedIndex: qualities.findIndex(item => item.id === qualityControlState.request?.id),
+      decodedMatch: request.decodedMatch, renditionMatch: request.renditionMatch,
+      subtitleLoaded: customSubtitleCues.length > 0, subtitleEnabled: subtitleOverlayEnabled,
+      subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs,
+      appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
+      candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo)
+    });
+  }
+  function publishRemoteSourceState() {
+    const state = buildRemoteSourceState();
+    if (state) window.postMessage({ type: 'PVC_SOURCE_STATE', payload: { session: remoteSourceSession, state } }, '*');
+    return state;
+  }
+  function startRemoteSource(session) {
+    if (!frameProtocol || !frameProtocol.cleanSession(session)) {
+      window.postMessage({ type: 'PVC_OPEN_IF_MEDIA' }, '*'); return;
+    }
+    if (retiredRemoteSessions.has(session)) return;
+    if (remoteSourceSession === session) { publishRemoteSourceState(); return; }
+    clearRemoteSession();
+    const { video } = findVideoAndPlayer();
+    if (!video || video.readyState === 0) { window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*'); return; }
+    remoteSourceSession = session; remoteSourceOwner = frameProtocol.newSession();
+    remoteSourceRevision = 0; remoteSourceSignature = '';
+    const popup = document.getElementById('pvc-controller-popup'); if (popup) popup.style.display = 'none';
+    monitorVideoResolution(video);
+    postHudSignal('PVC_HUD_OPENED');
+    publishRemoteSourceState(); startQualityWatch();
+    syncRemoteFullscreen();
+  }
+  function syncRemoteFullscreen() {
+    if (!remoteSourceSession) return;
+    let popup = document.getElementById('pvc-controller-popup');
+    if (remoteFullscreen()) {
+      popup ||= buildPvcPopup();
+      const target = getActiveContainer(); if (popup.parentElement !== target) target.appendChild(popup);
+      popup.classList.add('pvc-in-fullscreen'); popup.style.display = 'block';
+      syncLocalMediaHud();
+      clampPopupToViewport(popup); resetIdleTimer(popup);
+    } else if (popup) { popup.style.display = 'none'; popup.classList.remove('pvc-in-fullscreen'); }
+    publishRemoteSourceState();
+  }
+  function remoteControl(name, value) {
+    if (!frameProtocol || !remotePresentation || !remotePresentationSession) return Promise.resolve({ ok: false, code: 'stale' });
+    const command = frameProtocol.cleanCommand({ name, value, owner: remotePresentation.owner, revision: remotePresentation.revision });
+    if (!command) { showToast('Gömülü oynatıcı bu isteği desteklemiyor.'); return Promise.resolve({ ok: false, code: 'unsupported' }); }
+    const id = remoteRequestId = (remoteRequestId + 1) % 2147483647, session = remotePresentationSession;
+    return new Promise(resolve => {
+      const timer = setTimeout(() => {
+        remoteRequests.delete(id); showToast('Gömülü oynatıcı yanıt vermedi.'); resolve({ ok: false, code: 'timeout' });
+      }, name === 'report' || name === 'ping' ? 10000 : 5000);
+      remoteRequests.set(id, { owner: command.owner, session, resolve, timer });
+      window.postMessage({ type: 'PVC_REMOTE_COMMAND', payload: { session, id, command } }, '*');
+    });
+  }
+  function acceptRemoteReply(payload) {
+    if (payload?.session !== remotePresentationSession) return;
+    const reply = frameProtocol?.cleanReply(payload.reply), pending = reply && remoteRequests.get(reply.id);
+    if (!pending || pending.owner !== reply.owner || pending.owner !== remotePresentation?.owner) return;
+    clearTimeout(pending.timer); remoteRequests.delete(reply.id); pending.resolve(reply);
+    if (!reply.ok) showToast(reply.code === 'stale' ? 'Kalite listesi değişti; yeniden seçin.' : 'Gömülü oynatıcı bu isteği uygulayamadı.');
+  }
+  async function executeRemoteCommand(payload) {
+    if (!frameProtocol || !remoteSourceSession || payload?.session !== remoteSourceSession) return;
+    const command = frameProtocol.cleanCommand(payload.command), id = payload.id;
+    if (!command || !Number.isInteger(id) || id < 0 || id > 2147483647) return;
+    const session = remoteSourceSession, owner = remoteSourceOwner, state = buildRemoteSourceState();
+    let reply = { id, owner, ok: true, code: 'ok' };
+    if (!state || command.owner !== owner || (command.name !== 'refresh' && command.revision !== state.revision)) reply = { ...reply, ok: false, code: 'stale' };
+    else {
+      try {
+        const { video, player } = findVideoAndPlayer(), value = command.value;
+        if (!video && !['refresh', 'report'].includes(command.name)) throw new Error('no-media');
+        switch (command.name) {
+          case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
+          case 'volume': setAudioVolume(value); break;
+          case 'audio': setAudioMode(value); break;
+          case 'seek': if (!seekBy(value)) throw new Error('seek'); break;
+          case 'quality': if (!remoteSourceQualities[value] || !requestQuality(remoteSourceQualities[value], video, player)) throw new Error('quality'); break;
+          case 'target': controlledVideo = value < 0 ? null : remoteSourceCandidates[value]; if (value >= 0 && !controlledVideo) throw new Error('target'); break;
+          case 'adapter': userForcedAdapterName = value === 'none' ? '' : value; getActiveAdapter(video, player); break;
+          case 'filters': videoFilterState = { ...value }; applyVideoFiltersToElement(video); updateFilterUiBadges(); break;
+          case 'appearance': Object.assign(subtitleAppearance, value); updateSubtitleAppearanceControls();
+            if (video.__nokSubtitleTrack?.cues) for (const cue of video.__nokSubtitleTrack.cues) { cue.snapToLines = false; cue.line = 100 - value.bottom; }
+            renderCustomSubtitleCue(video); break;
+          case 'subtitle-load': customSubtitleCues = value; subtitleFileName = 'External subtitles'; subtitleOffsetMs = 0;
+            subtitleOverlayEnabled = true; subtitleLoadStatus = 'loaded'; addDiagnosticLog('INFO', 'SUBTITLE_LOADED');
+            injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); break;
+          case 'subtitle-visible': subtitleOverlayEnabled = value; injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); break;
+          case 'subtitle-offset': if (value === 0) { subtitleOffsetMs = 0; injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); } else shiftSubtitleSync(value); break;
+          case 'hotkeys': hotkeysEnabled = value; break;
+          case 'presentation-active': remoteSourceActive = value; break;
+          case 'play': if (video.paused) await video.play(); else video.pause(); break;
+          case 'pip': if (await togglePictureInPicture() === false) reply = { ...reply, ok: false, code: 'unsupported' }; break;
+          case 'ping': { const result = await testCdnPing(false); if (result?.ms !== undefined) reply.ms = result.ms; else reply = { ...reply, ok: false, code: 'failed' }; break; }
+          case 'report': reply.report = buildDiagnosticPayload(video ? 'USER_MANUAL_DIAGNOSTIC' : 'NO_VIDEO_FOUND'); break;
+          case 'drm-info': break;
+          case 'refresh': invalidateMediaDiscovery(); break;
+          default: reply = { ...reply, ok: false, code: 'unsupported' };
+        }
+      } catch (_) { reply = { id, owner, ok: false, code: 'failed' }; }
+    }
+    if (remoteSourceSession !== session || remoteSourceOwner !== owner) return;
+    const safe = frameProtocol.cleanReply(reply);
+    if (safe) window.postMessage({ type: 'PVC_SOURCE_REPLY', payload: { session, reply: safe } }, '*');
+    publishRemoteSourceState();
+  }
+  function acceptRemoteState(payload) {
+    const session = frameProtocol?.cleanSession(payload?.session), state = frameProtocol?.cleanState(payload?.state);
+    if (!session || !state || retiredRemoteSessions.has(session) || window !== window.top) return;
+    const first = remotePresentationSession !== session;
+    if (first) clearRemoteSession();
+    if (remotePresentation && remotePresentation.owner !== state.owner) {
+      for (const pending of remoteRequests.values()) { clearTimeout(pending.timer); pending.resolve({ ok: false, code: 'stale' }); }
+      remoteRequests.clear();
+    }
+    remotePresentationSession = session; remotePresentation = state;
+    renderRemoteHud();
+    if (first) {
+      const popup = document.getElementById('pvc-controller-popup'); resetPopupToDefaultPosition(popup); clampPopupToViewport(popup); resetIdleTimer(popup);
+    }
+  }
+  function renderRemoteHud() {
+    const state = remotePresentation; if (!state) return;
+    const popup = document.getElementById('pvc-controller-popup') || buildPvcPopup();
+    popup.__nokActivity = active => {
+      if (popup.__nokLastActivity === active) return;
+      popup.__nokLastActivity = active; remoteControl('presentation-active', active);
+    };
+    const target = getActiveContainer();
+    const blockedTarget = ['IFRAME', 'FRAME', 'VIDEO'].includes(target.tagName);
+    if (!blockedTarget && popup.parentElement !== target) target.appendChild(popup);
+    popup.style.display = state.fullscreen || blockedTarget ? 'none' : 'block';
+    const text = (id, value) => setUiText(document.getElementById(id), value);
+    const value = (id, next) => { const input = document.getElementById(id); if (input && document.activeElement !== input) input.value = String(next); };
+    if (remoteRequests.size === 0) {
+      currentAudioVolumePercent = state.requestedVolume; targetEnforcedPlaybackRate = state.requestedRate;
+      currentAudioMode = state.audioMode; videoFilterState = { ...state.filters }; Object.assign(subtitleAppearance, state.appearance);
+      subtitleOverlayEnabled = state.subtitleEnabled; subtitleOffsetMs = state.subtitleOffset;
+      value('pvc-speed-slider', state.requestedRate); value('pvc-volume-slider', state.requestedVolume);
+      updateFilterUiBadges(); updateSubtitleAppearanceControls();
+    }
+    userForcedAdapterName = state.forcedAdapter === 'none' ? '' : state.forcedAdapter;
+    lastObservedResolution = state.hasVideo ? `${state.width}x${state.height} (${state.height}p)` : '—';
+    text('pvc-realtime-res-badge', `🎬 Gerçek: ${lastObservedResolution}`); text('pvc-mini-res-val', `🎬 ${state.height || '—'}p`);
+    text('pvc-hdr-speed-badge', `${state.requestedRate}x`); text('pvc-mini-speed-val', `⚡ ${state.rate}x`);
+    text('pvc-hdr-volume-badge', `${state.requestedVolume}%`); text('pvc-mini-vol-val', `🔊 ${state.volume}% (${state.audioMode === 'mono' ? 'M' : 'S'})`);
+    text('pvc-hdr-audio-badge', state.audioMode.toUpperCase()); text('pvc-active-adapter-badge', state.adapter);
+    text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
+    text('pvc-sub-offset-badge', `${state.subtitleOffset >= 0 ? '+' : ''}${state.subtitleOffset}ms`);
+    text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
+    document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
+    text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
+    for (const [id, show] of [['pvc-drm-status-badge', state.drm], ['pvc-no-video-alert', !state.hasVideo]]) {
+      const element = document.getElementById(id); if (element) element.style.display = show ? 'block' : 'none';
+    }
+    renderRemoteQualities(); renderRemoteTargets();
+  }
+  function renderRemoteQualities() {
+    const state = remotePresentation, container = document.getElementById('pvc-dynamic-quality-container');
+    if (!state || !container) return;
+    const signature = JSON.stringify([state.owner, state.revision, uiLanguage, state.qualities]);
+    if (container.__nokRemoteSignature !== signature) {
+      container.innerHTML = ''; container.__nokRemoteSignature = signature;
+      state.qualities.forEach((quality, index) => {
+        const button = document.createElement('button'); button.className = 'pvc-quality-chip-btn'; button.type = 'button';
+        const label = quality.height > 0 ? `${quality.height}p` : quality.bitrate > 0 ? `${(quality.bitrate / 1000000).toFixed(1)} Mb/sn` : `Seviye ${index + 1}`;
+        setUiText(button, label); button.__nokRemoteIndex = index;
+        const owner = state.owner, revision = state.revision;
+        button.onclick = e => { e.stopPropagation(); if (remotePresentation?.owner === owner && remotePresentation.revision === revision) remoteControl('quality', index); };
+        container.appendChild(button);
+      });
+      const note = document.createElement('span'); note.className = 'pvc-quality-inventory-note';
+      setUiText(note, state.qualities.length ? 'Kaynak menüsü ve oynatıcı seviyeleri birlikte listelenir; tüm kaynakların bulunduğu doğrulanmadı.' : 'Bu oynatıcıda kullanılabilir kalite kontrolü bulunamadı.'); container.appendChild(note);
+    }
+    for (const button of container.querySelectorAll('button')) {
+      const selected = state.requestedIndex >= 0 && button.__nokRemoteIndex === state.requestedIndex;
+      const confirmed = selected && ['confirmed', 'decoded-match'].includes(state.verification);
+      button.classList.toggle('pvc-active', confirmed); button.classList.toggle('pvc-requested', selected && !confirmed); button.setAttribute('aria-pressed', String(confirmed));
+    }
+    setUiText(document.getElementById('pvc-quality-count-badge'), `${state.qualities.length} seviye`);
+    const labels = { pending: 'Bekleniyor', confirmed: 'Doğrulandı', 'decoded-match': 'Görüntü eşleşti', 'rendition-confirmed': 'Oynatıcı seçti; görüntü bekleniyor', 'timed-out': 'Doğrulanamadı', rejected: 'Reddedildi' };
+    setUiText(document.getElementById('pvc-quality-status'), state.verification === 'not-verified' ? 'Kalite isteği yok.'
+      : `İstenen ${state.requestedHeight ? state.requestedHeight + 'p' : '—'} · oynatılan ${state.height ? state.height + 'p' : '—'} · ${labels[state.verification]}`);
+  }
+  function renderRemoteTargets() {
+    const select = document.getElementById('pvc-video-target'), state = remotePresentation;
+    if (!select || !state || document.activeElement === select) return;
+    const signature = JSON.stringify([state.owner, state.revision, state.candidates, uiLanguage]);
+    if (select.__nokRemoteSignature !== signature) {
+      select.innerHTML = ''; select.__nokRemoteSignature = signature;
+      const automatic = document.createElement('option'); automatic.value = 'auto'; setUiText(automatic, 'Otomatik seçim'); select.appendChild(automatic);
+      state.candidates.forEach((candidate, index) => {
+        const option = document.createElement('option'); option.value = String(index); setUiText(option, `Video ${index + 1} · ${candidate.height ? candidate.height + 'p' : '—'}`); select.appendChild(option);
+      });
+    }
+    select.value = state.target < 0 ? 'auto' : String(state.target);
+  }
+  function syncLocalMediaHud() {
+    if (remotePresentation) return;
+    const speed = document.getElementById('pvc-speed-slider'); if (speed) speed.value = String(targetEnforcedPlaybackRate);
+    const volume = document.getElementById('pvc-volume-slider');
+    if (volume) { volume.value = String(currentAudioVolumePercent); updateVolumeSliderVisualGain(volume, currentAudioVolumePercent); }
+    setUiText(document.getElementById('pvc-hdr-speed-badge'), `${targetEnforcedPlaybackRate}x`);
+    setUiText(document.getElementById('pvc-hdr-volume-badge'), `${currentAudioVolumePercent}%`);
+    setUiText(document.getElementById('pvc-hdr-audio-badge'), currentAudioMode.toUpperCase());
+    document.getElementById('pvc-audio-stereo-btn')?.classList.toggle('pvc-audio-active', currentAudioMode === 'stereo');
+    document.getElementById('pvc-audio-mono-btn')?.classList.toggle('pvc-audio-active', currentAudioMode === 'mono');
+    const toggle = document.getElementById('pvc-sub-toggle-btn');
+    setUiText(toggle, subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli'); toggle?.classList.toggle('pvc-active', subtitleOverlayEnabled);
+    if (customSubtitleCues.length) setUiText(document.getElementById('pvc-sub-status-text'), `💬 Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
+    setUiText(document.getElementById('pvc-sub-offset-badge'), `${subtitleOffsetMs >= 0 ? '+' : ''}${subtitleOffsetMs}ms`);
+    updateFilterUiBadges(); updateSubtitleAppearanceControls(); updateRealtimeResolutionBadge();
+  }
+  // END FRAME PRESENTATION
+
   // Yalnızca seçili video ile ilişkilendirilmiş gerçek instance'lar kullanılır.
   const mediaLibraryBindings = new WeakMap();
   const hookedLibraryMethods = new WeakSet();
@@ -714,6 +1029,7 @@
       }, 100);
     };
     hls.on('hlsManifestLoading', () => {
+      invalidateQualityVideo(state.video);
       state.manifestObserved = false;
       state.declaredLevelCount = null;
       refresh();
@@ -809,6 +1125,19 @@
   }, true);
   hookMediaLibraries();
 
+  function isIvsBoundToVideo(player, video) {
+    if (!player || !video) return false;
+    try {
+      if (typeof player.getHTMLVideoElement === 'function') return player.getHTMLVideoElement() === video;
+      return video.__ivsPlayer === player || video._ivsPlayer === player;
+    } catch (_) { return false; }
+  }
+  function ivsQualityKey(quality) {
+    if (!quality || typeof quality.name !== 'string' || quality.name.length > 128
+        || !Number.isFinite(quality.height) || quality.height < 0 || quality.height > 4320
+        || !Number.isFinite(quality.bitrate) || quality.bitrate < 0 || quality.bitrate > 1000000000) return null;
+    return JSON.stringify([quality.name, quality.height, quality.bitrate]);
+  }
   function hookIvsInstance(player) {
     if (!player || typeof player !== 'object') return player;
     globalCapturedIvsPlayer = player;
@@ -969,6 +1298,7 @@
     FULLSCREEN_ENTERED: [], FULLSCREEN_EXITED: [], DRM_DETECTED: [],
     SOURCE_SWITCH_STARTED: [], SOURCE_SWITCH_COMPLETED: [], PIP_FAILED: [],
     WEB_AUDIO_DRM_SKIPPED: [],
+    AD_CONTROL_STARTED: [], AD_CONTROL_ENDED: [],
     SPEED_REQUESTED: ['rate'], SPEED_FAILED: [],
     VOLUME_REQUESTED: ['percent'], AUDIO_MODE_CHANGED: ['mono'], SEEK_REQUESTED: ['delta'],
     QUALITY_REQUESTED: ['height'],
@@ -1027,6 +1357,7 @@
   // 🖥️ TAM EKRAN DİNAMİK YENİDEN YERLEŞİM (FULLSCREEN STACKING MANAGER)
   // =========================================================================
   function syncFullscreenElements() {
+    if (remotePresentation) { renderRemoteHud(); return; }
     const activeTarget = getActiveContainer();
     const popup = document.getElementById('pvc-controller-popup');
     const toast = document.getElementById('pvc-quick-toast');
@@ -1055,6 +1386,7 @@
       const { video } = findVideoAndPlayer();
       if (video) renderCustomSubtitleCue(video);
     }
+    if (remoteSourceSession) syncRemoteFullscreen();
   }
 
   ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
@@ -1062,6 +1394,7 @@
   });
 
   function showToast(msg) {
+    if (remoteSourceSession && !remoteFullscreen()) return;
     try {
       const existing = document.getElementById('pvc-quick-toast');
       if (existing) existing.remove();
@@ -1237,6 +1570,30 @@
     return discovered;
   }
 
+  // Cache discovery, not player instances: library attachment can change between calls.
+  let mediaDiscoveryCache = { at: -Infinity, candidates: [] };
+  let controlledVideo = null;
+  function invalidateMediaDiscovery() { mediaDiscoveryCache.at = -Infinity; }
+  function getMediaCandidates() {
+    const now = performance.now();
+    if (now - mediaDiscoveryCache.at > 1000 || mediaDiscoveryCache.candidates.some(item => item.video.isConnected === false)) {
+      mediaDiscoveryCache = { at: now, candidates: deepFindMediaElements() };
+    }
+    return mediaDiscoveryCache.candidates;
+  }
+  // Attributes (including filter sliders and video styles) never invalidate the scan.
+  if (typeof MutationObserver === 'function') {
+    const mediaObserver = new MutationObserver(records => {
+      const isUiNode = node => node?.nodeType === 1 && (node.id?.startsWith('pvc-') || node.closest?.('[id^="pvc-"]'));
+      if (records.some(record => !isUiNode(record.target)
+          && [...record.addedNodes, ...record.removedNodes].some(node => !isUiNode(node)))) invalidateMediaDiscovery();
+    });
+    mediaObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  document.addEventListener('playing', invalidateMediaDiscovery, true);
+  document.addEventListener('loadedmetadata', invalidateMediaDiscovery, true);
+  // END MEDIA DISCOVERY CACHE
+
   function scoreVideoCandidate(video) {
     if (!video) return -999;
     let score = 0;
@@ -1269,14 +1626,24 @@
   }
 
   function findVideoAndPlayer() {
-    const discoveredList = deepFindMediaElements();
+    const discoveredList = getMediaCandidates();
     if (discoveredList.length === 0) {
+      controlledVideo = null;
       isMediaInShadowDom = false;
       return { video: null, player: null, playerType: 'none', platform: HOSTNAME, isShadow: false };
     }
 
-    discoveredList.sort((a, b) => scoreVideoCandidate(b.video) - scoreVideoCandidate(a.video));
-    const bestCandidate = discoveredList[0];
+    // Score each candidate once; sorting previously repeated layout reads in its comparator.
+    let bestCandidate = discoveredList[0], bestScore = -Infinity;
+    for (const candidate of discoveredList) {
+      const score = scoreVideoCandidate(candidate.video);
+      if (score > bestScore) { bestCandidate = candidate; bestScore = score; }
+    }
+    if (controlledVideo) {
+      const controlled = discoveredList.find(item => item.video === controlledVideo && item.video.isConnected !== false);
+      if (controlled) bestCandidate = controlled;
+      else controlledVideo = null;
+    }
     const selectedVideo = bestCandidate.video;
     isMediaInShadowDom = bestCandidate.isShadow;
 
@@ -1287,12 +1654,15 @@
     const shaka = findLibraryPlayer(selectedVideo, 'shaka');
     const hls = findLibraryPlayer(selectedVideo, 'hls');
     const vjs = findVideoJsPlayer(selectedVideo);
+    const attachedIvs = selectedVideo.__ivsPlayer || selectedVideo._ivsPlayer;
+    const ivs = attachedIvs && isIvsBoundToVideo(attachedIvs, selectedVideo) ? attachedIvs
+      : globalCapturedIvsPlayer && isIvsBoundToVideo(globalCapturedIvsPlayer, selectedVideo) ? globalCapturedIvsPlayer : null;
 
     if (HOSTNAME.includes('youtube.com')) {
       playerType = 'youtube-player';
       player = document.getElementById('movie_player') || null;
-    } else if (selectedVideo.__ivsPlayer || globalCapturedIvsPlayer) {
-      player = selectedVideo.__ivsPlayer || globalCapturedIvsPlayer;
+    } else if (ivs) {
+      player = ivs;
       playerType = 'amazon-ivs';
     } else if (shaka) {
       player = shaka;
@@ -1698,12 +2068,12 @@
       return window.location.pathname.includes('/video/') || window.location.pathname.includes('/videos/');
     },
     findIvsPlayer(video) {
-      if (globalCapturedIvsPlayer && typeof globalCapturedIvsPlayer.getQualities === 'function') return globalCapturedIvsPlayer;
-      if (video && video.__ivsPlayer && typeof video.__ivsPlayer.getQualities === 'function') return video.__ivsPlayer;
-      if (video && video._ivsPlayer && typeof video._ivsPlayer.getQualities === 'function') return video._ivsPlayer;
-      if (window.ivsPlayer && typeof window.ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = window.ivsPlayer);
-      if (window.__ivsPlayer && typeof window.__ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = window.__ivsPlayer);
-      if (window.player && typeof window.player.getQualities === 'function') return (globalCapturedIvsPlayer = window.player);
+      if (isIvsBoundToVideo(globalCapturedIvsPlayer, video) && typeof globalCapturedIvsPlayer.getQualities === 'function') return globalCapturedIvsPlayer;
+      if (isIvsBoundToVideo(video?.__ivsPlayer, video) && typeof video.__ivsPlayer.getQualities === 'function') return video.__ivsPlayer;
+      if (isIvsBoundToVideo(video?._ivsPlayer, video) && typeof video._ivsPlayer.getQualities === 'function') return video._ivsPlayer;
+      for (const candidate of [window.ivsPlayer, window.__ivsPlayer, window.player]) {
+        if (isIvsBoundToVideo(candidate, video) && typeof candidate.getQualities === 'function') return (globalCapturedIvsPlayer = candidate);
+      }
 
       const candidates = [
         video,
@@ -1717,7 +2087,7 @@
       ].filter(Boolean);
 
       for (const el of candidates) {
-        if (el.__ivsPlayer && typeof el.__ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = el.__ivsPlayer);
+        if (isIvsBoundToVideo(el.__ivsPlayer, video) && typeof el.__ivsPlayer.getQualities === 'function') return (globalCapturedIvsPlayer = el.__ivsPlayer);
         try {
           const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
           if (fiberKey && el[fiberKey]) {
@@ -1746,7 +2116,7 @@
               return false;
             }, 350);
 
-            if (foundPlayer) {
+            if (isIvsBoundToVideo(foundPlayer, video)) {
               globalCapturedIvsPlayer = foundPlayer;
               if (video) video.__ivsPlayer = foundPlayer;
               return foundPlayer;
@@ -1956,23 +2326,6 @@
         }, 120);
       } catch (e) {}
     },
-    checkAdFastForward(video) {
-      if (!video || !window.location.hostname.includes('kick.com')) return;
-      const adSelectors = ['[data-testid="ad-badge"]', '[class*="ad-overlay"]', '[class*="ad-badge"]'];
-      const hasAd = adSelectors.some(sel => !!document.querySelector(sel));
-      if (hasAd && !this.isKickAdActive) {
-        this.isKickAdActive = true;
-        this.preKickAdSpeed = video.playbackRate || 1.0;
-        this.preKickAdMuted = video.muted;
-        try { video.playbackRate = 16.0; video.muted = true; } catch (e) {}
-      } else if (!hasAd && this.isKickAdActive) {
-        this.isKickAdActive = false;
-        try { video.playbackRate = this.preKickAdSpeed || 1.0; video.muted = this.preKickAdMuted; } catch (e) {}
-      }
-    },
-    isKickAdActive: false,
-    preKickAdSpeed: 1.0,
-    preKickAdMuted: false,
     getQualities(video) {
       const results = [];
       const ivs = this.findIvsPlayer(video);
@@ -1980,36 +2333,31 @@
         try {
           const qList = ivs.getQualities();
           if (Array.isArray(qList) && qList.length > 0) {
-            qList.forEach((q, idx) => {
+            qList.slice(0, 128).forEach((q, idx) => {
+              const key = ivsQualityKey(q); if (!key || (!q.height && !q.bitrate)) return;
               const h = q.height || 0;
-              results.push({ id: `ivs_${idx}`, index: idx, label: q.name || `${h}p`, height: h, bitrate: q.bitrate || 0, raw: q });
+              results.push({ id: `ivs_${key}`, index: idx, label: h ? `${h}p` : `${(q.bitrate / 1000000).toFixed(1)} Mb/sn`,
+                height: h, bitrate: q.bitrate || 0, qualityApi: 'ivs', raw: q });
             });
             return results.sort((a, b) => (b.height || 0) - (a.height || 0));
           }
         } catch (e) {}
       }
-      return [
-        { id: 'kick_1080p60', label: '1080p60', height: 1080 },
-        { id: 'kick_720p60', label: '720p60', height: 720 },
-        { id: 'kick_480p30', label: '480p30', height: 480 },
-        { id: 'kick_360p30', label: '360p30', height: 360 },
-        { id: 'kick_160p30', label: '160p30', height: 160 }
-      ];
+      return []; // No guessed renditions when the selected player has no inventory.
     },
     applyQuality(targetItem, video) {
-      this.findAndInvokeReactQuality(targetItem.label, targetItem.height);
       const ivs = this.findIvsPlayer(video);
       if (ivs && typeof ivs.getQualities === 'function') {
         try {
-          if (typeof ivs.setAutoQualityMode === 'function') ivs.setAutoQualityMode(false);
           const qList = ivs.getQualities();
-          const targetQuality = Array.isArray(qList) ? qList.find(q => (q.height && q.height === targetItem.height) || (q.name && q.name.includes(`${targetItem.height}`))) : null;
-          if (targetQuality && typeof ivs.setQuality === 'function') ivs.setQuality(targetQuality);
+          const key = ivsQualityKey(targetItem.raw);
+          const targetQuality = key && Array.isArray(qList) ? qList.find(q => ivsQualityKey(q) === key) : null;
+          if (!targetQuality || typeof ivs.setQuality !== 'function') return false;
+          ivs.setQuality(targetQuality);
+          return true;
         } catch (e) {}
       }
-      this.triggerKickUiQuality(targetItem.label);
-      showToast(`Kick: ${targetItem.label} (Kilitlendi)`);
-      return true;
+      return false;
     }
   };
 
@@ -2167,6 +2515,19 @@
     }
   };
 
+  function applyVideoJsEnabledSelection(levels, index) {
+    const list = Array.from(levels || []), target = list[index];
+    if (!target) return false;
+    const read = level => typeof level.enabled === 'function' ? level.enabled() : level.enabled;
+    const write = (level, enabled) => { if (typeof level.enabled === 'function') level.enabled(enabled); else level.enabled = enabled; };
+    // VHS starts a fast switch only on a disabled -> enabled transition.
+    // If the target is already in the ABR pool, keep another level active while
+    // cycling that target; never transiently disable every level.
+    if (read(target) === true && list.some((level, i) => i !== index && read(level) === true)) write(target, false);
+    write(target, true);
+    list.forEach((level, i) => { if (i !== index) write(level, false); });
+    return true;
+  }
   const VideoJsAdapter = {
     name: 'VideoJsAdapter',
     tier: 2,
@@ -2176,6 +2537,22 @@
     },
     getQualities(video, player) {
       const vjs = findVideoJsPlayer(video, player);
+      if (typeof vjs?.getGroupedSrc === 'function' && typeof vjs?.currentResolution === 'function') {
+        try {
+          const groups = vjs.getGroupedSrc()?.label;
+          const options = [], heights = new Set();
+          for (const [sourceLabel, sources] of Object.entries(groups || {})) {
+            if (!Array.isArray(sources)) continue;
+            const numericLabel = sourceLabel.match(/^(\d{2,4})p?$/i);
+            const height = sources.map(source => diagnosticNumber(Number(source.res), 100, 4320)).find(Boolean)
+              || (numericLabel ? diagnosticNumber(Number(numericLabel[1]), 100, 4320) : null);
+            if (!height || heights.has(height)) continue;
+            heights.add(height);
+            options.push({ id: `vjs_source_${height}`, height, label: `${height}p`, qualityApi: 'vjs-resolution-switcher', sourceLabel });
+          }
+          if (options.length) return options.sort((a, b) => b.height - a.height);
+        } catch (_) {}
+      }
       if (vjs && typeof vjs.qualityLevels === 'function') {
         try {
           const ql = vjs.qualityLevels();
@@ -2183,7 +2560,9 @@
             const res = [];
             for (let i = 0; i < ql.length; i++) {
               const h = ql[i].height || 0;
-              res.push({ id: `vjs_${i}`, index: i, label: ql[i].label || (h ? `${h}p` : `Seviye ${i + 1}`), height: h, raw: ql[i] });
+              // QualityLevels labels may be playlist IDs/URLs, not user-facing resolutions.
+              res.push({ id: `vjs_${i}`, index: i, label: h ? `${h}p` : ql[i].bitrate > 0
+                ? `${(ql[i].bitrate / 1000000).toFixed(1)} Mb/sn` : `Seviye ${i + 1}`, height: h, raw: ql[i] });
             }
             if (res.length > 0) return res.sort((a, b) => (b.height || 0) - (a.height || 0));
           }
@@ -2205,6 +2584,13 @@
     },
     applyQuality(targetItem, video, player) {
       const vjs = findVideoJsPlayer(video, player);
+      if (targetItem.qualityApi === 'vjs-resolution-switcher') {
+        try {
+          if (!vjs?.getGroupedSrc?.()?.label?.[targetItem.sourceLabel] || typeof vjs.currentResolution !== 'function') return false;
+          vjs.currentResolution(targetItem.sourceLabel);
+          return true;
+        } catch (_) { return false; }
+      }
       if (targetItem.qualityApi === 'vhs-representations') {
         try {
           const vhs = vjs?.tech_?.vhs || vjs?.tech?.({ IWillNotUseThisInPlugins: true })?.vhs;
@@ -2213,9 +2599,7 @@
           const targetIndex = targetItem.representationId !== undefined
             ? representations.findIndex(rep => rep.id === targetItem.representationId) : targetItem.index;
           if (!Number.isInteger(targetIndex) || typeof representations[targetIndex]?.enabled !== 'function') return false;
-          // Hedefi önce aç; geçiş sırasında tüm seviyelerin kapalı kalmasını önle.
-          representations[targetIndex].enabled(true);
-          representations.forEach((rep, index) => { if (index !== targetIndex && typeof rep.enabled === 'function') rep.enabled(false); });
+          if (!applyVideoJsEnabledSelection(representations, targetIndex)) return false;
           showToast(`Video.js: ${targetItem.label} istendi`);
           return true;
         } catch (_) { return false; }
@@ -2224,7 +2608,7 @@
         try {
           const ql = vjs.qualityLevels();
           if (ql && ql.length > 0 && Number.isInteger(targetItem.index) && ql[targetItem.index]) {
-            for (let i = 0; i < ql.length; i++) ql[i].enabled = (targetItem.index === i);
+            if (!applyVideoJsEnabledSelection(ql, targetItem.index)) return false;
             showToast(`Video.js: ${targetItem.label}`);
             return true;
           }
@@ -2280,8 +2664,8 @@
     tier: 3,
     displayName: 'Evrensel HTML5 & Shadow DOM (Tier 3)',
     matches() { return true; },
-    getQualities() { return []; },
-    applyQuality() { return false; }
+    getQualities(video) { return getNativeQualityMenuOptions(video); },
+    applyQuality(item, video) { return applyNativeQualityMenu(item, video); }
   };
 
   PuhuTvAdapter.tier = 1; PuhuTvAdapter.displayName = 'PuhuTV (Tier 1)';
@@ -2302,6 +2686,281 @@
     DashJsAdapter,
     GenericAdapter
   ];
+
+  // A quality choice belongs to a particular media/player/source, never just a label.
+  const qualityControlState = { context: null, request: null, generation: 0 };
+  const qualityMediaEpochs = new WeakMap();
+  const qualityObservedVideos = new WeakSet();
+  let qualityWatchTimer = null;
+  const qualityChoiceBindings = new WeakMap();
+  const nativeQualityHandles = new WeakMap();
+  const QUALITY_PLAYER_ROOT = '.video-js, .plyr, .jwplayer, .vds-player, [data-player]';
+  function getQualitySourceKey(video, player) {
+    return typeof player?.url === 'string' ? player.url : video?.currentSrc || video?.src || '';
+  }
+  function invalidateQualityVideo(video) {
+    if (video) qualityMediaEpochs.set(video, (qualityMediaEpochs.get(video) || 0) + 1);
+  }
+  function observeQualityVideo(video) {
+    if (!video || qualityObservedVideos.has(video)) return;
+    qualityObservedVideos.add(video);
+    for (const event of ['emptied', 'loadstart']) video.addEventListener(event, () => invalidateQualityVideo(video));
+  }
+  function qualityContextMatches(video, player, context = qualityControlState.context) {
+    return !!video && !!context && context.video === video && context.player === player
+      && context.source === getQualitySourceKey(video, player) && context.epoch === (qualityMediaEpochs.get(video) || 0);
+  }
+  function resetQualityContext(video, player, adapter) {
+    if (qualityContextMatches(video, player) && qualityControlState.context.adapter === adapter) return;
+    clearTimeout(pendingTimeoutTimer);
+    const pending = qualityControlState.request;
+    const expectedSwitch = video && pending?.video === video && ['native-menu', 'vjs-resolution-switcher'].includes(pending.qualityApi)
+      && performance.now() - pending.started < 12000 && ['pending', 'rendition-confirmed'].includes(pending.status);
+    qualityControlState.context = video ? { video, player, adapter, source: getQualitySourceKey(video, player), epoch: qualityMediaEpochs.get(video) || 0 } : null;
+    qualityControlState.request = expectedSwitch ? pending : null;
+    qualityControlState.generation++;
+    activeForcedQualityId = ''; activeForcedQualityLabel = '';
+    pendingQualityLabel = ''; pendingQualityHeight = 0;
+    cachedDiscoveredQualities = [];
+  }
+  function getNativeQualityMenuOptions(video) {
+    const root = video?.closest?.(QUALITY_PLAYER_ROOT);
+    if (!root || root.closest?.('#pvc-controller-popup')) return [];
+    // A shared layout containing several videos cannot establish ownership of a menu.
+    const ownedVideos = [...root.querySelectorAll('video')].filter(item => item.closest(QUALITY_PLAYER_ROOT) === root);
+    if (ownedVideos.length !== 1 || ownedVideos[0] !== video) return [];
+    const nodes = root.querySelectorAll('button[data-plyr="quality"][value], .vjs-resolution-button .vjs-menu-item, .vjs-quality-selector .vjs-menu-item, .jw-settings-submenu-quality button[data-value]');
+    const options = [], heights = new Set();
+    for (const node of nodes) {
+      if (node.closest(QUALITY_PLAYER_ROOT) !== root || node.disabled || node.getAttribute('aria-disabled') === 'true') continue;
+      // Only a strict numeric resolution is exported to our UI. No arbitrary page text.
+      const label = (node.textContent || '').trim();
+      const match = label.match(/^(\d{2,4})\s*p?(?:\s*(?:HD|FHD|QHD|UHD|4K|\(HD\)|\(FHD\)))?$/i);
+      const height = match && diagnosticNumber(Number(match[1]), 100, 4320);
+      if (!height || heights.has(height)) continue;
+      heights.add(height);
+      const option = { id: `menu_${height}`, label: `${height}p`, height, qualityApi: 'native-menu' };
+      nativeQualityHandles.set(option, { node, root, video, source: video.currentSrc || video.src || '' });
+      options.push(option);
+    }
+    return options.sort((a, b) => b.height - a.height);
+  }
+  function applyNativeQualityMenu(item, video) {
+    const handle = nativeQualityHandles.get(item);
+    if (!handle || handle.video !== video || handle.node.isConnected === false || handle.video.isConnected === false
+        || handle.root !== video.closest?.(QUALITY_PLAYER_ROOT) || !handle.root.contains(handle.node)
+        || handle.source !== (video.currentSrc || video.src || '') || handle.node.disabled || handle.node.getAttribute('aria-disabled') === 'true') return false;
+    handle.node.click();
+    return true; // Invocation only. Decoded dimensions are checked separately.
+  }
+  function readQualityDiagnostics(video, player) {
+    const current = qualityContextMatches(video, player);
+    const request = current ? qualityControlState.request : null;
+    return { current, adapter: current ? qualityControlState.context.adapter : null,
+      verification: request && ['pending', 'rendition-confirmed'].includes(request.status) && performance.now() - request.started >= 12000
+        ? 'timed-out' : request?.status || 'not-verified',
+      requestedHeight: request?.height || null,
+      decodedMatch: request?.decodedMatch ?? null, renditionMatch: request?.renditionMatch ?? null,
+      cachedCount: current ? cachedDiscoveredQualities.length : 0,
+      menuCount: current ? cachedDiscoveredQualities.filter(item => item.qualityApi === 'native-menu').length : 0 };
+  }
+  // END QUALITY CONTEXT
+
+  // AD LIFECYCLE: one selected media owner, no URL/text/duration heuristics.
+  function createAdLifecycle(ports) {
+    let active = null;
+    const safely = fn => { try { return fn(); } catch (_) {} };
+    function stop(restorePlayer = true) {
+      if (!active) return;
+      const saved = active; active = null;
+      // Native state belongs to the captured element, never a replacement video.
+      safely(() => { saved.video.playbackRate = 1; saved.video.defaultPlaybackRate = 1; });
+      safely(() => { saved.video.volume = saved.volume; saved.video.muted = saved.muted; });
+      if (restorePlayer) {
+        safely(() => saved.setRate?.(1)); safely(() => saved.setMuted?.(saved.muted));
+        safely(() => saved.restoreQuality?.());
+        ports.resetRequestedRate();
+      }
+      ports.log('AD_CONTROL_ENDED');
+    }
+    function tick(selection, marked) {
+      const video = selection?.video;
+      if (active && (active.video !== video || active.player !== selection.player || !video?.isConnected || video.ended)) stop(false);
+      if (!video || !video.isConnected || video.ended) return;
+      if (!marked) { stop(); return; }
+      if (!active) {
+        const controls = safely(() => ports.capture(selection)) || {};
+        active = { ...controls, video, player: selection.player, volume: video.volume, muted: video.muted };
+        safely(() => controls.lowerQuality?.());
+        ports.log('AD_CONTROL_STARTED');
+      }
+      // SDK and native setters are independent: an unsupported 16x must not prevent mute.
+      if (video.playbackRate !== 16) { safely(() => active.setRate?.(16)); safely(() => { video.playbackRate = 16; }); }
+      if (!video.muted) { safely(() => active.setMuted?.(true)); safely(() => { video.muted = true; }); }
+    }
+    return Object.freeze({ tick, stop, isActive: video => active?.video === video });
+  }
+  function hasSelectedAdMarker(video) {
+    const root = video?.closest?.('#channel-player, [data-testid="video-player"], .video-js, .jwplayer, .html5-video-player, .plyr');
+    if (!root || root.querySelectorAll('video').length !== 1 || !root.contains(video)) return false;
+    const visible = node => {
+      const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
+      return node.isConnected !== false && rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    };
+    if (!visible(root)) return false;
+    if (root.matches('.video-js.vjs-ad-playing, .jwplayer.jw-flag-ads, .html5-video-player.ad-showing')) return true;
+    // A data-testid marker is used only on the supported Kick host and inside this player.
+    return /(^|\.)kick\.com$/.test(HOSTNAME) && [...root.querySelectorAll('[data-testid="ad-badge"]')].some(visible);
+  }
+  function captureAdControls({ video, player }) {
+    if (trtRateGuards.get(video)?.active) armTrtRateGuard(video, 1, player);
+    const source = video.currentSrc || video.src || '', sourceObject = video.srcObject;
+    const current = () => video.isConnected !== false && video === findVideoAndPlayer().video
+      && player === findVideoAndPlayer().player && source === (video.currentSrc || video.src || '') && sourceObject === video.srcObject;
+    const result = {};
+    const ivs = KickAdapter.findIvsPlayer(video);
+    if (ivs && isIvsBoundToVideo(ivs, video)) {
+      result.setRate = rate => { if (isIvsBoundToVideo(ivs, video)) ivs.setPlaybackRate?.(rate); };
+      result.setMuted = muted => { if (isIvsBoundToVideo(ivs, video)) ivs.setMuted?.(muted); };
+      if (typeof ivs.getQuality === 'function' && typeof ivs.isAutoQualityMode === 'function' && typeof ivs.setQuality === 'function' && typeof ivs.setAutoQualityMode === 'function') {
+        const levels = ivs.getQualities(), previous = ivs.getQuality(), automatic = ivs.isAutoQualityMode();
+        const lowest = [...levels].filter(item => item.height > 0).sort((a, b) => a.height - b.height || (a.bitrate || 0) - (b.bitrate || 0))[0];
+        const previousKey = ivsQualityKey(previous);
+        if (lowest && (automatic || (previousKey && levels.some(level => ivsQualityKey(level) === previousKey)))) {
+          result.lowerQuality = () => ivs.setQuality(lowest);
+          result.restoreQuality = () => { if (current() && isIvsBoundToVideo(ivs, video)) {
+            if (automatic) ivs.setAutoQualityMode(true);
+            else { const live = ivs.getQualities().find(level => ivsQualityKey(level) === previousKey); if (live) ivs.setQuality(live); }
+          } };
+        }
+      }
+      return result;
+    }
+    const hls = findLibraryPlayer(video, 'hls', player);
+    if (hls) {
+      const levels = [...(hls.levels || [])], previous = hls.manualLevel;
+      const lowest = levels.map((level, index) => ({ level, index })).filter(item => item.level.height > 0)
+        .sort((a, b) => a.level.height - b.level.height || (a.level.bitrate || 0) - (b.level.bitrate || 0))[0];
+      if (lowest && Number.isInteger(previous) && previous >= -1 && previous < levels.length) {
+        result.lowerQuality = () => { hls.currentLevel = lowest.index; };
+        result.restoreQuality = () => { if (current() && levels.length === hls.levels.length && levels.every((level, i) => level === hls.levels[i])) hls.currentLevel = previous; };
+      }
+      return result;
+    }
+    const vjs = findVideoJsPlayer(video, player);
+    if (vjs) {
+      result.setRate = rate => vjs.playbackRate?.(rate);
+      result.setMuted = muted => vjs.muted?.(muted);
+      let representations = false;
+      const readLevels = () => {
+        const levels = vjs.qualityLevels ? Array.from(vjs.qualityLevels()) : [];
+        if (levels.length) return levels;
+        representations = true;
+        return (vjs.tech_?.vhs || vjs.tech?.({ IWillNotUseThisInPlugins: true })?.vhs)?.representations?.() || [];
+      };
+      const levels = readLevels(), previous = levels.map(level => typeof level.enabled === 'function' ? level.enabled() : level.enabled);
+      const lowest = levels.map((level, index) => ({ level, index })).filter(item => item.level.height > 0)
+        .sort((a, b) => a.level.height - b.level.height || (a.level.bitrate || a.level.bandwidth || 0) - (b.level.bitrate || b.level.bandwidth || 0))[0];
+      const enable = (level, value) => { if (typeof level.enabled === 'function') level.enabled(value); else level.enabled = value; };
+      if (lowest && previous.every(value => typeof value === 'boolean') && previous.some(Boolean)) {
+        result.lowerQuality = () => applyVideoJsEnabledSelection(levels, lowest.index);
+        result.restoreQuality = () => {
+          const live = readLevels();
+          const same = live.length === levels.length && live.every((level, index) => representations
+            ? level.id !== undefined && level.id === levels[index].id && level.height === levels[index].height
+            : level === levels[index]);
+          if (current() && same) {
+            live.forEach((level, index) => { if (previous[index]) enable(level, true); });
+            live.forEach((level, index) => { if (!previous[index]) enable(level, false); });
+          }
+        };
+        return result;
+      }
+    }
+    // A checked native numeric menu item is an exact, restorable selection.
+    const menu = getNativeQualityMenuOptions(video), checked = menu.find(item => {
+      const node = nativeQualityHandles.get(item)?.node;
+      return node?.getAttribute('aria-checked') === 'true' || node?.getAttribute('aria-selected') === 'true';
+    });
+    const lowest = [...menu].filter(item => item.height > 0).sort((a, b) => a.height - b.height || (a.bitrate || 0) - (b.bitrate || 0))[0];
+    if (checked && lowest) {
+      result.lowerQuality = () => applyNativeQualityMenu(lowest, video);
+      result.restoreQuality = () => { if (current()) applyNativeQualityMenu(checked, video); };
+    }
+    return result;
+  }
+  const adLifecycle = createAdLifecycle({ capture: captureAdControls,
+    resetRequestedRate: () => { targetEnforcedPlaybackRate = 1; },
+    log: event => addDiagnosticLog('INFO', event) });
+  let adWatchTimer = null;
+  function stopAdWatch() { clearTimeout(adWatchTimer); adWatchTimer = null; adLifecycle.stop(); }
+  function startAdWatch() {
+    if (adWatchTimer !== null || remotePresentation) return;
+    const tick = () => {
+      const selection = findVideoAndPlayer();
+      if (!selection.video || selection.video.isConnected === false) { stopAdWatch(); return; }
+      adLifecycle.tick(selection, hasSelectedAdMarker(selection.video));
+      adWatchTimer = setTimeout(tick, 750);
+    };
+    adWatchTimer = setTimeout(tick, 750);
+  }
+  window.addEventListener('pagehide', stopAdWatch);
+  // END AD LIFECYCLE
+
+  function startQualityWatch() {
+    clearTimeout(qualityWatchTimer);
+    if (remotePresentation) { qualityWatchTimer = null; return; }
+    const tick = () => {
+      if (remoteSourceSession) {
+        if (document.hidden || (!remoteSourceActive && !remoteFullscreen())) {
+          const context = qualityControlState.context;
+          if (context?.video?.isConnected !== false && context?.video && qualityControlState.request) updateQualityVerification(context.video, context.player);
+          qualityWatchTimer = setTimeout(tick, 750); return;
+        }
+        const { video } = findVideoAndPlayer(); if (video) monitorVideoResolution(video);
+        publishRemoteSourceState(); qualityWatchTimer = setTimeout(tick, 750); return;
+      }
+      const popup = document.getElementById('pvc-controller-popup');
+      if (!popup || popup.style.display === 'none') { qualityWatchTimer = null; return; }
+      if (!document.hidden) {
+        if (popup.classList.contains('pvc-idle-hidden')) {
+          const context = qualityControlState.context;
+          if (context?.video && context.video.isConnected !== false && qualityControlState.request) updateQualityVerification(context.video, context.player);
+        } else {
+          const selection = findVideoAndPlayer();
+          if (selection.video) monitorVideoResolution(selection.video);
+          renderDynamicQualityButtons();
+          updateRealtimeResolutionBadge();
+          updateVideoTargetControls();
+        }
+      }
+      qualityWatchTimer = setTimeout(tick, 750);
+    };
+    qualityWatchTimer = setTimeout(tick, 750);
+  }
+
+  function updateVideoTargetControls() {
+    if (remotePresentation) { renderRemoteTargets(); return; }
+    const select = document.getElementById('pvc-video-target');
+    if (!select || document.activeElement === select) return;
+    const candidates = getMediaCandidates();
+    const sameVideos = select.__nokVideos?.length === candidates.length
+      && select.__nokVideos.every((video, i) => video === candidates[i].video);
+    const labelSignature = candidates.map(item => item.video.videoHeight || 0).join(',');
+    if (!sameVideos || select.__nokVideoLabels !== labelSignature) {
+      select.innerHTML = '';
+      const automatic = document.createElement('option'); automatic.value = 'auto'; setUiText(automatic, 'Otomatik seçim'); select.appendChild(automatic);
+      candidates.forEach(({ video }, i) => {
+        const option = document.createElement('option'); option.value = String(i);
+        const resolution = video.videoHeight > 0 ? `${video.videoHeight}p` : '—';
+        setUiText(option, `Video ${i + 1} · ${resolution}`); select.appendChild(option);
+      });
+      select.__nokVideos = candidates.map(item => item.video);
+      select.__nokVideoLabels = labelSignature;
+    }
+    const index = candidates.findIndex(item => item.video === controlledVideo);
+    select.value = index >= 0 ? String(index) : 'auto';
+  }
 
   function probeAdapterHealth(adapter, video, player) {
     if (!adapter) return false;
@@ -2353,7 +3012,9 @@
   }
 
   function getActiveAdapter(video, player) {
-    return resolveCascadeAdapter(video, player);
+    const adapter = resolveCascadeAdapter(video, player);
+    resetQualityContext(video, player, adapter);
+    return adapter;
   }
 
   function updateAdapterHudBadge(adapter) {
@@ -2366,8 +3027,9 @@
     updateCollapsedSummaryBar();
   }
 
-  function discoverStreamQualities() {
-    const { video, player } = findVideoAndPlayer();
+  function discoverStreamQualities(selection = findVideoAndPlayer()) {
+    const { video, player } = selection;
+    observeQualityVideo(video);
     const adapter = getActiveAdapter(video, player);
 
     cachedDiscoveredQualities = [];
@@ -2376,18 +3038,28 @@
         const found = adapter.getQualities(video, player);
         if (found && found.length > 0) {
           cachedDiscoveredQualities = found;
-          return found;
         }
       } catch (e) {}
     }
 
-    return [];
+    if (video && adapter !== GenericAdapter) {
+      const menu = getNativeQualityMenuOptions(video);
+      const menuHeights = new Set(menu.map(item => item.height));
+      // Keep separately declared source menu choices even if this HLS manifest exposes one level.
+      cachedDiscoveredQualities = [...menu, ...cachedDiscoveredQualities.filter(item => !menuHeights.has(item.height)
+        && !(menu.length > 0 && item.resolutionSource === 'observed-video'))];
+    }
+    for (const option of cachedDiscoveredQualities) qualityChoiceBindings.set(option, {
+      video, player, source: getQualitySourceKey(video, player), epoch: qualityMediaEpochs.get(video) || 0, generation: qualityControlState.generation
+    });
+    return cachedDiscoveredQualities;
   }
 
   // =========================================================================
   // 📊 KÜÇÜLTÜLMÜŞ (MINI-PILL) DETAYLI BİLGİ BARI GÜNCELLEYİCİSİ (MADDE 6)
   // =========================================================================
   function updateCollapsedSummaryBar() {
+    if (remotePresentation) { renderRemoteHud(); return; }
     const miniRes = document.getElementById('pvc-mini-res-val');
     const miniSpeed = document.getElementById('pvc-mini-speed-val');
     const miniVol = document.getElementById('pvc-mini-vol-val');
@@ -2405,6 +3077,7 @@
   }
 
   function updateRealtimeResolutionBadge() {
+    if (remotePresentation) { renderRemoteHud(); return; }
     const { video, player } = findVideoAndPlayer();
     const badge = document.getElementById('pvc-realtime-res-badge');
     if (!badge) return;
@@ -2422,20 +3095,8 @@
 
       lastObservedResolution = `${w}x${h} (${label})`;
 
-      if (pendingQualityLabel) {
-        if (pendingQualityHeight > 0 && h === pendingQualityHeight) {
-          pendingQualityLabel = '';
-          clearTimeout(pendingTimeoutTimer);
-          setUiText(badge, `🎬 Gerçek: ${lastObservedResolution}`);
-          badge.style.color = 'var(--pvc-accent-ink, #92bfd5)';
-        } else {
-          setUiText(badge, `⏳ ${pendingQualityLabel} Uygulanıyor (${label})`);
-          badge.style.color = 'var(--pvc-warning, #f59e0b)';
-        }
-      } else {
-        setUiText(badge, `🎬 Gerçek: ${lastObservedResolution}`);
-        badge.style.color = 'var(--pvc-accent-ink, #92bfd5)';
-      }
+      setUiText(badge, `🎬 Gerçek: ${lastObservedResolution}`);
+      badge.style.color = 'var(--pvc-accent-ink, #92bfd5)';
     } else {
       setUiText(badge, '🎬 Çözünürlük: Bekleniyor...');
       badge.style.color = 'var(--pvc-muted, #a2b6c0)';
@@ -2451,14 +3112,18 @@
       updateAdapterHudBadge(adapter);
       applyVideoFiltersToElement(video);
     }
+    updateQualityVerification(video, player);
     updateCollapsedSummaryBar();
   }
 
   function monitorVideoResolution(video) {
+    startAdWatch();
     if (!video || video.__nokMonitored) return;
     video.__nokMonitored = true;
 
     const handleResize = () => {
+      if (findVideoAndPlayer().video !== video) return;
+      if (currentAudioVolumePercent > 100 || currentAudioMode === 'mono') initAudioGraphForVideo(video);
       updateRealtimeResolutionBadge();
       renderDynamicQualityButtons();
     };
@@ -2467,11 +3132,11 @@
     video.addEventListener('loadedmetadata', handleResize);
     video.addEventListener('playing', handleResize);
     video.addEventListener('timeupdate', () => {
+      const selected = findVideoAndPlayer();
+      if (selected.video !== video) return;
+      updateQualityVerification(video, selected.player);
       if (pendingQualityLabel || lastObservedResolution.includes('Bekleniyor')) {
         updateRealtimeResolutionBadge();
-      }
-      if (HOSTNAME.includes('kick.com')) {
-        KickAdapter.checkAdFastForward(video);
       }
       renderCustomSubtitleCue(video);
     });
@@ -2487,11 +3152,7 @@
     applyVideoFiltersToElement(video);
     handleResize();
 
-    if (HOSTNAME.includes('kick.com')) {
-      setInterval(() => {
-        KickAdapter.checkAdFastForward(video);
-      }, 750);
-    }
+    video.addEventListener('ended', () => { if (adLifecycle.isActive(video)) adLifecycle.stop(); });
   }
 
   // =========================================================================
@@ -2505,10 +3166,11 @@
   }
 
   async function togglePictureInPicture() {
+    if (remotePresentation) return (await remoteControl('pip')).ok;
     const { video } = findVideoAndPlayer();
     if (!video) {
       showToast('PiP için aktif video bulunamadı');
-      return;
+      return false;
     }
 
     try {
@@ -2534,30 +3196,64 @@
         } else {
           showToast('Tarayıcınız bu videoda PiP API desteklemiyor');
         }
+        return false;
       }
+      return true;
     } catch (err) {
       addDiagnosticLog('WARN', 'PIP_FAILED');
       showToast('PiP açılamadı (Video henüz hazır olmayabilir)');
+      return false;
     }
   }
 
   // =========================================================================
   // 🎨 GÖRÜNTÜ FİLTRELERİ VE GECE KALKANI MOTORU (MADDE 3)
   // =========================================================================
+  const appliedVideoFilters = new WeakMap();
+  let lastFilteredVideo = null;
+  let filterUpdateFrame = null;
+  function restoreVideoFilter(video) {
+    const saved = video && appliedVideoFilters.get(video);
+    if (!saved) return;
+    if (video.style.getPropertyValue('filter') === saved.applied) {
+      if (saved.value) video.style.setProperty('filter', saved.value, saved.priority);
+      else video.style.removeProperty('filter');
+    }
+    appliedVideoFilters.delete(video);
+  }
+  function scheduleVideoFilterUpdate() {
+    if (filterUpdateFrame !== null) return;
+    filterUpdateFrame = requestAnimationFrame(() => {
+      filterUpdateFrame = null;
+      if (remotePresentation) remoteControl('filters', { ...videoFilterState });
+      else applyVideoFiltersToElement();
+      updateFilterUiBadges();
+    });
+  }
   function applyVideoFiltersToElement(video) {
     const targetVideo = video || findVideoAndPlayer().video;
     if (!targetVideo) return;
+    if (lastFilteredVideo && lastFilteredVideo !== targetVideo) restoreVideoFilter(lastFilteredVideo);
+    lastFilteredVideo = targetVideo;
 
     const parts = [];
     if (videoFilterState.brightness !== 100) parts.push(`brightness(${videoFilterState.brightness}%)`);
     if (videoFilterState.contrast !== 100) parts.push(`contrast(${videoFilterState.contrast}%)`);
     if (videoFilterState.saturate !== 100) parts.push(`saturate(${videoFilterState.saturate}%)`);
+    // Filter ordering/clamping is significant; do not merge brightness across sepia.
     if (videoFilterState.nightShield) parts.push('sepia(38%) brightness(88%) contrast(95%)');
     if (videoFilterState.invert) parts.push('invert(100%) hue-rotate(180deg)');
 
-    const filterCss = parts.length > 0 ? parts.join(' ') : 'none';
+    if (parts.length === 0) { restoreVideoFilter(targetVideo); return; }
+    let saved = appliedVideoFilters.get(targetVideo);
+    if (!saved) {
+      saved = { value: targetVideo.style.getPropertyValue('filter'), priority: targetVideo.style.getPropertyPriority('filter'), applied: null };
+      appliedVideoFilters.set(targetVideo, saved);
+    }
+    const filterCss = parts.join(' ');
+    if (saved.applied === filterCss && targetVideo.style.getPropertyValue('filter') === filterCss) return;
     targetVideo.style.setProperty('filter', filterCss, 'important');
-    updateFilterUiBadges();
+    saved.applied = filterCss;
   }
 
   function updateFilterUiBadges() {
@@ -2588,7 +3284,7 @@
 
   function resetVideoFilters() {
     videoFilterState = { brightness: 100, contrast: 100, saturate: 100, nightShield: false, invert: false };
-    applyVideoFiltersToElement();
+    scheduleVideoFilterUpdate();
     showToast('🎨 Görüntü Filtreleri Sıfırlandı');
   }
 
@@ -2636,6 +3332,39 @@
     return cues.sort((a, b) => a.start - b.start);
   }
 
+  const subtitleAppearance = { fontSize: 20, bottom: 8, background: 82, color: 'white' };
+  function setSubtitleAppearance(key, value) {
+    if (key === 'color') {
+      if (!['white', 'yellow'].includes(value)) return false;
+    } else {
+      const ranges = { fontSize: [12, 48], bottom: [0, 40], background: [0, 100] };
+      if (!Object.hasOwn(ranges, key) || !Number.isFinite(value)) return false;
+      value = Math.round(Math.max(ranges[key][0], Math.min(ranges[key][1], value)));
+    }
+    subtitleAppearance[key] = value;
+    if (remotePresentation) { updateSubtitleAppearanceControls(); remoteControl('appearance', { ...subtitleAppearance }); return true; }
+    const input = document.getElementById(`pvc-sub-${key}`);
+    if (input) input.value = String(value);
+    const output = document.getElementById(`pvc-sub-${key}-value`);
+    if (output) setUiText(output, key === 'fontSize' ? `${value}px` : `${value}%`);
+    const { video } = findVideoAndPlayer();
+    if (video) {
+      if (key === 'bottom' && video.__nokSubtitleTrack?.cues) {
+        for (const cue of video.__nokSubtitleTrack.cues) { cue.snapToLines = false; cue.line = 100 - value; }
+      }
+      renderCustomSubtitleCue(video);
+    }
+    return true;
+  }
+  function updateSubtitleAppearanceControls() {
+    for (const [key, value] of Object.entries(subtitleAppearance)) {
+      const input = document.getElementById(`pvc-sub-${key}`); if (input && document.activeElement !== input) input.value = String(value);
+      const output = document.getElementById(`pvc-sub-${key}-value`);
+      if (output) setUiText(output, key === 'fontSize' ? `${value}px` : `${value}%`);
+    }
+  }
+  // END SUBTITLE APPEARANCE
+
   function ensureSubtitleOverlayElement() {
     let overlay = document.getElementById('pvc-subtitle-overlay');
     if (!overlay) {
@@ -2655,6 +3384,9 @@
     }
 
     const targetOverlay = ensureSubtitleOverlayElement();
+    targetOverlay.style.setProperty('font-size', `${subtitleAppearance.fontSize}px`, 'important');
+    targetOverlay.style.setProperty('background', `rgba(9, 13, 22, ${subtitleAppearance.background / 100})`, 'important');
+    targetOverlay.style.setProperty('color', subtitleAppearance.color === 'yellow' ? '#fff176' : '#ffffff', 'important');
     const effectiveTime = video.currentTime - (subtitleOffsetMs / 1000);
     const activeCue = customSubtitleCues.find(c => effectiveTime >= c.start && effectiveTime <= c.end);
 
@@ -2691,7 +3423,7 @@
         return;
       }
       targetOverlay.style.setProperty('left', `${(visibleLeft + visibleRight) / 2}px`, 'important');
-      targetOverlay.style.setProperty('top', `${visibleBottom - Math.min(40, (visibleBottom - visibleTop) * 0.08)}px`, 'important');
+      targetOverlay.style.setProperty('top', `${visibleBottom - (visibleBottom - visibleTop) * subtitleAppearance.bottom / 100}px`, 'important');
       targetOverlay.style.setProperty('bottom', 'auto', 'important');
       targetOverlay.style.setProperty('transform', 'translate(-50%, -100%)', 'important');
       targetOverlay.style.setProperty('max-width', `${(visibleRight - visibleLeft) * 0.92}px`, 'important');
@@ -2719,17 +3451,21 @@
       customSubtitleCues.forEach(c => {
         const s = Math.max(0, c.start + offsetSec);
         const e = Math.max(s + 0.2, c.end + offsetSec);
-        track.addCue(new window.VTTCue(s, e, c.text));
+        const cue = new window.VTTCue(s, e, c.text);
+        cue.snapToLines = false;
+        cue.line = 100 - subtitleAppearance.bottom;
+        track.addCue(cue);
       });
     } catch (e) {}
   }
 
   function shiftSubtitleSync(deltaMs) {
+    if (remotePresentation) { remoteControl('subtitle-offset', deltaMs); return; }
     if (customSubtitleCues.length === 0) {
       showToast('Önce bir .srt veya .vtt altyazı dosyası yükleyin');
       return;
     }
-    subtitleOffsetMs += deltaMs;
+    subtitleOffsetMs = Math.max(-3600000, Math.min(3600000, subtitleOffsetMs + deltaMs));
     const badge = document.getElementById('pvc-sub-offset-badge');
     if (badge) {
       setUiText(badge, `${subtitleOffsetMs >= 0 ? '+' : ''}${subtitleOffsetMs}ms`);
@@ -2819,6 +3555,7 @@
   }
 
   function setSpeed(rate) {
+    if (remotePresentation) { remoteControl('speed', Math.max(0.25, Math.min(3, rate))); return true; }
     const { video, player } = findVideoAndPlayer();
     if (!video) {
       showToast('Video elementi bulunamadı');
@@ -2875,6 +3612,11 @@
       addDiagnosticLog('INFO', 'WEB_AUDIO_DRM_SKIPPED');
       return null;
     }
+    // Native stereo volume needs no irreversible MediaElementAudioSource connection.
+    // Firefox can ignore rate changes for an audio-less video routed through Web Audio
+    // (Mozilla bug 1942609). Use capability evidence, never a browser/version cutoff.
+    if (video.readyState < 1 || (video.readyState >= 1 && video.mozHasAudio === false)) return null;
+    if (currentAudioVolumePercent <= 100 && currentAudioMode === 'stereo' && !audioSourceElementMap.has(video)) return null;
     try {
       if (!audioContextInstance) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -2899,6 +3641,8 @@
       if (!audioGainNodeInstance) {
         audioGainNodeInstance = audioContextInstance.createGain();
       }
+      const requestedGain = currentAudioVolumePercent > 100 ? currentAudioVolumePercent / 100 : 1;
+      if (audioGainNodeInstance.gain.value !== requestedGain) audioGainNodeInstance.gain.setValueAtTime(requestedGain, audioContextInstance.currentTime);
       if (!audioSplitterNodeInstance) {
         audioSplitterNodeInstance = audioContextInstance.createChannelSplitter(2);
       }
@@ -2968,6 +3712,7 @@
   let isInternalVolumeUpdating = false;
 
   function setAudioVolume(percent) {
+    if (remotePresentation) { remoteControl('volume', Math.max(0, Math.min(300, percent))); return; }
     if (isInternalVolumeUpdating) return;
     isInternalVolumeUpdating = true;
     try {
@@ -3030,6 +3775,7 @@
   }
 
   function setAudioMode(mode) {
+    if (remotePresentation) { remoteControl('audio', mode); return; }
     if (mode !== 'stereo' && mode !== 'mono') return;
     currentAudioMode = mode;
     addDiagnosticLog('INFO', 'AUDIO_MODE_CHANGED', { mono: mode === 'mono' ? 1 : 0 });
@@ -3052,6 +3798,7 @@
   }
 
   function seekBy(seconds) {
+    if (remotePresentation) { remoteControl('seek', seconds); return true; }
     const { video, player } = findVideoAndPlayer();
     if (!video) return false;
     addDiagnosticLog('INFO', 'SEEK_REQUESTED', { delta: seconds });
@@ -3086,13 +3833,32 @@
   }
 
   function requestQuality(chosen, video, player) {
+    const binding = qualityChoiceBindings.get(chosen);
+    if (!binding || binding.video !== video || binding.player !== player || binding.generation !== qualityControlState.generation
+        || binding.source !== getQualitySourceKey(video, player) || binding.epoch !== (qualityMediaEpochs.get(video) || 0)) {
+      showToast('Kalite listesi değişti; yeniden seçin.');
+      return false;
+    }
     const adapter = getActiveAdapter(video, player);
+    const liveChoice = discoverStreamQualities({ video, player }).find(item => item.id === chosen.id);
+    if (!liveChoice || (chosen.raw && liveChoice.raw !== chosen.raw && chosen.qualityApi !== 'ivs')) {
+      showToast('Kalite listesi değişti; yeniden seçin.');
+      return false;
+    }
+    chosen = liveChoice;
+    clearTimeout(pendingTimeoutTimer); pendingQualityLabel = ''; pendingQualityHeight = 0;
     addDiagnosticLog('INFO', 'QUALITY_REQUESTED', { height: chosen.height });
+    qualityControlState.request = { video, id: chosen.id, height: chosen.height || 0, choice: chosen,
+      qualityApi: chosen.qualityApi || '', status: 'pending', started: performance.now(), decodedMatch: false, renditionMatch: null };
     let accepted = false;
-    try { accepted = adapter.applyQuality(chosen, video, player) === true; } catch (_) {}
+    try { accepted = (chosen.qualityApi === 'native-menu' ? applyNativeQualityMenu(chosen, video)
+      : adapter.applyQuality(chosen, video, player)) === true; } catch (_) {}
     if (!accepted) {
+      qualityControlState.request.status = 'rejected';
+      activeForcedQualityId = ''; activeForcedQualityLabel = '';
       addDiagnosticLog('WARN', 'QUALITY_REJECTED');
       showToast('Bu oynatıcıda kalite seçimi uygulanamadı.');
+      updateQualityStatusText(video);
       return false;
     }
     activeForcedQualityId = chosen.id;
@@ -3100,15 +3866,77 @@
     pendingQualityLabel = chosen.label;
     pendingQualityHeight = chosen.height || 0;
     clearTimeout(pendingTimeoutTimer);
+    const request = qualityControlState.request;
     pendingTimeoutTimer = setTimeout(() => {
-      pendingQualityLabel = '';
-      pendingQualityHeight = 0;
-      updateRealtimeResolutionBadge();
-    }, 3500);
+      if (qualityControlState.request !== request) return;
+      updateQualityVerification(video, findVideoAndPlayer().player, true);
+    }, 12000);
+    updateQualityVerification(video, player);
     return true;
   }
 
+  function updateQualityVerification(video, player, expired = false) {
+    if (!qualityContextMatches(video, player)) return;
+    const request = qualityControlState.request;
+    if (!request || request.status === 'rejected') { updateQualityStatusText(video); return; }
+    const chosen = request.choice;
+    let rendition = null;
+    try {
+      if (chosen.qualityApi === 'native-menu') {
+        const node = nativeQualityHandles.get(chosen)?.node;
+        rendition = node ? node.getAttribute('aria-checked') === 'true' || node.getAttribute('aria-selected') === 'true' : null;
+      } else if (chosen.id.startsWith('hls_')) {
+        const hls = findLibraryPlayer(video, 'hls', player);
+        if (hls) rendition = hls.currentLevel === chosen.index && (!chosen.raw || hls.levels[chosen.index] === chosen.raw);
+      } else if (chosen.qualityApi === 'ivs') {
+        const ivs = KickAdapter.findIvsPlayer(video);
+        if (ivs?.getQuality) rendition = ivsQualityKey(ivs.getQuality()) === ivsQualityKey(chosen.raw);
+      } else if (chosen.id.startsWith('shaka_')) {
+        const shaka = findLibraryPlayer(video, 'shaka', player);
+        if (shaka) rendition = shaka.getVariantTracks().some(track => track.id === chosen.trackId && track.active
+          && (!(chosen.height > 0) || track.height === chosen.height));
+      } else if (chosen.id.startsWith('vjs_')) {
+        const vjs = findVideoJsPlayer(video, player);
+        if (chosen.qualityApi === 'vjs-resolution-switcher') {
+          rendition = vjs?.currentResolution?.()?.label === chosen.sourceLabel;
+        } else if (chosen.qualityApi !== 'vhs-representations') {
+          const levels = vjs?.qualityLevels?.();
+          if (Number.isInteger(levels?.selectedIndex) && levels.selectedIndex >= 0) rendition = levels.selectedIndex === chosen.index
+            && (!chosen.raw || levels[chosen.index] === chosen.raw);
+        } else {
+          const vhs = vjs?.tech_?.vhs || vjs?.tech?.({ IWillNotUseThisInPlugins: true })?.vhs;
+          const selected = vhs?.playlists?.media?.();
+          if (selected?.id != null && chosen.representationId != null) rendition = selected.id === chosen.representationId;
+        }
+      }
+    } catch (_) {}
+    request.renditionMatch = rendition;
+    request.decodedMatch = request.height > 0 && video.readyState >= 2 && video.videoHeight === request.height;
+    request.status = request.decodedMatch ? rendition === true ? 'confirmed' : 'decoded-match'
+      : expired || performance.now() - request.started >= 12000 ? 'timed-out'
+      : rendition === true ? 'rendition-confirmed' : 'pending';
+    if (request.status === 'confirmed' || request.status === 'decoded-match' || request.status === 'timed-out') {
+      pendingQualityLabel = ''; pendingQualityHeight = 0; clearTimeout(pendingTimeoutTimer);
+    }
+    updateQualityStatusText(video);
+  }
+  function updateQualityStatusText(video) {
+    const status = document.getElementById('pvc-quality-status');
+    if (!status) return;
+    const request = qualityControlState.request;
+    const labels = { pending: 'Bekleniyor', confirmed: 'Doğrulandı', 'decoded-match': 'Görüntü eşleşti',
+      'rendition-confirmed': 'Oynatıcı seçti; görüntü bekleniyor', 'timed-out': 'Doğrulanamadı', rejected: 'Reddedildi' };
+    if (!request) { setUiText(status, 'Kalite isteği yok.'); return; }
+    const observed = video?.videoHeight > 0 ? `${video.videoHeight}p` : '—';
+    setUiText(status, `İstenen ${request.height ? request.height + 'p' : '—'} · oynatılan ${observed} · ${labels[request.status]}`);
+  }
+
   function cycleNextQuality() {
+    if (remotePresentation) {
+      const index = remotePresentation.requestedIndex;
+      if (remotePresentation.qualities.length) remoteControl('quality', (index + 1) % remotePresentation.qualities.length);
+      return;
+    }
     const qualities = discoverStreamQualities();
     if (!qualities || qualities.length === 0) return;
 
@@ -3135,7 +3963,7 @@
 
     if (!hotkeysEnabled) return;
 
-    const { video } = findVideoAndPlayer();
+    const { video } = remotePresentation ? { video: { playbackRate: remotePresentation.rate } } : findVideoAndPlayer();
     if (!video) return;
 
     // Shift + ArrowUp / ArrowDown -> %10 Ses Kontrolü (%0 - %300)
@@ -3183,16 +4011,31 @@
   }, { capture: true });
 
   function renderDynamicQualityButtons() {
+    if (remotePresentation) { renderRemoteQualities(); return; }
     const container = document.getElementById('pvc-dynamic-quality-container');
     if (!container) return;
 
-    const qualities = discoverStreamQualities();
+    const selection = findVideoAndPlayer();
+    const qualities = discoverStreamQualities(selection);
+    updateQualityVerification(selection.video, selection.player);
     const countBadge = document.getElementById('pvc-quality-count-badge');
     if (countBadge) {
       setUiText(countBadge, `${qualities.length} seviye`);
     }
 
+    const request = qualityControlState.request;
+    const signature = JSON.stringify([qualityControlState.generation, uiLanguage,
+      qualities.map(item => [item.id, item.label, item.height, item.sourceLabel, item.representationId])]);
+    const sameRaw = container.__nokQualities?.every((item, i) => item.raw === qualities[i]?.raw);
+    if (container.__nokQualitySignature === signature && sameRaw) { updateQualityButtonStates(container); return; }
+    const focusedId = container.contains(document.activeElement) ? document.activeElement.__nokQualityId : null;
+    container.__nokQualitySignature = signature; container.__nokQualities = qualities;
     container.innerHTML = '';
+    if (qualities.some(q => q.qualityApi === 'native-menu')) {
+      const note = document.createElement('span'); note.className = 'pvc-quality-inventory-note';
+      setUiText(note, 'Kaynak menüsü ve oynatıcı seviyeleri birlikte listelenir; tüm kaynakların bulunduğu doğrulanmadı.');
+      container.appendChild(note);
+    }
     if (currentActiveAdapterName === 'HlsJsAdapter' || qualities.some(q => q.id.startsWith('hls_'))) {
       const note = document.createElement('span');
       note.className = 'pvc-quality-inventory-note';
@@ -3209,8 +4052,11 @@
 
     qualities.forEach(q => {
       const btn = document.createElement('button');
-      const isCurrentActive = activeForcedQualityId === q.id || activeForcedQualityLabel === q.label;
-      btn.className = `pvc-quality-chip-btn ${isCurrentActive ? 'pvc-active' : ''}`;
+      btn.__nokQualityId = q.id;
+      const requested = request?.id === q.id;
+      const confirmed = requested && ['confirmed', 'decoded-match'].includes(request.status);
+      btn.className = `pvc-quality-chip-btn ${confirmed ? 'pvc-active' : requested ? 'pvc-requested' : ''}`;
+      btn.setAttribute('aria-pressed', String(confirmed));
       setUiText(btn, String(q.label).replace(/\s*\(.*\)\s*$/, '') || q.label);
       setUiAttribute(btn, 'title', q.resolutionSource === 'observed-video'
         ? 'Çözünürlük akışta belirtilmemiş; değer oynatılan videodan ölçüldü. Başka bir kalite seçeneği anlamına gelmez.'
@@ -3225,7 +4071,19 @@
       };
 
       container.appendChild(btn);
+      if (focusedId === q.id) btn.focus();
     });
+  }
+
+  function updateQualityButtonStates(container) {
+    const request = qualityControlState.request;
+    for (const button of container.querySelectorAll('button')) {
+      const requested = request?.id === button.__nokQualityId;
+      const confirmed = requested && ['confirmed', 'decoded-match'].includes(request.status);
+      button.classList.toggle('pvc-active', confirmed);
+      button.classList.toggle('pvc-requested', requested && !confirmed);
+      button.setAttribute('aria-pressed', String(confirmed));
+    }
   }
 
   async function switchToPuhuMncdnDirectly(video, player) {
@@ -3257,6 +4115,10 @@
   let lastPingStatus = 'not-tested';
 
   async function testCdnPing(silent = false) {
+    if (remotePresentation) {
+      if (silent) return null;
+      const reply = await remoteControl('ping'); return reply.ok && reply.ms !== undefined ? { ms: reply.ms, method: 'remote' } : null;
+    }
     const { video, player } = findVideoAndPlayer();
     if (!video) {
       lastPingStatus = 'no-video';
@@ -3343,15 +4205,16 @@
     return count === 0 ? '0' : count === 1 ? '1' : count <= 4 ? '2-4' : '5+';
   }
 
-  function diagnosticPlatform(hostname) {
-    const platforms = {
+  const DIAGNOSTIC_PLATFORMS = Object.freeze({
       kick: ['kick.com'], trt: ['trt1.com.tr', 'trtizle.com', 'trt.com.tr'],
       now: ['nowtv.com.tr'], puhu: ['puhutv.com'], youtube: ['youtube.com'],
       twitch: ['twitch.tv'], reddit: ['reddit.com'], x: ['x.com'],
       netflix: ['netflix.com'], disney: ['disneyplus.com'], prime: ['primevideo.com'],
       tabii: ['tabii.com'], gain: ['gain.tv'], exxen: ['exxen.com']
-    };
-    for (const [platform, domains] of Object.entries(platforms)) {
+  });
+  let diagnosticPagePlatform = 'other';
+  function diagnosticPlatform(hostname) {
+    for (const [platform, domains] of Object.entries(DIAGNOSTIC_PLATFORMS)) {
       if (domains.some(domain => hostname === domain || hostname.endsWith('.' + domain))) return platform;
     }
     return 'other';
@@ -3388,20 +4251,23 @@
   function buildDiagnosticPayload(errorCode) {
     const { playerType, video, player } = findVideoAndPlayer();
     const hls = findLibraryPlayer(video, 'hls', player);
-    const adapter = video ? ALL_ADAPTERS.find(item => item.name === currentActiveAdapterName) : null;
+    const recordedQuality = readQualityDiagnostics(video, player);
+    const adapter = recordedQuality.adapter;
     const requestedAdapter = ALL_ADAPTERS.find(item => item.name === userForcedAdapterName);
     const browserFamily = /firefox/i.test(navigator.userAgent) ? 'firefox'
       : /chrom(e|ium)|edg\//i.test(navigator.userAgent) ? 'chromium'
       : /safari/i.test(navigator.userAgent) ? 'safari' : 'other';
-    const quality = cachedDiscoveredQualities.find(item => item.id === activeForcedQualityId);
+    const playerPlatform = diagnosticPlatform(HOSTNAME);
+    const pagePlatform = diagnosticChoice(diagnosticPagePlatform, Object.keys(DIAGNOSTIC_PLATFORMS), 'other');
     // Uygulanmamış adaptörler kalite kontrolü sunmaz; istekler başarı kanıtı değildir.
-    const qualityControl = !video || !adapter || ['GenericAdapter', 'DashJsAdapter'].includes(adapter.name)
+    const qualityControl = !video || !adapter || adapter.name === 'DashJsAdapter' || (adapter.name === 'GenericAdapter' && recordedQuality.menuCount === 0)
       ? 'not-implemented' : 'requires-runtime-verification';
     return {
       reportSchemaVersion: 2,
       extensionVersion: EXTENSION_VERSION,
       errorCode: diagnosticChoice(errorCode, ['NO_VIDEO_FOUND', 'USER_MANUAL_DIAGNOSTIC'], 'USER_MANUAL_DIAGNOSTIC'),
-      platform: diagnosticPlatform(HOSTNAME),
+      platform: playerPlatform !== 'other' ? playerPlatform : pagePlatform,
+      platformScope: playerPlatform !== 'other' ? 'player' : pagePlatform !== 'other' ? 'page' : 'unlisted',
       browserFamily,
       playerType: diagnosticChoice(playerType, ['none', 'shadow-html5', 'native-html5', 'youtube-player',
         'amazon-ivs', 'videojs-attached', 'vjsPlayer', 'videojs-parent', 'videojs-global', 'hlsjs', 'shaka-player']),
@@ -3410,7 +4276,7 @@
       forcedAdapter: requestedAdapter ? requestedAdapter.name : 'none',
       forcedAdapterStatus: !requestedAdapter ? 'not-forced' : !video ? 'no-video'
         : requestedAdapter.name === adapter?.name ? 'selected' : 'unavailable',
-      adapterSelectionStatus: video ? diagnosticChoice(adapterHealthStatus, ['healthy', 'failed']) : 'no-video',
+      adapterSelectionStatus: video ? adapter ? diagnosticChoice(adapterHealthStatus, ['healthy', 'failed']) : 'not-evaluated' : 'no-video',
       frame: collectFrameDiagnostics(),
       videoCandidateCount: diagnosticCount(deepFindMediaElements().length),
       videoState: video ? {
@@ -3441,11 +4307,14 @@
       } : null,
       quality: {
         control: qualityControl,
-        requestedHeight: qualityControl === 'not-implemented' ? null : diagnosticNumber(quality?.height, 1, 4320),
-        cachedOptionCount: diagnosticCount(video ? cachedDiscoveredQualities.length : 0),
+        requestedHeight: qualityControl === 'not-implemented' ? null : diagnosticNumber(recordedQuality.requestedHeight, 1, 4320),
+        cachedOptionCount: diagnosticCount(recordedQuality.cachedCount),
         // getQualities() ve applyQuality() burada çağrılmaz; rapor salt okunurdur.
-        verification: 'not-verified',
-        inventoryScope: hls ? 'bound-hls-player' : 'adapter',
+        verification: diagnosticChoice(recordedQuality.verification,
+          ['not-verified', 'pending', 'confirmed', 'decoded-match', 'rendition-confirmed', 'timed-out', 'rejected'], 'not-verified'),
+        decodedMatch: recordedQuality.decodedMatch,
+        renditionMatch: recordedQuality.renditionMatch,
+        inventoryScope: recordedQuality.menuCount > 0 ? 'player-and-source-menu' : hls ? 'bound-hls-player' : 'adapter',
         inventoryCompleteness: 'not-verified',
         adaptiveMode: hls ? hls.manualLevel === -1 ? 'auto' : Number.isInteger(hls.manualLevel) && hls.manualLevel >= 0 ? 'manual' : 'unknown' : 'unknown',
         playerLevelCount: hls ? diagnosticCount(hls.levels.length) : null,
@@ -3462,6 +4331,7 @@
   }
 
   function reportAnonymousError(errorCode) {
+    if (remotePresentation) { remoteControl('report').then(reply => { if (reply.ok && reply.report) showErrorModal(reply.report); }); return; }
     showErrorModal(buildDiagnosticPayload(errorCode));
   }
 
@@ -3692,6 +4562,7 @@
     modal.querySelectorAll('.pvc-adapter-option').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (remotePresentation) { remoteControl('adapter', el.getAttribute('data-adapter') || 'none'); modal.remove(); return; }
         userForcedAdapterName = el.getAttribute('data-adapter');
         const newAdapter = getActiveAdapter(video, player);
         renderDynamicQualityButtons();
@@ -3710,7 +4581,7 @@
     if (existing) existing.remove();
 
     const { video } = findVideoAndPlayer();
-    const drm = detectDrmStatus(video);
+    const drm = remotePresentation ? { isDrm: remotePresentation.drm, keySystem: 'EME', label: 'DRM / EME' } : detectDrmStatus(video);
 
     const modal = document.createElement('div');
     modal.id = 'pvc-drm-modal';
@@ -3750,18 +4621,21 @@
   function resetIdleTimer(popup) {
     if (!popup) return;
     popup.classList.remove('pvc-idle-hidden', 'pvc-idle-semi');
+    popup.__nokActivity?.(true);
 
     clearTimeout(idleTimerStep1);
     clearTimeout(idleTimerStep2);
     if (hudAccessibility.keepVisible) return;
 
     idleTimerStep1 = setTimeout(() => {
-      if (!popup.matches(':hover') && !popup.contains(document.activeElement)) {
+      const keyboardFocus = () => popup.__nokKeyboardFocus !== false && popup.contains(document.activeElement);
+      if (!popup.matches(':hover') && !keyboardFocus()) {
         popup.classList.add('pvc-idle-semi');
       }
       idleTimerStep2 = setTimeout(() => {
-        if (!popup.matches(':hover') && !popup.contains(document.activeElement)) {
+        if (!popup.matches(':hover') && !keyboardFocus()) {
           popup.classList.add('pvc-idle-hidden');
+          popup.__nokActivity?.(false);
         }
       }, 2000);
     }, idleDelaySeconds * 1000);
@@ -3779,7 +4653,7 @@
     return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
   }
 
-  // Normal modda: sağ rayda, simgenin altında. Tam ekranda mevcut konum korunur (serbest hareket).
+  // Açılış sağ üsttedir; kullanıcı her iki modda da paneli yatay/dikey taşıyabilir.
   function resetPopupToDefaultPosition(popup) {
     if (!popup || isFullscreenMode()) return;
     popup.style.setProperty('top', `${HUD_DEFAULT_TOP}px`, 'important');
@@ -3797,18 +4671,6 @@
     const rect = target.getBoundingClientRect();
     const w = rect.width || target.offsetWidth || 320;
     const h = rect.height || target.offsetHeight || 200;
-
-    // Normal mod: sağ ray (yalnızca dikey sınır koruması)
-    if (!isFullscreenMode()) {
-      let railTop = rect.top;
-      if (railTop < EDGE_MARGIN) railTop = EDGE_MARGIN;
-      if (railTop + h > vh - EDGE_MARGIN) railTop = Math.max(EDGE_MARGIN, vh - h - EDGE_MARGIN);
-      target.style.setProperty('top', `${Math.round(railTop)}px`, 'important');
-      target.style.setProperty('right', `${HUD_RAIL_RIGHT}px`, 'important');
-      target.style.setProperty('left', 'auto', 'important');
-      target.style.setProperty('bottom', 'auto', 'important');
-      return;
-    }
 
     let newLeft = rect.left;
     let newTop = rect.top;
@@ -3839,7 +4701,6 @@
       e.preventDefault(); // Yerel metin/resim sürüklemesini engelle
       resetIdleTimer(popup);
 
-      const fullscreen = isFullscreenMode();
       const rect = popup.getBoundingClientRect();
       const startClientX = e.clientX;
       const startClientY = e.clientY;
@@ -3876,8 +4737,8 @@
         popup.style.setProperty('top', `${Math.round(candidateTop)}px`, 'important');
         popup.style.setProperty('bottom', 'auto', 'important');
 
-        if (fullscreen) {
-          // Tam ekran: 2D serbest hareket + yatay mıknatıslı kenar yakalama
+        {
+          // Both embedded and fullscreen HUDs can move away from native player controls.
           let candidateLeft = startLeft + (moveEvent.clientX - startClientX);
           if (Math.abs(candidateLeft - EDGE_MARGIN) <= SNAP_THRESHOLD) {
             candidateLeft = EDGE_MARGIN;
@@ -3889,10 +4750,6 @@
           candidateLeft = Math.max(EDGE_MARGIN, Math.min(vw - w - EDGE_MARGIN, candidateLeft));
           popup.style.setProperty('left', `${Math.round(candidateLeft)}px`, 'important');
           popup.style.setProperty('right', 'auto', 'important');
-        } else {
-          // Normal mod: sağ raya sabit, yalnızca dikey (yukarı/aşağı) kayma
-          popup.style.setProperty('right', `${HUD_RAIL_RIGHT}px`, 'important');
-          popup.style.setProperty('left', 'auto', 'important');
         }
 
         popup.classList.toggle('pvc-snapped-edge', snapped);
@@ -3984,6 +4841,8 @@
         <button id="pvc-change-adapter-btn" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--pvc-muted, #a2b6c0); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;" title="Adaptör Listesini Aç ve Değiştir">Değiştir ▾</button>
       </div>
 
+      <label class="pvc-video-target-row"><span>Video hedefi</span><select id="pvc-video-target" aria-label="Video hedefi"><option value="auto">Otomatik seçim</option></select></label>
+
       <!-- DRM Koruma Rozeti -->
       <div id="pvc-drm-status-badge" style="display: none; padding: 5px 10px; background: color-mix(in srgb, var(--pvc-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-warning) 40%, transparent); border-radius: 6px; margin-bottom: 6px; color: var(--pvc-warning, #fbbf24); font-size: 10.5px; font-weight: 600; cursor: pointer;">
         <span>🛡️ DRM Korumalı Akış (Güvenli Mod)</span>
@@ -4073,6 +4932,7 @@
         </div>
         <div id="pvc-content-quality" class="pvc-section-content">
           <div id="pvc-dynamic-quality-container" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;"></div>
+          <p id="pvc-quality-status" class="pvc-settings-note" aria-live="polite">Kalite isteği yok.</p>
         </div>
       </div>
 
@@ -4132,6 +4992,15 @@
             <button id="pvc-sub-sync-reset" class="pvc-action-btn" title="Senkron kaymasını sıfırla">0ms Sıfırla</button>
             <button id="pvc-sub-sync-p100" class="pvc-action-btn" title="Altyazıyı 100ms ileri al">⏩ +100ms</button>
           </div>
+          <details class="pvc-sub-appearance">
+            <summary>Altyazı görünümü</summary>
+            <label>Yazı boyutu <output id="pvc-sub-fontSize-value">20px</output><input id="pvc-sub-fontSize" type="range" min="12" max="48" value="20" class="pvc-range-slider" /></label>
+            <label>Alt kenardan uzaklık <output id="pvc-sub-bottom-value">8%</output><input id="pvc-sub-bottom" type="range" min="0" max="40" value="8" class="pvc-range-slider" /></label>
+            <label>Arka plan opaklığı <output id="pvc-sub-background-value">82%</output><input id="pvc-sub-background" type="range" min="0" max="100" value="82" class="pvc-range-slider" /></label>
+            <label>Yazı rengi <select id="pvc-sub-color"><option value="white">Beyaz</option><option value="yellow">Sarı</option></select></label>
+            <button id="pvc-sub-appearance-reset" class="pvc-action-btn">Görünümü sıfırla</button>
+            <p class="pvc-settings-note">Yazı boyutu katmanda uygulanır; yerel tam ekran/PiP yazısını tarayıcı yönetir.</p>
+          </details>
         </div>
       </div>
 
@@ -4169,6 +5038,15 @@
       resetIdleTimer(popup);
       clampPopupToViewport(popup);
     });
+    const videoTarget = popup.querySelector('#pvc-video-target');
+    videoTarget.addEventListener('change', e => {
+      e.stopPropagation();
+      if (remotePresentation) { remoteControl('target', videoTarget.value === 'auto' ? -1 : Number(videoTarget.value)); return; }
+      const candidate = videoTarget.__nokVideos?.[Number(videoTarget.value)];
+      controlledVideo = videoTarget.value !== 'auto' && candidate?.isConnected !== false ? candidate || null : null;
+      renderDynamicQualityButtons(); updateRealtimeResolutionBadge(); resetIdleTimer(popup);
+    });
+    updateVideoTargetControls();
 
     // Olay İzolasyonu (e.stopPropagation)
     ['click', 'pointerdown', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keyup'].forEach(evtType => {
@@ -4182,7 +5060,9 @@
 
     popup.addEventListener('focusin', () => resetIdleTimer(popup));
     popup.addEventListener('focusout', () => resetIdleTimer(popup));
-    popup.addEventListener('mouseenter', () => popup.classList.remove('pvc-idle-semi', 'pvc-idle-hidden'));
+    popup.addEventListener('pointerdown', () => { popup.__nokKeyboardFocus = false; resetIdleTimer(popup); });
+    popup.addEventListener('keydown', () => { popup.__nokKeyboardFocus = true; resetIdleTimer(popup); });
+    popup.addEventListener('mouseenter', () => resetIdleTimer(popup));
     popup.addEventListener('mouseleave', () => resetIdleTimer(popup));
     popup.addEventListener('mousemove', () => resetIdleTimer(popup));
     popup.addEventListener('mousedown', () => resetIdleTimer(popup));
@@ -4230,6 +5110,7 @@
       e.stopPropagation();
       resetIdleTimer(popup);
       hotkeysEnabled = !hotkeysEnabled;
+      if (remotePresentation) remoteControl('hotkeys', hotkeysEnabled);
       hkBtn.classList.toggle('pvc-btn-active', hotkeysEnabled);
       hkBtn.setAttribute('aria-pressed', String(hotkeysEnabled));
       setUiAttribute(hkBtn, 'title', hotkeysEnabled ? 'Klavye Kısayolları Aktif (Kapatmak için tıklayın)'
@@ -4243,6 +5124,7 @@
     popup.querySelector('#pvc-mini-pip-btn').onclick = (e) => { e.stopPropagation(); togglePictureInPicture(); };
     popup.querySelector('#pvc-mini-play-pause').onclick = (e) => {
       e.stopPropagation();
+      if (remotePresentation) { remoteControl('play'); return; }
       const { video } = findVideoAndPlayer();
       if (!video) return;
       if (video.paused) {
@@ -4312,12 +5194,12 @@
         e.stopPropagation();
         resetIdleTimer(popup);
         videoFilterState[key] = parseInt(e.target.value, 10);
-        applyVideoFiltersToElement();
+        scheduleVideoFilterUpdate();
       });
       el.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         videoFilterState[key] = 100;
-        applyVideoFiltersToElement();
+        scheduleVideoFilterUpdate();
         showToast('🎨 Filtre %100 değerine sıfırlandı');
       });
     };
@@ -4328,14 +5210,14 @@
     popup.querySelector('#pvc-btn-night-shield').onclick = (e) => {
       e.stopPropagation();
       videoFilterState.nightShield = !videoFilterState.nightShield;
-      applyVideoFiltersToElement();
+      scheduleVideoFilterUpdate();
       showToast(videoFilterState.nightShield ? '🌙 Gece Kalkanı Aktif' : '☀️ Gece Kalkanı Kapatıldı');
     };
 
     popup.querySelector('#pvc-btn-invert-color').onclick = (e) => {
       e.stopPropagation();
       videoFilterState.invert = !videoFilterState.invert;
-      applyVideoFiltersToElement();
+      scheduleVideoFilterUpdate();
       showToast(videoFilterState.invert ? '🔄 Ters Renk Modu Aktif' : '🔄 Ters Renk Kapatıldı');
     };
 
@@ -4357,6 +5239,7 @@
     subFileInput.addEventListener('change', (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      if (remotePresentation && file.size > 4000000) { subFileInput.value = ''; showToast('Altyazı dosyası gömülü oynatıcı için çok büyük.'); return; }
       const reader = new FileReader();
       reader.onload = (loadEvt) => {
         const content = loadEvt.target && loadEvt.target.result;
@@ -4374,6 +5257,10 @@
             return;
           }
           customSubtitleCues = parsedCues;
+          // Loading a file is an explicit request to show it, even after a previous hide.
+          subtitleOverlayEnabled = true;
+          subToggleBtn.classList.add('pvc-active');
+          setUiText(subToggleBtn, '👁️ Altyazı: Açık');
           subtitleLoadStatus = 'loaded';
           addDiagnosticLog('INFO', 'SUBTITLE_LOADED');
           subtitleFileName = file.name;
@@ -4385,7 +5272,14 @@
             subStatusText.style.color = 'var(--pvc-success, #34d399)';
           }
           const { video } = findVideoAndPlayer();
-          if (video) {
+          if (remotePresentation) {
+            setUiText(subStatusText, 'Altyazı aktarılıyor...');
+            remoteControl('subtitle-load', parsedCues).then(reply => {
+              if (!reply.ok) showToast('Gömülü oynatıcı bu isteği uygulayamadı.');
+              else showToast(`💬 Altyazı Yüklendi: ${parsedCues.length} satır`);
+            });
+            return;
+          } else if (video) {
             monitorVideoResolution(video);
             injectNativeTextTrackCues(video);
             renderCustomSubtitleCue(video);
@@ -4411,6 +5305,7 @@
       subtitleOverlayEnabled = !subtitleOverlayEnabled;
       subToggleBtn.classList.toggle('pvc-active', subtitleOverlayEnabled);
       setUiText(subToggleBtn, subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
+      if (remotePresentation) { remoteControl('subtitle-visible', subtitleOverlayEnabled); return; }
       const { video } = findVideoAndPlayer();
       if (video) {
         injectNativeTextTrackCues(video);
@@ -4419,9 +5314,22 @@
     };
 
     popup.querySelector('#pvc-sub-sync-m100').onclick = (e) => { e.stopPropagation(); shiftSubtitleSync(-100); };
+    for (const key of ['fontSize', 'bottom', 'background', 'color']) {
+      const input = popup.querySelector(`#pvc-sub-${key}`);
+      input.value = String(subtitleAppearance[key]);
+      input.addEventListener(key === 'color' ? 'change' : 'input', e => {
+        e.stopPropagation(); resetIdleTimer(popup);
+        setSubtitleAppearance(key, key === 'color' ? input.value : Number(input.value));
+      });
+    }
+    popup.querySelector('#pvc-sub-appearance-reset').onclick = e => {
+      e.stopPropagation();
+      for (const [key, value] of Object.entries({ fontSize: 20, bottom: 8, background: 82, color: 'white' })) setSubtitleAppearance(key, value);
+    };
     popup.querySelector('#pvc-sub-sync-p100').onclick = (e) => { e.stopPropagation(); shiftSubtitleSync(100); };
     popup.querySelector('#pvc-sub-sync-reset').onclick = (e) => {
       e.stopPropagation();
+      if (remotePresentation) { remoteControl('subtitle-offset', 0); return; }
       subtitleOffsetMs = 0;
       const badge = document.getElementById('pvc-sub-offset-badge');
       if (badge) setUiText(badge, '0ms');
@@ -4436,6 +5344,7 @@
     // Çözünürlük, Adaptör, DRM ve Footer Butonları
     popup.querySelector('#pvc-refresh-res-btn').onclick = (e) => {
       e.stopPropagation();
+      if (remotePresentation) { remoteControl('refresh'); return; }
       updateRealtimeResolutionBadge();
       renderDynamicQualityButtons();
       testCdnPing(true);
@@ -4454,6 +5363,7 @@
 
     popup.querySelector('#pvc-rescan-btn').onclick = (e) => {
       e.stopPropagation();
+      if (remotePresentation) { remoteControl('refresh'); return; }
       const { video } = findVideoAndPlayer();
       if (video) {
         monitorVideoResolution(video);
@@ -4501,7 +5411,9 @@
     popup.querySelector('#pvc-close-popup-btn').onclick = (e) => {
       e.stopPropagation();
       popup.style.display = 'none';
-      window.postMessage({ type: 'PVC_HUD_CLOSED' }, '*');
+      stopAdWatch();
+      postHudSignal('PVC_HUD_CLOSED');
+      if (remotePresentation || remoteSourceSession) clearRemoteSession();
     };
 
     // Küçültme / Genişletme (➖ / ➕) (Madde 6)
@@ -4517,12 +5429,17 @@
     };
 
     setupHudNavigation(popup);
+    updateSubtitleAppearanceControls();
+    if (!remotePresentation) syncLocalMediaHud();
+    startQualityWatch();
     renderDynamicQualityButtons();
     updateCollapsedSummaryBar();
     return popup;
   }
 
   function togglePvcPopup() {
+    if (remotePresentation || remoteSourceSession) { postHudSignal('PVC_HUD_CLOSED'); clearRemoteSession(); return; }
+    if (frameProtocol && window.parent !== window && !isFullscreenMode()) { window.postMessage({ type: 'PVC_REQUEST_TOP_TOGGLE' }, '*'); return; }
     let popup = document.getElementById('pvc-controller-popup');
     const wasClosed = !popup || popup.style.display === 'none';
     if (!popup) {
@@ -4530,11 +5447,12 @@
     }
     syncFullscreenElements();
     popup.style.display = wasClosed ? 'block' : 'none';
-    if (!wasClosed) window.postMessage({ type: 'PVC_HUD_CLOSED' }, '*');
+    if (!wasClosed) { stopAdWatch(); postHudSignal('PVC_HUD_CLOSED'); }
     if (popup.style.display === 'block') {
       if (wasClosed) resetPopupToDefaultPosition(popup);
       clampPopupToViewport(popup);
       resetIdleTimer(popup);
+      startQualityWatch();
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
       testCdnPing(true);
@@ -4553,6 +5471,11 @@
     }
   }
 
+  if (window === window.top) {
+    const platform = diagnosticPlatform(HOSTNAME);
+    if (platform !== 'other') window.postMessage({ type: `PVC_PLATFORM_${platform}` }, '*');
+  }
+  window.postMessage({ type: 'PVC_ENGINE_READY' }, '*');
   startPeriodicPingEngine();
   setTimeout(() => {
     const { video } = findVideoAndPlayer();

@@ -1,12 +1,20 @@
 # 🌐 NOk Video Controller — Site Uyumluluk ve Durum Takip Tablosu (`SITE_COMPATIBILITY.md`)
 
-> **Son Güncelleme:** v0.5.10 (geliştirme; canlı doğrulama bekliyor)
+> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+
+> **Son Güncelleme:** v0.7.0 (test adayı; gerçek site doğrulaması bekliyor)
 > **Yönetim Kuralı (Katı Protokol):**
 > 1. **✅ Tam Çalışıyor:** Bu bölüme **yalnızca geliştiricilerin açık testi ve onayı/talebi** ile site eklenebilir. Yapay zeka kendi inisiyatifiyle bu bölüme site ekleyemez.
 > 2. **🟡 Yarı Çalışıyor (Test / Geliştirme Aşamasında):** Siteye özel bir adaptör/değişiklik yazıldığında, siteye dair herhangi bir değişiklik yapıldığında veya mevcut basamaklı adaptör mimarisinin (Tier 1 / Tier 2 / Tier 3) sitede çalışacağı öngörüldüğünde eklenir.
 > 3. **❌ Hiç Çalışmıyor (Desteklenmiyor):** Geliştiriciler tarafından "bu sitede çalışmıyor" bilgisi verildiğinde veya çok bilinen bir site için sistemlerine özgü bir şey hazırlanmadığından çalışmayacağı düşünüldüğünde buraya eklenir.
 
 ---
+
+v0.7.0 güncel durum: iframe dışı üst HUD ve kaynak çerçeveye bağlı reklam yaşam döngüsü uygulanmıştır. 129 Node testi ve iki yerel kökende gerçek Edge ile 14 sentetik kontrol geçti. Kurulu eklenti, Firefox veya gerçek site testi değildir; bu nedenle aşağıdaki site durumları yükseltilmedi. Dizipod yalnızca kullanıcının kesin hatırlamadığı olası test adayıdır; eski raporun kaynağı veya desteklenen platform olarak kaydedilmedi. Kaynak/test kanıtı ve canlı açık işler RELEASE_ROADMAP.md içindedir. Aşağıdaki v0.6.x paragrafları tarihsel aşama notlarıdır.
+
+v0.6.1 kalite kaynak bağlamını, eski seçim reddini ve requested/rendition/decoded ayrımını ekler. Belirli Plyr/Video.js/JW Player menüleri ve Video.js resolution-switcher API'si yeni keşif yollarıdır. Bunlar raporlanan her sitenin canlı doğrulandığı anlamına gelmez. Eksik HLS seçenekleri ve Video.js geçişi için yalnızca model/API kanıtı vardır; kaynak menüsü yapısı/site adıyla canlı kontrol beklenir. İframe dışı HUD ve reklam yaşam döngüsü açıktır. 97 Node testi site durumlarını yükseltmez.
+
+v0.6.0 ilk aşaması filtre tarama/yazma yükünü, pointer odağının gizlenmeyi kilitlemesini ve eksik altyazı görünüm kontrollerini ele alır. Normal modda yatay sürükleme vardır. Çapraz kökenli iframe'de HUD hâlâ oynatıcı çerçevesindedir; dış sayfa yerleşimi, eksik kalite envanterleri ve reklam geri yükleme işleri açıktır (RELEASE_ROADMAP.md). 82 Node testi canlı Firefox/Chromium uyumluluk kanıtı sayılmaz; site durumları yükseltilmedi.
 
 ## ✅ 1. Tam Çalışıyor (Geliştirici Onaylı)
 

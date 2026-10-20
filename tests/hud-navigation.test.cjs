@@ -143,6 +143,17 @@ test('presentation preferences apply locally, respect reduced-motion default, an
   assert.equal(fresh.run('hudAccessibility.keepVisible'), false); assert.equal(fresh.run('uiLanguage'), 'en');
 });
 
+test('pointer-retained focus no longer blocks idle hiding; keyboard interaction protects focus', () => {
+  const h = harness(); h.context.document.activeElement = h.slider;
+  h.popup.__nokKeyboardFocus = false;
+  h.run('resetIdleTimer(popup)');
+  for (let i = 0; i < 2; i++) { const pending = [...h.timers.values()]; h.timers.clear(); pending.forEach(fn => fn()); }
+  assert.equal(h.popup.classList.contains('pvc-idle-hidden'), true);
+  h.popup.__nokKeyboardFocus = true; h.run('resetIdleTimer(popup)');
+  for (let i = 0; i < 2; i++) { const pending = [...h.timers.values()]; h.timers.clear(); pending.forEach(fn => fn()); }
+  assert.equal(h.popup.classList.contains('pvc-idle-hidden'), false);
+});
+
 test('translated navigation and accessibility choices do not reset the selected tab', () => {
   const h = harness(); h.find('pvc-tab-settings').emit('click'); h.run('setUiLanguage("tr", false)');
   assert.equal(h.find('pvc-tab-settings').textContent, 'Ayarlar');

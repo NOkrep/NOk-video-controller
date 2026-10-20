@@ -1,0 +1,3 @@
+# Generated synthetic browser evidence; regenerate with tests/browser-integration.cjs.
+tests/artifacts/
+dist/
