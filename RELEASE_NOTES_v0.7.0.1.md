@@ -21,7 +21,7 @@ VHS davranışı ve kullanılan SDK yolu için birincil kaynak: [playlist-contro
 
 ## Açık kalanlar
 
-Kullanıcı Firefox'ta v0.7.0 ile Dizipod'da bozulma/performance gerilemesi gözlediğini bildirdi; belirli adım ve belirti şu anda bilinmiyor. Bu sitenin v0.7.0.1 ile düzeldiği **doğrulanmadı**. Yerel test, site uyumluluğu onayı değildir.
+Kullanıcı Firefox'ta v0.7.0 ile Özel test sitesi'da bozulma/performance gerilemesi gözlediğini bildirdi; belirli adım ve belirti şu anda bilinmiyor. Bu sitenin v0.7.0.1 ile düzeldiği **doğrulanmadı**. Yerel test, site uyumluluğu onayı değildir.
 
 Gerçek Kick/TRT/diğer site kalite ve reklam akışları, cihazda yüksek çözünürlüklü filtre maliyeti, ekran okuyucu ve gerçek %200 tarayıcı zoom kabulü açık kalır. Çerçeveye özgü tema/erişilebilirlik tercihlerinin fullscreen panelinde farklı kalabilmesi ve native fullscreen/PiP altyazı sınırları önceki adayla aynıdır. Uiverse farkları [ANIMATION_DETAILS.md](./ANIMATION_DETAILS.md) içinde; bu pakette animasyon kapsamı genişletilmedi.
 
@@ -29,4 +29,4 @@ Gerçek Kick/TRT/diğer site kalite ve reklam akışları, cihazda yüksek çöz
 
 ZIP'i ayrı klasöre aç, eklentiyi yeniden yükle ve açık video sayfalarını yenile. Firefox'ta `about:debugging` → geçici eklenti → `manifest.json`; Chromium'da geliştirici modu → paketlenmemiş klasörü yükle. Önceki sürümle karşılaştırırken aynı anda iki eklenti kopyasını etkin bırakma.
 
-İlk fırsatta Dizipod için panel kapalı/açık ve varsayılan/filtreli görünümü karşılaştır; kalan sorunda manuel anonim rapor ve kısa gözlem yeterlidir. İçerik adı veya tam bağlantı gerekmez. Yeni rapor alanı, uzak bağımlılık, otomatik gönderim veya kalıcı depolama eklenmedi.
+İlk fırsatta Özel test sitesi için panel kapalı/açık ve varsayılan/filtreli görünümü karşılaştır; kalan sorunda manuel anonim rapor ve kısa gözlem yeterlidir. İçerik adı veya tam bağlantı gerekmez. Yeni rapor alanı, uzak bağımlılık, otomatik gönderim veya kalıcı depolama eklenmedi.

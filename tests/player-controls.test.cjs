@@ -611,6 +611,8 @@ test('content relay sends only fixed frame-open signal and reinjection adds no d
   assert.equal(sent.at(-1).type, 'NOK_FRAME_OPEN');
   vm.runInContext(content, context);
   assert.equal(events.length, 1);
+  assert.equal(selfPosts.at(-1).type, 'PVC_OPEN_IF_MEDIA','automatic reinjection stays silent');
+  window.__NOK_VIDEO_CONTROLLER_TOOLBAR_REQUEST__=true;vm.runInContext(content,context);
   assert.equal(selfPosts.at(-1).type, 'PVC_TOOLBAR_TOGGLE');
 });
 
@@ -633,5 +635,5 @@ test('complete main engine boots and reinjection does not register another messa
   assert.equal(listeners.length, 1);
   vm.runInContext(source, context);
   assert.equal(listeners.length, 1);
-  assert.deepEqual(JSON.parse(JSON.stringify(posts)), [{ type: 'PVC_ENGINE_READY' }, { type: 'PVC_TOGGLE_POPUP' }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(posts)), [{ type: 'PVC_ENGINE_READY' }, { type: 'PVC_ENGINE_READY' }]);
 });

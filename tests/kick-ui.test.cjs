@@ -52,6 +52,31 @@ test('pointer simulation invokes one semantic click instead of toggling twice', 
   assert.equal(clicks, 1); assert.equal(events.filter(event => event === 'click').length, 0);
 });
 
+test('Radix volume supports direct React props and default max with cached array dispatch',()=>{
+  const h=harness(),values=[];
+  const root={isConnected:true,__reactProps$sample:{value:[50],onValueChange:value=>values.push(value)}};
+  h.context.document.querySelectorAll=()=>[root];
+  assert.equal(h.run('KickAdapter.findAndInvokeReactVolume(40)'),true);
+  h.context.document.querySelectorAll=()=>{throw Error('cached handler should skip DOM scan');};
+  assert.equal(h.run('KickAdapter.findAndInvokeReactVolume(60)'),true);
+  assert.deepEqual(JSON.parse(JSON.stringify(values)),[[40],[60]]);
+});
+
+test('known React speed setter in direct props is cached and finite-duration VOD needs no legacy URL shape',()=>{
+  const h=harness(),rates=[];
+  const root={isConnected:true,__reactProps$sample:{setPlaybackRate:rate=>rates.push(rate)}};
+  h.context.document.querySelector=()=>root;
+  assert.equal(h.run('KickAdapter.findAndInvokeReactSpeed(1.5)'),true);
+  h.context.document.querySelector=()=>{throw Error('cached setter must skip DOM scan');};
+  assert.equal(h.run('KickAdapter.findAndInvokeReactSpeed(2)'),true);
+  assert.deepEqual(rates,[1.5,2]);
+  h.context.window.location.pathname='/watch/sample';
+  h.context.findVideoAndPlayer=()=>({video:{duration:600}});
+  assert.equal(h.run('KickAdapter.isVodPage()'),true);
+  h.context.findVideoAndPlayer=()=>({video:{duration:Infinity}});
+  assert.equal(h.run('KickAdapter.isVodPage()'),false);
+});
+
 test('Kick speed fallback navigates two real menu levels and clicks the exact rate once', () => {
   const h = harness(); let stage = 0; const clicked = [];
   function item(name, nextStage) {

@@ -26,7 +26,7 @@ Tarayıcı kanıtı son küçük seçili-video metadata korumasından önce alı
 
 ## Açık kabul koşulları
 
-- Gerçek Kick/TRT ve raporlanan diğer sitelerde kalite envanteri, hız/ses arayüz eşleşmesi ve reklam geri yüklemesi kullanıcı testi bekliyor. Dizipod kesin rapor kaynağı olarak kabul edilmedi.
+- Gerçek Kick/TRT ve raporlanan diğer sitelerde kalite envanteri, hız/ses arayüz eşleşmesi ve reklam geri yüklemesi kullanıcı testi bekliyor. Özel test sitesi kesin rapor kaynağı olarak kabul edilmedi.
 - Gerçek ekran okuyucu, tarayıcıda %200 zoom ve cihazda yüksek çözünürlüklü filtre performansı ayrıca denenmeli. Firefox CSS piksel ölçeği deneyi gerçek %200 tarayıcı zoom doğrulaması değildir.
 - Tema/erişilebilirlik tercihleri çerçeveye özgü olduğundan fullscreen panelinde farklı kalabilir. Native video fullscreen/PiP altyazı görünümünü tarayıcı sınırlayabilir.
 

@@ -1,6 +1,6 @@
 # Kalite kontrolü: bağlam, kaynak menüsü ve kanıt
 
-> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 20 Ekim 2026 · v0.7.0 test adayı. v0.6.1 kalite iyileştirmeleri korunur; iframe sunumu ve reklam yaşam döngüsü artık kaynakta uygulanmıştır (`FRAME_PRESENTATION.md`, `AD_CONTROL.md`). Sentetik Edge'de native menü + gerçek decoded boyut eşleşmesi geçti; raporlanan gerçek sitelerde Firefox/Chromium sonucu henüz yoktur. Bu belge `RELEASE_ROADMAP.md` kapsamını küçültmez. Kick artık yalnızca seçili videoya bağlı gerçek IVS listesi sunar; tahmini liste yoktur. SDK seçimi ve decoded boyut eşleşmesi ayrı kanıtlardır.
 

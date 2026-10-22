@@ -86,6 +86,7 @@ test('candidate cache expires, invalidates on media events and immediately repla
 test('discovery observer ignores HUD and filter style changes, but invalidates a replaced media node', () => {
   let observer, scans = 0;
   const context = vm.createContext({ performance: { now: () => 0 },
+    retryPendingRemoteSource() {}, releaseDetachedMediaState() {},
     deepFindMediaElements: () => { scans++; return []; },
     MutationObserver: class { constructor(callback) { observer = callback; } observe(_target, options) { assert.equal(options.attributes, undefined); } },
     document: { documentElement: {}, addEventListener() {} }
@@ -117,7 +118,7 @@ test('explicit video target survives a higher-scoring sibling and releases a det
   const candidates = [{ video: main }, { video: preview }];
   const context = vm.createContext({ controlledVideo: main, getMediaCandidates: () => candidates,
     scoreVideoCandidate: video => video === preview ? 300 : 100, detectDrmStatus() {},
-    findLibraryPlayer: () => null, findVideoJsPlayer: () => null,
+    findLibraryPlayer: () => null, findVideoJsPlayer: () => null, findYouTubePlayer:()=>null,
     HOSTNAME: 'example.invalid', globalCapturedIvsPlayer: null, activeDrmState: { isDrm: false }, isMediaInShadowDom: false
   });
   vm.runInContext(section('  function findVideoAndPlayer()', '  let smoothSwitchInterval'), context);
@@ -145,6 +146,22 @@ test('quality polling performs no discovery while idle-hidden and terminates whe
   hidden = false; flush(); assert.equal(discoveries, 1); assert.equal(updates, 1);
   popup.style.display = 'none'; flush(); assert.equal(timers.size, 0);
 });
+
+test('closed HUD with a completed quality request skips timeupdate scans; pending quality and captions keep working',()=>{
+  const listeners={};let scans=0,captions=0;
+  const video={addEventListener:(type,callback)=>{listeners[type]=callback;}};
+  const context=vm.createContext({video,document:{getElementById:()=>({style:{display:'none'}})},
+    qualityControlState:{request:{status:'confirmed'}},customSubtitleCues:[],remoteSourceSession:null,
+    currentAudioVolumePercent:100,currentAudioMode:'stereo',pendingQualityLabel:'',lastObservedResolution:'',
+    startAdWatch(){},findVideoAndPlayer(){scans++;return {video};},updateQualityVerification(){},
+    updateRealtimeResolutionBadge(){},renderDynamicQualityButtons(){},applyVideoFiltersToElement(){},
+    renderCustomSubtitleCue(){captions++;}});
+  vm.runInContext(section('  function monitorVideoResolution','  function updatePipButtonsState'),context);
+  vm.runInContext('monitorVideoResolution(video)',context);scans=0;
+  for(let i=0;i<100;i++)listeners.timeupdate();assert.equal(scans,0);
+  context.qualityControlState.request.status='pending';listeners.timeupdate();assert.equal(scans,1);
+  context.qualityControlState.request.status='confirmed';context.customSubtitleCues.push({});listeners.timeupdate();assert.equal(scans,2);assert.equal(captions,2);
+});
 test('inactive iframe presentation suspends discovery/publication and resumes when active or fullscreen', () => {
   const timers = new Map(); let next=0, discoveries=0, publications=0, fullscreen=false;
   const context = vm.createContext({remotePresentation:null,remoteSourceSession:'session',remoteSourceActive:false,qualityWatchTimer:null,
@@ -162,7 +179,7 @@ test('inactive iframe presentation suspends discovery/publication and resumes wh
 test('selection rejects a stale IVS attachment before reporting a player or building quality context', () => {
   const video = {isConnected:true,__ivsPlayer:{getHTMLVideoElement:()=>({})}};
   const context = vm.createContext({controlledVideo:null,getMediaCandidates:()=>[{video}],scoreVideoCandidate:()=>100,
-    detectDrmStatus(){},findLibraryPlayer:()=>null,findVideoJsPlayer:()=>null,
+    detectDrmStatus(){},findLibraryPlayer:()=>null,findVideoJsPlayer:()=>null,findYouTubePlayer:()=>null,
     HOSTNAME:'example.invalid',globalCapturedIvsPlayer:null,activeDrmState:{isDrm:false},isMediaInShadowDom:false});
   vm.runInContext(section('  function isIvsBoundToVideo','  function ivsQualityKey')+section('  function findVideoAndPlayer()', '  let smoothSwitchInterval'),context);
   assert.equal(vm.runInContext('findVideoAndPlayer().player',context),null);

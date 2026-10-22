@@ -1,6 +1,8 @@
-# NOk Video Controller (v0.7.0.1 — düzeltme adayı)
+# NOk Video Controller (v0.7.2 — kaynak geliştirmesi)
 
-> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
+> Güncel kaynak çalışması: yeni HUD/medya/gizlilik düzeltmeleri ve iki tarayıcı motorunda ilk bellek ölçümleri [DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md) / [MEMORY_MEASUREMENTS.md](./MEMORY_MEASUREMENTS.md) içinde. Aşağıdaki v0.7.0.1 paket kaydı önceki sürümün kanıtıdır; yeni ZIP veya release hazırlanmadı.
+
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
@@ -27,7 +29,7 @@
 ## 📚 Kapsamlı Proje & Mimari Dokümantasyonu
 
 - 👉 **[PROJECT_MASTER_GUIDE.md](./PROJECT_MASTER_GUIDE.md)**: Mimari tasarım, basamaklı adaptör hattı, ses/filtre/altyazı motorları ve geliştirici devir kılavuzu.
-- 👉 **[SITE_COMPATIBILITY.md](./SITE_COMPATIBILITY.md)**: Platform bazlı çalışma durumu ve uyumluluk takip tablosu.
+- Site uyumluluk ve kullanıcı test notları yalnızca yerelde tutulur; GitHub dağıtımına dahil edilmez.
 
 ---
 

@@ -1,6 +1,6 @@
 # v0.7.0 iframe panel sunumu
 
-> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 20 Ekim 2026 · test adayı. Amaç normal sayfada gömülü videonun kontrollerini kapatmayan tek paneldir. Medya, altyazı katmanı ve SDK işlemleri videonun bulunduğu belgede kalır; üst belge yalnızca HUD'u sunar. Top sayfada video varsa normal yerel kontrol tercih edilir.
 

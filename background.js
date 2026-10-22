@@ -30,6 +30,11 @@ browserAPI.action.onClicked.addListener(async (tab) => {
       console.log('[NOkrep] CSS insert notice:', err.message);
     });
 
+    // Explicit isolated-world intent; document.readyState cannot identify a click.
+    await browserAPI.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => { window.__NOK_VIDEO_CONTROLLER_TOOLBAR_REQUEST__ = true; }
+    });
     // 2. content.js dosyasını sekmeye enjekte et
     await browserAPI.scripting.executeScript({
       target: { tabId: tab.id },

@@ -42,15 +42,16 @@
     }
   }
 
-  // Eğer sayfa ilk defa yükleniyorsa (document_start veya toolbar click)
+  const toolbarRequested = window.__NOK_VIDEO_CONTROLLER_TOOLBAR_REQUEST__ === true;
+  delete window.__NOK_VIDEO_CONTROLLER_TOOLBAR_REQUEST__;
+  // Loading/interactive/complete is not evidence of a user toolbar click.
   if (!window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__) {
     window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__ = true;
     // Otomatik enjeksiyonda kancaları sessizce tak; kullanıcı toolbar ikonuna bastıysa doğrudan aç
-    const isManualClick = document.readyState === 'complete' || document.readyState === 'interactive';
-    injectMainWorldScript(isManualClick);
+    injectMainWorldScript(toolbarRequested);
   } else {
     // Kullanıcı ikona tekrar tıkladıysa popup'ı aç/kapat
-    window.postMessage({ type: 'PVC_TOOLBAR_TOGGLE' }, '*');
+    if (toolbarRequested) window.postMessage({ type: 'PVC_TOOLBAR_TOGGLE' }, '*');
     return;
   }
 
@@ -89,13 +90,13 @@
       lifecycle(child, 'NOK_FRAME_OPEN');
     });
   }
-  function closeBranch() {
+  function closeBranch(keepOpen = false) {
     searching = false;
     activeChild = null;
     delegatedVisible = false;
     requestedByParent = false;
-    window.postMessage({ type: 'PVC_HIDE_POPUP' }, '*');
-    if (frameProtocol) window.postMessage({ type: 'PVC_REMOTE_CLEAR' }, '*');
+    if (!keepOpen) window.postMessage({ type: 'PVC_HIDE_POPUP' }, '*');
+    if (frameProtocol) window.postMessage({ type: 'PVC_REMOTE_CLEAR', payload: { keepOpen } }, '*');
     hideChildren();
     session = null;
     ancestorFullscreen = false;
@@ -137,6 +138,16 @@
       if (selectedLanguageSignal) send(event.source, selectedLanguageSignal);
       return;
     }
+    if (frameProtocol && type === 'NOK_FRAME_READY' && children().includes(event.source)) {
+      if (session && (searching || activeChild === event.source)) lifecycle(event.source, 'NOK_FRAME_OPEN');
+      return;
+    }
+    if (frameProtocol && type === 'NOK_FRAME_RESCAN' && event.source === activeChild
+        && event.data.payload?.session === session) {
+      if (requestedByParent) lifecycle(window.parent, 'NOK_FRAME_RESCAN');
+      else { closeBranch(true); send(window, 'PVC_RESCAN_OPEN_HUD'); }
+      return;
+    }
     if (window.parent !== window && event.source === window.parent && event.data.type === 'NOK_FRAME_OPEN') {
       const incomingSession = frameProtocol ? frameProtocol.cleanSession(event.data.payload?.session) : null;
       if (frameProtocol && !incomingSession) return;
@@ -159,7 +170,7 @@
       }
       activeChild = event.source;
       delegatedVisible = true;
-      window.postMessage({ type: 'PVC_HIDE_POPUP' }, '*');
+      if (!frameProtocol || requestedByParent) window.postMessage({ type: 'PVC_HIDE_POPUP' }, '*');
       hideChildren(activeChild);
       if (frameProtocol && requestedByParent) send(window, 'PVC_REMOTE_SOURCE_SUSPEND');
       if (requestedByParent) lifecycle(window.parent, 'NOK_FRAME_ACTIVE');
@@ -269,6 +280,7 @@
   });
   if (window.parent !== window) send(window.parent, 'NOK_LANGUAGE_REQUEST');
   if (window.parent !== window) send(window.parent, 'NOK_PLATFORM_REQUEST');
+  if (frameProtocol && window.parent !== window) send(window.parent, 'NOK_FRAME_READY');
   if (frameProtocol) for (const type of ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange']) document.addEventListener?.(type, syncFullscreenBranch);
   if (frameProtocol && typeof MutationObserver === 'function') {
     let pending = false;
@@ -280,8 +292,9 @@
         if (activeChild && !children().includes(activeChild)) {
           const parentWasWaiting = requestedByParent;
           const previousSession = session;
-          closeBranch();
-          if (parentWasWaiting) send(window.parent, 'NOK_FRAME_CLOSED', { session: previousSession });
+          closeBranch(!parentWasWaiting);
+          if (parentWasWaiting) send(window.parent, 'NOK_FRAME_RESCAN', { session: previousSession });
+          else send(window, 'PVC_RESCAN_OPEN_HUD');
         }
       }, 100);
     });

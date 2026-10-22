@@ -1,6 +1,6 @@
 # v0.6.0 → v0.7.0 çalışma planı
 
-> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 20 Ekim 2026. Kullanıcı “adım adım” ilerlemek istiyor. Mevcut **v0.7.0 test adayı** kaynak ve sentetik regresyon aşamasına ulaştı; tüm gerçek site issue'larının çözüldüğü iddiası yoktur. 20 tema korunur; finalist seçilmedi. Kaynak raporlar yeniden yayımlanmaz; aşağıda yalnızca teknik bulgular tutulur.
 
@@ -36,7 +36,7 @@
 ## Açık canlı kabul listesi
 
 - Eklentiyi yeniden yükle, medya sayfasını yenile: Firefox kurulu eklenti yolunda iframe dışı tek HUD, idle gizlenme, kapat/aç ve iki kademeli nested fullscreen.
-- Native menü ile bütün kalite seçeneklerini karşılaştır; listedeki değere tıklayıp SDK seçimi ve decoded sonucu birlikte gözle. Kullanıcının “dizipod.com olabilir” yanıtı kesin rapor kaynağı değildir. Yeni anonim rapor hangi teknik sınıfın kaldığını göstermelidir; alan adı rapora zorla eklenmez.
+- Native menü ile bütün kalite seçeneklerini karşılaştır; listedeki değere tıklayıp SDK seçimi ve decoded sonucu birlikte gözle. Kullanıcının “özel test sitesi olabilir” yanıtı kesin rapor kaynağı değildir. Yeni anonim rapor hangi teknik sınıfın kaldığını göstermelidir; alan adı rapora zorla eklenmez.
 - Kick VOD ses/hız UI eşleşmesi; gerçek reklam işareti giriş/çıkışı, 16x'in gerçekten uygulanması, önceki kalite/ABR ve mute dönüşü. İşaret yoksa eklenti bunu desteklenmeyen algılama olarak bırakır.
 - SRT/VTT, cue boşluğu, yazı boyutu/konumu/zemin/renk; doğrudan video fullscreen/PiP kısıtını wrapper fullscreen'den ayır.
 - Büyük yazı/yüksek kontrast/reduced motion, ekran okuyucu, %200 zoom; özellikle çerçeveye özgü tema/erişilebilirlik tercihlerinin fullscreen'de aynı olmayabileceğini kontrol et.
@@ -47,4 +47,4 @@ Her aşama için kaynak/test sonucu ile canlı Firefox/Chromium sonucu ayrı tut
 
 ## v0.7.0.1 — Düzeltme sonrası kabul
 
-142 Node testi, Firefox kurulu geçici eklentide sürekli iframe filtresi ve yerel gerçek HLS/Video.js Firefox/Edge decoded geçişleri geçti. Önceki Edge kalite zaman aşımı yerel senaryoda kapandı. Dizipod Firefox v0.7.0 kullanıcı regresyonu kesin adım bilinmeden alınmıştır; 0.7.0.1 ile gerçek site kabulü açık kalır. Ekran okuyucu, gerçek %200 zoom, Kick/TRT reklam/arayüz ve cihaz GPU ölçümü hâlâ ayrı kabul gerektirir. Test ZIP'i yeni sürüm adıyla hazırlanır; eski ZIP korunur. Güncel paket kanıtı RELEASE_NOTES_v0.7.0.1.md içindedir.
+142 Node testi, Firefox kurulu geçici eklentide sürekli iframe filtresi ve yerel gerçek HLS/Video.js Firefox/Edge decoded geçişleri geçti. Önceki Edge kalite zaman aşımı yerel senaryoda kapandı. Özel test sitesi Firefox v0.7.0 kullanıcı regresyonu kesin adım bilinmeden alınmıştır; 0.7.0.1 ile gerçek site kabulü açık kalır. Ekran okuyucu, gerçek %200 zoom, Kick/TRT reklam/arayüz ve cihaz GPU ölçümü hâlâ ayrı kabul gerektirir. Bu önceki aşamada test ZIP'i hazırlanmıştı; **yeni kullanıcı tercihi gereği açıkça istenmeden başka ZIP/release hazırlanmaz**. Önceki paket kanıtı RELEASE_NOTES_v0.7.0.1.md, yeni kaynak kapsamı ACTIVE_WORK.md içindedir.

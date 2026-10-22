@@ -2,7 +2,7 @@
 // node tests/firefox-integration.cjs --browser=<firefox.exe>
 // References: MDN Create_BiDi_connection; W3C WebDriver BiDi webExtension.install.
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
-const http = require('node:http'), {spawn} = require('node:child_process');
+const http = require('node:http'), {spawn,execFileSync} = require('node:child_process');
 const assert = require('node:assert/strict');
 const {serveMedia,mediaHtml,exerciseFileMedia}=require('./file-media-checks.cjs');
 const {serveLibraryAsset,libraryHtml}=require('./library-fixtures.cjs');
@@ -10,6 +10,11 @@ const root = path.resolve(__dirname, '..');
 const browserPath = process.argv.find(arg => arg.startsWith('--browser='))?.slice(10);
 const mediaPath=process.argv.find(arg=>arg.startsWith('--media='))?.slice(8);
 const testLibraries=process.argv.includes('--libraries');
+const testMemory=process.argv.includes('--memory'), memory=[];
+function sampleMemory(stage, cycles=0) {
+  const measured=JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(processHandle.pid)],{encoding:'utf8',windowsHide:true}));
+  memory.push({stage,cycles,...measured});
+}
 const scale=Number(process.argv.find(arg=>arg.startsWith('--scale='))?.slice(8)||1);
 if(![1,2].includes(scale))throw new Error('Test scale must be 1 or 2.');
 if (!browserPath) throw new Error('Provide --browser=<firefox.exe>. No browser or driver is downloaded.');
@@ -51,14 +56,15 @@ async function start() {
     'datareporting.policy.dataSubmissionEnabled':false,'toolkit.telemetry.enabled':false,'extensions.update.enabled':false};
   if(scale!==1)prefs['layout.css.devPixelsPerPx']=scale.toFixed(1);
   fs.writeFileSync(path.join(profile,'user.js'),Object.entries(prefs).map(([key,value])=>`user_pref(${JSON.stringify(key)},${JSON.stringify(value)});`).join('\n'));
-  processHandle=spawn(browserPath,['--headless','--width','1280','--height','800','--no-remote','--profile',profile,'--remote-debugging-port','0','about:blank'],
+  processHandle=spawn(browserPath,['--headless','--width','1280','--height','800','--no-remote','--new-instance','--profile',profile,'--remote-debugging-port','0','about:blank'],
     {windowsHide:true,stdio:['ignore','pipe','pipe']});
   const endpoint = await new Promise((resolve,reject)=>{
-    let output='';const timer=setTimeout(()=>reject(new Error('Firefox BiDi startup timeout')),20000);
+    let output='';const timer=setTimeout(()=>reject(new Error('Firefox BiDi startup timeout: '+output.slice(-2000))),20000);
     processHandle.once('error',error=>{clearTimeout(timer);reject(error);});
-    processHandle.once('exit',code=>{clearTimeout(timer);reject(new Error(`Firefox exited during startup (${code})`));});
+    processHandle.once('exit',code=>{clearTimeout(timer);reject(new Error(`Firefox exited during startup (${code}): ${output.slice(-2000)}`));});
     processHandle.stderr.on('data',chunk=>{output+=chunk;const match=output.match(/WebDriver BiDi listening on (ws:\/\/127\.0\.0\.1:\d+)/);
       if(match){clearTimeout(timer);resolve(match[1]+'/session');}});
+    processHandle.stdout.on('data',chunk=>{output+=chunk;});
   });
   socket=new WebSocket(endpoint);
   await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true});});
@@ -85,21 +91,38 @@ async function start() {
       window.__fixtureMessages.push({type:data.type,self:event.source===window,id:data.payload?.id,revision:data.payload?.state?.revision,
         name:data.payload?.command?.name,value:typeof data.payload?.command?.value==='number'?data.payload.command.value:undefined,
         ok:data.payload?.reply?.ok,code:data.payload?.reply?.code});if(window.__fixtureMessages.length>40)window.__fixtureMessages.shift();});}`});
-    const installed=await send('webExtension.install',{extensionData:{type:'path',path:root}});
-    assert.equal(installed.extension,'nok-video-controller@nokrep.local');
+    const install=async()=>{
+      const installed=await send('webExtension.install',{extensionData:{type:'path',path:root}});
+      assert.equal(installed.extension,'nok-video-controller@nokrep.local');
+    };
+    if(!testMemory)await install();
     const leafOrigin=await serve((_request,response)=>html(response,`<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#091820;color:white}.plyr{width:100%}video{display:block;width:100%}</style></head><body>
       <div class="plyr"><video autoplay muted playsinline></video><button data-plyr="quality" value="1080" aria-checked="true">1080p</button><button data-plyr="quality" value="720">720p</button><button data-plyr="quality" value="480">480p</button></div>
       <script>const canvas=document.createElement('canvas');canvas.width=1920;canvas.height=1080;const ctx=canvas.getContext('2d');
       const paint=()=>{ctx.fillStyle='#19405a';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font='60px sans-serif';ctx.fillText('Firefox '+canvas.height+'p',50,100);};paint();
-      const video=document.querySelector('video');video.srcObject=canvas.captureStream(10);video.play();setInterval(paint,100);
+      const video=document.querySelector('video');window.startFixtureVideo=()=>{video.srcObject=canvas.captureStream(10);video.play();};
+      if(!new URLSearchParams(location.search).has('late'))startFixtureVideo();setInterval(paint,100);
       document.querySelectorAll('[data-plyr]').forEach(button=>button.onclick=()=>{canvas.height=Number(button.value);canvas.width=Math.round(canvas.height*16/9);document.querySelectorAll('[data-plyr]').forEach(item=>item.setAttribute('aria-checked',String(item===button)));paint();});</script></body></html>`));
     const middleOrigin=await serve((_request,response)=>html(response,`<!doctype html><html><body style="margin:0;background:#152330"><iframe src="${leafOrigin}/leaf" style="width:100%;height:100vh;border:0" allow="fullscreen;autoplay;picture-in-picture"></iframe></body></html>`));
     const topOrigin=await serve((_request,response)=>html(response,`<!doctype html><html><body style="margin:24px;background:#152330;color:white;font:16px sans-serif"><h1>Installed extension / nested cross-origin fixture</h1><button id="open" onclick="window.postMessage({type:'PVC_TOOLBAR_TOGGLE'},'*')">Controller</button><iframe id="player-frame" src="${middleOrigin}/middle" style="display:block;width:700px;height:450px;margin-top:24px" allow="fullscreen;autoplay;picture-in-picture"></iframe></body></html>`));
     const tab=(await send('browsingContext.create',{type:'tab'})).context;
     await send('browsingContext.navigate',{context:tab,url:topOrigin+'/',wait:'complete'});
-    const tree=await send('browsingContext.getTree',{root:tab});
-    const middle=tree.contexts[0].children[0].context, leaf=tree.contexts[0].children[0].children[0].context;
+    let tree=await send('browsingContext.getTree',{root:tab});
+    let middle=tree.contexts[0].children[0].context, leaf=tree.contexts[0].children[0].children[0].context;
+    if(testMemory){
+      await until(leaf,`document.querySelector('video').readyState>=2`,'baseline playing video');
+      await delay(1500);sampleMemory('same-video-without-extension');
+      await install();
+      await send('browsingContext.navigate',{context:tab,url:topOrigin+'/',wait:'complete'});
+      tree=await send('browsingContext.getTree',{root:tab});
+      middle=tree.contexts[0].children[0].context;leaf=tree.contexts[0].children[0].children[0].context;
+    }
     await until(leaf,`window.__NOK_VIDEO_CONTROLLER_INJECTED__ && document.querySelector('video').readyState>=2`,'native extension injection in leaf');
+    await evaluate(tab,`document.querySelector('iframe').requestFullscreen()`,true);
+    await evaluate(tab,`document.exitFullscreen()`,true);
+    await delay(200);
+    assert.equal(await evaluate(tab,`document.querySelector('#pvc-controller-popup')?.style.display==='block'`),false,'fullscreen must not open an unused HUD');
+    if(testMemory){await delay(1500);sampleMemory('installed-never-opened');}
     await evaluate(tab,`document.getElementById('open').click()`,true);
     await until(tab,`document.querySelector('#pvc-controller-popup')?.style.display==='block' && document.querySelector('#pvc-active-adapter-badge')?.textContent.includes('GenericAdapter')
       && document.querySelector('#pvc-no-video-alert')?.style.display==='none'`,'top presentation with a media owner');
@@ -136,6 +159,8 @@ async function start() {
     assert.equal(await evaluate(tab,`document.querySelector('#pvc-subtitle-overlay')!==null`),false);
     await evaluate(tab,`(()=>{const input=document.querySelector('#pvc-sub-fontSize');input.value='28';input.dispatchEvent(new Event('input',{bubbles:true}));})()`,true);
     await until(leaf,`getComputedStyle(document.querySelector('#pvc-subtitle-overlay')).fontSize==='28px'`,'nested subtitle appearance');
+    await evaluate(tab,`(()=>{const input=document.querySelector('#pvc-sub-background');input.value='0';input.dispatchEvent(new Event('input',{bubbles:true}));})()`,true);
+    await until(leaf,`(()=>{const s=getComputedStyle(document.querySelector('#pvc-subtitle-overlay'));return s.backgroundColor.endsWith(', 0)')&&s.borderTopWidth==='0px'&&s.boxShadow==='none';})()`,'zero-opacity subtitle has no background edge');
     await evaluate(tab,`document.querySelector('iframe').requestFullscreen()`,true);
     await until(leaf,`document.querySelector('#pvc-controller-popup')?.style.display==='block'`,'nested fullscreen leaf HUD');
     assert.equal(await evaluate(tab,`document.querySelector('#pvc-controller-popup').style.display`),'none');
@@ -174,6 +199,37 @@ async function start() {
       await evaluate(tab,`document.getElementById('open').click()`,true);
       await until(tab,`document.querySelector('#pvc-no-video-alert')?.style.display==='none' && document.querySelector('#pvc-controller-popup').style.display==='block'`,'repeated reopen source ready');
     }
+    if(testMemory){
+      sampleMemory('open-after-controls');
+      for(let cycle=1;cycle<=30;cycle++){
+        await evaluate(tab,`document.querySelector('#pvc-close-popup-btn').click()`,true);
+        await until(tab,`document.querySelector('#pvc-controller-popup').style.display==='none'`,'memory cycle close');
+        await evaluate(tab,`document.getElementById('open').click()`,true);
+        await until(tab,`document.querySelector('#pvc-no-video-alert')?.style.display==='none'&&document.querySelector('#pvc-controller-popup').style.display==='block'`,'memory cycle open');
+        if(cycle%10===0){await delay(1000);sampleMemory('repeated-open-close',cycle);}
+      }
+      assert.equal(await evaluate(tab,`document.querySelectorAll('#pvc-controller-popup').length`),1);
+      await evaluate(tab,`document.querySelector('#pvc-close-popup-btn').click()`,true);
+      await until(tab,`document.querySelector('#pvc-controller-popup').style.display==='none'`,'memory final close');
+      await delay(5000);sampleMemory('closed-settled',30);
+    }
+    const lateOrigin=await serve((_request,response)=>html(response,`<!doctype html><html><body><button id="open" onclick="window.postMessage({type:'PVC_TOOLBAR_TOGGLE'},'*')">Controller</button><iframe src="${leafOrigin}/leaf?late" style="width:700px;height:450px" allow="fullscreen;autoplay"></iframe></body></html>`));
+    await send('browsingContext.navigate',{context:tab,url:lateOrigin+'/',wait:'complete'});
+    tree=await send('browsingContext.getTree',{root:tab});leaf=tree.contexts[0].children[0].context;
+    await until(leaf,`window.__NOK_VIDEO_CONTROLLER_INJECTED__`,'late source engine ready');
+    await evaluate(tab,`document.getElementById('open').click()`,true);
+    await until(tab,`document.querySelector('#pvc-controller-popup')?.style.display==='block'`,'empty HUD available');
+    await evaluate(tab,`(()=>{window.__fixtureUnexpectedClose=false;const p=document.querySelector('#pvc-controller-popup');new MutationObserver(()=>{if(p.style.display==='none')window.__fixtureUnexpectedClose=true;}).observe(p,{attributes:true,attributeFilter:['style']});})()`);
+    await evaluate(leaf,`startFixtureVideo()`,true);
+    await until(tab,`document.querySelector('#pvc-no-video-alert')?.style.display==='none'`,'late media discovered without reopening');
+    assert.equal(await evaluate(tab,`window.__fixtureUnexpectedClose`),false,'late discovery must keep the already-open HUD visible');
+    await evaluate(tab,`(()=>{const old=document.querySelector('iframe'),next=old.cloneNode();next.src=${JSON.stringify(leafOrigin+'/leaf?replacement')};old.replaceWith(next);})()`);
+    await until(tab,`document.querySelector('#pvc-no-video-alert')?.style.display==='none' && document.querySelector('#pvc-controller-popup')?.style.display==='block'`,'replacement HUD remains open');
+    await delay(500);tree=await send('browsingContext.getTree',{root:tab});leaf=tree.contexts[0].children[0].context;
+    await until(leaf,`document.querySelector('video').readyState>=2`,'replacement media ready');
+    await evaluate(tab,`(()=>{const input=document.querySelector('#pvc-volume-slider');input.value='55';input.dispatchEvent(new Event('input',{bubbles:true}));})()`,true);
+    await until(leaf,`Math.abs(document.querySelector('video').volume-.55)<.01`,'replacement controls target the new frame');
+    await until(tab,`document.querySelector('#pvc-volume-slider').style.background.includes('18.333')`,'remote volume updates slider fill');
     let fileMedia;
     if(mediaPath){
       const mediaOrigin=await serve((request,response)=>{
@@ -209,7 +265,7 @@ async function start() {
     const result={browser:session.capabilities.browserName,version:session.capabilities.browserVersion,installedExtension:true,synthetic:true,
       checks:['temporary extension install','native content/Main World injection','nested cross-origin top HUD','single visible HUD',
         'nested volume','native quality and decoded confirmation','nested subtitle transfer','nested subtitle appearance',
-        'ancestor fullscreen to leaf','fullscreen values','fullscreen exit','close/reopen','three reopened-session volume changes'],iframeFilterTraffic,reflow,fileMedia,libraries,errors};
+        'ancestor fullscreen to leaf','fullscreen values','fullscreen exit','close/reopen','three reopened-session volume changes','fullscreen before opening stays closed','zero-opacity subtitle edge','late media keeps HUD visible','frame replacement recovers controls','remote volume fill'],iframeFilterTraffic,reflow,memory,fileMedia,libraries,errors};
     assert.deepEqual(errors,[]);
     fs.writeFileSync(path.join(artifactDir,'result.json'),JSON.stringify(result,null,2)+'\n');
     process.stdout.write(JSON.stringify(result,null,2)+'\n');

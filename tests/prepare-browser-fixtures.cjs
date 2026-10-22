@@ -15,6 +15,11 @@ function digest(data){return crypto.createHash('sha256').update(data).digest('he
   for(const directory of [mediaDir,hlsDir,runtimeDir])fs.mkdirSync(directory,{recursive:true});
   const media=path.join(mediaDir,'synthetic-720p.webm');
   if(force||!fs.existsSync(media))run(['-f','lavfi','-i','testsrc2=size=1280x720:rate=30','-t','30','-an','-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','700k','-y',media]);
+  if(process.argv.includes('--audio-fixture')){
+    const audioMedia=path.join(mediaDir,'synthetic-av-720p.webm');
+    if(force||!fs.existsSync(audioMedia))run(['-i',media,'-f','lavfi','-i','anullsrc=r=48000:cl=stereo',
+      '-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','libopus','-b:a','32k','-t','30','-shortest','-y',audioMedia]);
+  }
   for(const height of [480,720,1080]){
     const playlist=path.join(hlsDir,height+'.m3u8');
     if(force||!fs.existsSync(playlist))run(['-i',media,'-t','24','-vf',`scale=-2:${height}`,'-an','-c:v','libx264','-preset','ultrafast','-crf','30','-pix_fmt','yuv420p',

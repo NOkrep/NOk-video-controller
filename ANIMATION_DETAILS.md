@@ -18,7 +18,7 @@ Mevcut sınıflar: `pvc-raised-button`, `pvc-check-input`/`pvc-check-visual`, `p
 
 ## Henüz kullanılmayanlar
 
-- [german_7619 radio](https://uiverse.io/german_7619/brown-sloth-50): kullanılmadı; kesin kaynak kodu arşivde bulunamadı. Animasyonun çalıştığı iddia edilmez.
+- [german_7619 radio](https://uiverse.io/german_7619/brown-sloth-50): 20 Ekim'de kullanılmıyordu. **22 Ekim güncellemesi:** sayfa/görsel tekrar doğrulandı; seçili etiketle içeriği birleştiren yüzey ve içbükey dış köşeler dikey HUD sekmelerine uyarlandı. Etiket kaydırma/radio DOM'u taşınmadı; native button/ARIA ve klavye gezinmesi korunur. Geçiş için sürekli çalışan animasyon yoktur; selected/focus durumları CSS ile güncellenir. Spacious74 kredisi THIRD_PARTY_NOTICES.md dosyasına eklendi.
 - [zanina-yassine form](https://uiverse.io/zanina-yassine/angry-shrimp-34): checkout yerleşimi incelendi; mevcut HUD'a uygun bir form görevi oluşmadığı için uygulanmadı.
 - [vinodjangid07 tooltip](https://uiverse.io/vinodjangid07/funny-panther-79): kullanılmadı; kesin kaynak kodu doğrulanmadı. Mevcut native title, bu örneğin tooltip animasyonu değildir.
 

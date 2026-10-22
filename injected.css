@@ -514,7 +514,8 @@
   color: #ffffff !important;
   padding: 6px 16px !important;
   border-radius: 8px !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: none !important;
+  box-shadow: none !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 20px !important;
   font-weight: 600 !important;
@@ -854,20 +855,24 @@
 #pvc-controller-popup .pvc-hud-body {
   display: grid !important;
   grid-template-columns: 64px minmax(0, 1fr) !important;
-  gap: 12px !important;
+  gap: 0 !important;
   align-items: start !important;
 }
 #pvc-controller-popup .pvc-hud-content,
 #pvc-controller-popup .pvc-hud-panel { min-width: 0 !important; }
+#pvc-controller-popup .pvc-hud-content {
+  background: var(--pvc-surface) !important; border-radius: 10px !important; padding: 10px !important;
+}
 #pvc-controller-popup .pvc-hud-tabs {
   display: flex !important;
   flex-direction: column !important;
   gap: 8px !important;
   align-self: stretch !important;
-  padding: 4px 8px 4px 0 !important;
-  border-right: 1px solid var(--pvc-border) !important;
+  padding: 12px 0 !important;
+  border-right: none !important;
 }
 #pvc-controller-popup .pvc-hud-tab {
+  position: relative !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -877,7 +882,7 @@
   min-height: 58px !important;
   padding: 8px 2px !important;
   border: 1px solid transparent !important;
-  border-radius: 11px !important;
+  border-radius: 10px 0 0 10px !important;
   background: transparent !important;
   color: var(--pvc-muted) !important;
   font: 600 10px/1.3 system-ui, sans-serif !important;
@@ -889,11 +894,26 @@
 #pvc-controller-popup .pvc-tab-icon { display: flex !important; }
 #pvc-controller-popup .pvc-tab-icon svg { width: 20px !important; height: 20px !important; }
 #pvc-controller-popup .pvc-hud-tab[aria-selected="true"] {
-  background: var(--pvc-accent) !important;
-  color: var(--pvc-accent-on, #0a1418) !important;
-  border-color: var(--pvc-accent-ink) !important;
+  background: var(--pvc-surface) !important;
+  color: var(--pvc-accent-ink) !important;
+  border-color: transparent !important;
   box-shadow: inset 3px 0 0 var(--pvc-accent-ink) !important;
+  z-index: 1 !important;
 }
+/* german_7619 / Spacious74: selected label joins the content surface vertically. */
+#pvc-controller-popup .pvc-hud-tab[aria-selected="true"]::before,
+#pvc-controller-popup .pvc-hud-tab[aria-selected="true"]::after {
+  content: "" !important; position: absolute !important; right: -1px !important;
+  width: 10px !important; height: 10px !important; pointer-events: none !important; background: transparent !important;
+}
+#pvc-controller-popup .pvc-hud-tab[aria-selected="true"]::before {
+  top: -11px !important; border-radius: 0 0 10px 0 !important; box-shadow: 0 5px 0 0 var(--pvc-surface) !important;
+}
+#pvc-controller-popup .pvc-hud-tab[aria-selected="true"]::after {
+  bottom: -11px !important; border-radius: 0 10px 0 0 !important; box-shadow: 0 -5px 0 0 var(--pvc-surface) !important;
+}
+#pvc-controller-popup #pvc-menu-footer { flex-wrap: wrap !important; }
+#pvc-controller-popup #pvc-ping-btn { white-space: normal !important; overflow-wrap: anywhere !important; min-width: 0 !important; }
 #pvc-controller-popup .pvc-section-header { flex-wrap: wrap !important; gap: 4px !important; }
 #pvc-controller-popup .pvc-section-title-wrap { min-width: 0 !important; }
 #pvc-controller-popup .pvc-label { font-size: 12px !important; }
@@ -904,7 +924,7 @@
 #pvc-controller-popup.pvc-collapsed .pvc-hud-tabs,
 #pvc-controller-popup.pvc-collapsed .pvc-hud-panel { display: none !important; }
 @media (max-width: 380px) {
-  #pvc-controller-popup .pvc-hud-body { grid-template-columns: 56px minmax(0, 1fr) !important; gap: 8px !important; }
+  #pvc-controller-popup .pvc-hud-body { grid-template-columns: 56px minmax(0, 1fr) !important; gap: 0 !important; }
   #pvc-controller-popup .pvc-btn-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   #pvc-controller-popup .pvc-quick-speed-buttons { flex-wrap: wrap !important; }
   #pvc-controller-popup .pvc-chip-btn { flex-basis: 40% !important; }

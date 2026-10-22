@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.0.1';
+  const EXTENSION_VERSION = '0.7.2';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
     { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
@@ -38,7 +38,7 @@
   ];
 
   if (window.__NOK_VIDEO_CONTROLLER_INJECTED__) {
-    window.postMessage({ type: 'PVC_TOGGLE_POPUP' }, '*');
+    window.postMessage({ type: 'PVC_ENGINE_READY' }, '*');
     return;
   }
   window.__NOK_VIDEO_CONTROLLER_INJECTED__ = true;
@@ -46,6 +46,11 @@
   // UI-only gettext catalogue. No page content, subtitle cues or report JSON is translated.
   // Language and original DOM text live only in this frame's RAM.
   const UI_MESSAGES = {
+    'Site bilgisini rapora ekle (isteğe bağlı)': 'Include site information in the report (optional)',
+    'Sayfa alan adı; tam adres ve içerik yolu eklenmez.': 'Page domain only; full address and content path are excluded.',
+    'Oynatıcı çerçevesinin alan adı; ana sitenin adı olmayabilir.': 'Player frame domain; this may differ from the main website.',
+    'Açıklama karakter sayısı': 'Comment character count',
+    'Paylaşılabilir alan adı bulunamadı.': 'No shareable domain is available.',
     'Gömülü oynatıcı bu isteği desteklemiyor.': 'The embedded player does not support this request.',
     'Gömülü oynatıcı bu isteği uygulayamadı.': 'The embedded player could not apply this request.',
     'Gömülü oynatıcı yanıt vermedi.': 'The embedded player did not respond.',
@@ -638,7 +643,16 @@
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
     if (event.data.type === 'PVC_REMOTE_SOURCE_START') { startRemoteSource(event.data.payload?.session); return; }
-    if (event.data.type === 'PVC_REMOTE_CLEAR') { clearRemoteSession(); return; }
+    if (event.data.type === 'PVC_REMOTE_CLEAR') { clearRemoteSession(true, event.data.payload?.keepOpen === true); return; }
+    if (event.data.type === 'PVC_RESCAN_OPEN_HUD') {
+      const popup = document.getElementById('pvc-controller-popup');
+      if (!popup || popup.style.display === 'none') return;
+      invalidateMediaDiscovery();
+      startQualityWatch(); renderDynamicQualityButtons(); updateRealtimeResolutionBadge();
+      const { video } = findVideoAndPlayer();
+      if (!video || video.readyState === 0) window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
+      return;
+    }
     if (event.data.type === 'PVC_REMOTE_SOURCE_SUSPEND') { clearRemoteSession(false); return; }
     if (event.data.type === 'PVC_REMOTE_STATE') { acceptRemoteState(event.data.payload); return; }
     if (event.data.type === 'PVC_REMOTE_REPLY') { acceptRemoteReply(event.data.payload); return; }
@@ -745,6 +759,7 @@
   const frameProtocol = globalThis.NOkFrameProtocol || null;
   let remotePresentation = null, remotePresentationSession = null;
   let remoteSourceSession = null, remoteSourceOwner = null, remoteAncestorFullscreen = false, remoteSourceActive = true;
+  let pendingRemoteSourceSession = null;
   let remoteSourceRevision = 0, remoteSourceSignature = '', remoteSourceQualities = [], remoteSourceCandidates = [];
   let remoteRequestId = 0;
   let remoteFilterQueued = null, remoteFilterFlight = null, remoteFilterIntent = null;
@@ -754,21 +769,22 @@
     const session = remoteSourceSession || remotePresentationSession;
     window.postMessage(session ? { type, payload: { session } } : { type }, '*');
   }
-  function clearRemoteSession(retire = true) {
+  function clearRemoteSession(retire = true, keepOpen = false) {
     const hadRemote = remotePresentation || remoteSourceSession;
-    if (retire) for (const session of [remotePresentationSession, remoteSourceSession]) if (session) retiredRemoteSessions.add(session);
+    if (retire) for (const session of [remotePresentationSession, remoteSourceSession, pendingRemoteSourceSession]) if (session) retiredRemoteSessions.add(session);
     while (retiredRemoteSessions.size > 8) retiredRemoteSessions.delete(retiredRemoteSessions.values().next().value);
     for (const pending of remoteRequests.values()) { clearTimeout(pending.timer); pending.resolve({ ok: false, code: 'stale' }); }
     remoteRequests.clear();
     remoteFilterQueued = null; remoteFilterFlight = null; remoteFilterIntent = null;
     if (filterUpdateFrame !== null) { cancelAnimationFrame(filterUpdateFrame); filterUpdateFrame = null; }
     remotePresentation = null; remotePresentationSession = null; remoteSourceSession = null; remoteSourceOwner = null;
+    pendingRemoteSourceSession = null;
     remoteAncestorFullscreen = false; remoteSourceQualities = []; remoteSourceCandidates = [];
     remoteSourceActive = true;
     if (hadRemote) {
       stopAdWatch();
       clearTimeout(qualityWatchTimer);
-      const popup = document.getElementById('pvc-controller-popup'); if (popup) popup.style.display = 'none';
+      const popup = document.getElementById('pvc-controller-popup'); if (popup && !keepOpen) popup.style.display = 'none';
       for (const id of ['pvc-error-modal', 'pvc-adapter-modal', 'pvc-drm-modal']) document.getElementById(id)?.remove();
     }
   }
@@ -789,7 +805,7 @@
     const request = readQualityDiagnostics(video, player);
     const bounded = (value, min, max, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
     return frameProtocol.cleanState({
-      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video, fullscreen: remoteFullscreen(),
+      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(),
       paused: video?.paused !== false, muted: video?.muted === true,
       width: Math.round(bounded(video?.videoWidth, 0, 16384)), height: Math.round(bounded(video?.videoHeight, 0, 8640)),
       rate: bounded(video?.playbackRate, 0, 16), requestedRate: targetEnforcedPlaybackRate,
@@ -816,9 +832,12 @@
     }
     if (retiredRemoteSessions.has(session)) return;
     if (remoteSourceSession === session) { publishRemoteSourceState(); return; }
-    clearRemoteSession();
+    clearRemoteSession(pendingRemoteSourceSession !== session);
     const { video } = findVideoAndPlayer();
-    if (!video || video.readyState === 0) { window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*'); return; }
+    if (!video || video.readyState === 0) {
+      pendingRemoteSourceSession = session;
+      window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*'); return;
+    }
     remoteSourceSession = session; remoteSourceOwner = frameProtocol.newSession();
     remoteSourceRevision = 0; remoteSourceSignature = '';
     const popup = document.getElementById('pvc-controller-popup'); if (popup) popup.style.display = 'none';
@@ -839,6 +858,11 @@
     } else if (popup) { popup.style.display = 'none'; popup.classList.remove('pvc-in-fullscreen'); }
     publishRemoteSourceState();
   }
+  function retryPendingRemoteSource() {
+    if (pendingRemoteSourceSession) startRemoteSource(pendingRemoteSourceSession);
+  }
+  document.addEventListener('loadedmetadata', retryPendingRemoteSource, true);
+  document.addEventListener('playing', retryPendingRemoteSource, true);
   function remoteControl(name, value) {
     if (!frameProtocol || !remotePresentation || !remotePresentationSession) return Promise.resolve({ ok: false, code: 'stale' });
     const command = frameProtocol.cleanCommand({ name, value, owner: remotePresentation.owner, revision: remotePresentation.revision });
@@ -901,7 +925,7 @@
     else {
       try {
         const { video, player } = findVideoAndPlayer(), value = command.value;
-        if (!video && !['refresh', 'report'].includes(command.name)) throw new Error('no-media');
+        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys'].includes(command.name)) throw new Error('no-media');
         switch (command.name) {
           case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
           case 'volume': setAudioVolume(value); break;
@@ -969,6 +993,7 @@
       currentAudioMode = state.audioMode; syncRemoteFilters(state); Object.assign(subtitleAppearance, state.appearance);
       subtitleOverlayEnabled = state.subtitleEnabled; subtitleOffsetMs = state.subtitleOffset;
       value('pvc-speed-slider', state.requestedRate); value('pvc-volume-slider', state.requestedVolume);
+      updateVolumeSliderVisualGain(document.getElementById('pvc-volume-slider'), state.requestedVolume);
       updateFilterUiBadges(); updateSubtitleAppearanceControls();
     }
     userForcedAdapterName = state.forcedAdapter === 'none' ? '' : state.forcedAdapter;
@@ -1150,6 +1175,18 @@
         if (element?.contains(video) || candidate.tech_?.el_ === video
             || candidate === video.player || candidate === video.vjsPlayer
             || candidate === video.parentElement?.player) return candidate;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function findYouTubePlayer(video, hint) {
+    if (!video || video.readyState === 0) return null;
+    const doc = video.ownerDocument || document;
+    for (const player of [hint, doc.getElementById?.('movie_player'), doc.querySelector?.('.html5-video-player')]) {
+      try {
+        if (typeof player?.getPlayerState !== 'function' || typeof player.getAvailableQualityLevels !== 'function') continue;
+        if ((player.getVideoElement?.() || player.querySelector?.('video')) === video) return player;
       } catch (_) {}
     }
     return null;
@@ -1625,13 +1662,35 @@
         && (['VIDEO', 'IFRAME', 'FRAME'].includes(node.tagName) || node.shadowRoot || node.tagName?.includes('-')
           || node.querySelector?.('video, iframe, frame'));
       if (records.some(record => !isUiNode(record.target)
-          && [...record.addedNodes, ...record.removedNodes].some(mayChangeMedia))) invalidateMediaDiscovery();
+          && [...record.addedNodes, ...record.removedNodes].some(mayChangeMedia))) {
+        invalidateMediaDiscovery();
+        releaseDetachedMediaState();
+        retryPendingRemoteSource();
+      }
     });
     mediaObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
   document.addEventListener('playing', invalidateMediaDiscovery, true);
   document.addEventListener('loadedmetadata', invalidateMediaDiscovery, true);
   // END MEDIA DISCOVERY CACHE
+
+  function releaseDetachedMediaState() {
+    releaseDetachedAudioSources();
+    mediaDiscoveryCache.candidates = mediaDiscoveryCache.candidates.filter(item => item.video.isConnected !== false);
+    if (controlledVideo?.isConnected === false) controlledVideo = null;
+    if (lastFilteredVideo?.isConnected === false) { restoreVideoFilter(lastFilteredVideo); lastFilteredVideo = null; }
+    if (qualityControlState.context?.video?.isConnected === false) {
+      resetQualityContext(null, null, GenericAdapter);
+      const qualities = document.getElementById('pvc-dynamic-quality-container');
+      if (qualities) { qualities.__nokQualities = null; qualities.__nokQualitySignature = ''; qualities.innerHTML = ''; }
+      remoteSourceQualities = [];
+    }
+    const select = document.getElementById('pvc-video-target');
+    if (select?.__nokVideos?.some(video => video.isConnected === false)) select.__nokVideos = null;
+    remoteSourceCandidates = remoteSourceCandidates.filter(video => video.isConnected !== false);
+    if (cachedKickVolOwner?.isConnected === false) { cachedKickVolOwner = null; cachedKickVolSetter = null; cachedKickVolHook = null; }
+    if (cachedKickSpeedOwner?.isConnected === false) { cachedKickSpeedOwner = null; cachedKickSpeedSetter = null; cachedKickSpeedHook = null; }
+  }
 
   function scoreVideoCandidate(video) {
     if (!video) return -999;
@@ -1641,6 +1700,7 @@
     if (!video.paused && video.currentTime > 0 && !video.ended) score += 120;
     if (!video.muted && video.volume > 0) score += 40;
     if (video.readyState >= 2) score += 25;
+    else if (video.readyState === 0) score -= 300;
 
     try {
       const rect = video.getBoundingClientRect();
@@ -1697,9 +1757,10 @@
     const ivs = attachedIvs && isIvsBoundToVideo(attachedIvs, selectedVideo) ? attachedIvs
       : globalCapturedIvsPlayer && isIvsBoundToVideo(globalCapturedIvsPlayer, selectedVideo) ? globalCapturedIvsPlayer : null;
 
-    if (HOSTNAME.includes('youtube.com')) {
+    const yt = findYouTubePlayer(selectedVideo);
+    if (yt) {
       playerType = 'youtube-player';
-      player = document.getElementById('movie_player') || null;
+      player = yt;
     } else if (ivs) {
       player = ivs;
       playerType = 'amazon-ivs';
@@ -1801,142 +1862,22 @@
   const PuhuTvAdapter = {
     name: 'PuhuTvAdapter',
     matches() {
-      return HOSTNAME.includes('puhutv.com') || !!document.querySelector('.puhu-player, .vjs-puhu-skin, [class*="puhu"]');
-    },
-    lockAbrBandwidth(player) {
-      try {
-        if (!player) return;
-        if (player.tech_ && player.tech_.vhs) {
-          player.tech_.vhs.bandwidth = 99999999;
-          if (player.tech_.vhs.masterPlaylistController_) {
-            player.tech_.vhs.masterPlaylistController_.fastQualityChange_ = true;
-          }
-          player.tech_.vhs.GOAL_BUFFER_LENGTH = 30;
-        }
-        if (player.tech_ && player.tech_.hls) {
-          player.tech_.hls.bandwidth = 99999999;
-        }
-      } catch (e) {}
+      return /(^|\.)puhutv\.com$/.test(HOSTNAME) || !!document.querySelector('.puhu-player, .vjs-puhu-skin');
     },
     getQualities(video, player) {
-      const results = [];
-      const seenHeights = new Set();
-
-      let currentSrcUrl = '';
-      if (player && typeof player.currentSrc === 'function') currentSrcUrl = player.currentSrc();
-      if (!currentSrcUrl && video) currentSrcUrl = video.currentSrc || video.src || '';
-
-      if (player && player.tech_ && player.tech_.vhs && player.tech_.vhs.playlists && player.tech_.vhs.playlists.master) {
-        try {
-          const masterPlaylists = player.tech_.vhs.playlists.master.playlists;
-          if (Array.isArray(masterPlaylists) && masterPlaylists.length > 0) {
-            masterPlaylists.forEach((pl, idx) => {
-              const res = pl.attributes && pl.attributes.RESOLUTION ? pl.attributes.RESOLUTION : null;
-              const h = res ? res.height : 0;
-              const w = res ? res.width : 0;
-              const bw = (pl.attributes && pl.attributes.BANDWIDTH) || 0;
-              const uri = pl.resolvedUri || pl.uri || '';
-              const mediaMatch = uri.match(/media-(\d+)/i);
-              let mediaTag = mediaMatch ? `media-${mediaMatch[1]}` : 'media-2';
-              let smilTag = '576p.smil';
-
-              let label = `${h}p`;
-              if (h >= 1000 || w >= 1900) { label = '1080p (FHD)'; if (!mediaMatch) mediaTag = 'media-4'; smilTag = '1080p.smil'; }
-              else if (h >= 700 || w >= 1200) { label = '720p (HD)'; if (!mediaMatch) mediaTag = 'media-3'; smilTag = '720p.smil'; }
-              else if (h === 576 || (w === 786 && h === 576) || (h >= 540 && h <= 576)) { label = '576p (PAL)'; if (!mediaMatch) mediaTag = 'media-3'; smilTag = '576p.smil'; }
-              else if (h === 480 || (w === 654 && h === 480) || (h >= 450 && h < 540)) { label = '480p (SD)'; if (!mediaMatch) mediaTag = 'media-2'; smilTag = '480p.smil'; }
-              else if (h >= 320 && h < 450) { label = '360p (Düşük)'; if (!mediaMatch) mediaTag = 'media-1'; smilTag = '360p.smil'; }
-
-              if (h > 0 && !seenHeights.has(h)) {
-                seenHeights.add(h);
-                results.push({ id: `puhu_vhs_${idx}`, index: idx, label, height: h, width: w, bitrate: bw, mediaTag, smilTag, vhsPlaylist: pl });
-              }
-            });
-          }
-        } catch (e) {}
-      }
-
-      if (results.length === 0 && player && typeof player.qualityLevels === 'function') {
-        try {
-          const qLevels = player.qualityLevels();
-          if (qLevels && qLevels.length > 0) {
-            for (let i = 0; i < qLevels.length; i++) {
-              const q = qLevels[i];
-              const h = q.height || 0;
-              const w = q.width || 0;
-              let label = q.label || `${h}p`;
-              let mediaTag = 'media-2';
-              let smilTag = '576p.smil';
-              if (h >= 1000 || w >= 1900) { label = '1080p (FHD)'; mediaTag = 'media-4'; smilTag = '1080p.smil'; }
-              else if (h >= 700 || w >= 1200) { label = '720p (HD)'; mediaTag = 'media-3'; smilTag = '720p.smil'; }
-              else if (h === 576 || (h >= 540 && h <= 576)) { label = '576p (PAL)'; mediaTag = 'media-3'; smilTag = '576p.smil'; }
-              else if (h === 480 || (h >= 450 && h < 540)) { label = '480p (SD)'; mediaTag = 'media-2'; smilTag = '480p.smil'; }
-              else if (h >= 320 && h < 450) { label = '360p (Düşük)'; mediaTag = 'media-1'; smilTag = '360p.smil'; }
-
-              if (h > 0 && !seenHeights.has(h)) {
-                seenHeights.add(h);
-                results.push({ id: `vjs_ql_${i}`, index: i, label, height: h, width: w, bitrate: q.bitrate || 0, mediaTag, smilTag, raw: q });
-              }
-            }
-          }
-        } catch (e) {}
-      }
-
-      if (results.length === 0 && currentSrcUrl && currentSrcUrl.includes('mncdn.com') && currentSrcUrl.includes('.smil')) {
-        return [
-          { id: 'puhu_mn_1080', label: '1080p (FHD)', height: 1080, mediaTag: 'media-4', smilTag: '1080p.smil' },
-          { id: 'puhu_mn_720', label: '720p (HD)', height: 720, mediaTag: 'media-3', smilTag: '720p.smil' },
-          { id: 'puhu_mn_576', label: '576p (PAL)', height: 576, mediaTag: 'media-3', smilTag: '576p.smil' },
-          { id: 'puhu_mn_480', label: '480p (SD)', height: 480, mediaTag: 'media-2', smilTag: '480p.smil' },
-          { id: 'puhu_mn_360', label: '360p (Düşük)', height: 360, mediaTag: 'media-1', smilTag: '360p.smil' }
-        ];
-      }
-
-      return results.sort((a, b) => (b.height || 0) - (a.height || 0));
+      // Only the selected player's declared renditions; CDN names cannot prove an inventory.
+      const vjs = findVideoJsPlayer(video, player);
+      if (vjs) return VideoJsAdapter.getQualities(video, vjs);
+      const hls = findLibraryPlayer(video, 'hls', player);
+      return hls ? HlsJsAdapter.getQualities(video, hls) : [];
     },
-    applyQuality(targetItem, video, player) {
-      puhuFallbackAttempted = false;
-      if (targetItem.mediaTag) targetPuhuMediaLevel = targetItem.mediaTag;
-      if (targetItem.smilTag) targetPuhuSmilLevel = targetItem.smilTag;
-
-      this.lockAbrBandwidth(player);
-
-      let currentSrcUrl = '';
-      if (player && typeof player.currentSrc === 'function') currentSrcUrl = player.currentSrc();
-      if (!currentSrcUrl && video) currentSrcUrl = video.currentSrc || video.src || '';
-
-      if (targetItem.height >= 1000 && !currentSrcUrl.includes('mncdn.com')) {
-        switchToPuhuMncdnDirectly(video, player);
-        return true;
-      }
-
-      if (player && typeof player.qualityLevels === 'function') {
-        try {
-          const qLevels = player.qualityLevels();
-          if (qLevels && qLevels.length > 0) {
-            const targetIdx = targetItem.index !== undefined ? targetItem.index : -1;
-            for (let i = 0; i < qLevels.length; i++) {
-              if (targetIdx !== -1) {
-                qLevels[i].enabled = (i === targetIdx);
-              } else if (targetItem.height) {
-                const match = qLevels[i].height === targetItem.height || Math.abs((qLevels[i].height || 0) - targetItem.height) < 40;
-                qLevels[i].enabled = match;
-              }
-            }
-          }
-        } catch (e) {}
-      }
-
-      if (player && player.tech_ && player.tech_.vhs && player.tech_.vhs.masterPlaylistController_) {
-        try { player.tech_.vhs.masterPlaylistController_.fastQualityChange_ = true; } catch (e) {}
-      }
-
-      this.lockAbrBandwidth(player);
-      showToast(`PuhuTV: ${targetItem.label} (Kilitlendi)`);
-      return true;
+    applyQuality(item, video, player) {
+      const vjs = findVideoJsPlayer(video, player);
+      if (vjs) return VideoJsAdapter.applyQuality(item, video, vjs);
+      const hls = findLibraryPlayer(video, 'hls', player);
+      return hls ? HlsJsAdapter.applyQuality(item, video, hls) : false;
     }
   };
-
   function simulateFullPointerClick(el) {
     if (!el) return false;
     const initialScrollX = window.scrollX;
@@ -2038,13 +1979,14 @@
   function invokeKickVolumeSlider(percent) {
     const roots = document.querySelectorAll('[data-testid="volume-slider"], .volume-slider, [role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], input[type="range"][aria-label*="volume" i]');
     for (const root of roots) {
-      const key = Object.keys(root).find(name => name.startsWith('__reactFiber$') || name.startsWith('__reactInternalInstance$'));
+      const key = Object.keys(root).find(name => name.startsWith('__reactFiber$') || name.startsWith('__reactInternalInstance$') || name.startsWith('__reactProps$'));
       if (!key) continue;
       let invoked = false;
-      searchFiberTree(root[key], node => {
+      searchFiberTree(key.startsWith('__reactProps$') ? { memoizedProps: root[key] } : root[key], node => {
         const props = node.memoizedProps;
         if (typeof props?.onValueChange !== 'function' || !Array.isArray(props.value || props.defaultValue)) return false;
-        const max = props.max ?? Number(root.getAttribute?.('aria-valuemax') || root.max);
+        const declaredMax = props.max ?? root.getAttribute?.('aria-valuemax') ?? root.querySelector?.('[role="slider"]')?.getAttribute('aria-valuemax') ?? root.max;
+        const max = declaredMax == null || declaredMax === '' ? 100 : Number(declaredMax);
         if (max !== 1 && max !== 100) return false;
         try {
           props.onValueChange([percent / 100 * max]);
@@ -2104,7 +2046,9 @@
       return HOSTNAME.includes('kick.com') || (!!document.querySelector('#channel-player, [class*="kick-player"]') && !HOSTNAME.includes('trt') && !HOSTNAME.includes('puhu') && !HOSTNAME.includes('nowtv'));
     },
     isVodPage() {
-      return window.location.pathname.includes('/video/') || window.location.pathname.includes('/videos/');
+      const { video } = findVideoAndPlayer();
+      return (Number.isFinite(video?.duration) && video.duration > 0)
+        || window.location.pathname.includes('/video/') || window.location.pathname.includes('/videos/');
     },
     findIvsPlayer(video) {
       if (isIvsBoundToVideo(globalCapturedIvsPlayer, video) && typeof globalCapturedIvsPlayer.getQualities === 'function') return globalCapturedIvsPlayer;
@@ -2216,11 +2160,11 @@
       ].filter(Boolean);
 
       for (const root of rootCandidates) {
-        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
         if (!fiberKey || !root[fiberKey]) continue;
 
         let success = false;
-        searchFiberTree(root[fiberKey], (node) => {
+        searchFiberTree(fiberKey.startsWith('__reactProps$') ? { memoizedProps: root[fiberKey] } : root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
             const speedSetters = ['setPlaybackRate', 'setSpeed', 'onPlaybackRateChange', 'handlePlaybackRateChange'];
@@ -2266,11 +2210,11 @@
       ].filter(Boolean);
 
       for (const root of rootCandidates) {
-        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
+        const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$') || k.startsWith('__reactProps$'));
         if (!fiberKey || !root[fiberKey]) continue;
 
         let success = false;
-        searchFiberTree(root[fiberKey], (node) => {
+        searchFiberTree(fiberKey.startsWith('__reactProps$') ? { memoizedProps: root[fiberKey] } : root[fiberKey], (node) => {
           const props = node.memoizedProps;
           if (props && typeof props === 'object') {
             const volSetters = ['setVolume', 'onVolumeChange', 'handleVolumeChange', 'setVolumeLevel'];
@@ -2305,14 +2249,9 @@
 
         const sliders = document.querySelectorAll('input[type="range"][aria-label*="volume" i], input[type="range"][aria-label*="ses" i], [data-testid="volume-slider"] input');
         sliders.forEach(slider => {
-          setReactInputValue(slider, validPercent);
+          const max = Number(slider.max || 100), min = Number(slider.min || 0);
+          setReactInputValue(slider, min + normalizedVol * (max - min));
           slider.style.setProperty('--slider-fill', `${validPercent}%`);
-        });
-
-        const radixSliders = document.querySelectorAll('[role="slider"][aria-label*="volume" i], [role="slider"][aria-label*="ses" i], div[data-testid="volume-slider"] [role="slider"]');
-        radixSliders.forEach(slider => {
-          slider.setAttribute('aria-valuenow', validPercent.toString());
-          slider.style.setProperty('left', `${validPercent}%`, 'important');
         });
 
         const ivs = this.findIvsPlayer(video);
@@ -2510,11 +2449,9 @@
     name: 'YouTubeAdapter',
     tier: 2,
     displayName: 'YouTube Oynatıcı (Tier 2)',
-    matches() {
-      return HOSTNAME.includes('youtube.com') || !!document.getElementById('movie_player') || !!document.querySelector('.html5-video-player');
-    },
+    matches(video, player) { return !!findYouTubePlayer(video, player); },
     getQualities(video, player) {
-      const yt = player || document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+      const yt = findYouTubePlayer(video, player);
       if (yt && typeof yt.getAvailableQualityLevels === 'function') {
         try {
           const levels = yt.getAvailableQualityLevels();
@@ -2542,7 +2479,7 @@
       return GenericAdapter.getQualities();
     },
     applyQuality(targetItem, video, player) {
-      const yt = player || document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+      const yt = findYouTubePlayer(video, player);
       if (yt && typeof yt.setPlaybackQualityRange === 'function' && targetItem.raw) {
         try {
           yt.setPlaybackQualityRange(targetItem.raw, targetItem.raw);
@@ -3193,6 +3130,10 @@
     video.addEventListener('loadedmetadata', handleResize);
     video.addEventListener('playing', handleResize);
     video.addEventListener('timeupdate', () => {
+      const popup = document.getElementById('pvc-controller-popup');
+      const pending = ['pending', 'rendition-confirmed'].includes(qualityControlState.request?.status);
+      if (!customSubtitleCues.length && !pending && !remoteSourceSession
+          && (!popup || popup.style.display === 'none')) return;
       const selected = findVideoAndPlayer();
       if (selected.video !== video) return;
       updateQualityVerification(video, selected.player);
@@ -3668,8 +3609,92 @@
     }
   }
 
+  // AUDIO SOURCE LIFETIME: the AudioContext can retain connected media even behind a WeakMap.
+  const audioSourceVideoRefs = new Set();
+  const audioVideoRefLookup = new WeakMap();
+  const audioRootObservers = new WeakMap();
+  const audioGraphs = new WeakMap(), audioResumeTasks = new WeakMap();
+  const audioContextFinalizer = new FinalizationRegistry(ctx => {
+    // Suspend/disconnect happens immediately on removal. Close only after the media
+    // is unreachable, so a temporarily detached element can still be reinserted.
+    if (ctx.state !== 'closed') ctx.close().catch(() => {});
+  });
+  let activeAudioSource = null, activeAudioVideoRef = null, activeAudioRoutingMode = null;
+  function disconnectSharedAudioOutput() {
+    for (const node of [audioGainNodeInstance, audioSplitterNodeInstance, audioMergerNodeInstance]) {
+      try { node?.disconnect(); } catch (_) {}
+    }
+  }
+  function isAudioVideoConnected(video) {
+    if (!video || video.isConnected === false) return false;
+    const doc = video.ownerDocument, view = doc?.defaultView;
+    if (doc && !view) return false;
+    try {
+      if (view && view !== window && (view.closed || (view.parent !== view && !view.frameElement?.isConnected))) return false;
+    } catch (_) { return false; }
+    return true;
+  }
+  function releaseDetachedAudioSources() {
+    for (const ref of audioSourceVideoRefs) {
+      const video = ref.deref();
+      if (!video) { audioSourceVideoRefs.delete(ref); continue; }
+      if (isAudioVideoConnected(video)) continue;
+      const source = audioSourceElementMap.get(video);
+      try { source?.disconnect(); } catch (_) {}
+      if (source && source === activeAudioSource) {
+        activeAudioSource = null; activeAudioVideoRef = null; activeAudioRoutingMode = null; disconnectSharedAudioOutput();
+      }
+      const ctx = source?.context;
+      if (ctx && ctx.state !== 'closed') {
+        // Suspended contexts release native processing roots while preserving reinsertion.
+        // A separate context per media owner avoids pausing another player's sound.
+        ctx.suspend().then(() => {
+          if (isAudioVideoConnected(ref.deref())) resumeOwnedAudioContext(ctx);
+        }).catch(() => {});
+      }
+      if (ctx && ctx === audioContextInstance && !activeAudioSource) {
+        audioContextInstance = null; audioGainNodeInstance = null;
+        audioSplitterNodeInstance = null; audioMergerNodeInstance = null;
+      }
+      audioSourceVideoRefs.delete(ref);
+      // Keep the weak binding: a reinserted element cannot be bound a second time.
+    }
+  }
+  function observeAudioRootMutations(records) {
+    if (records.some(record => record.removedNodes.length > 0)) releaseDetachedAudioSources();
+  }
+  function trackAudioSourceVideo(video) {
+    let ref = audioVideoRefLookup.get(video);
+    if (!ref) { ref = new WeakRef(video); audioVideoRefLookup.set(video, ref); }
+    audioSourceVideoRefs.add(ref);
+    const root = video.getRootNode?.();
+    if (root && (root.host || (root.nodeType === 9 && root !== document)) && typeof MutationObserver === 'function' && !audioRootObservers.has(root)) {
+      const observer = new MutationObserver(observeAudioRootMutations);
+      observer.observe(root, { childList: true, subtree: true }); audioRootObservers.set(root, observer);
+    }
+  }
+  function restorePreviousAudioSource(nextVideo) {
+    if (!activeAudioSource || activeAudioVideoRef?.deref() === nextVideo) return;
+    const previous = activeAudioVideoRef?.deref(), source = activeAudioSource;
+    activeAudioSource = null; activeAudioVideoRef = null; activeAudioRoutingMode = null;
+    try {
+      source.disconnect();
+      // Another still-present player keeps its native stereo/volume, without the shared boost.
+      if (isAudioVideoConnected(previous)) source.connect(source.context.destination);
+    } catch (_) {}
+    disconnectSharedAudioOutput();
+  }
+  function resumeOwnedAudioContext(ctx) {
+    if (ctx.state !== 'suspended' || audioResumeTasks.has(ctx)) return;
+    const task = ctx.resume().catch(() => {}).finally(() => audioResumeTasks.delete(ctx));
+    audioResumeTasks.set(ctx, task);
+  }
+  // END AUDIO SOURCE LIFETIME
+
   function initAudioGraphForVideo(video) {
     if (!video) return null;
+    releaseDetachedAudioSources();
+    restorePreviousAudioSource(video);
     if (detectDrmStatus(video).isDrm) {
       addDiagnosticLog('INFO', 'WEB_AUDIO_DRM_SKIPPED');
       return null;
@@ -3680,37 +3705,37 @@
     if (video.readyState < 1 || (video.readyState >= 1 && video.mozHasAudio === false)) return null;
     if (currentAudioVolumePercent <= 100 && currentAudioMode === 'stereo' && !audioSourceElementMap.has(video)) return null;
     try {
-      if (!audioContextInstance) {
+      let source = audioSourceElementMap.get(video);
+      let ctx = source?.context;
+      if (!ctx) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return null;
-        audioContextInstance = new AudioCtx();
-      }
-
-      if (audioContextInstance.state === 'suspended') {
-        audioContextInstance.resume().catch(() => {});
-      }
-
-      let source = audioSourceElementMap.get(video);
-      if (!source) {
+        ctx = new AudioCtx();
         try {
-          source = audioContextInstance.createMediaElementSource(video);
+          source = ctx.createMediaElementSource(video);
           audioSourceElementMap.set(video, source);
+          audioContextFinalizer.register(video, ctx);
         } catch (e) {
-          return { ctx: audioContextInstance, gainNode: audioGainNodeInstance };
+          ctx.close?.().catch(() => {});
+          return null;
         }
       }
-
-      if (!audioGainNodeInstance) {
-        audioGainNodeInstance = audioContextInstance.createGain();
+      resumeOwnedAudioContext(ctx);
+      trackAudioSourceVideo(video);
+      let graph = audioGraphs.get(ctx);
+      if (!graph) {
+        graph = { gain: ctx.createGain(), splitter: null, merger: null, requestedGain: null }; audioGraphs.set(ctx, graph);
       }
+      audioContextInstance = ctx; audioGainNodeInstance = graph.gain;
       const requestedGain = currentAudioVolumePercent > 100 ? currentAudioVolumePercent / 100 : 1;
-      if (audioGainNodeInstance.gain.value !== requestedGain) audioGainNodeInstance.gain.setValueAtTime(requestedGain, audioContextInstance.currentTime);
-      if (!audioSplitterNodeInstance) {
-        audioSplitterNodeInstance = audioContextInstance.createChannelSplitter(2);
+      // AudioParam.value can lag behind scheduled events by a rendering quantum.
+      if (graph.requestedGain !== requestedGain) {
+        audioGainNodeInstance.gain.setValueAtTime(requestedGain, audioContextInstance.currentTime); graph.requestedGain = requestedGain;
       }
-      if (!audioMergerNodeInstance) {
-        audioMergerNodeInstance = audioContextInstance.createChannelMerger(2);
+      if (currentAudioMode === 'mono' && !graph.splitter) {
+        graph.splitter = ctx.createChannelSplitter(2); graph.merger = ctx.createChannelMerger(2);
       }
+      audioSplitterNodeInstance = graph.splitter; audioMergerNodeInstance = graph.merger;
 
       applyAudioGraphRouting(source);
       return { ctx: audioContextInstance, gainNode: audioGainNodeInstance };
@@ -3725,8 +3750,10 @@
     if (video && detectDrmStatus(video).isDrm) return;
     const source = sourceNode || (video ? audioSourceElementMap.get(video) : null);
     if (!source) return;
+    if (source === activeAudioSource && activeAudioVideoRef?.deref() === video && activeAudioRoutingMode === currentAudioMode) return;
 
     try {
+      restorePreviousAudioSource(video);
       source.disconnect();
       audioGainNodeInstance.disconnect();
       if (audioSplitterNodeInstance) audioSplitterNodeInstance.disconnect();
@@ -3744,6 +3771,7 @@
       }
 
       audioGainNodeInstance.connect(audioContextInstance.destination);
+      activeAudioSource = source; activeAudioVideoRef = new WeakRef(video); activeAudioRoutingMode = currentAudioMode;
     } catch (e) {}
   }
 
@@ -3802,13 +3830,6 @@
 
       if (video && !isDrm) {
         initAudioGraphForVideo(video);
-        if (audioGainNodeInstance && audioContextInstance) {
-          if (audioContextInstance.state === 'suspended') {
-            audioContextInstance.resume().catch(() => {});
-          }
-          const gainMultiplier = validPercent > 100 ? (validPercent / 100) : 1.0;
-          audioGainNodeInstance.gain.setValueAtTime(gainMultiplier, audioContextInstance.currentTime);
-        }
       }
 
       const slider = document.getElementById('pvc-volume-slider');
@@ -3844,7 +3865,6 @@
     const { video } = findVideoAndPlayer();
     if (video) {
       initAudioGraphForVideo(video);
-      applyAudioGraphRouting();
     }
 
     const stereoBtn = document.getElementById('pvc-audio-stereo-btn');
@@ -4323,8 +4343,6 @@
     const browserFamily = /firefox/i.test(navigator.userAgent) ? 'firefox'
       : /chrom(e|ium)|edg\//i.test(navigator.userAgent) ? 'chromium'
       : /safari/i.test(navigator.userAgent) ? 'safari' : 'other';
-    const playerPlatform = diagnosticPlatform(HOSTNAME);
-    const pagePlatform = diagnosticChoice(diagnosticPagePlatform, Object.keys(DIAGNOSTIC_PLATFORMS), 'other');
     // Uygulanmamış adaptörler kalite kontrolü sunmaz; istekler başarı kanıtı değildir.
     const qualityControl = !video || !adapter || adapter.name === 'DashJsAdapter' || (adapter.name === 'GenericAdapter' && recordedQuality.menuCount === 0)
       ? 'not-implemented' : 'requires-runtime-verification';
@@ -4332,8 +4350,8 @@
       reportSchemaVersion: 2,
       extensionVersion: EXTENSION_VERSION,
       errorCode: diagnosticChoice(errorCode, ['NO_VIDEO_FOUND', 'USER_MANUAL_DIAGNOSTIC'], 'USER_MANUAL_DIAGNOSTIC'),
-      platform: playerPlatform !== 'other' ? playerPlatform : pagePlatform,
-      platformScope: playerPlatform !== 'other' ? 'player' : pagePlatform !== 'other' ? 'page' : 'unlisted',
+      platform: 'other',
+      platformScope: 'unlisted',
       browserFamily,
       playerType: diagnosticChoice(playerType, ['none', 'shadow-html5', 'native-html5', 'youtube-player',
         'amazon-ivs', 'videojs-attached', 'vjsPlayer', 'videojs-parent', 'videojs-global', 'hlsjs', 'shaka-player']),
@@ -4410,10 +4428,23 @@
         ['unspecified', 'detection', 'quality', 'speed', 'volume', 'subtitles', 'pip', 'hud'], 'unspecified');
       // Notlar ancak kullanıcının açık seçimiyle dışa aktarılır. Otomatik anonimlik iddiası yoktur.
       delete payload.userComments;
+      delete payload.siteDomain; delete payload.siteDomainContext;
+      payload.platform = 'other'; payload.platformScope = 'unlisted';
+      if (modal.querySelector('#pvc-include-site').checked) {
+        const domain = (window.location?.hostname || HOSTNAME).toLowerCase().replace(/\.$/, '');
+        if (domain.length <= 253 && /^(?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*$/.test(domain)
+            && !/(^|\.)(localhost|local|internal|invalid|test)$/.test(domain)) {
+          payload.siteDomain = domain;
+          payload.siteDomainContext = window === window.top ? 'page' : 'frame';
+          const platform = window === window.top ? diagnosticPlatform(domain) : diagnosticPagePlatform;
+          payload.platform = diagnosticChoice(platform, Object.keys(DIAGNOSTIC_PLATFORMS), 'other');
+          if (payload.platform !== 'other') payload.platformScope = 'page';
+        }
+      }
       delete payload.deleteAfterResolutionRequested;
       if (modal.querySelector('#pvc-request-deletion').checked === true) payload.deleteAfterResolutionRequested = true;
       if (modal.querySelector('#pvc-include-comment').checked) {
-        payload.userComments = modal.querySelector('#pvc-user-feedback-input').value.slice(0, 500);
+        payload.userComments = modal.querySelector('#pvc-user-feedback-input').value.slice(0, 4000);
       }
       return JSON.stringify(payload, null, 2);
     };
@@ -4440,8 +4471,12 @@
             </select>
           </label>
           <div style="margin-bottom: 12px;">
+            <label class="pvc-report-field"><input id="pvc-include-site" type="checkbox"> Site bilgisini rapora ekle (isteğe bağlı)</label>
+            <p id="pvc-site-scope-note" class="pvc-modal-desc"></p>
+            <output id="pvc-site-domain-preview"></output>
             <label class="pvc-report-field"><input id="pvc-include-comment" type="checkbox"> Kendi açıklamamı rapora ekle (isteğe bağlı)</label>
-            <textarea id="pvc-user-feedback-input" disabled maxlength="500" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; height: 56px; background: var(--pvc-surface, #142127); border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: none;"></textarea>
+            <textarea id="pvc-user-feedback-input" disabled maxlength="4000" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; min-height: 96px; box-sizing: border-box; background: var(--pvc-surface, #142127); border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: vertical;"></textarea>
+            <output id="pvc-comment-count" aria-label="Açıklama karakter sayısı">0 / 4000</output>
             <p class="pvc-modal-desc">Açıklamanız otomatik anonimleştirilmez. Paylaşmadan önce aşağıdaki raporu kontrol edin.
               Bu panel sayfanın içinde çalışır; yazdığınız açıklama sayfanın betiklerinden gizlenmez.
               E-posta gönderen adresinizi, GitHub ise hesabınızı paylaşımınıza bağlayabilir.</p>
@@ -4482,6 +4517,10 @@
     const refreshLinks = () => {
       const updatedJson = updatePayloadJson();
       codeBlock.textContent = updatedJson;
+      modal.querySelector('#pvc-comment-count').textContent = `${Math.min(feedbackInput.value.length, 4000)} / 4000`;
+      modal.querySelector('#pvc-site-domain-preview').textContent = payload.siteDomain || '';
+      setUiText(modal.querySelector('#pvc-site-scope-note'), window === window.top
+        ? 'Sayfa alan adı; tam adres ve içerik yolu eklenmez.' : 'Oynatıcı çerçevesinin alan adı; ana sitenin adı olmayabilir.');
       const issueTitle = encodeURIComponent(`[Diagnostic/v${EXTENSION_VERSION}]: ${payload.platform} - ${payload.problem}`);
       // Only a fixed, non-identifying request enters the draft URL, never the report or comment.
       const deletionBody = payload.deleteAfterResolutionRequested === true
@@ -4492,6 +4531,7 @@
     };
 
     feedbackInput.addEventListener('input', refreshLinks);
+    modal.querySelector('#pvc-include-site').addEventListener('change', refreshLinks);
     modal.querySelector('#pvc-report-problem').addEventListener('change', refreshLinks);
     modal.querySelector('#pvc-request-deletion').addEventListener('change', refreshLinks);
     includeComment.addEventListener('change', () => {
@@ -5524,8 +5564,8 @@
       testCdnPing(true);
 
       const { video } = findVideoAndPlayer();
-      window.postMessage({ type: video ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
-      if (video) {
+      window.postMessage({ type: video && video.readyState > 0 ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
+      if (video && video.readyState > 0) {
         monitorVideoResolution(video);
         const slider = popup.querySelector('#pvc-speed-slider');
         const hdrSpeed = popup.querySelector('#pvc-hdr-speed-badge');

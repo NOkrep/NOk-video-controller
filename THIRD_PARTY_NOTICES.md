@@ -7,6 +7,7 @@ The following MIT-licensed Uiverse components were adapted in v0.5.10:
 - gharsh11032000 — https://uiverse.io/gharsh11032000/brave-pug-20
 - Nawsome — https://uiverse.io/Nawsome/slimy-tiger-93
 - eslam-hany — https://uiverse.io/eslam-hany/strange-goose-48
+- german_7619 (German Rozó), variation credited to Spacious74 (VishalS) — https://uiverse.io/german_7619/brown-sloth-50 (vertical tab surface adaptation, 22 October 2026)
 
 Sources: the linked component pages and Uiverse's official https://github.com/uiverse-io/galaxy archive. WhiteNervosa's source additionally credits a variation of work by @mrhyddenn.
 
@@ -19,6 +20,10 @@ Copyright - 2026 gharsh11032000 (Harsh Gupta)
 Copyright - 2026 Nawsome
 
 Copyright - 2026 eslam-hany (Eslam Hany)
+
+Copyright - 2026 german_7619 (German Rozó)
+
+Copyright - 2026 Spacious74 (VishalS)
 
 ## MIT License
 

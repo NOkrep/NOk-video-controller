@@ -1,3 +1,8 @@
 # Generated synthetic browser evidence; regenerate with tests/browser-integration.cjs.
 tests/artifacts/
 dist/
+
+# Private site compatibility and user testing notes (keep local).
+/SITE_COMPATIBILITY.md
+/ACCEPTANCE_STATUS.md
+/PRIVATE_TEST_NOTES.md

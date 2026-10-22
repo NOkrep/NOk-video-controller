@@ -1,11 +1,11 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
+> Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.0.1 (düzeltme adayı; yerel Firefox/Edge geçti, gerçek site kabulü açık)
+> **Sürüm:** v0.7.2 (kaynak geliştirmesi; release/ZIP/push yapılmadı; gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** 22 Ekim 2026 — v0.7.0.1 (iframe filtre kuyruğu, eski durum reddi, VHS tampon yenileme)
+> **Son Güncelleme:** 22 Ekim 2026 — v0.7.1 (yeni raporlar, HUD yaşam döngüsü, isteğe bağlı site bilgisi, iki motor bellek incelemesi)
 
 ---
 
@@ -288,9 +288,9 @@ Sistem artık statik bir adaptör listesi yerine, 3 kademeli hiyerarşik ve kend
 | :--- | :--- | :--- |
 | TRT v0.4.8 | 720p isteğine karşın 1080 sınıfı görüntü; kullanıcı hız ve kalite işlemediğini, ses UI'sının eşleşmediğini bildirmiş. | Sonraki sürümlerde düzeltme notları var; güncel canlı test olmadan çözülmüş sayılmaz. |
 | Kişisel sunucu v0.5.0 | Video hazır; yalnızca "çalışmıyor" açıklaması ve işlem bildirimleri var. | Hangi kontrolün başarısız olduğu kanıtlanamıyor. Özel sunucu adresi bu belgeye taşınmadı. |
-| HDfilmcehennemi v0.5.1 | `NO_VIDEO_FOUND`, `playerType: none`, video durumu yok. | Başlatılmamış oynatıcı/iframe/başka bir neden ayrımı rapordan yapılamıyor. |
+| Özel test sitesi A v0.5.1 | `NO_VIDEO_FOUND`, `playerType: none`, video durumu yok. | Başlatılmamış oynatıcı/iframe/başka bir neden ayrımı rapordan yapılamıyor. |
 | Nepu v0.5.1 | `hlsjs` algısı, GenericAdapter ve sabit kalite listesi; gerçek seçim kanıtı yok. | Kütüphane varlığı çalışan instance/kalite API'si anlamına gelmez. |
-| Diziyou v0.5.0 | Seçili video `0x0`, `readyState: 0`, `networkState: 0`; buna rağmen sarma/hız bildirimleri var. | Hazır olmayan/yanlış video olasılığı; oynatma başarısı kanıtlanmıyor. |
+| Özel test sitesi B v0.5.0 | Seçili video `0x0`, `readyState: 0`, `networkState: 0`; buna rağmen sarma/hız bildirimleri var. | Hazır olmayan/yanlış video olasılığı; oynatma başarısı kanıtlanmıyor. |
 | Kick v0.5.2 | Kullanıcı kalite UI eşleşmesinin çalıştığını, hız/ses UI eşleşmesinin çalışmadığını bildirmiş. | Yeni istenen/okunan değerler ve çağrı olayları sonraki incelemeyi destekler; UI sorunu bu sürümde düzeltilmedi. |
 
 Ham raporlar, tokenlar, adresler ve kullanıcıya özgü bilgiler repoya kopyalanmaz. `tests/diagnostics.test.cjs` üretim fonksiyonlarını izole Node/DOM taklidi ortamında çalıştırır; gizli örnek dizelerin dışa çıkmamasını, güvenli önizlemeyi, açıklama seçimini, tampon sınırlarını ve kopyalama hatalarını denetler. Video yoksa veya `NO_VIDEO_FOUND` ise rapor `problem: detection` ile açılır; seçim kullanıcı tarafından değiştirilebilir. Bu testler gerçek tarayıcı/site doğrulaması değildir.
@@ -439,7 +439,7 @@ Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-st
 - İframe filtresinde tek uçuş + son değer kuyruğu. Kullanıcı niyeti eşleşen kaynak durumuna kadar korunur; eski yanıt seçimi ezmez. Kapatma/oynatıcı değişimi kuyruk ve çizim işini iptal eder.
 - Metin/span DOM değişimi keşif önbelleğini gereksiz bozmaz; medya/iframe değişimleri ve 1s keşif yenilemesi korunur.
 - Video.js hedefi seçmiş ama eski tamponu oynatıyorsa, aynı video/instance ve iki hedef yükleyici kontrolünden sonra VHS kendi yenileme yolu bir kez denenir. Gerçek decoded eşleşme yine gereklidir.
-- 142 Node testi; Firefox kurulu geçici eklentide sürekli iframe filtresi; Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Eski 0.7.0 Edge zaman aşımı bu senaryoda kapandı. Dizipod gerçek kabulü açık. RELEASE_NOTES_v0.7.0.1.md.
+- 142 Node testi; Firefox kurulu geçici eklentide sürekli iframe filtresi; Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Eski 0.7.0 Edge zaman aşımı bu senaryoda kapandı. Özel test sitesi gerçek kabulü açık. RELEASE_NOTES_v0.7.0.1.md.
 
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
 
@@ -649,3 +649,11 @@ Lütfen ilk olarak PROJECT_MASTER_GUIDE.md dosyasını incele ve [BURAYA YAPMAK 
 ---
 
 *NOk Video Controller bir **NOkrep** açık kaynak projesidir.*
+
+## 22 Ekim 2026 — yeni raporlar sonrası kaynak çalışması
+
+Güncel kapsam [ACTIVE_WORK.md](./ACTIVE_WORK.md), 152 Node testi ve tarayıcı kontrol sınırları [DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md), Firefox/Chromium bellek bulguları [MEMORY_MEASUREMENTS.md](./MEMORY_MEASUREMENTS.md) içinde tutulur. Rapor platformu varsayılan other; kullanıcı seçerse önizlemedeki alan adı/platform paylaşılır. Açıklama sınırı görünür sayaçlı 4000 karakterdir; anonimleştirme değildir. Özel site test notları Git dışında yerelde kalır. Eski paket kanıtları yukarıda tarihleriyle korunur; yeni release veya ZIP hazırlanmadı.
+
+### v0.7.2 — sahipli ses bağlamı ve bellek temizliği
+
+Her video kendi isteğe bağlı Web Audio bağlamına sahiptir. Kaldırmada bağlantı kesilir ve bağlam suspend edilir; yeniden ekleme için binding korunur. Video erişilemez olduğunda FinalizationRegistry yalnız bu bağlamı kapatır. Native stereo <=100% ve DRM bypass korunur. Ses seviyesi güncellemeleri DSP bağlantısını tekrar kurmaz; son gain isteği AudioParam.value gecikmesinden bağımsız tutulur. 158 Node testi ve Firefox/Chromium nesne yaşam döngüsü ölçümleri; kapsam/sınırlamalar MEMORY_MEASUREMENTS.md içinde. Bu kaynak artışı release veya ZIP değildir. Her sonraki sürüm artışında kullanıcıya değişiklik, kanıt ve hedef durumu bildirilecektir.

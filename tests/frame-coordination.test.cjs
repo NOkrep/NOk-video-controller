@@ -76,7 +76,7 @@ function tree(remote = false) {
       executing = null;
     }
   }
-  function toolbar(f) { executing = f; vm.runInContext(content, f.context); executing = null; flush(); }
+  function toolbar(f) { executing = f; f.window.__NOK_VIDEO_CONTROLLER_TOOLBAR_REQUEST__=true; vm.runInContext(content, f.context); executing = null; flush(); }
   function documentEvent(f, type) { executing = f; f.docListeners[type](); executing = null; flush(); }
   return { frame, local, from, documentEvent, flush, toolbar, frames, messages };
 }

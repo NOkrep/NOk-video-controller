@@ -126,15 +126,20 @@ test('events reject unknown fields, nested objects, invalid values and prototype
   assert.deepEqual(events[4].details, { percent: 125 });
 });
 
-test('platform scope distinguishes player, inherited page and unlisted without exposing hosts', () => {
+test('platform and domain stay undisclosed until the user opts into the preview', () => {
   const h = harness();
   assert.equal(h.payload().platformScope, 'unlisted');
   h.run('diagnosticPagePlatform = "trt"');
-  assert.equal(h.payload().platform, 'trt'); assert.equal(h.payload().platformScope, 'page');
+  assert.equal(h.payload().platform, 'other'); assert.equal(h.payload().platformScope, 'unlisted');
   h.run('diagnosticPagePlatform = "private.example"');
   assert.equal(h.payload().platform, 'other');
   const known = harness({ hostname: 'player.kick.com' }); known.run('diagnosticPagePlatform = "trt"');
-  assert.equal(known.payload().platform, 'kick'); assert.equal(known.payload().platformScope, 'player');
+  assert.equal(known.payload().platform, 'other'); assert.equal(known.payload().platformScope, 'unlisted');
+  const modal=known.open(),opt=modal.querySelector('#pvc-include-site');opt.checked=true;opt.emit('change');
+  let shared=JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent);
+  assert.equal(shared.platform,'kick');assert.equal(shared.siteDomain,'player.kick.com');assert.equal(shared.siteDomainContext,'page');
+  opt.checked=false;opt.emit('change');shared=JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent);
+  assert.equal(shared.platform,'other');assert.equal(shared.siteDomain,undefined);
   assert.equal(known.run('diagnosticPlatform("notkick.com")'), 'other');
   assert.equal(known.run('diagnosticPlatform("kick.com.private.example")'), 'other');
 });
@@ -149,8 +154,31 @@ test('ring buffer is bounded and exports coarse relative ages', () => {
   assert.equal(h.payload().recentEvents[0].ageSeconds, 5);
 });
 
+test('consented domain stays out of share links and is removed from the preview when consent is withdrawn',()=>{
+  const h=harness({hostname:'private.example.com'}),modal=h.open(),choice=modal.querySelector('#pvc-include-site');
+  choice.checked=true;choice.emit('change');
+  assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).siteDomain,'private.example.com');
+  assert.match(modal.querySelector('#pvc-site-domain-preview').textContent,/private.example.com/);
+  for(const id of ['#pvc-send-mail-link','#pvc-open-github-link'])assert.equal(modal.querySelector(id).href.includes('private.example.com'),false);
+  choice.checked=false;choice.emit('change');
+  assert.equal(modal.querySelector('#pvc-site-domain-preview').textContent,'');
+  assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).siteDomain,undefined);
+});
+
+test('local/IP addresses are not shared and embedded player type cannot supply a site platform',()=>{
+  for(const hostname of ['localhost','127.0.0.1','192.168.1.1','machine.local','foo.internal']){
+    const h=harness({hostname}),modal=h.open(),choice=modal.querySelector('#pvc-include-site');choice.checked=true;choice.emit('change');
+    assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).siteDomain,undefined,hostname);
+  }
+  const h=harness({hostname:'www.youtube.com',playerType:'youtube-player'});
+  h.run('window.top = {};');
+  const modal=h.open(),choice=modal.querySelector('#pvc-include-site');choice.checked=true;choice.emit('change');
+  const report=JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent);
+  assert.equal(report.siteDomain,'www.youtube.com');assert.equal(report.siteDomainContext,'frame');assert.equal(report.platform,'other');
+});
+
 test('supported platform names never export arbitrary subdomains', () => {
-  assert.equal(harness({ hostname: 'private-customer.kick.com' }).payload().platform, 'kick');
+  assert.equal(harness({ hostname: 'private-customer.kick.com' }).payload().platform, 'other');
   assert.equal(harness({ hostname: 'kick.com.attacker.invalid' }).payload().platform, 'other');
   assert.equal(harness({ hostname: '127.0.0.1' }).payload().platform, 'other');
 });
@@ -292,8 +320,9 @@ test('problem selection is allowlisted and opted-in comments are bounded', () =>
   const checkbox = modal.querySelector('#pvc-include-comment');
   checkbox.checked = true; checkbox.emit('change');
   const textarea = modal.querySelector('#pvc-user-feedback-input');
-  textarea.value = 'a'.repeat(900); textarea.emit('input');
-  assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).userComments.length, 500);
+  textarea.value = 'a'.repeat(5000); textarea.emit('input');
+  assert.equal(JSON.parse(modal.querySelector('#pvc-modal-code-block').textContent).userComments.length, 4000);
+  assert.equal(modal.querySelector('#pvc-comment-count').textContent,'4000 / 4000');
 });
 
 test('deletion request is opt-in, reaches both drafts as fixed text and never exports comments in URLs', () => {

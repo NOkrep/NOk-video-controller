@@ -6,7 +6,7 @@ const source = fs.readFileSync(path.join(__dirname,'..','injected.js'),'utf8');
 function harness() {
   const posts = [], calls = [], timers = new Map(), cancelledFrames=[]; let next = 0;
   const window = {postMessage: message => posts.push(message)}; window.top = window;
-  const context = vm.createContext({window, qualityWatchTimer:null, filterUpdateFrame:null, document:{getElementById:()=>null},
+  const context = vm.createContext({window, qualityWatchTimer:null, filterUpdateFrame:null, document:{getElementById:()=>null,addEventListener(){}},
     setTimeout: callback => {timers.set(++next,callback);return next;}, clearTimeout:id=>timers.delete(id),
     cancelAnimationFrame:id=>cancelledFrames.push(id),
     stopAdWatch(){}, showToast(){}, findVideoAndPlayer:()=>({video:{},player:null}), setSpeed:value=>{calls.push(value);return true;},
@@ -27,6 +27,20 @@ test('source controller rejects stale owner or inventory revision before invokin
   await h.run('executeRemoteCommand({session,id:2,command})'); assert.deepEqual(h.calls,[]);
   h.context.command={name:'speed',owner,revision:1,value:1.5};
   await h.run('executeRemoteCommand({session,id:3,command})'); assert.deepEqual(h.calls,[1.5]); assert.equal(h.posts.at(-1).payload.reply.ok,true);
+});
+
+test('unready source waits and retries the same session when metadata arrives',()=>{
+  const h=harness(),video={readyState:0};
+  h.context.findVideoAndPlayer=()=>({video});
+  h.context.monitorVideoResolution=()=>{};h.context.startQualityWatch=()=>{};h.context.syncRemoteFullscreen=()=>{};
+  h.run('startRemoteSource(session)');
+  assert.equal(h.run('remoteSourceSession'),null);
+  assert.equal(h.run('pendingRemoteSourceSession'),session);
+  assert.equal(h.posts.at(-1).type,'PVC_OPEN_IN_CHILD_FRAMES');
+  video.readyState=4;h.run('retryPendingRemoteSource()');
+  assert.equal(h.run('remoteSourceSession'),session);
+  assert.equal(h.run('pendingRemoteSourceSession'),null);
+  assert.equal(h.posts.at(-1).type,'PVC_HUD_OPENED');
 });
 test('source controller drops a previous session and malformed commands without a reply or action',async()=>{
   const h=harness(); h.run('remoteSourceSession=session; remoteSourceOwner=owner');
