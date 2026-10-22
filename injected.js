@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.7.0 (Main World Engine)
+ * injected.js - NOk Video Controller v0.7.0.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,9 +17,10 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.0';
+  const EXTENSION_VERSION = '0.7.0.1';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
     { version: 'v0.7.0', notes: 'Test adayı: çapraz kökenli iframe için üst sayfada tek HUD, sınırlı komut/durum köprüsü ve tam ekranda kaynak çerçeveye geçiş. Oynatıcıya bağlı reklam işaretinde 16x isteği, mute ve geri alınabilir en düşük kalite; bitişte 1x/önceki ses-kalite. Kick gerçek envanter ve video sahipliği. 135 Node testi; Firefox kurulu geçici eklentiyle yerel iframe, gerçek HLS/Video.js kalite ve dosya medyasında 16x doğrulandı. Edge Video.js kalite zaman aşımı ve gerçek site kabulü açık.' },
     { version: 'v0.6.1', notes: 'Kalite seçenekleri video/oynatıcı/kaynağa bağlandı; native kaynak menüsü ve Video.js resolution-switcher desteği; istek/oynatıcı/görüntü doğrulaması ayrı, zaman aşımı görünür. Çoklu video hedef seçimi. İframe dışı sunum ve reklam aşaması açık; canlı doğrulama bekliyor.' },
     { version: 'v0.6.0', notes: 'İlk iyileştirme aşaması: filtre input birleştirme ve tarama önbelleği, pointer/klavye odaklı gizlenme, normal modda yatay sürükleme, altyazı görünümü ve sabit platform kapsamı. Kalite/iframe dışı panel/reklam iyileştirmeleri açık; canlı doğrulama bekliyor.' },
@@ -746,6 +747,7 @@
   let remoteSourceSession = null, remoteSourceOwner = null, remoteAncestorFullscreen = false, remoteSourceActive = true;
   let remoteSourceRevision = 0, remoteSourceSignature = '', remoteSourceQualities = [], remoteSourceCandidates = [];
   let remoteRequestId = 0;
+  let remoteFilterQueued = null, remoteFilterFlight = null, remoteFilterIntent = null;
   const remoteRequests = new Map(), retiredRemoteSessions = new Set(), remoteVideoTokens = new WeakMap();
   let remoteVideoToken = 0;
   function postHudSignal(type) {
@@ -758,6 +760,8 @@
     while (retiredRemoteSessions.size > 8) retiredRemoteSessions.delete(retiredRemoteSessions.values().next().value);
     for (const pending of remoteRequests.values()) { clearTimeout(pending.timer); pending.resolve({ ok: false, code: 'stale' }); }
     remoteRequests.clear();
+    remoteFilterQueued = null; remoteFilterFlight = null; remoteFilterIntent = null;
+    if (filterUpdateFrame !== null) { cancelAnimationFrame(filterUpdateFrame); filterUpdateFrame = null; }
     remotePresentation = null; remotePresentationSession = null; remoteSourceSession = null; remoteSourceOwner = null;
     remoteAncestorFullscreen = false; remoteSourceQualities = []; remoteSourceCandidates = [];
     remoteSourceActive = true;
@@ -848,6 +852,38 @@
       window.postMessage({ type: 'PVC_REMOTE_COMMAND', payload: { session, id, command } }, '*');
     });
   }
+  function queueRemoteFilters(value) {
+    if (!remotePresentation || !remotePresentationSession) return;
+    rememberRemoteFilterIntent(value);
+    remoteFilterQueued = { value: { ...value }, owner: remotePresentation.owner, session: remotePresentationSession };
+    flushRemoteFilters();
+  }
+  function rememberRemoteFilterIntent(value) {
+    remoteFilterIntent = { value: { ...value }, owner: remotePresentation.owner, session: remotePresentationSession };
+  }
+  function sameFilterValues(a, b) {
+    return a && b && ['brightness', 'contrast', 'saturate', 'nightShield', 'invert'].every(key => a[key] === b[key]);
+  }
+  function syncRemoteFilters(state) {
+    if (remoteFilterIntent && (remoteFilterIntent.owner !== state.owner || remoteFilterIntent.session !== remotePresentationSession)) remoteFilterIntent = null;
+    if (remoteFilterIntent && (!sameFilterValues(state.filters, remoteFilterIntent.value)
+        || remoteFilterFlight || remoteFilterQueued || filterUpdateFrame !== null)) return;
+    remoteFilterIntent = null;
+    videoFilterState = { ...state.filters };
+  }
+  function flushRemoteFilters() {
+    if (remoteFilterFlight || !remoteFilterQueued) return;
+    const queued = remoteFilterQueued; remoteFilterQueued = null;
+    if (queued.owner !== remotePresentation?.owner || queued.session !== remotePresentationSession) return;
+    remoteFilterFlight = queued;
+    remoteControl('filters', queued.value).then(reply => {
+      // Clearing/replacing a session must not let an old reply dispatch a new command.
+      if (remoteFilterFlight !== queued) return;
+      remoteFilterFlight = null;
+      if (!reply.ok && !remoteFilterQueued && sameFilterValues(remoteFilterIntent?.value, queued.value)) remoteFilterIntent = null;
+      flushRemoteFilters();
+    });
+  }
   function acceptRemoteReply(payload) {
     if (payload?.session !== remotePresentationSession) return;
     const reply = frameProtocol?.cleanReply(payload.reply), pending = reply && remoteRequests.get(reply.id);
@@ -930,7 +966,7 @@
     const value = (id, next) => { const input = document.getElementById(id); if (input && document.activeElement !== input) input.value = String(next); };
     if (remoteRequests.size === 0) {
       currentAudioVolumePercent = state.requestedVolume; targetEnforcedPlaybackRate = state.requestedRate;
-      currentAudioMode = state.audioMode; videoFilterState = { ...state.filters }; Object.assign(subtitleAppearance, state.appearance);
+      currentAudioMode = state.audioMode; syncRemoteFilters(state); Object.assign(subtitleAppearance, state.appearance);
       subtitleOverlayEnabled = state.subtitleEnabled; subtitleOffsetMs = state.subtitleOffset;
       value('pvc-speed-slider', state.requestedRate); value('pvc-volume-slider', state.requestedVolume);
       updateFilterUiBadges(); updateSubtitleAppearanceControls();
@@ -1585,8 +1621,11 @@
   if (typeof MutationObserver === 'function') {
     const mediaObserver = new MutationObserver(records => {
       const isUiNode = node => node?.nodeType === 1 && (node.id?.startsWith('pvc-') || node.closest?.('[id^="pvc-"]'));
+      const mayChangeMedia = node => node?.nodeType === 1 && !isUiNode(node)
+        && (['VIDEO', 'IFRAME', 'FRAME'].includes(node.tagName) || node.shadowRoot || node.tagName?.includes('-')
+          || node.querySelector?.('video, iframe, frame'));
       if (records.some(record => !isUiNode(record.target)
-          && [...record.addedNodes, ...record.removedNodes].some(node => !isUiNode(node)))) invalidateMediaDiscovery();
+          && [...record.addedNodes, ...record.removedNodes].some(mayChangeMedia))) invalidateMediaDiscovery();
     });
     mediaObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
@@ -2515,6 +2554,28 @@
     }
   };
 
+  function refreshVideoJsBufferedQuality(video, vjs, choice) {
+    // VHS may have selected the requested playlist while old rendition frames
+    // still fill the buffer. Its fastQualityChange_ then skips a same-playlist
+    // request. Reuse VHS's own reset/load path only for that exact bound case.
+    // https://github.com/videojs/http-streaming/blob/v3.17.2/src/playlist-controller.js
+    try {
+      if (!video || video.isConnected === false || video.ended || video.readyState < 2
+          || !(video.videoHeight > 0) || !(choice.height > 0) || video.videoHeight === choice.height
+          || !(video.buffered?.length > 0) || findVideoJsPlayer(video, vjs) !== vjs) return false;
+      const vhs = vjs?.tech_?.vhs || vjs?.tech?.({ IWillNotUseThisInPlugins: true })?.vhs;
+      const controller = vhs?.playlistController_;
+      const id = choice.representationId ?? choice.raw?.id ?? vjs?.qualityLevels?.()[choice.index]?.id;
+      const representation = id == null ? null : vhs?.representations?.().find(item => item.id === id);
+      const media = controller?.mainPlaylistLoader_?.media?.();
+      if (!representation?.playlist || representation.height !== choice.height || !representation.enabled()
+          || media?.id !== id || controller.mainSegmentLoader_?.playlist_?.id !== id
+          || typeof controller.runFastQualitySwitch_ !== 'function') return false;
+      try { controller.runFastQualitySwitch_(); } catch (_) { /* One attempt per explicit request, even on SDK failure. */ }
+      return true;
+    } catch (_) { return false; }
+  }
+
   function applyVideoJsEnabledSelection(levels, index) {
     const list = Array.from(levels || []), target = list[index];
     if (!target) return false;
@@ -3222,10 +3283,11 @@
     appliedVideoFilters.delete(video);
   }
   function scheduleVideoFilterUpdate() {
+    if (remotePresentation) rememberRemoteFilterIntent(videoFilterState);
     if (filterUpdateFrame !== null) return;
     filterUpdateFrame = requestAnimationFrame(() => {
       filterUpdateFrame = null;
-      if (remotePresentation) remoteControl('filters', { ...videoFilterState });
+      if (remotePresentation) queueRemoteFilters(videoFilterState);
       else applyVideoFiltersToElement();
       updateFilterUiBadges();
     });
@@ -3911,6 +3973,10 @@
       }
     } catch (_) {}
     request.renditionMatch = rendition;
+    if (rendition === true && chosen.id.startsWith('vjs_') && !request.bufferRefreshAttempted
+        && video.videoHeight !== request.height && performance.now() - request.started >= 250) {
+      request.bufferRefreshAttempted = refreshVideoJsBufferedQuality(video, findVideoJsPlayer(video, player), chosen);
+    }
     request.decodedMatch = request.height > 0 && video.readyState >= 2 && video.videoHeight === request.height;
     request.status = request.decodedMatch ? rendition === true ? 'confirmed' : 'decoded-match'
       : expired || performance.now() - request.started >= 12000 ? 'timed-out'

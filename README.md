@@ -1,6 +1,6 @@
-# NOk Video Controller (v0.7.0 — test adayı)
+# NOk Video Controller (v0.7.0.1 — düzeltme adayı)
 
-> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
@@ -40,7 +40,11 @@
 
 ## Geliştirme Doğrulaması
 
-`node --test tests/*.test.cjs` gizlilik sınırını, altyazıları, kalite/hız çağrılarını, çok çerçeveli HUD koordinasyonunu, filtre iş birleştirmesini ve Kick UI işleyicilerini Node ortamında sınar. `node --check injected.js` sözdizimini denetler. v0.7.0 için 135 test geçer. Firefox 158 kurulu geçici eklentiyle yerel nested iframe ve gerçek oynatıcı kütüphanelerini geçti. Edge temel sentetik kontrolleri geçti; son genişletilmiş Video.js kalite geçişi zaman aşımı açıktır. Bunlar gerçek site veya cihaz GPU/FPS onayı değildir.
+`node --test tests/*.test.cjs` gizlilik sınırını, altyazıları, kalite/hız çağrılarını, çok çerçeveli HUD koordinasyonunu, filtre iş birleştirmesini ve Kick UI işleyicilerini Node ortamında sınar. `node --check injected.js` sözdizimini denetler. v0.7.0.1 için 142 test geçer. Firefox 158 kurulu geçici eklentiyle yerel nested iframe, sürekli filtre sürükleme ve gerçek oynatıcı kütüphanelerini geçti. Önceki Edge Video.js zaman aşımı yerel senaryoda giderildi; Hls.js ve Video.js decoded geçişleri her iki tarayıcıda doğrulandı. Bunlar gerçek site veya cihaz GPU/FPS onayı değildir.
+
+## v0.7.0.1 — Küçük düzeltme paketi
+
+İframe filtrelerinde tek bekleyen komut, son kullanıcı seçimini eski kaynak durumundan koruma ve oturum kapatmada kuyruk iptali; ilgisiz metin değişimlerinde medya önbelleğini koruma; doğrulanmış VHS sahipliğiyle eski kalite tamponunu bir kez yenileme. [Sürüm notları](./RELEASE_NOTES_v0.7.0.1.md) ve açık gerçek site koşulları geçerlidir.
 
 ## v0.7.0 — Tek iframe paneli ve reklam yaşam döngüsü
 

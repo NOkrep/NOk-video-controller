@@ -1,6 +1,6 @@
 # v0.6.0 → v0.7.0 çalışma planı
 
-> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 20 Ekim 2026. Kullanıcı “adım adım” ilerlemek istiyor. Mevcut **v0.7.0 test adayı** kaynak ve sentetik regresyon aşamasına ulaştı; tüm gerçek site issue'larının çözüldüğü iddiası yoktur. 20 tema korunur; finalist seçilmedi. Kaynak raporlar yeniden yayımlanmaz; aşağıda yalnızca teknik bulgular tutulur.
 
@@ -43,3 +43,8 @@
 - Gerçek yüksek çözünürlüklü video ile varsayılan/filtre açık karşılaştırması: FPS/dropped frames/GPU cihazda ölçülmeli. Modelde 200 input→1 yazım, GPU kazanım yüzdesi değildir.
 
 Her aşama için kaynak/test sonucu ile canlı Firefox/Chromium sonucu ayrı tutulur. Kullanıcı teyidi olmadan SITE_COMPATIBILITY “Tam Çalışıyor” listesine site eklenmez. Rapor önizlemesi/açıklama opt-in/silme talebi korunur; otomatik rapor gönderimi yoktur.
+
+
+## v0.7.0.1 — Düzeltme sonrası kabul
+
+142 Node testi, Firefox kurulu geçici eklentide sürekli iframe filtresi ve yerel gerçek HLS/Video.js Firefox/Edge decoded geçişleri geçti. Önceki Edge kalite zaman aşımı yerel senaryoda kapandı. Dizipod Firefox v0.7.0 kullanıcı regresyonu kesin adım bilinmeden alınmıştır; 0.7.0.1 ile gerçek site kabulü açık kalır. Ekran okuyucu, gerçek %200 zoom, Kick/TRT reklam/arayüz ve cihaz GPU ölçümü hâlâ ayrı kabul gerektirir. Test ZIP'i yeni sürüm adıyla hazırlanır; eski ZIP korunur. Güncel paket kanıtı RELEASE_NOTES_v0.7.0.1.md içindedir.

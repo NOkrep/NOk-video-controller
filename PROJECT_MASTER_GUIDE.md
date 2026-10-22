@@ -1,11 +1,11 @@
 # NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.0 (test adayı; kaynak/test aşamaları hazır, gerçek Firefox/site doğrulaması bekliyor)
+> **Sürüm:** v0.7.0.1 (düzeltme adayı; yerel Firefox/Edge geçti, gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** 20 Ekim 2026 — v0.7.0 (iframe sunumu, reklam yaşam döngüsü ve birleşik sentetik regresyon)
+> **Son Güncelleme:** 22 Ekim 2026 — v0.7.0.1 (iframe filtre kuyruğu, eski durum reddi, VHS tampon yenileme)
 
 ---
 
@@ -434,6 +434,13 @@ Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-st
 - Kick kalite listesi SDK'den gelir; tahmini fallback kaldırıldı. IVS video sahipliği ve wrapper değişimine dayanıklı değer kimliği eklendi. Setter cache ve cascade korunur; gerçek Kick arayüz eşleşmesi ayrıca doğrulanmalıdır.
 - 129 Node testi, JS syntax/diff kontrolü ve iki yerel kökende gerçek Edge ile 14 sentetik kontrol geçti. MediaStream 16x'i uygulamaz; yalnızca isteği sınar. Kurulu eklenti, nested gerçek tarayıcı, Firefox, gerçek reklam/site, ekran okuyucu, zoom, GPU/FPS açık kabul koşullarıdır. SITE_COMPATIBILITY durumu yükseltilmedi; push/tag/release yapılmadı.
 
+### 4.24 v0.7.0.1 — Filtre ve Kalite Düzeltmeleri
+
+- İframe filtresinde tek uçuş + son değer kuyruğu. Kullanıcı niyeti eşleşen kaynak durumuna kadar korunur; eski yanıt seçimi ezmez. Kapatma/oynatıcı değişimi kuyruk ve çizim işini iptal eder.
+- Metin/span DOM değişimi keşif önbelleğini gereksiz bozmaz; medya/iframe değişimleri ve 1s keşif yenilemesi korunur.
+- Video.js hedefi seçmiş ama eski tamponu oynatıyorsa, aynı video/instance ve iki hedef yükleyici kontrolünden sonra VHS kendi yenileme yolu bir kez denenir. Gerçek decoded eşleşme yine gereklidir.
+- 142 Node testi; Firefox kurulu geçici eklentide sürekli iframe filtresi; Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Eski 0.7.0 Edge zaman aşımı bu senaryoda kapandı. Dizipod gerçek kabulü açık. RELEASE_NOTES_v0.7.0.1.md.
+
 ## 5. 📊 Sürüm Evrimi ve Çözülen Kritik Problemler
 
 ### v0.7.0 (Test Adayı — Kaynak ve Sentetik Regresyon Hazır)
@@ -612,7 +619,7 @@ Eğer projeyi yeni bir yapay zeka modeline, başka bir konuşmaya veya yeni bir 
 
 ### Yeni Konuşmayı Başlatırken Kullanılacak Prompt Şablonu:
 ```text
-NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut sürüm: v0.7.0 test adayı; Firefox yerel kurulu eklenti testi geçti; gerçek site kabulü bekliyor). RELEASE_ROADMAP.md kaynak aşamalarını ve açık canlı kabul koşullarını; FRAME_PRESENTATION.md iframe sınırlarını, AD_CONTROL.md reklam davranışını; QUALITY_CONTROL.md kalite kanıt sınırını, ANIMATION_DETAILS.md kaynak/uyarlama farklarını açıklar. 135 Node testi ve yerel Firefox/Edge kanıtı gerçek site onayı değildir; son Edge Video.js kalite zaman aşımı açıktır. RELEASE_NOTES_v0.7.0.md güncel paket kanıtıdır.
+NOk Video Controller projesini geliştirmeye devam ediyoruz (Mevcut sürüm: v0.7.0.1 düzeltme adayı; Firefox/Edge yerel testleri geçti; gerçek site kabulü bekliyor). RELEASE_ROADMAP.md kaynak aşamalarını ve açık canlı kabul koşullarını; FRAME_PRESENTATION.md iframe sınırlarını, AD_CONTROL.md reklam davranışını; QUALITY_CONTROL.md kalite kanıt sınırını, ANIMATION_DETAILS.md kaynak/uyarlama farklarını açıklar. 142 Node testi ve yerel Firefox/Edge kanıtı gerçek site onayı değildir; eski Edge Video.js kalite zaman aşımı yerel senaryoda giderildi. RELEASE_NOTES_v0.7.0.1.md güncel paket kanıtıdır.
 Projenin tam mimarisi, tasarım tercihleri, 3 kademeli Basamaklı Adaptör Mimarisi (Cascade Strategy Pipeline), DRM/EME tespit motoru ve dosya ağacı `/PROJECT_MASTER_GUIDE.md` dosyasında eksiksiz belgelenmiştir. Site durumları `/SITE_COMPATIBILITY.md` dosyasında takip edilir.
 
 Bu projede dikkat edilmesi gereken katı kurallar:

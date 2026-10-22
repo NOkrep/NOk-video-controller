@@ -1,8 +1,8 @@
 # 🌐 NOk Video Controller — Site Uyumluluk ve Durum Takip Tablosu (`SITE_COMPATIBILITY.md`)
 
-> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Son Güncelleme:** v0.7.0 (test adayı; gerçek site doğrulaması bekliyor)
+> **Son Güncelleme:** v0.7.0.1 (düzeltme adayı; gerçek site doğrulaması bekliyor)
 > **Yönetim Kuralı (Katı Protokol):**
 > 1. **✅ Tam Çalışıyor:** Bu bölüme **yalnızca geliştiricilerin açık testi ve onayı/talebi** ile site eklenebilir. Yapay zeka kendi inisiyatifiyle bu bölüme site ekleyemez.
 > 2. **🟡 Yarı Çalışıyor (Test / Geliştirme Aşamasında):** Siteye özel bir adaptör/değişiklik yazıldığında, siteye dair herhangi bir değişiklik yapıldığında veya mevcut basamaklı adaptör mimarisinin (Tier 1 / Tier 2 / Tier 3) sitede çalışacağı öngörüldüğünde eklenir.
@@ -10,7 +10,7 @@
 
 ---
 
-v0.7.0 güncel durum: iframe dışı üst HUD ve kaynak çerçeveye bağlı reklam yaşam döngüsü uygulanmıştır. 129 Node testi ve iki yerel kökende gerçek Edge ile 14 sentetik kontrol geçti. Kurulu eklenti, Firefox veya gerçek site testi değildir; bu nedenle aşağıdaki site durumları yükseltilmedi. Dizipod yalnızca kullanıcının kesin hatırlamadığı olası test adayıdır; eski raporun kaynağı veya desteklenen platform olarak kaydedilmedi. Kaynak/test kanıtı ve canlı açık işler RELEASE_ROADMAP.md içindedir. Aşağıdaki v0.6.x paragrafları tarihsel aşama notlarıdır.
+v0.7.0 tarihsel paket durumu: iframe dışı üst HUD ve kaynak çerçeveye bağlı reklam yaşam döngüsü uygulanmıştır. 129 Node testi ve iki yerel kökende gerçek Edge ile 14 sentetik kontrol geçti. Kurulu eklenti, Firefox veya gerçek site testi değildir; bu nedenle aşağıdaki site durumları yükseltilmedi. Dizipod yalnızca kullanıcının kesin hatırlamadığı olası test adayıdır; eski raporun kaynağı veya desteklenen platform olarak kaydedilmedi. Kaynak/test kanıtı ve canlı açık işler RELEASE_ROADMAP.md içindedir. Aşağıdaki v0.6.x paragrafları tarihsel aşama notlarıdır.
 
 v0.6.1 kalite kaynak bağlamını, eski seçim reddini ve requested/rendition/decoded ayrımını ekler. Belirli Plyr/Video.js/JW Player menüleri ve Video.js resolution-switcher API'si yeni keşif yollarıdır. Bunlar raporlanan her sitenin canlı doğrulandığı anlamına gelmez. Eksik HLS seçenekleri ve Video.js geçişi için yalnızca model/API kanıtı vardır; kaynak menüsü yapısı/site adıyla canlı kontrol beklenir. İframe dışı HUD ve reklam yaşam döngüsü açıktır. 97 Node testi site durumlarını yükseltmez.
 
@@ -63,3 +63,8 @@ v0.5.10 tüm 20 SevenGrid paletini yerel seçiciyle ve beş Uiverse kontrol uyar
 | :--- | :--- | :--- |
 | **Salt `<audio>` Tabanlı Medya Siteleri** | `open.spotify.com` vb. | Eklentinin medya tarayıcısı (`deepFindMediaElements`) yalnızca `tagName === 'VIDEO'` olan elemanları hedeflemektedir; `<audio>` etiketleri kapsam dışıdır. |
 | **Tarayıcı Sistem & Mağaza Sayfaları** | `chrome://`, `about:`, `addons.mozilla.org` | Tarayıcı güvenlik kısıtlamaları nedeniyle eklenti betiklerinin sistem sayfalarına enjekte edilmesi engellenmektedir. |
+
+
+## 22 Ekim 2026 — Dizipod regresyon bildirimi
+
+Kullanıcı Firefox üzerinde v0.7.0 ile Dizipod'da genel bozulma/performance gerilemesi bildirdi; kesin adım ve belirti şu anda bilinmiyor. v0.7.0.1 filtre/kalite düzeltmeleri yerel testlerden geçti, ancak Dizipod'da doğrulanmadı. Bu kayıt siteyi Tam Çalışıyor durumuna yükseltmez ve bütün işlevlerin çalışmadığını da kanıtlamaz. Yeni kullanıcı testi/anonim rapor beklenir.

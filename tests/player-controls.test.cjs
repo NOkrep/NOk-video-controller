@@ -330,6 +330,45 @@ test('Video.js manual choice signals a real enabled transition without ever disa
   assert.deepEqual(signals,[1],'sole active rendition must not be toggled off');
 });
 
+test('Video.js refreshes buffered old frames only when both VHS loaders own the exact requested playlist',()=>{
+  const h=harness(),playlist={id:'bound-1080',segments:[{}]},other={id:'different'};let refreshes=0;
+  const representation={id:'bound-1080',height:1080,playlist,enabled:()=>true};
+  const controller={mainPlaylistLoader_:{media:()=>playlist},mainSegmentLoader_:{playlist_:playlist},
+    runFastQualitySwitch_:()=>refreshes++};
+  const player={currentTime(){},playbackRate(){},tech_:{vhs:{representations:()=>[representation],playlistController_:controller}}};
+  h.video.parentElement={player};h.video.videoHeight=480;h.video.buffered={length:1};h.context.activePlayer=player;
+  const refresh=()=>h.run('refreshVideoJsBufferedQuality(video,activePlayer,{height:1080,representationId:"bound-1080"})');
+  assert.equal(refresh(),true);assert.equal(refreshes,1);
+  controller.mainSegmentLoader_.playlist_=other;assert.equal(refresh(),false);
+  controller.mainSegmentLoader_.playlist_=playlist;controller.waitingForFastQualityPlaylistReceived_=true;
+  assert.equal(refresh(),true,'a cached loaded playlist can strand the VHS waiting flag after mediachange');
+  controller.waitingForFastQualityPlaylistReceived_=false;h.video.videoHeight=1080;assert.equal(refresh(),false);
+  h.video.videoHeight=480;h.video.parentElement=null;assert.equal(refresh(),false);
+  assert.equal(refreshes,2,'unbound, wrong loader and decoded-match cases must never flush');
+});
+
+test('Video.js buffer recovery is optional and never invents a missing controller API',()=>{
+  const h=harness();h.video.videoHeight=480;h.video.buffered={length:1};
+  const player={currentTime(){},playbackRate(){},qualityLevels:()=>[]};
+  h.video.parentElement={player};h.context.activePlayer=player;
+  assert.equal(h.run('refreshVideoJsBufferedQuality(video,activePlayer,{height:1080,index:0})'),false);
+});
+
+test('a pending Video.js request attempts buffer recovery once and still requires actual decoded evidence',()=>{
+  const h=harness(),playlist={id:'target'},levels=[{id:'target',height:1080,enabled:true}];let refreshes=0;
+  levels.selectedIndex=0;
+  const controller={mainPlaylistLoader_:{media:()=>playlist},mainSegmentLoader_:{playlist_:playlist},
+    runFastQualitySwitch_(){refreshes++;throw new Error('SDK failure after reset began');}};
+  const player={currentTime(){},playbackRate(){},qualityLevels:()=>levels,
+    tech_:{vhs:{representations:()=>[{id:'target',height:1080,playlist,enabled:()=>true}],playlistController_:controller}}};
+  h.video.parentElement={player};h.video.videoHeight=480;h.video.buffered={length:1};h.context.activePlayer=player;
+  h.run('requestQuality(discoverStreamQualities()[0],video,activePlayer)');
+  h.context.performance.now=()=>1000;
+  h.run('for(let i=0;i<10;i++)updateQualityVerification(video,activePlayer)');
+  assert.equal(refreshes,1);assert.equal(h.run('qualityControlState.request.status'),'rendition-confirmed');
+  h.video.currentSrc='replacement';h.run('updateQualityVerification(video,activePlayer)');assert.equal(refreshes,1);
+});
+
 function qualityMenu(h, labels = ['1080p', '720p', '480p']) {
   const calls = [];
   const root = { closest: () => null, contains: node => nodes.includes(node),

@@ -1,6 +1,6 @@
 # v0.7.0 iframe panel sunumu
 
-> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 20 Ekim 2026 · test adayı. Amaç normal sayfada gömülü videonun kontrollerini kapatmayan tek paneldir. Medya, altyazı katmanı ve SDK işlemleri videonun bulunduğu belgede kalır; üst belge yalnızca HUD'u sunar. Top sayfada video varsa normal yerel kontrol tercih edilir.
 
@@ -27,3 +27,8 @@ Sıfır kalıcı depolama korunur. `postMessage` ve sayfa DOM'u gizli iletişim 
 Node testleri protokol sınırları, tek/nested/sibling dal, eski oturum/sahip/sayaç reddi, iptal/zaman aşımı ve fullscreen yönlendirmesini sınar. `tests/browser-integration.cjs`, iki farklı localhost kökeninde gerçek Edge DOM/medya ile üst panel sınırını, tek HUD'u, ses/kalite/altyazı/filtreyi, iframe fullscreen giriş/çıkışını, kaynak raporunu ve kapat/açı sınar.
 
 Bu senaryo production betiklerini sayfa betikleri olarak yükler; tarayıcıya kurulmuş eklenti/isolated-world izin testi değildir. Ayrı tests/firefox-integration.cjs senaryosu Firefox 158 üzerinde geçici kurulu eklentiyle iki kademeli nested iframe, fullscreen ve yeniden açmayı geçti. Mağaza paketi, ekran okuyucu, gerçek tarayıcı zoom ve gerçek site doğrulaması ayrıca gereklidir. Test çıktıları `tests/artifacts/iframe-browser/` altında üretilir, Git'e alınmaz.
+
+
+## v0.7.0.1 — Filtre kuyruğu ve durum yarışı
+
+Kaynak yavaşsa filtre komutları sınırsız birikmez: tek bekleyen komut + en yeni değer tutulur. Gönderilmemiş veya onay bekleyen kullanıcı değeri eski kaynak snapshot'ıyla ezilmez. Eşleşen yanıt/durum sonrasında kaynak eşitlemesi sürer; kapatma ve sahip değişiminde eski kuyruk/çizim işi iptal edilir. Kurulu geçici Firefox eklentisinde 36 karelik kaydırma, son 120% değeri, reset ve en fazla 1 bekleyen istek doğrulandı.

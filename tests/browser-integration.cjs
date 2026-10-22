@@ -16,6 +16,7 @@ const { chromium } = require(path.join(packages, 'playwright'));
 const assets = new Set(['frame-protocol.js', 'content.js', 'injected.js', 'injected.css', 'icons/nok-logo.svg']);
 const artifactDir = path.join(__dirname, 'artifacts', 'iframe-browser');
 const servers = [];
+const mediaRequests=[];
 let mainOrigin, childOrigin;
 const scripts = () => `<link rel="stylesheet" href="${mainOrigin}/injected.css"><script src="${mainOrigin}/frame-protocol.js"></script><script src="${mainOrigin}/content.js"></script>`;
 function parentHtml() {
@@ -44,9 +45,13 @@ function listen(handler) {
 }
 (async () => {
   let browser;
+  let stage = 'startup', testPage;
+  fs.mkdirSync(artifactDir, { recursive: true });
+  fs.writeFileSync(path.join(artifactDir, 'result.json'), JSON.stringify({status:'running',testLibraries})+'\n');
   try {
     childOrigin = await listen((_request, response) => { response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); response.end(childHtml()); });
     mainOrigin = await listen((request, response) => {
+      if(/^\/hls\//.test(request.url))mediaRequests.push(request.url);
       if(testLibraries&&serveLibraryAsset(request,response))return;
       if(testLibraries&&['/library/hls','/library/videojs'].includes(request.url)){
         response.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});response.end(libraryHtml(request.url.endsWith('/hls')?'hls':'videojs',scripts()));return;}
@@ -64,6 +69,7 @@ function listen(handler) {
     await context.route('**/*', route => [mainOrigin, childOrigin].some(origin => route.request().url().startsWith(origin + '/')) ? route.continue() : route.abort());
     await context.addInitScript(origin => { window.chrome = { runtime: { getURL: file => origin + '/' + file } }; }, mainOrigin);
     const page = await context.newPage(), errors = [];
+    testPage = page;
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(mainOrigin);
     const frame = await (await page.locator('#player-frame').elementHandle()).contentFrame();
@@ -134,6 +140,7 @@ function listen(handler) {
       fileMedia=await page.evaluate(exerciseFileMedia);}
     const libraries=[];
     if(testLibraries)for(const kind of ['hls','videojs']){
+      stage = kind + ':load';
       await page.goto(mainOrigin+'/library/'+kind);
       await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2,undefined,{timeout:20000});
       await page.locator('#open').click();
@@ -144,6 +151,7 @@ function listen(handler) {
       await page.locator('#pvc-section-quality .pvc-section-header').click();
       const transitions=[];
       for(const height of [1080,480]){
+        stage = kind + ':quality:' + height;
         await page.locator('#pvc-dynamic-quality-container button').filter({hasText:new RegExp('^'+height+'p')}).click();
         await page.waitForFunction(height=>document.querySelector('video').videoHeight===height,height,{timeout:12000});
         await page.waitForFunction(height=>document.querySelector('#pvc-quality-status').textContent.includes('decoded '+height+'p') && document.querySelector('#pvc-quality-status').textContent.includes('Confirmed'),height);
@@ -152,11 +160,31 @@ function listen(handler) {
       libraries.push({kind,adapter,inventory:heights,transitions});
     }
     assert.deepEqual(errors,[]);
-    const result = { browser: 'Chromium-family executable', installedExtension: false, synthetic: true,
+    const result = { status:'passed', browser: 'Chromium-family executable', installedExtension: false, synthetic: true,
       checks: ['parent HUD bounds', 'single HUD', 'remote volume', 'menu and decoded quality', 'subtitle in owning frame', 'subtitle appearance', 'remote filter', 'ancestor fullscreen', 'fullscreen state persistence', 'exit fullscreen', 'source diagnostic relay', 'close/reopen', 'player-owned ad entry: 16x requested, muted, lowest quality', 'ad quality/rate/audio restore'],
       limitations: ['Iframe MediaStream fixture ignores playback rate; optional file fixture separately measures actual speed', 'Not an installed-extension or Firefox/real-site test'], fileMedia,libraries,pageErrors: errors };
     fs.writeFileSync(path.join(artifactDir, 'result.json'), JSON.stringify(result, null, 2) + '\n');
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  } catch(error) {
+    const state = await testPage?.evaluate(() => {
+      const video=document.querySelector('video'),player=window.videojs?.getAllPlayers?.()[0],vhs=player?.tech_?.vhs;
+      return {
+        media:video?{height:video.videoHeight,ready:video.readyState,paused:video.paused,time:video.currentTime,ended:video.ended,
+          buffered:Array.from({length:video.buffered.length},(_,i)=>[video.buffered.start(i),video.buffered.end(i)])}:null,
+        qualityStatus:document.querySelector('#pvc-quality-status')?.textContent,
+        vhs:vhs?{representations:vhs.representations?.().map(r=>({height:r.height,enabled:r.enabled(),id:r.id,playlistId:r.playlist?.id})),
+          playlist:vhs.playlistController_?.mainPlaylistLoader_?.media?.()?.id,
+          segmentPlaylist:vhs.playlistController_?.mainSegmentLoader_?.playlist_?.id,
+          waiting:vhs.playlistController_?.waitingForFastQualityPlaylistReceived_,
+          segments:vhs.playlistController_?.mainPlaylistLoader_?.media?.()?.segments?.length,
+          selected:player.qualityLevels?.().selectedIndex,requests:vhs.stats?.mediaRequests,appends:vhs.stats?.mediaAppends,
+          playerError:player.error()?.code}:null
+      };
+    }).catch(()=>null);
+    const failure={status:'failed',stage,error:error.message,state,mediaRequests};
+    fs.writeFileSync(path.join(artifactDir,'result.json'),JSON.stringify(failure,null,2)+'\n');
+    process.stderr.write(JSON.stringify(failure,null,2)+'\n');
+    throw error;
   } finally {
     await browser?.close();
     await Promise.all(servers.map(server => new Promise(resolve => server.close(resolve))));

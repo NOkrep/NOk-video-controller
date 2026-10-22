@@ -1,6 +1,6 @@
 # Kalite kontrolü: bağlam, kaynak menüsü ve kanıt
 
-> 20 Ekim 2026 paket durumu: Güncel paket kanıtı: **135 Node testi** geçti. Firefox 158 üzerinde geçici kurulu eklentiyle nested iframe, fullscreen, altyazı, odak/gizlenme ve yerel gerçek Hls.js/Video.js kalite geçişleri doğrulandı. Son genişletilmiş Edge Video.js kalite geçişi zaman aşımı açık sorundur. Gerçek site kabulü bekliyor; ayrıntılı sınırlar ve deneme sırası [RELEASE_NOTES_v0.7.0.md](./RELEASE_NOTES_v0.7.0.md) içinde.
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Dizipod dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
 20 Ekim 2026 · v0.7.0 test adayı. v0.6.1 kalite iyileştirmeleri korunur; iframe sunumu ve reklam yaşam döngüsü artık kaynakta uygulanmıştır (`FRAME_PRESENTATION.md`, `AD_CONTROL.md`). Sentetik Edge'de native menü + gerçek decoded boyut eşleşmesi geçti; raporlanan gerçek sitelerde Firefox/Chromium sonucu henüz yoktur. Bu belge `RELEASE_ROADMAP.md` kapsamını küçültmez. Kick artık yalnızca seçili videoya bağlı gerçek IVS listesi sunar; tahmini liste yoktur. SDK seçimi ve decoded boyut eşleşmesi ayrı kanıtlardır.
 
@@ -57,3 +57,8 @@ Açık ve görünür HUD'da 750ms aralıkla geç bağlanan instance/seviye liste
 Bunlar gerçek sitenin menü seçicisi veya kalite geçişi için canlı kanıt değildir. Özellikle raporlanan Generic/native-html5 iframe ve HLS 5+ aday senaryolarının gerçek site yapısı kontrol edilmelidir. Site menüsü desteklenen kök/selector/API dışında veya kapalı shadow root'taysa bu sürümün tüm seçenekleri bulduğu söylenemez. İzin artırma, kapalı DRM'yi kırma veya manifest URL'sinden çözünürlük tahmini yapılmaz.
 
 Canlı kontrol: site menüsündeki seçeneklerle HUD'u karşılaştır; video hedefini doğrula; farklı yükseklik seç ve tampon geçişini bekle; requested/rendition/decoded durumlarını izle; duraklatıp devam et; kaynak değiştir; paneli kapat/aç ve iframe/fullscreen geçişini dene. Kullanıcının site adını belirtmesi, ilgili menü yolunu doğrulamak için yeterli başlangıçtır; içerik/hesap/tam izleme bağlantısı istenmez.
+
+
+## v0.7.0.1 — Eski VHS tamponu
+
+Seçilen kaliteyi gösteren SDK ile decoded video farklı kalabiliyordu. Eşleşen video/instance ve hedef playlist/segment loader kimlikleri doğrulanınca, VHS kendi runFastQualitySwitch_ yolu manuel istek başına en fazla bir kez denenir. Yöntem yoksa zorlanmaz; fake başarı, yeni ağ kaynağı veya doğrudan MSE buffer silme yoktur. Eski Edge zaman aşımı ile Firefox gerçek yerel Video.js 1080→480 senaryoları geçti. Gerçek site kapsamı RELEASE_NOTES_v0.7.0.1.md sınırındadır.

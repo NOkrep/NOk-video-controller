@@ -105,6 +105,22 @@ async function start() {
       && document.querySelector('#pvc-no-video-alert')?.style.display==='none'`,'top presentation with a media owner');
     assert.equal(await evaluate(leaf,`document.querySelector('#pvc-controller-popup')?.style.display==='block'`),false);
     assert.equal(await evaluate(middle,`document.querySelector('#pvc-controller-popup')?.style.display==='block'`),false);
+    // Exercise the real cross-frame slider path, not only synchronous local inputs.
+    await evaluate(tab,`(()=>{window.__fixtureFilterTraffic={sent:0,maxPending:0,pending:new Set()};
+      window.addEventListener('message',event=>{const data=event.data,t=window.__fixtureFilterTraffic;
+        if(event.source!==window)return;
+        if(data?.type==='PVC_REMOTE_COMMAND'&&data.payload?.command?.name==='filters'){
+          t.sent++;t.pending.add(data.payload.id);t.maxPending=Math.max(t.maxPending,t.pending.size);
+        }else if(data?.type==='PVC_REMOTE_REPLY')t.pending.delete(data.payload?.reply?.id);
+      });})()`);
+    await evaluate(tab,`new Promise(resolve=>{let frame=0;const input=document.querySelector('#pvc-filter-brightness');
+      const step=()=>{input.value=String(100+(frame%3)*5);input.dispatchEvent(new Event('input',{bubbles:true}));
+        if(++frame===36){input.value='120';input.dispatchEvent(new Event('input',{bubbles:true}));resolve();}else requestAnimationFrame(step);};step();})`);
+    await until(leaf,`document.querySelector('video').style.filter.includes('brightness(120%)')`,'latest iframe slider value');
+    const iframeFilterTraffic=await evaluate(tab,`({sent:__fixtureFilterTraffic.sent,maxPending:__fixtureFilterTraffic.maxPending})`);
+    assert.equal(iframeFilterTraffic.maxPending,1,'filter relay must never build a backlog');
+    await evaluate(tab,`(()=>{const input=document.querySelector('#pvc-filter-brightness');input.value='100';input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+    await until(leaf,`document.querySelector('video').style.filter===''`,'iframe filter reset');
     assert.ok(await evaluate(tab,`(()=>{const popup=document.querySelector('#pvc-controller-popup').getBoundingClientRect(),frame=document.querySelector('iframe').getBoundingClientRect();
       return innerWidth<frame.right+popup.width+16 || popup.left>=frame.right;})()`));
     await evaluate(tab,`(()=>{const input=document.querySelector('#pvc-volume-slider');input.value='40';input.dispatchEvent(new Event('input',{bubbles:true}));})()`,true);
@@ -193,7 +209,7 @@ async function start() {
     const result={browser:session.capabilities.browserName,version:session.capabilities.browserVersion,installedExtension:true,synthetic:true,
       checks:['temporary extension install','native content/Main World injection','nested cross-origin top HUD','single visible HUD',
         'nested volume','native quality and decoded confirmation','nested subtitle transfer','nested subtitle appearance',
-        'ancestor fullscreen to leaf','fullscreen values','fullscreen exit','close/reopen','three reopened-session volume changes'],reflow,fileMedia,libraries,errors};
+        'ancestor fullscreen to leaf','fullscreen values','fullscreen exit','close/reopen','three reopened-session volume changes'],iframeFilterTraffic,reflow,fileMedia,libraries,errors};
     assert.deepEqual(errors,[]);
     fs.writeFileSync(path.join(artifactDir,'result.json'),JSON.stringify(result,null,2)+'\n');
     process.stdout.write(JSON.stringify(result,null,2)+'\n');

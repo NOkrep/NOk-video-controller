@@ -95,6 +95,10 @@ test('discovery observer ignores HUD and filter style changes, but invalidates a
   run();
   observer([{ target: { nodeType: 1, id: 'pvc-theme-name' }, addedNodes: [{}], removedNodes: [] }]); run();
   assert.equal(scans, 1);
+  for(let i=0;i<200;i++){
+    observer([{target:{},addedNodes:[{nodeType:3},{nodeType:1,tagName:'SPAN',querySelector:()=>null}],removedNodes:[]}]);run();
+  }
+  assert.equal(scans,1,'unrelated text/chat DOM churn must not rescan the entire media tree');
   observer([{ target: {}, addedNodes: [{ nodeType: 1, tagName: 'VIDEO' }], removedNodes: [] }]); run();
   assert.equal(scans, 2);
 });
