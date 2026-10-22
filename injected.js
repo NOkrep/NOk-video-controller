@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.2';
+  const EXTENSION_VERSION = '0.7.3';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
     { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
@@ -3214,6 +3214,22 @@
   const appliedVideoFilters = new WeakMap();
   let lastFilteredVideo = null;
   let filterUpdateFrame = null;
+  // Dragging changes pixels, not ownership. Reuse a weak target briefly; media
+  // discovery invalidation, explicit selection or detachment bypass this cache.
+  let videoFilterTargetCache = { at: -Infinity, ref: null, discoveryAt: null, controlledRef: null };
+  function rememberVideoFilterTarget(video) {
+    videoFilterTargetCache = { at: performance.now(), ref: video ? new WeakRef(video) : null,
+      discoveryAt: mediaDiscoveryCache.at, controlledRef: controlledVideo ? new WeakRef(controlledVideo) : null };
+  }
+  function getVideoFilterTarget() {
+    const cached = videoFilterTargetCache, video = cached.ref?.deref() || null;
+    if (performance.now() - cached.at < 200 && (!cached.ref || video?.isConnected)
+        && cached.discoveryAt === mediaDiscoveryCache.at
+        && (cached.controlledRef?.deref() || null) === controlledVideo) return video;
+    const selected = findVideoAndPlayer().video;
+    rememberVideoFilterTarget(selected);
+    return selected;
+  }
   function restoreVideoFilter(video) {
     const saved = video && appliedVideoFilters.get(video);
     if (!saved) return;
@@ -3234,7 +3250,8 @@
     });
   }
   function applyVideoFiltersToElement(video) {
-    const targetVideo = video || findVideoAndPlayer().video;
+    const targetVideo = video || getVideoFilterTarget();
+    if (video) rememberVideoFilterTarget(video);
     if (!targetVideo) return;
     if (lastFilteredVideo && lastFilteredVideo !== targetVideo) restoreVideoFilter(lastFilteredVideo);
     lastFilteredVideo = targetVideo;

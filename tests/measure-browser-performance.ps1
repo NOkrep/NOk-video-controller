@@ -1,5 +1,6 @@
 param([Parameter(Mandatory=$true)][int]$RootProcessId,[int]$DurationSeconds=5)
 $ErrorActionPreference='Stop'
+function Get-TaskIds {
 $taskIds=[System.Collections.Generic.HashSet[int]]::new()
 $taskQueue=[System.Collections.Generic.Queue[int]]::new()
 $taskQueue.Enqueue($RootProcessId)
@@ -8,6 +9,9 @@ while($taskQueue.Count -gt 0){
     if(-not $taskIds.Add($taskCurrent)){continue}
     Get-CimInstance Win32_Process -Filter "ParentProcessId = $taskCurrent" | ForEach-Object { $taskQueue.Enqueue([int]$_.ProcessId) }
 }
+return ,$taskIds
+}
+$taskIds=Get-TaskIds
 function Read-TaskCpu {
     $taskMap=@{}
     foreach($taskId in $taskIds){
@@ -38,8 +42,10 @@ while($taskClock.Elapsed.TotalSeconds -lt $DurationSeconds){
     Start-Sleep -Milliseconds 900
 }
 $taskAfter=Read-TaskCpu
+$taskClock.Stop()
+$taskFinalIds=Get-TaskIds
 $taskCpu=0.0
-$taskStable=$taskBefore.Count -eq $taskAfter.Count
+$taskStable=($taskBefore.Count -eq $taskAfter.Count) -and $taskIds.SetEquals($taskFinalIds)
 foreach($taskId in $taskBefore.Keys){
     if(-not $taskAfter.ContainsKey($taskId) -or $taskBefore[$taskId].ticks -ne $taskAfter[$taskId].ticks){$taskStable=$false;continue}
     $taskCpu += $taskAfter[$taskId].cpu-$taskBefore[$taskId].cpu

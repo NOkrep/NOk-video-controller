@@ -4,10 +4,10 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const root=path.resolve(__dirname,'..');
 function processMemory(pid){return JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(pid)],{encoding:'utf8',windowsHide:true}));}
 function performanceWindow(pid,seconds){return new Promise((resolve,reject)=>execFile('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-performance.ps1'),'-RootProcessId',String(pid),'-DurationSeconds',String(seconds)],{encoding:'utf8',windowsHide:true},(error,stdout)=>error?reject(error):resolve(JSON.parse(stdout))));}
-async function createDriver(engine,executablePath,packages){
+async function createDriver(engine,executablePath,packages,options={}){
   if(engine==='chromium'){
     const {chromium}=require(path.join(packages,'playwright'));
-    const context=await chromium.launchPersistentContext('',{executablePath,headless:true,viewport:{width:1280,height:800},
+    const context=await chromium.launchPersistentContext('',{executablePath,headless:true,viewport:options.viewport||{width:1280,height:800},
       ignoreDefaultArgs:['--disable-extensions'],args:['--enable-unsafe-extension-debugging']});
     const browser=context.browser(),cdp=await browser.newBrowserCDPSession();
     await context.route('**/*',route=>/^(?:chrome-extension:|http:\/\/127\.0\.0\.1:\d+\/)/.test(route.request().url())?route.continue():route.abort());
@@ -33,8 +33,9 @@ async function createDriver(engine,executablePath,packages){
     'user_pref("datareporting.policy.dataSubmissionEnabled",false);','user_pref("toolkit.telemetry.enabled",false);',
     'user_pref("extensions.update.enabled",false);'].join('\n'));
   // Mozilla's documented switch is process-local; only this isolated test gets it.
-  const child=spawn(executablePath,['--headless','--no-remote','--new-instance','--profile',profile,'--remote-debugging-port','0','about:blank'],
-    {windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,MOZ_REMOTE_ALLOW_SYSTEM_ACCESS:'1'}});
+  const size=options.viewport?['--width',String(options.viewport.width),'--height',String(options.viewport.height)]:[];
+  const child=spawn(executablePath,['--headless','--no-remote','--new-instance','--profile',profile,'--remote-debugging-port','0',...size,'about:blank'],
+    {windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,...(options.memoryControls?{MOZ_REMOTE_ALLOW_SYSTEM_ACCESS:'1'}:{})}});
   const requests=new Map();let socket,id=0;
   const send=(method,params={})=>new Promise((resolve,reject)=>{
     const request=++id,timer=setTimeout(()=>{requests.delete(request);reject(Error('BiDi timeout: '+method));},20000);
@@ -91,7 +92,15 @@ async function createDriver(engine,executablePath,packages){
       },
       memory:async()=>({process:processMemory(child.pid)}),
       performance:seconds=>performanceWindow(child.pid,seconds),
-      gpuMode:async()=>({rendererReported:false,softwareRenderer:null}),
+      gpuMode:async page=>page?evaluate(page,()=>{
+        const canvas=document.createElement('canvas'),gl=canvas.getContext('webgl');
+        if(!gl)return {rendererReported:false,softwareRenderer:null};
+        try{
+          const extension=gl.getExtension('WEBGL_debug_renderer_info');
+          const renderer=extension?gl.getParameter(extension.UNMASKED_RENDERER_WEBGL):null;
+          return {rendererReported:!!renderer,softwareRenderer:renderer?/swiftshader|llvmpipe|software|warp|basic render/i.test(renderer):null};
+        }finally{gl.getExtension('WEBGL_lose_context')?.loseContext();}
+      }):({rendererReported:false,softwareRenderer:null}),
       close:async()=>{
         try{await send('browser.close');}catch(_){}socket.close();if(child.exitCode===null)child.kill();
         await delay(500);

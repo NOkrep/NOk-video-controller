@@ -56,11 +56,12 @@ function instrumentResources(){
   };
   document.addEventListener('DOMContentLoaded',()=>{trackVideo(document.querySelector('video'));});
 }
-async function createFixture(){
-  const media=path.join(__dirname,'artifacts','media','synthetic-av-720p.webm');
+async function createFixture({height=720,displayWidth=800}={}){
+  if(![720,1080].includes(height)||![800,1600].includes(displayWidth))throw Error('Unsupported fixture dimensions');
+  const media=path.join(__dirname,'artifacts','media',`synthetic-av-${height}p.webm`);
   if(!fs.existsSync(media))throw Error('Generate the local audio fixture with prepare-browser-fixtures.cjs --audio-fixture.');
   const body=`<!doctype html><html><head><meta charset="utf-8"><script>(${instrumentResources})();</script><style>
-  body{margin:24px;background:#152330;color:white}video{display:block;width:800px;height:450px}</style></head><body>
+  body{margin:24px;background:#152330;color:white}video{display:block;width:${displayWidth}px;height:${displayWidth*9/16}px}</style></head><body>
   <button id="open" onclick="window.postMessage({type:'PVC_TOOLBAR_TOGGLE'},'*')">Controller</button>
   <video src="/synthetic.webm" autoplay muted loop playsinline></video></body></html>`;
   const server=http.createServer((request,response)=>{

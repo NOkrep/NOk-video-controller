@@ -1,6 +1,6 @@
 # Etkin çalışma kapsamı
 
-22 Ekim 2026. Kaynak sürümü **v0.7.2**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+22 Ekim 2026. Kaynak sürümü **v0.7.3**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.
@@ -29,3 +29,12 @@
 4. **Puhu/Video.js/medya keşfi gerçek site kabulü: açık.** Önceki yerel testler korunur; güncel site başarısı iddia edilmez.
 
 **Sürüm bildirim kuralı:** her kaynak sürümü artışında kullanıcıya sürüm, değişiklik, doğrulanan kanıtlar ve açık hedefler bildirilir; hedef kartını kullanıcı güncelleyebilir. v0.7.2, 158 Node testi ve gerçek Firefox/Edge laboratuvar kontrolleriyle kaynak kontrol noktasıdır; release/ZIP/push yoktur.
+
+## v0.7.3 kontrol noktası — hedef kartına aktarılacak durum
+
+- **1 Bellek: kısmen tamamlandı.** v0.7.2 nesne temizliği kanıtı korunur; toplam native/cache RAM payı henüz sınıflandırılmadı.
+- **2 Filtreler: ölçüm ve hedef araması düzeltmesi tamamlandı; render kabulü açık.** 1080p30 yerel videoda Firefox/Edge CPU, GPU sayaç durumu ve kare kaybı iki tekrarla kaydedildi. 200 ms WeakRef hedef önbelleğiyle sürükleme video konumu sorgusu Firefox 199/202 → 94/93, Edge 386/386 → 98/88. 159 Node testi geçti. Firefox ağır statik zincir kare kaybı ve görünür tarayıcı/GPU doğrulaması tamamlanmadı. FILTER_PERFORMANCE.md.
+- **3 Kick UI/reklam: açık.** Bu kontrol noktasında yeni canlı site kanıtı yok.
+- **4 Gerçek site kalite/medya keşfi: açık.** Puhu/Video.js ve bildirilen gömülü oynatıcılar için canlı kabul sürer.
+
+Kaynak klasörü v0.7.3; kullanıcı sürüm artışından ve kalan kapsamdan haberdar edildi. Hedefin bütünü tamamlandı işaretlenmez. Yayın/ZIP/push istenmedi ve yapılmadı.

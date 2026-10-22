@@ -20,6 +20,12 @@ function digest(data){return crypto.createHash('sha256').update(data).digest('he
     if(force||!fs.existsSync(audioMedia))run(['-i',media,'-f','lavfi','-i','anullsrc=r=48000:cl=stereo',
       '-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','libopus','-b:a','32k','-t','30','-shortest','-y',audioMedia]);
   }
+  if(process.argv.includes('--performance-fixture')){
+    const perfMedia=path.join(mediaDir,'synthetic-av-1080p.webm');
+    if(force||!fs.existsSync(perfMedia))run(['-f','lavfi','-i','testsrc2=size=1920x1080:rate=30',
+      '-f','lavfi','-i','anullsrc=r=48000:cl=stereo','-t','30','-c:v','libvpx','-deadline','realtime','-cpu-used','8',
+      '-b:v','1500k','-c:a','libopus','-b:a','32k','-shortest','-y',perfMedia]);
+  }
   for(const height of [480,720,1080]){
     const playlist=path.join(hlsDir,height+'.m3u8');
     if(force||!fs.existsSync(playlist))run(['-i',media,'-t','24','-vf',`scale=-2:${height}`,'-an','-c:v','libx264','-preset','ultrafast','-crf','30','-pix_fmt','yuv420p',

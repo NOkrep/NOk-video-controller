@@ -20,8 +20,9 @@ function mediaStyle(value = '', priority = '') {
 }
 function filters(value = '', priority = '') {
   const frames = new Map(); let frameId = 0, discoveries = 0;
-  const video = { style: mediaStyle(value, priority) };
+  const video = { style: mediaStyle(value, priority), isConnected: true };
   const context = vm.createContext({ video, remotePresentation: null, videoFilterState: { brightness: 100, contrast: 100, saturate: 100, nightShield: false, invert: false },
+    clock: 0, performance: { now: () => context.clock }, mediaDiscoveryCache: { at: 0 }, controlledVideo: null,
     document: { getElementById: () => null },
     findVideoAndPlayer() { discoveries++; return { video: context.video }; },
     requestAnimationFrame(callback) { frames.set(++frameId, callback); return frameId; },
@@ -67,6 +68,20 @@ test('night shield preserves filter ordering instead of assuming noncommuting op
   h.run('videoFilterState.nightShield = true; videoFilterState.brightness = 125; applyVideoFiltersToElement(video);');
   const filter = h.video.style.getPropertyValue('filter');
   assert.equal(filter, 'brightness(125%) sepia(38%) brightness(88%) contrast(95%)');
+});
+
+test('continuous filter changes reuse a weak target; media invalidation, selection, detachment and expiry reselect immediately', () => {
+  const h = filters();
+  const nextFrame = () => { h.run('videoFilterState.brightness++; scheduleVideoFilterUpdate()'); h.flush(); };
+  nextFrame();
+  for(let i=1;i<=11;i++){h.context.clock=i*16;nextFrame();}
+  assert.equal(h.discoveries,1,'drag frames within the short window reuse the selected target');
+  h.context.mediaDiscoveryCache.at=-Infinity;nextFrame();assert.equal(h.discoveries,2);
+  h.context.controlledVideo=h.video;nextFrame();assert.equal(h.discoveries,3);
+  const previous=h.video;previous.isConnected=false;
+  h.context.video={style:mediaStyle(),isConnected:true};nextFrame();assert.equal(h.discoveries,4);
+  assert.equal(previous.style.getPropertyValue('filter'),'','old media filter is restored');
+  h.context.clock+=201;nextFrame();assert.equal(h.discoveries,5,'auto ownership is periodically rechecked');
 });
 
 test('candidate cache expires, invalidates on media events and immediately replaces a detached video', () => {

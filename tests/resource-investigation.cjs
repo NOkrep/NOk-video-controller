@@ -14,7 +14,7 @@ const control=async(selector,value)=>driver.evaluate(page,(selector,value,click)
   if(click)node.click();else{node.value=String(value);node.dispatchEvent(new Event('input',{bubbles:true}));}
 },selector,value??null,value===undefined);
 (async()=>{try{
-  fixture=await createFixture();driver=await createDriver(engine,executable,packages);
+  fixture=await createFixture();driver=await createDriver(engine,executable,packages,{memoryControls:true});
   page=await driver.open(fixture.url);
   const ready=()=>until(driver,page,()=>document.querySelector('video')?.readyState>=2,'decoded A/V file');
   const snapshot=async(stage,gc=false)=>{
