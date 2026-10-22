@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.4';
+  const EXTENSION_VERSION = '0.7.5';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
     { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
@@ -2738,13 +2738,18 @@
     const ownedVideos = [...root.querySelectorAll('video')].filter(item => item.closest(QUALITY_PLAYER_ROOT) === root);
     if (ownedVideos.length !== 1 || ownedVideos[0] !== video) return [];
     const namedPuhu = allowNamedPuhu && /(^|\.)puhutv\.com$/.test(HOSTNAME);
-    const nodes = root.querySelectorAll('button[data-plyr="quality"][value], .vjs-resolution-button .vjs-menu-item, .vjs-quality-selector .vjs-menu-item, .jw-settings-submenu-quality button[data-value]'
+    const nodes = root.querySelectorAll('button[data-plyr="quality"][value], .vjs-resolution-button .vjs-menu-item, .vjs-quality-selector .vjs-menu-item, .vjs-quality-button .vjs-menu-item.item-quality, .jw-settings-submenu-quality button[data-value]'
       + (namedPuhu ? ', .vjs-quality-selector .vjs-quality-item' : ''));
     const options = [], heights = new Set();
     for (const node of nodes) {
       if (node.closest(QUALITY_PLAYER_ROOT) !== root || node.disabled || node.getAttribute('aria-disabled') === 'true') continue;
       // Only a strict numeric resolution is exported to our UI. No arbitrary page text.
-      const label = (node.textContent || '').trim();
+      const videoJsMenu = !(namedPuhu && node.classList?.contains('vjs-quality-item'))
+        && node.classList?.contains('item-quality') && !!node.closest?.('.vjs-quality-button');
+      // This plugin appends decorative HD/FullHD icons to the numeric text node.
+      // Read only its own numeric caption, never a nested badge's arbitrary text.
+      const label = (videoJsMenu ? [...(node.childNodes || [])].filter(child => child.nodeType === 3)
+        .map(child => child.textContent).join(' ') : node.textContent || '').trim();
       const match = label.match(/^(\d{2,4})\s*p?(?:\s*(?:HD|FHD|QHD|UHD|4K|\(HD\)|\(FHD\)))?$/i);
       const named = namedPuhu && node.classList?.contains('vjs-quality-item')
         && /^(?:Düşük|Standart|Yüksek|Low|Standard|High)$/i.test(label)
@@ -2753,7 +2758,8 @@
       if (!height || heights.has(height)) continue;
       heights.add(height);
       const option = { id: `menu_${height}`, label: `${height}p`, height, qualityApi: 'native-menu' };
-      nativeQualityHandles.set(option, { node, root, video, source: video.currentSrc || video.src || '', selectionClass: named ? 'selected' : null });
+      nativeQualityHandles.set(option, { node, root, video, source: video.currentSrc || video.src || '',
+        selectionClass: named ? 'selected' : videoJsMenu ? 'vjs-checked' : null });
       options.push(option);
     }
     return options.sort((a, b) => b.height - a.height);

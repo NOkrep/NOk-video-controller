@@ -1,6 +1,6 @@
-# Gerçek site kontrolleri — v0.7.4
+# Gerçek site kontrolleri — v0.7.5
 
-22 Ekim 2026. Gerçek kurulu eklenti, ayrı ve geçici Firefox 158.0.1 profili, hesap girişi yok. Headless tarayıcı; kişisel profil kullanılmadı. Bu kayıt bütün site kataloğuna veya tüm tarayıcılara uyumluluk garantisi değildir. İçerik adları, tam izleme adresleri, hesap bilgileri, akış token'ları ve API anahtarları bu dosyaya alınmaz. Yerel operatör çıktıları `tests/artifacts/` içinde Git dışında tutulur.
+22 Ekim 2026. Gerçek kurulu eklenti, ayrı ve geçici Firefox 158.0.1 profili, hesap girişi yok. İlk Puhu/Kick kayıtları headless; görünür kontrol aşağıda ayrıca belirtilir. Kişisel profil kullanılmadı. Bu kayıt bütün site kataloğuna veya tüm tarayıcılara uyumluluk garantisi değildir. İçerik adları, tam izleme adresleri, hesap bilgileri, akış token'ları ve API anahtarları bu dosyaya alınmaz. Yerel operatör çıktıları `tests/artifacts/` içinde Git dışında tutulur.
 
 ## Puhu: standart kalite yolu
 
@@ -43,3 +43,32 @@ Güncel oynatıcı kökü `#injected-channel-player`; reklam işareti denetimi b
 - Belleğin native/cache payı ve görünür Firefox ağır filtre/GPU koşulları; ayrı ölçüm dosyalarındaki açık sınırlamalar korunur.
 
 166 Node testi geçti. Daha sonraki kaynak değişiklikleri için bu sayı ve canlı kabul kapsamı yeniden değerlendirilir. ZIP/release/push hazırlanmadı.
+
+## Kick: görünür Firefox ve eklentisiz kontrol
+
+v0.7.4 kaynağıyla görünür geçici Firefox 158.0.1 oturumunda canlı video 1280×720, readyState 3 ve oynuyor durumundaydı. HUD hiç açılmadan da `#injected-channel-player` içindeki kontrol alanında button/slider yoktu. Çerez katmanı kapatıldı, BiDi gerçek pointer girdisiyle video üzerine gidildi; görünür ses/hız kontrolleri yine oluşmadı. Bu durum yalnız headless koşuluna bağlanamaz.
+
+Aynı herkese açık oynatıcı **eklenti hiç kurulmadan** ayrı görünür geçici Firefox profilinde tekrar kontrol edildi: engine false, HUD 0, aynı oynatma durumu/çözünürlük ve oynatıcı kökünde yine 0 button/slider. Pointer hit-test gerçekten VIDEO öğesini gösterdi; açık ShadowRoot kontrolü de görünür bir alternatif kontrol ağacı bulmadı. Böylece bu oturumdaki boş kontrol durumu eklentiye özgü değildir. Bu, kullanıcının kendi tarayıcısındaki ses/hız eşleşme sorununu geçersiz kılmaz ve o sorunun düzeldiğini kanıtlamaz.
+
+Bu gözlem üzerine tahmini React setter/hook değişikliği yapılmadı. Gerçek reklam başlangıcı/bitişi görülmedi; 16x/mute/lowest/restore kabulü hâlâ açık. İçerik veya hesap bilgisi içermeyen sayısal özet `tests/artifacts/kick-visible-control/summary.json` içinde Git dışındadır. Sonraki farklı kanıt, kontrolü gerçekten oluşan bir oynatıcı/VOD ya da farklı tarayıcı koşulu olmalıdır; aynı Firefox hover döngüsünü tekrarlamak yeni kabul kanıtı üretmez.
+
+## v0.7.5 — bildirilen Video.js oynatıcı
+
+Üst sayfada gizli, readyState 0 bir video; aynı kökenli iframe'de hazır Video.js 7.18.1 oynatıcı bulundu. HUD gerçek iframe hedefini ve 480/720/1080 envanterini seçti. Site kendi native kalite bileşenini video başlatıldıktan sonra oluşturuyor; eklentinin bağlı VHS temsillerinden seçim yapması sitenin Auto etiketini açık bırakıyordu.
+
+v0.7.5, bu tek video sahibine ait `.vjs-quality-button .item-quality` öğelerini tanır; doğrudan sayısal caption'ı nested HD/FullHD ikonlarından ayırır. Aynı yükseklikteki seçenek sitenin kendi gerçek kontrolünden uygulanır, `vjs-checked` yalnız okunur. Native seçim yeni ağ adresi tahmini, sahte ARIA veya ek tampon müdahalesi değildir.
+
+Son kaynak SHA256'sıyla temiz görünür Firefox 158.0.1 ve Edge 152.0.4191.53 kurulumlarında:
+
+| Tarayıcı | Eklenti isteği | Site native seçimi / SDK | Decoded görüntü | HUD sonucu |
+|---|---|---|---|---|
+| Firefox | 1080p | 1080 / 1080 | 1280×720 | Not confirmed, başarı vurgusu yok |
+| Firefox | 480p | 480 / 480 | 1280×720 | Not confirmed, başarı vurgusu yok |
+| Edge | 1080p | 1080 / 1080 | 1280×720 | Not confirmed, başarı vurgusu yok |
+| Edge | 480p | 480 / 480 | 1280×720 | Not confirmed, başarı vurgusu yok |
+
+İki motorda gerçek iframe videosu hız 1.5x ve native ses 0.4 komutlarını da aldı. Böylece gizli/yüklenmemiş üst video yerine hazır iframe hedefinin kontrol edildiği bu örnekte doğrulandı. Bu tek durum diğer bildirilen gömülü sitelerin kabulü yerine geçmez.
+
+Üç rendition'ın üçünde de `playlist.resolvedUri` alanı doluydu ve değerler tek bir distinct adres bildirdi. Adresler dışa aktarılmadı. Önceki manuel site menüsü denemesinde de native 1080 seçili görünürken decoded görüntü 720 kaldı. Bu bulgular bu kaynağın ilan ettiği kalite ile görüntü arasındaki farkı gösterir; sunucu yanıtlarının daima aynı olduğunu, bütün katalogda tek kalite bulunduğunu veya kullanıcının başka içerikte gördüğü farkın geçersiz olduğunu kanıtlamaz.
+
+Yeni VHS 2 özel reset/seek denemesi görüntü değişimini doğrulayamadığı için son kaynakta tutulmadı. Mevcut dar VHS 3 kurtarma yolu korunur. **Native menü eşleşmesi ve iframe kontrolü doğrulandı; gerçek decoded kalite değişimi kabulü başarısız/açık kaldı.** 170 Node testi geçti. Git dışı sayısal özetler `tests/artifacts/videojs-site-{firefox,chromium}-v075-native/summary.json`; `decodedAcceptance:false` açıkça kayıtlıdır. Test yardımcısı bu durumda tam görüntü kabulü için çıkış kodu 2 üretir; kanıt toplanması başarıya dönüştürülmez. Site adı eşleşmesi özel yerel nottadır, bu belgede izleme adresi/içerik adı yoktur.

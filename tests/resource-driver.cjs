@@ -7,7 +7,7 @@ function performanceWindow(pid,seconds){return new Promise((resolve,reject)=>exe
 async function createDriver(engine,executablePath,packages,options={}){
   if(engine==='chromium'){
     const {chromium}=require(path.join(packages,'playwright'));
-    const context=await chromium.launchPersistentContext('',{executablePath,headless:true,viewport:options.viewport||{width:1280,height:800},
+    const context=await chromium.launchPersistentContext('',{executablePath,headless:!options.visible,viewport:options.viewport||{width:1280,height:800},
       ignoreDefaultArgs:['--disable-extensions'],args:['--enable-unsafe-extension-debugging']});
     const browser=context.browser(),cdp=await browser.newBrowserCDPSession();
     await context.route('**/*',route=>(/^(?:chrome-extension:|http:\/\/127\.0\.0\.1:\d+\/)/.test(route.request().url())
@@ -19,7 +19,9 @@ async function createDriver(engine,executablePath,packages,options={}){
       install:()=>cdp.send('Extensions.loadUnpacked',{path:root}),
       open:async url=>{const page=await context.newPage();await page.goto(url,{waitUntil:options.allowWeb?'domcontentloaded':'load'});return page;},
       navigate:(page,url)=>page.goto(url,{waitUntil:options.allowWeb?'domcontentloaded':'load'}),
+      frames:async page=>page.frames().map(target=>{let domain='';try{domain=new URL(target.url()).hostname;}catch(_){}return {target,domain};}),
       hover:(page,selector)=>page.locator(selector).hover({timeout:5000}),
+      pointerClick:(page,selector)=>page.locator(selector).click({timeout:5000}),
       reload:page=>page.reload(),
       evaluate:(page,fn,...args)=>page.evaluate(({code,args})=>(0,eval)(`(${code})(...${JSON.stringify(args)})`),{code:String(fn),args}),
       gc:async page=>{await(await session(page)).send('HeapProfiler.collectGarbage');await delay(250);await(await session(page)).send('HeapProfiler.collectGarbage');await delay(100);return 'CDP HeapProfiler.collectGarbage twice, with finalizer turn';},
@@ -47,7 +49,7 @@ async function createDriver(engine,executablePath,packages,options={}){
     'user_pref("extensions.update.enabled",false);'].join('\n'));
   // Mozilla's documented switch is process-local; only this isolated test gets it.
   const size=options.viewport?['--width',String(options.viewport.width),'--height',String(options.viewport.height)]:[];
-  const child=spawn(executablePath,['--headless','--no-remote','--new-instance','--profile',profile,'--remote-debugging-port','0',...size,'about:blank'],
+  const child=spawn(executablePath,[...(!options.visible?['--headless']:[]),'--no-remote','--new-instance','--profile',profile,'--remote-debugging-port','0',...size,'about:blank'],
     {windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,...(options.memoryControls?{MOZ_REMOTE_ALLOW_SYSTEM_ACCESS:'1'}:{})}});
   const requests=new Map();let socket,id=0;
   const send=(method,params={})=>new Promise((resolve,reject)=>{
@@ -82,6 +84,12 @@ async function createDriver(engine,executablePath,packages,options={}){
     let memoryPage;
     return {engine,version:session.capabilities.browserVersion,
       install:()=>send('webExtension.install',{extensionData:{type:'path',path:root}}),open,navigate,evaluate,
+      frames:async page=>{
+        const tree=(await send('browsingContext.getTree',{root:page})).contexts[0],frames=[];
+        const visit=node=>{let domain='';try{domain=new URL(node.url).hostname;}catch(_){}
+          frames.push({target:node.context,domain});for(const child of node.children||[])visit(child);};
+        visit(tree);return frames;
+      },
       hover:async(page,selector)=>{
         const point=await evaluate(page,selector=>{
           const node=document.querySelector(selector);if(!node)throw Error('Missing hover target');
@@ -91,6 +99,16 @@ async function createDriver(engine,executablePath,packages,options={}){
         },selector);
         return send('input.performActions',{context:page,actions:[{type:'pointer',id:'nok-test-pointer',parameters:{pointerType:'mouse'},
           actions:[{type:'pointerMove',origin:'viewport',duration:100,...point}]}]});
+      },
+      pointerClick:async(page,selector)=>{
+        const point=await evaluate(page,selector=>{
+          const node=document.querySelector(selector);if(!node)throw Error('Missing click target');
+          node.scrollIntoView({block:'center'});const rect=node.getBoundingClientRect();
+          if(!(rect.width>0&&rect.height>0))throw Error('Hidden click target');
+          return {x:Math.round(rect.left+rect.width/2),y:Math.round(rect.top+rect.height/2)};
+        },selector);
+        return send('input.performActions',{context:page,actions:[{type:'pointer',id:'nok-test-pointer',parameters:{pointerType:'mouse'},
+          actions:[{type:'pointerMove',origin:'viewport',duration:100,...point},{type:'pointerDown',button:0},{type:'pointerUp',button:0}]}]});
       },
       reload:async page=>{const url=(await send('browsingContext.getTree',{root:page})).contexts[0].url;await send('browsingContext.navigate',{context:page,url,wait:'complete'});},
       gc:async page=>{

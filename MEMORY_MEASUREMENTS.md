@@ -104,3 +104,50 @@ node tests/prepare-browser-fixtures.cjs --audio-fixture
 node tests/resource-investigation.cjs --engine=firefox --browser="<firefox.exe>" --label=memory-check --assert-clean
 node tests/resource-investigation.cjs --engine=chromium --browser="<Chromium browser.exe>" --packages="<Playwright node_modules>" --label=memory-check --assert-clean
 ```
+
+## v0.7.4: kategori ölçümü ve eklentisiz video değiştirme kontrolü
+
+22 Ekim 2026. Üretim koduna yeni ölçüm veya veri toplama eklenmedi. Aynı yerel 720p30/Opus dosyada gerçek kurulu v0.7.4 ile 30 aç/kapat, boost/mono ve 20 video değiştirme turu iki motorda yeniden geçti. Geçici profiller sırayla çalıştı; kişisel profil kullanılmadı. Firefox 158.0.1, Chromium tabanlı Edge 152.0.4191.53; headless ve zorlanmış toplama koşulları önceki bölümle aynıdır.
+
+Firefox'ta `nsIMemoryReporterManager.getReports(..., anonymize=true)` yalnız ayrı test profilindeki about:memory bağlamından çağrıldı. Measure düğmesiyle büyük rapor DOM'u oluşturulmadı. Geriye yalnız sabit kategori anahtarları ve sayılar döner; ham yollar, süreç etiketleri, açıklamalar veya heap dump kaydedilmez. `explicit/` yaprakları sabit üst gruplara ayrılır; sınıflandırılmamış heap, süreç başına heap-allocated eksi raporlanmış HEAP tahsislerinden hesaplanır. Bunlar Windows private bytes ile aynı kapsam değildir; resident/heap/explicit değerleri birbirine eklenmez. Bu turda 10 OS sürecinden 8'i byte raporu verdi; rapor tamamlanması bütün süreçlerin mutlaka yanıt verdiğini kanıtlamaz. Yöntem: [Mozilla bellek raporlayıcı arayüzü](https://raw.githubusercontent.com/mozilla-firefox/firefox/main/xpcom/base/nsIMemoryReporter.idl), [about:memory belgesi](https://firefox-source-docs.mozilla.org/performance/memory/about_colon_memory.html).
+
+| Firefox kontrol noktası | Süreç private MiB | explicit/gfx MiB | explicit/window-objects MiB | explicit/js-non-window MiB |
+|---|---:|---:|---:|---:|
+| HUD açık, ısınmış | 554.26 | 150.08 | 16.39 | 60.24 |
+| 30 aç/kapat | 544.37 | 151.08 | 16.40 | 57.06 |
+| Aynı video boost/mono | 549.34 | 151.11 | 16.52 | 56.56 |
+| 20 video değişimi | 571.05 | 151.11 | 16.19 | 60.17 |
+| Panel kapalı, 5 s + toplama | 470.38 | 70.02 | 15.62 | 56.68 |
+
+Kapatma/yerleşme adımında raporlanan gfx tahsisleri yaklaşık 81 MiB azaldı. Bu gözlem grafik tahsislerinin değişken payını gösterir; tüm farkın önbellek olduğunu veya önceki 34 MiB'ın kesin nedeninin bulunduğunu kanıtlamaz. Minimize işlemi GC/CC yanında cache baskısı da uygular. Testin ilk eklentisiz örneği henüz aynı toplama/ısınma koşulunda olmadığından bu tablodan eklentinin toplam RAM maliyeti çıkarılmaz. Son durumda bir canlı video/source/context, sıfır kaldırılmış canlı video ve 9 canlı video dinleyicisi vardı; 30 aç/kapat boyunca bunlar birikmedi.
+
+Chromium'da CDP süreç türleri, yalnız testin sahip olduğu PID ağacının Windows private bytes ölçümüyle eşleştirildi; PID, komut satırı ve profil yolu sonuç dosyasına yazılmaz. Rol ölçümü ile toplam süreç ölçümü ardışık olduğundan satırların toplamı tam eşit olmak zorunda değildir. `other`, CDP tarafından sınıflandırılmayan test alt süreçlerini de içerir. Renderer toplamı yalnız sayfa JS heap'i değildir; sayfa CDP heap ölçümü bütün renderer süreçlerinin heap toplamını kapsamaz.
+
+| Chromium kurulu eklenti | Süreç private MiB | Renderer private MiB | GPU süreç private MiB | Sayfa JS heap MiB |
+|---|---:|---:|---:|---:|
+| HUD açık, ısınmış | 380 | 117 | 151 | 1.94 |
+| 30 aç/kapat | 373 | 119 | 142 | 2.10 |
+| Aynı video boost/mono | 381 | 124 | 147 | 2.17 |
+| 20 video değişimi | 461 | 190 | 155 | 2.23 |
+| Panel kapalı, 5 s + toplama | 445 | 190 | 115 | 1.95 |
+
+Renderer payı boost başlangıcına göre yaklaşık 66 MiB artarken sayfa heap'i, DOM ve dinleyici sayısı benzer kaldı. Son durumda bir canlı video/source/context, sıfır kaldırılmış canlı video; 985 DOM düğümü ve 132 CDP JS dinleyicisi vardı. Bu artışı doğrudan eklentinin native sızıntısı olarak adlandırmamak için **eklenti hiç kurulmadan**, aynı medya ve aynı 20 değiştirme/toplama yöntemi ayrı geçici Chromium profilinde çalıştırıldı:
+
+| Chromium eklentisiz kontrol | Süreç private MiB | Renderer private MiB | Sayfa JS heap MiB |
+|---|---:|---:|---:|
+| Isınmış başlangıç | 335 | 85 | 0.71 |
+| 5 video değişimi | 350 | 99 | 0.74 |
+| 10 video değişimi | 343 | 121 | 0.74 |
+| 15 video değişimi | 356 | 139 | 0.74 |
+| 20 video değişimi | 373 | 156 | 0.74 |
+| 5 s + toplama | 351 | 156 | 0.74 |
+
+Eklentisiz kontrol de renderer'da yaklaşık 71 MiB artış üretti; kaldırılmış videolar toplanmıştı, DOM 163 düğümde kaldı ve AudioContext hiç oluşturulmadı. **Benzer renderer büyümesi eklenti olmadan da tekrarlandı.** Bu, büyümenin yalnız eklentiye özgü olmadığına kanıttır; farklı profiller ve zamanlamalar nedeniyle iki artış birbirinden çıkarılıp eklentiye kesin bir maliyet atanmaz. Decoder/cache/allocator arasında tekil tahsis nedeni henüz belirlenmedi ve uzun vadeli plato kanıtı yoktur. Önceki Firefox 34 MiB farkı bu deneyle geriye dönük açıklanmış sayılmaz.
+
+Sayısal kanıtlar Git dışında: `tests/artifacts/resource-{firefox,chromium}-v074-categories/`, kısa Firefox kontrolü `resource-firefox-v074-categories-smoke/`, eklentisiz kontrol `native-media-chromium-v074-control/`. Kurulu turlar gerçek kaynak SHA256'sını içerir. Ham rapor yolları veya kişisel içerik yoktur. Üretim sürümü **v0.7.4** kaldı; test yardımcıları ve bu belge değişti, yayın/ZIP/push yapılmadı.
+
+```powershell
+node tests/resource-investigation.cjs --engine=firefox --browser="<firefox.exe>" --label=categories --categories --assert-clean
+node tests/resource-investigation.cjs --engine=chromium --browser="<Chromium browser.exe>" --packages="<Playwright node_modules>" --label=categories --categories --assert-clean
+node tests/native-media-retention.cjs --engine=chromium --browser="<Chromium browser.exe>" --packages="<Playwright node_modules>" --label=native-control
+```

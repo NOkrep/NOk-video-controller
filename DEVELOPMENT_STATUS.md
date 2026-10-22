@@ -50,3 +50,9 @@ Puhu'nun isimli kalite kontrolleri, seçili video sahibinin gerçek menü ID'ler
 Kullanıcı talebiyle eski manuel `1080p kaynağını yeniden dene` seçeneği kalite bölümüne geri eklendi; daha iyi karşılık doğrulanana kadar korunur. Alternatif kaynak ve gerekirse sayfa yenileme akışı sürer. Tek eşzamanlı istek, seçili video/SDK/source sahipliği, DRM engeli ve kesin CDN host denetimi eklendi; salt deneme başarı olarak işaretlenmez. Yenileme hâlâ RAM ayarlarını sıfırlar, kalıcı depolama kullanılmaz.
 
 Kick gerçek sayfasında IVS sesinin %35 isteğini aldığı görüldü; görünür kontrol eşleşmesi ve gerçek reklam döngüsü henüz doğrulanmadı. Güncel oyuncu kökü reklam denetimine eklendi, sahiplik/görünürlük kısıtları korundu. **166 Node testi geçti.** Canlı kabul kapsamı ve sınırlamalar [LIVE_SITE_VALIDATION.md](./LIVE_SITE_VALIDATION.md) içindedir; hedefin bütünü açık, ZIP/yayın/push yoktur.
+
+## v0.7.5 — gerçek Video.js native seçim eşleşmesi
+
+Tek video sahibinin `.vjs-quality-button .item-quality` kontrolü desteklenir. Doğrudan sayısal metin, nested HD/FullHD ikonlarından ayrılır; native `vjs-checked` okunur ve gerçek menü bir kez tıklanır. Kaynak değişmiş/başka video sahibinden kalan handle reddedilir; ek SDK seviyeleri korunur. Puhu'nun isimli kontrolleri ve eski manuel retry seçeneği sürer. **170 Node testi geçti.**
+
+Temiz kurulu görünür Firefox/Edge'de, bildirilen Video.js örneğinde 1080p ve 480p komutları site ve SDK seçiminde eşleşti; gerçek iframe 1.5x/%40 ses komutunu aldı. Üç rendition aynı resolved URI alanını bildiriyor; görüntü iki motorda da 720p kalıyor ve eklenti bunu doğru biçimde onaylamıyor. Bu yüzden decoded kalite kabulü açık kalır. Ek VHS 2 reset/seek denemesi son kaynakta tutulmadı. Ayrıntı LIVE_SITE_VALIDATION.md; özel site eşleşmesi Git dışındaki notta. Kaynak v0.7.5, yeni release/ZIP/push yok.

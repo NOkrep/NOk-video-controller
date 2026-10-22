@@ -1,6 +1,6 @@
 # Etkin çalışma kapsamı
 
-22 Ekim 2026. Kaynak sürümü **v0.7.4**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+22 Ekim 2026. Kaynak sürümü **v0.7.5**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.
@@ -49,3 +49,21 @@ Kaynak klasörü v0.7.3; kullanıcı sürüm artışından ve kalan kapsamdan ha
 Hedef bütünü tamamlanmadı. Sürüm artışı kullanıcıya bildirildi; kaynak klasörü esas, ZIP/yayın/push yapılmadı.
 
 Eski Puhu düğmesinin geri eklenmesi, temiz Firefox'ta üç ardışık yenileme ve her seferinde yeniden görünür/etkin olmasıyla doğrulandı. Bu test HD yakalama kabulü değildir; reklam/önizleme/asıl içerik ayrımı ve eski kaynakta birkaç denemeden sonraki kalite sonucu ayrıca izlenecek. Kullanıcının bu yöntemi daha iyi bir çözüm doğrulanana kadar koruma talebi geçerlidir.
+
+### v0.7.4 bellek sınıflandırması — aynı sürümde ilerleme
+
+Gerçek kurulu Firefox/Chromium'da 30 aç/kapat ve 20 boost/mono video değiştirme tekrarları geçti; bir güncel video/source/context kaldı, kaldırılmış videolar toplandı. Firefox kapanışında gfx yaklaşık 151→70 MiB ve süreç private 571→470 MiB düştü. Chromium'daki renderer artışı eklentisiz 20 video değiştirme kontrolünde de tekrarlandı (yaklaşık +71 MiB; eklentili boost başlangıcına göre +66 MiB). Dolayısıyla bu büyüme yalnız eklentiye özgü değildir; kesin decoder/cache/allocator nedeni ve önceki 34 MiB'ın geriye dönük açıklaması kanıtlanmadı. Ayrıntı MEMORY_MEASUREMENTS.md. Test yardımcıları anonim sayısal kategoriler üretir; üretime rapor alanı eklenmedi. Sürüm artmadı, v0.7.4; Puhu eski düğmesi korunur. Dört parçalı hedefin bütünü açık; ağır filtre/görünür GPU, Kick UI/gerçek reklam ve diğer site kabulü tamamlanmış sayılmaz.
+
+### v0.7.4 görünür filtre kontrolü
+
+Firefox ve Edge'de gerçek kurulu eklentiyle iki tekrarlı görünür 1080p30 CPU/GPU/kare ölçümü tamamlandı. Firefox headless tam zincirdeki 99/150 ve 97/150 kayıp görünür koşulda 0/150 ve 0/150 oldu; GPU motor yükü belirgin arttı. Edge görünür turda bütün pencerelerde sıfır kayıp verdi. Bu, filtrelerin maliyetsiz veya gerçek sitedeki kasma raporunun geçersiz olduğu anlamına gelmez. GPU sayaçları iki motorda gözlendi; ham cihaz bilgisi alınmadı. Ayrıntı FILTER_PERFORMANCE.md. Filtre sırası/rengi değiştirilmedi, sürüm v0.7.4 kaldı. v0.7.3 hedef araması azaltması korunur; sentetik/görünür ölçüm kısmı tamamlandı, gerçek site/60 fps/farklı donanım kapsamı sınırlama olarak kaydedildi. Kick UI/gerçek reklam ve diğer site kabulü açık.
+
+Kick görünür Firefox tekrarı ve eklentisiz kontrolü tamamlandı: video oynarken iki koşulda da sitenin kontrol kökü boş; pointer hit-test VIDEO, görünür belge ve odak doğrulandı. Bu boşluk yalnız eklentiye özgü değildir; ses/hız UI veya gerçek reklam başarısı kanıtlanmadı. Aynı Firefox hover döngüsünü tekrar etme. Sonraki farklı kanıt kontrolü oluşan Kick VOD/Chromium koşulu veya bildirilen diğer Video.js/gömülü site kabulünden alınmalı. LIVE_SITE_VALIDATION.md ve Git dışındaki sayısal özet güncel. Üretim kodu/sürümü değişmedi; kaynak v0.7.4, eski Puhu düğmesi korunur.
+
+## v0.7.5 kontrol noktası — Video.js native menü
+
+170 Node testi geçti. Gerçek Video.js `.vjs-quality-button .item-quality` menüsü için sayısal caption/HD badge ayrımı ve gerçek `vjs-checked` seçimi desteği eklendi; aynı yükseklikte SDK yerine native kontrol kullanılır. Puhu isimli seçimleri ve eski 1080p retry düğmesi korunur. Kaynak sürümü artışı kullanıcıya bildirildi; ZIP/yayın/push yapılmadı.
+
+Temiz görünür Firefox/Edge'de 1080p ve 480p istekleri site menüsü ve SDK seçiminde eşleşti. Hazır iframe videosu 1.5x ve %40 ses isteğini aldı; gizli readyState 0 üst video seçilmedi. Ancak bu örnekte üç rendition tek bir resolved kaynak adresi bildiriyor, decoded görüntü her iki istekte 720p kalıyor. Eklenti doğru biçimde Not confirmed gösteriyor; **decoded kalite kabulü açık**, bütün site uyumlu/kalite çözüldü denmez. Kanıt LIVE_SITE_VALIDATION.md ve Git dışındaki iki motor özetlerinde. Görüntüyü değiştirmeyen deneysel VHS 2 tampon yolu son kaynakta yoktur.
+
+Sıradaki farklı kabul: bildirilen diğer yanlış/gömülü video siteleri; ayrıca kontrolü gerçekten oluşan Kick VOD/Chromium ve gerçek reklam döngüsü. Eski Puhu manuel retry korunmaya devam eder. Belleğin ilk 34 MiB farkı geriye dönük tek nedene bağlanmadı; ölçülmüş sınırlar MEMORY_MEASUREMENTS.md içindedir. Genel hedef tamamlanmadı.

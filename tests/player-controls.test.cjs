@@ -380,6 +380,60 @@ function qualityMenu(h, labels = ['1080p', '720p', '480p']) {
   return { root, nodes, calls };
 }
 
+function videoJsNativeMenu(h,captions=['1080p','720p','480p']){
+  const menu=qualityMenu(h,captions),button={},state={selected:null};
+  menu.nodes.forEach((node,index)=>{
+    node.textContent=captions[index]+(index===0?'FullHD':'HD');
+    node.childNodes=[{nodeType:3,textContent:captions[index]},{nodeType:1,textContent:'PRIVATE_BADGE_2160'}];
+    node.closest=selector=>selector==='.vjs-quality-button'?button:menu.root;
+    node.classList={contains:name=>name==='item-quality'||name==='vjs-checked'&&state.selected===index};
+    node.click=()=>{menu.calls.push(captions[index]);state.selected=index;};
+  });
+  return {...menu,state};
+}
+
+test('Video.js plugin captions ignore nested HD badges and verify the real selected class separately from decoded frames',()=>{
+  const h=harness(),menu=videoJsNativeMenu(h,['1080p','720p','480p','Auto','Watch 2160p']);h.video.videoHeight=720;
+  assert.deepEqual(h.json('discoverStreamQualities().map(q=>[q.height,q.label])'),[[1080,'1080p'],[720,'720p'],[480,'480p']]);
+  assert.equal(h.run('requestQuality(cachedDiscoveredQualities[0],video,null)'),true);
+  assert.deepEqual(menu.calls,['1080p']);assert.equal(menu.nodes[0].attributes['aria-checked'],undefined);
+  assert.equal(h.run('qualityControlState.request.status'),'rendition-confirmed');
+  h.video.videoHeight=1080;h.run('updateQualityVerification(video,null)');
+  assert.equal(h.run('qualityControlState.request.status'),'confirmed');assert.equal(h.requests.length,0);
+});
+
+test('Video.js prefers its native quality action over matching VHS controls and retains additional declared levels',()=>{
+  const h=harness(),menu=videoJsNativeMenu(h);let writes=0;
+  const player={currentTime(){},playbackRate(){},tech_:{vhs:{representations:()=>[240,480,720,1080].map(height=>({
+    id:String(height),height,enabled(value){if(value!==undefined)writes++;return true;}
+  }))}}};
+  h.video.parentElement={player};h.context.activePlayer=player;
+  assert.deepEqual(h.json('discoverStreamQualities().map(q=>[q.height,q.qualityApi])'),[
+    [1080,'native-menu'],[720,'native-menu'],[480,'native-menu'],[240,'vhs-representations']]);
+  h.run('requestQuality(cachedDiscoveredQualities[1],video,activePlayer)');
+  assert.deepEqual(menu.calls,['720p']);assert.equal(writes,0,'native click owns its own SDK changes');
+});
+
+test('Video.js plugin menu cannot donate a nested, shared or stale source action',()=>{
+  const h=harness(),menu=videoJsNativeMenu(h);
+  menu.root.querySelectorAll=()=>[h.video,{closest:()=>menu.root}];
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video)'),[]);
+  menu.root.querySelectorAll=selector=>selector==='video'?[h.video]:menu.nodes;
+  menu.nodes[0].closest=()=>({});
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video).map(q=>q.height)'),[720,480]);
+  h.run('discoverStreamQualities()');h.video.currentSrc='replacement-source';
+  assert.equal(h.run('requestQuality(cachedDiscoveredQualities[0],video,null)'),false);assert.deepEqual(menu.calls,[]);
+});
+
+test('a selected native Video.js quality must still time out when decoded video never matches',()=>{
+  const h=harness();videoJsNativeMenu(h);h.video.videoHeight=720;
+  h.run('requestQuality(discoverStreamQualities()[0],video,null)');
+  h.context.performance.now=()=>13000;h.run('updateQualityVerification(video,null)');
+  assert.equal(h.run('qualityControlState.request.status'),'timed-out');
+  assert.equal(h.run('qualityControlState.request.renditionMatch'),true);
+  assert.equal(h.run('qualityControlState.request.decodedMatch'),false);
+});
+
 test('a selected-video native quality menu exposes only strict numeric choices and uses one actual click', () => {
   const h = harness(); const menu = qualityMenu(h, ['1080p', '720p HD', '480p', 'Auto', 'PRIVATE_1080', 'Watch 720p']);
   assert.deepEqual(h.json('discoverStreamQualities().map(item => item.height)'), [1080, 720, 480]);

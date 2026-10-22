@@ -4,7 +4,7 @@ const readline=require('node:readline');
 const fs=require('node:fs'),path=require('node:path');
 const {createDriver,delay}=require('./resource-driver.cjs');
 const arg=name=>process.argv.find(value=>value.startsWith(`--${name}=`))?.slice(name.length+3);
-let driver,page;
+let driver,page,rootPage,frameTargets=[];
 function snapshot(){
   const visible=node=>{const box=node.getBoundingClientRect();return box.width>0&&box.height>0;};
   return {domain:location.hostname,text:document.body?.innerText.slice(0,1300),
@@ -19,8 +19,9 @@ function snapshot(){
 }
 (async()=>{
  try{
-  driver=await createDriver(arg('engine')||'firefox',arg('browser'),arg('packages'),{allowWeb:true});
-  await driver.install();process.stdout.write(JSON.stringify({ready:true,browserVersion:driver.version})+'\n');
+  driver=await createDriver(arg('engine')||'firefox',arg('browser'),arg('packages'),{allowWeb:true,visible:process.argv.includes('--visible')});
+  const installed=!process.argv.includes('--without-extension');
+  if(installed)await driver.install();process.stdout.write(JSON.stringify({ready:true,browserVersion:driver.version,installed})+'\n');
   for await(const line of readline.createInterface({input:process.stdin,crlfDelay:Infinity})){
     if(!line.trim())continue;
     try{
@@ -28,11 +29,19 @@ function snapshot(){
       if(command.action==='quit')break;
       if(command.action==='open'){
         const target=new URL(command.url);if(target.protocol!=='https:')throw Error('HTTPS pages only');
-        if(page)await driver.navigate(page,target.href);else page=await driver.open(target.href);
+        if(rootPage)await driver.navigate(rootPage,target.href);else rootPage=await driver.open(target.href);
+        page=rootPage;frameTargets=[];
         await delay(3000);result=await driver.evaluate(page,snapshot);
       }else if(command.action==='snapshot')result=await driver.evaluate(page,snapshot);
+      else if(command.action==='frames'){
+        frameTargets=await driver.frames(rootPage);result=frameTargets.map((frame,index)=>({index,domain:frame.domain}));
+      }else if(command.action==='selectFrame'){
+        if(!Number.isInteger(command.index)||!frameTargets[command.index])throw Error('List frames and choose a valid index');
+        page=frameTargets[command.index].target;result={selectedIndex:command.index,domain:frameTargets[command.index].domain};
+      }
       else if(command.action==='toolbar')result=await driver.evaluate(page,()=>{window.postMessage({type:'PVC_TOOLBAR_TOGGLE'},'*');return true;});
       else if(command.action==='hover')result=await driver.hover(page,command.selector);
+      else if(command.action==='pointerClick')result=await driver.pointerClick(page,command.selector);
       else if(command.action==='click')result=await driver.evaluate(page,selector=>{
         const node=document.querySelector(selector);if(!node)throw Error('Missing control');node.click();return true;
       },command.selector);

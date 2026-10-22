@@ -57,3 +57,42 @@ node tests/filter-performance.cjs --engine=firefox --browser="<firefox.exe>" --l
 ```
 
 Yerel sayısal JSON kanıtları Git dışındaki `tests/artifacts/filters-{firefox,chromium}-v072-first/` ve `filters-{firefox,chromium}-v073-target-cache/` içindedir. Kaynak SHA256, sürüm, gerçek kurulum, süreler, sayaçlar ve kare durumları kaydedilir; ham heap, kişisel içerik veya sayfa adresi içermez. Sonraki kabul: Firefox'ta ağır zincirin görünür tarayıcı/compositor koşullarında ayrıştırılması, geçerli GPU ölçümü ve gerçek sitede aynı sonucun sınanması. Bellek hedefinin native/cache sınıflandırması ve Kick/Puhu/site kabulü ayrı açık işlerdir.
+
+## v0.7.4: görünür Firefox kontrolü
+
+Test sürücüsüne `--visible` seçeneği eklendi; üretim filtre kodu, filtre sırası ve değerleri değiştirilmedi. Aynı 1080p30 yerel dosya, 1600×900 CSS video alanı, gerçek kurulu eklenti ve iki tekrar kullanıldı. Firefox 158.0.1 geçici profilinde bütün ölçüm belgeleri `visibilityState: visible`, bütün CPU pencereleri `processSetStable: true` idi. Bu turda Firefox için GPU motor sayaçları da gözlendi; önceki headless koşuldaki eksik GPU sayacından sıfır kullanım sonucu çıkarılmaması gerektiği doğrulandı.
+
+| Görünür Firefox / durum | CPU çekirdek eşdeğeri | Düşen / toplam kare | 3D motor toplamı örnek ortalaması |
+|---|---|---|---|
+| Nötr kapalı | 0.325 / 0.214 | 0/151 / 0/150 | 1.00 / 1.50 |
+| Üç filtre kapalı | 0.322 / 0.275 | 1/151 / 0/150 | 55.75 / 56.25 |
+| Tam zincir kapalı | 0.590 / 0.379 | 0/150 / 0/150 | 76.75 / 78.00 |
+| Parlaklık sürükleme | 0.341 / 0.390 | 0/150 / 1/151 | 1.75 / 37.00 |
+| Nötr dönüş | 0.180 / 0.271 | 0/150 / 0/150 | 1.50 / 1.25 |
+
+GPU sütunu tüm GPU'nun yüzdesi değildir; yalnız test süreçlerine ait 3D motor sayaçlarının örnek toplam ortalamasıdır. Nötr kapalıda VideoProcessing toplam ortalaması 4.50/4.25; üç filtre ve tam zincirde 0 oldu. Filtreli çizim farklı GPU motor iş yükü gösterdi ve bedelsiz değildir. Parlaklık sürüklemenin iki tekrarındaki GPU dağılımı da değişti; bu sayılar sabit maliyet veya kesin kazanç yüzdesi olarak kullanılmaz.
+
+Önceki headless tam zincirde 99/150 ve 97/150 kare kaybı, görünür turda 0/150 ve 0/150 oldu. Aynı üretim koduyla bu koşul farkı önemlidir; headless sonucu bütün Firefox kullanımlarına genellenmez. Görünür turda statik filtre style yazımı yine sıfır; sürükleme konum sorguları 77/98, CSS yazımları 254/301 idi. Üç filtre, nötr açık veya sürükleme penceresinde tekil kare kayıpları görüldüğünden her koşulda sıfır kayıp iddiası yoktur.
+
+Bu deney kullanıcının gerçek sitede gördüğü kasmayı geçersiz kılmaz. Bir makinede kısa 1080p30 örneği; 60 fps, farklı çözünürlük, codec, site scriptleri, DRM ve diğer GPU/compositor koşulları için garanti değildir. WebGL renderer işareti yine video compositor'un tam donanım yolunu kanıtlamaz. Filtre rengi veya işlevi performans adına sessizce değiştirilmedi. Kanıt Git dışında `tests/artifacts/filters-firefox-v074-visible/`; kaynak sürümü v0.7.4 ve SHA256 kayıtlıdır.
+
+```powershell
+node tests/filter-performance.cjs --engine=firefox --browser="<firefox.exe>" --label=visible --visible
+node tests/filter-performance.cjs --engine=chromium --browser="<Chromium browser.exe>" --packages="<Playwright node_modules>" --label=visible --visible
+```
+
+### Görünür Chromium karşılaştırması
+
+Edge 152.0.4191.53 aynı yöntemle ayrı geçici görünür profilde tamamlandı. Bütün örneklerde belge görünür, GPU motor sayaçları gözlenebilir ve oynatma 1920×1080 idi. Firefox ve Edge aynı anda benchmark çalıştırmadı.
+
+| Görünür Edge / durum | CPU çekirdek eşdeğeri | Düşen / toplam kare | 3D motor toplamı örnek ortalaması |
+|---|---|---|---|
+| Nötr kapalı | 0.299 / 0.264 | 0/150 / 0/151 | 0.00 / 0.00 |
+| Üç filtre kapalı | 0.282* / 0.267 | 0/151 / 0/148 | 2.00 / 7.00 |
+| Tam zincir kapalı | 0.240 / 0.278 | 0/149 / 0/150 | 7.25 / 6.80 |
+| Parlaklık sürükleme | 0.374 / 0.455 | 0/149 / 0/151 | 8.00 / 8.25 |
+| Nötr dönüş | 0.280 / 0.287 | 0/150 / 0/151 | 0.00 / 0.00 |
+
+`*` İlk üç filtre CPU penceresinde süreç kümesi değişti; kesin CPU karşılaştırmasına alınmaz. İlk nötr açık örneği de aynı işareti taşır. Nötr kapalıda VideoProcessing motor toplamı ortalaması 5.20/5.20, tam zincirde 0 oldu. Üç filtre ikinci penceresinde bir video style mutasyonu görüldü; tam zincirde iki tekrar da sıfırdı. Sürekli statik filtre yazımı görülmedi. Sürükleme konum sorgusu 105/97; CSS yazımı 301/301.
+
+Bu kısa görünür Edge turunun bütün pencereleri sıfır kare kaybı verdi; başka site/donanım/60 fps için garanti değildir. Firefox ve Edge GPU motor toplamlarının farkı tarayıcıların aynı GPU işi yaptığı veya tüm GPU verimlerinin doğrudan bu oranlarda farklı olduğu anlamına gelmez. Sabit üretim v0.7.4 ile görünür/headless koşullar ayrıştırılmış, v0.7.3'teki gereksiz hedef aramasını azaltma değişikliği korunmuştur. Kalan sınır gerçek site, yüksek kare hızı ve farklı donanım kabulüdür. Sayısal kanıt `tests/artifacts/filters-chromium-v074-visible/` içinde Git dışındadır.

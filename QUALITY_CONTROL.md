@@ -62,3 +62,11 @@ Canlı kontrol: site menüsündeki seçeneklerle HUD'u karşılaştır; video he
 ## v0.7.0.1 — Eski VHS tamponu
 
 Seçilen kaliteyi gösteren SDK ile decoded video farklı kalabiliyordu. Eşleşen video/instance ve hedef playlist/segment loader kimlikleri doğrulanınca, VHS kendi runFastQualitySwitch_ yolu manuel istek başına en fazla bir kez denenir. Yöntem yoksa zorlanmaz; fake başarı, yeni ağ kaynağı veya doğrudan MSE buffer silme yoktur. Eski Edge zaman aşımı ile Firefox gerçek yerel Video.js 1080→480 senaryoları geçti. Gerçek site kapsamı RELEASE_NOTES_v0.7.0.1.md sınırındadır.
+
+## v0.7.5 — Video.js yerel menü sahipliği
+
+Tek video sahibine ait `.vjs-quality-button .vjs-menu-item.item-quality` kontrolü tanınır. Bu plugin sayısal metne nested HD/FullHD ikonları ekler; yalnız öğenin doğrudan sayısal metni etiket olarak okunur. Rastgele iç metin, ikon yazısı veya sayfa bağlantısı çözünürlük üretmez. Auto sayısal seviye olarak gösterilmez. Aynı yükseklikte SDK seçeneği varsa gerçek native kontrol öncelik alır; SDK'nın ek gerçek seviyeleri korunur.
+
+Komut sitenin kendi menü öğesini bir kez tıklar. Native `vjs-checked` sınıfı seçilme kanıtıdır; eklenti ARIA/sınıf yazarak başarı üretmez. Seçilme ile decoded görüntü eşleşmesi ayrı kalır. İsimli Puhu kontrolleri ve `selected` sınıfı ayrı sahiplik/host kısıtlarıyla korunur. Kaynak değişmişse eski native handle kullanılamaz.
+
+170 Node testi; numeric caption/badge ayrımı, native yolun SDK yerine kullanılması, ek seviyeler, shared/nested/stale source reddi ve decoded eşleşmeden onay verilmemesi kapsamındadır. Yeni bir VHS 2 özel tampon müdahalesi son kaynakta yoktur. Eski `runFastQualitySwitch_` yolu kendi mevcut kısıtlarıyla korunur. Gerçek site bulguları ve sınırlamalar LIVE_SITE_VALIDATION.md içindedir; site/hesap/medya URL'si rapora eklenmez.
