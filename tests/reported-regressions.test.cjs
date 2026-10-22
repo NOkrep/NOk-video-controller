@@ -29,6 +29,7 @@ test('Puhu never fabricates a resolution from an SMIL URL or switches to a guess
   const levels=[{id:'declared',height:720}];
   const context=vm.createContext({HOSTNAME:'puhutv.com',document:{querySelector:()=>null},
     findVideoJsPlayer:()=>selected,findLibraryPlayer:()=>null,
+    getNativeQualityMenuOptions:()=>[],
     VideoJsAdapter:{getQualities:()=>levels,applyQuality:()=>{applied++;return true;}}});
   vm.runInContext(section('  const PuhuTvAdapter','  function simulateFullPointerClick'),context);
   context.video={currentSrc:'https://media.invalid/1080p.smil'};

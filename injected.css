@@ -459,6 +459,10 @@
   color: var(--pvc-text, #edf2f3) !important;
 }
 
+#pvc-controller-popup #pvc-puhu-retry-source-btn { margin-top: 6px !important; width: 100% !important; }
+#pvc-controller-popup #pvc-puhu-retry-source-btn[hidden] { display: none !important; }
+#pvc-controller-popup #pvc-puhu-retry-source-btn:disabled { opacity: .55 !important; cursor: wait !important; }
+
 .pvc-action-btn.pvc-active {
   background: color-mix(in srgb, var(--pvc-accent) 22%, transparent) !important;
   border-color: var(--pvc-accent-ink, #92bfd5) !important;

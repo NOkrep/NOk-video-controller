@@ -80,6 +80,19 @@ test('ended media restores native values without starting another ad lifecycle',
   h.run('controller.tick({video,player:null},true)'); assert.equal(h.video.playbackRate,1); assert.equal(h.video.muted,false);
   assert.equal(h.run('controller.isActive(video)'),false);
 });
+
+test('the current Kick injected player root still requires one owned video and a visible supported ad badge',()=>{
+  const h=harness({HOSTNAME:'kick.com',getComputedStyle:node=>node.style});
+  const marker={isConnected:true,style:{display:'block',visibility:'visible',opacity:'1'},getBoundingClientRect:()=>({width:20,height:20})};
+  const root={...marker,querySelectorAll:selector=>selector==='video'?[h.video]:[marker],contains:node=>node===h.video,matches:()=>false};
+  h.video.closest=selector=>selector.split(',').map(s=>s.trim()).includes('#injected-channel-player')?root:null;
+  assert.equal(h.run('hasSelectedAdMarker(video)'),true);
+  marker.style.visibility='hidden';assert.equal(h.run('hasSelectedAdMarker(video)'),false);
+  marker.style.visibility='visible';root.querySelectorAll=selector=>selector==='video'?[h.video,{}]:[marker];
+  assert.equal(h.run('hasSelectedAdMarker(video)'),false);
+  root.querySelectorAll=selector=>selector==='video'?[h.video]:[marker];h.context.HOSTNAME='other.invalid';
+  assert.equal(h.run('hasSelectedAdMarker(video)'),false);
+});
 test('Video.js enabled flags restore exactly; VHS wrapper objects may be recreated with stable IDs', () => {
   const levels = [{height:1080,enabled:true}, {height:480,enabled:true}, {height:720,enabled:false}];
   const vjs = {qualityLevels:()=>levels};

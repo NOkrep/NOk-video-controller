@@ -401,6 +401,94 @@ test('a shared or nested player layout cannot donate another video quality menu'
   assert.deepEqual(h.json('getNativeQualityMenuOptions(video)'), []);
 });
 
+test('Puhu named choices use the owned native control, retain extra declared levels and verify selection separately from decoded frames',()=>{
+  const h=harness('puhutv.com'),menu=qualityMenu(h,['Düşük','Standart','Yüksek','PRIVATE_QUALITY']);
+  const heights=[480,720,1080,2160];let selected=720;
+  menu.nodes.forEach((node,index)=>{
+    node.id=String(heights[index]);
+    node.classList={contains:name=>name==='vjs-quality-item'||name==='selected'&&selected===heights[index]};
+    node.click=()=>{menu.calls.push(heights[index]);selected=heights[index];};
+  });
+  const player={currentTime(){},playbackRate(){},tech_:{vhs:{representations:()=>[240,480,720,1080].map(height=>({id:String(height),height,enabled:()=>true}))}}};
+  h.video.parentElement={player};h.context.activePlayer=player;
+  vm.runInContext(section('  const PuhuTvAdapter','  function simulateFullPointerClick'),h.context);
+  h.run('PuhuTvAdapter.tier=1; ALL_ADAPTERS[ALL_ADAPTERS.findIndex(a=>a.name==="PuhuTvAdapter")]=PuhuTvAdapter');
+  assert.deepEqual(h.json('discoverStreamQualities().map(q=>[q.height,q.qualityApi])'),[
+    [1080,'native-menu'],[720,'native-menu'],[480,'native-menu'],[240,'vhs-representations']]);
+  assert.equal(h.run('requestQuality(cachedDiscoveredQualities.find(q=>q.height===480),video,activePlayer)'),true);
+  assert.deepEqual(menu.calls,[480]);
+  assert.equal(h.run('qualityControlState.request.status'),'rendition-confirmed','site selected class is real evidence, not fabricated ARIA');
+  h.video.videoHeight=480;h.run('updateQualityVerification(video,activePlayer)');
+  assert.equal(h.run('qualityControlState.request.status'),'confirmed');
+  assert.equal(h.requests.length,0,'native selection must not guess CDN addresses or reload');
+});
+
+test('named Puhu IDs are rejected on another host, with unknown text, or a shared player owner',()=>{
+  const h=harness(),menu=qualityMenu(h,['Yüksek']);
+  menu.nodes[0].id='1080';menu.nodes[0].classList={contains:()=>true};
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video,true)'),[]);
+  h.context.HOSTNAME='puhutv.com';
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video).map(q=>q.height)'),[],'generic path stays strict');
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video,true).map(q=>q.height)'),[1080]);
+  menu.nodes[0].textContent='PRIVATE_LABEL';assert.deepEqual(h.json('getNativeQualityMenuOptions(video,true)'),[]);
+  menu.nodes[0].textContent='Yüksek';
+  menu.root.querySelectorAll=()=>[h.video,{closest:()=>menu.root}];
+  assert.deepEqual(h.json('getNativeQualityMenuOptions(video,true)'),[]);
+});
+
+function puhuRetryHarness(){
+  const h=harness('puhutv.com'),switches=[];let reloads=0,stops=0;
+  const player={currentTime(){},playbackRate(){}};
+  h.video.parentElement={player};h.context.activePlayer=player;
+  h.context.lastCapturedDygApiUrl='https://dygvideo.dygdigital.com/api/video_info?akamai=true&ReferenceId=TEST';
+  h.context.targetPuhuSmilLevel=null;h.context.smoothPlayerSourceSwitch=(...args)=>switches.push(args);
+  h.window.location={reload:()=>reloads++};
+  const button={hidden:true,disabled:false,attributes:{},setAttribute(k,v){this.attributes[k]=v;}};
+  h.context.document.getElementById=id=>id==='pvc-puhu-retry-source-btn'?button:null;
+  h.context.event={stopPropagation:()=>stops++};
+  vm.runInContext(section('  async function switchToPuhuMncdnDirectly','  let periodicPingTimer'),h.context);
+  return {...h,button,player,switches,get reloads(){return reloads;},get stops(){return stops;}};
+}
+
+test('the manual Puhu source retry is visible alongside declared quality controls and stays hidden on other hosts, DRM or remote presentation',()=>{
+  const h=puhuRetryHarness(),update=()=>h.run('updatePuhuSourceRetryButton({video,player:activePlayer})');
+  update();assert.equal(h.button.hidden,false);
+  h.context.HOSTNAME='other.invalid';update();assert.equal(h.button.hidden,true);
+  h.context.HOSTNAME='puhutv.com';h.video.drm=true;update();assert.equal(h.button.hidden,true);
+  h.video.drm=false;h.context.remotePresentation={};update();assert.equal(h.button.hidden,true);
+  h.context.remotePresentation=null;h.video.parentElement=null;update();assert.equal(h.button.hidden,true);
+  assert.ok(source.includes("popup.querySelector('#pvc-puhu-retry-source-btn').onclick = retryPuhuSource"));
+  assert.equal(h.run('UI_MESSAGES["🚀 1080p kaynağını yeniden dene"]'),'🚀 Retry 1080p source');
+});
+
+test('manual Puhu retry keeps the legacy alternate-source route, isolates its click and never marks a requested 1080p source as confirmed',async()=>{
+  const h=puhuRetryHarness();let url;
+  h.context.fetch=async request=>{url=request;return {ok:true,json:async()=>({data:{video_url:'https://stream.mncdn.com/media/720p.smil/playlist.m3u8?test=opaque'}})};};
+  assert.equal(await h.run('retryPuhuSource(event)'),true);
+  assert.equal(new URL(url).searchParams.get('akamai'),'false');assert.equal(new URL(url).searchParams.get('ReferenceId'),'TEST');
+  assert.equal(h.stops,1);assert.equal(h.switches.length,1);
+  assert.equal(h.switches[0][2],'https://stream.mncdn.com/media/1080p.smil/playlist.m3u8?test=opaque');
+  assert.equal(h.run('qualityControlState.request'),null);assert.equal(h.run('activeForcedQualityId'),'');
+  assert.equal(h.reloads,0);assert.equal(h.button.disabled,false);
+});
+
+test('Puhu retry allows another manual attempt after its reload fallback but never reloads a replacement video',async()=>{
+  const h=puhuRetryHarness();h.context.fetch=async()=>({ok:true,json:async()=>({data:{}})});
+  await h.run('retryPuhuSource(event)');h.flush();assert.equal(h.reloads,1);assert.equal(h.button.disabled,false);
+  await h.run('retryPuhuSource(event)');h.context.selectedVideo={};h.flush();assert.equal(h.reloads,1);
+  assert.equal(h.switches.length,0);
+});
+
+test('concurrent retry clicks send one request and discard a response after player replacement',async()=>{
+  const h=puhuRetryHarness();let finish,requests=0;
+  h.context.fetch=()=>{requests++;return new Promise(resolve=>{finish=resolve;});};
+  const pending=h.run('retryPuhuSource(event)');assert.equal(h.button.disabled,true);
+  assert.equal(await h.run('retryPuhuSource(event)'),false);assert.equal(requests,1);
+  h.video.parentElement={player:{currentTime(){},playbackRate(){}}};h.context.activePlayer=h.video.parentElement.player;
+  finish({ok:true,json:async()=>({data:{video_url:'https://stream.mncdn.com/media/720p.smil/playlist.m3u8'}})});
+  await pending;h.flush();assert.equal(h.switches.length,0);assert.equal(h.reloads,0);assert.equal(h.button.disabled,false);
+});
+
 test('one-level HLS inventory is augmented with the actual source menu without an extra observed-only option', () => {
   const h = harness(); qualityMenu(h); h.video.videoHeight = 720;
   const hls = { media: h.video, currentLevel: 0, levels: [{ height: 0 }] };

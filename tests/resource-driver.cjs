@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {spawn,execFileSync,execFile}=require('node:child_process');
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const root=path.resolve(__dirname,'..');
-function processMemory(pid){return JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(pid)],{encoding:'utf8',windowsHide:true}));}
+function processMemory(pid,perProcess=false){return JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(pid),...(perProcess?['-PerProcess']:[])],{encoding:'utf8',windowsHide:true}));}
 function performanceWindow(pid,seconds){return new Promise((resolve,reject)=>execFile('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-performance.ps1'),'-RootProcessId',String(pid),'-DurationSeconds',String(seconds)],{encoding:'utf8',windowsHide:true},(error,stdout)=>error?reject(error):resolve(JSON.parse(stdout))));}
 async function createDriver(engine,executablePath,packages,options={}){
   if(engine==='chromium'){
@@ -10,17 +10,30 @@ async function createDriver(engine,executablePath,packages,options={}){
     const context=await chromium.launchPersistentContext('',{executablePath,headless:true,viewport:options.viewport||{width:1280,height:800},
       ignoreDefaultArgs:['--disable-extensions'],args:['--enable-unsafe-extension-debugging']});
     const browser=context.browser(),cdp=await browser.newBrowserCDPSession();
-    await context.route('**/*',route=>/^(?:chrome-extension:|http:\/\/127\.0\.0\.1:\d+\/)/.test(route.request().url())?route.continue():route.abort());
+    await context.route('**/*',route=>(/^(?:chrome-extension:|http:\/\/127\.0\.0\.1:\d+\/)/.test(route.request().url())
+      ||options.allowWeb&&/^https?:/.test(route.request().url()))?route.continue():route.abort());
     const pid=(await cdp.send('SystemInfo.getProcessInfo')).processInfo.find(p=>p.type==='browser').id;
     const sessions=new Map();
     const session=async page=>{if(!sessions.has(page))sessions.set(page,await context.newCDPSession(page));return sessions.get(page);};
     return {engine,version:browser.version(),
       install:()=>cdp.send('Extensions.loadUnpacked',{path:root}),
-      open:async url=>{const page=await context.newPage();await page.goto(url);return page;},
+      open:async url=>{const page=await context.newPage();await page.goto(url,{waitUntil:options.allowWeb?'domcontentloaded':'load'});return page;},
+      navigate:(page,url)=>page.goto(url,{waitUntil:options.allowWeb?'domcontentloaded':'load'}),
+      hover:(page,selector)=>page.locator(selector).hover({timeout:5000}),
       reload:page=>page.reload(),
       evaluate:(page,fn,...args)=>page.evaluate(({code,args})=>(0,eval)(`(${code})(...${JSON.stringify(args)})`),{code:String(fn),args}),
       gc:async page=>{await(await session(page)).send('HeapProfiler.collectGarbage');await delay(250);await(await session(page)).send('HeapProfiler.collectGarbage');await delay(100);return 'CDP HeapProfiler.collectGarbage twice, with finalizer turn';},
       memory:async page=>({process:processMemory(pid),heap:await(await session(page)).send('Runtime.getHeapUsage'),dom:await(await session(page)).send('Memory.getDOMCounters')}),
+      memoryCategories:async()=>{
+        const types=new Map((await cdp.send('SystemInfo.getProcessInfo')).processInfo.map(p=>[p.id,p.type]));
+        const measured=processMemory(pid,true),roles={};
+        for(const row of measured.rows){
+          const type=types.get(row.id),role=['browser','renderer','GPU'].includes(type)?type:'other';
+          roles[role]||={processCount:0,privateBytes:0,workingSetBytes:0};
+          roles[role].processCount++;roles[role].privateBytes+=row.privateBytes;roles[role].workingSetBytes+=row.workingSetBytes;
+        }
+        return {method:'owned-process-roles',roles}; // Never export PIDs or process command lines.
+      },
       performance:seconds=>performanceWindow(pid,seconds),
       gpuMode:async()=>{const info=await cdp.send('SystemInfo.getInfo');const renderer=info.gpu?.auxAttributes?.glRenderer;return {rendererReported:!!renderer,softwareRenderer:renderer?/swiftshader|llvmpipe|software|warp/i.test(renderer):null};},
       close:()=>context.close()};
@@ -52,12 +65,15 @@ async function createDriver(engine,executablePath,packages,options={}){
       if(pending){clearTimeout(pending.timer);requests.delete(message.id);message.type==='error'?pending.reject(Error(message.message)):pending.resolve(message.result);}
       else if(message.method==='network.beforeRequestSent'&&message.params.isBlocked){
         const request=message.params.request;
-        try{await send(/^(?:about:|blob:|data:|moz-extension:|chrome:|resource:|http:\/\/127\.0\.0\.1:\d+\/)/.test(request.url)?'network.continueRequest':'network.failRequest',{request:request.request});}catch(_){}
+        const allowed=/^(?:about:|blob:|data:|moz-extension:|chrome:|resource:|http:\/\/127\.0\.0\.1:\d+\/)/.test(request.url)
+          ||options.allowWeb&&/^https?:/.test(request.url);
+        try{await send(allowed?'network.continueRequest':'network.failRequest',{request:request.request});}catch(_){}
       }
     });
     const session=await send('session.new',{capabilities:{alwaysMatch:{acceptInsecureCerts:false}}});
     await send('session.subscribe',{events:['network.beforeRequestSent']});await send('network.addIntercept',{phases:['beforeRequestSent']});
-    const open=async url=>{const page=(await send('browsingContext.create',{type:'tab'})).context;await send('browsingContext.navigate',{context:page,url,wait:'complete'});return page;};
+    const navigate=(page,url)=>send('browsingContext.navigate',{context:page,url,wait:options.allowWeb?'interactive':'complete'});
+    const open=async url=>{const page=(await send('browsingContext.create',{type:'tab'})).context;await navigate(page,url);return page;};
     const evaluate=async(page,fn,...args)=>{
       const result=await send('script.evaluate',{target:{context:page},expression:`(async()=>JSON.stringify(await (${fn})(...${JSON.stringify(args)})))()`,awaitPromise:true,userActivation:true});
       if(result.type==='exception')throw Error('Page exception: '+result.exceptionDetails?.text);
@@ -65,7 +81,17 @@ async function createDriver(engine,executablePath,packages,options={}){
     };
     let memoryPage;
     return {engine,version:session.capabilities.browserVersion,
-      install:()=>send('webExtension.install',{extensionData:{type:'path',path:root}}),open,evaluate,
+      install:()=>send('webExtension.install',{extensionData:{type:'path',path:root}}),open,navigate,evaluate,
+      hover:async(page,selector)=>{
+        const point=await evaluate(page,selector=>{
+          const node=document.querySelector(selector);if(!node)throw Error('Missing hover target');
+          node.scrollIntoView({block:'center'});const rect=node.getBoundingClientRect();
+          if(!(rect.width>0&&rect.height>0))throw Error('Hidden hover target');
+          return {x:Math.round(rect.left+rect.width/4),y:Math.round(rect.top+rect.height/4)};
+        },selector);
+        return send('input.performActions',{context:page,actions:[{type:'pointer',id:'nok-test-pointer',parameters:{pointerType:'mouse'},
+          actions:[{type:'pointerMove',origin:'viewport',duration:100,...point}]}]});
+      },
       reload:async page=>{const url=(await send('browsingContext.getTree',{root:page})).contexts[0].url;await send('browsingContext.navigate',{context:page,url,wait:'complete'});},
       gc:async page=>{
         memoryPage ||= await open('about:memory');
@@ -91,6 +117,33 @@ async function createDriver(engine,executablePath,packages,options={}){
         return 'about:memory Minimize memory usage (GC/CC + cache pressure)';
       },
       memory:async()=>({process:processMemory(child.pid)}),
+      memoryCategories:async page=>{
+        if(!options.memoryControls)throw Error('Memory categories require the isolated privileged test profile');
+        memoryPage ||= await open('about:memory');
+        const result=await evaluate(memoryPage,()=>new Promise((resolve,reject)=>{
+          const manager=Cc['@mozilla.org/memory-reporter-manager;1'].getService(Ci.nsIMemoryReporterManager);
+          const groups={windowObjects:0,jsNonWindow:0,heapOverhead:0,images:0,gfx:0,media:0,other:0};
+          const standalone={},processes=new Map();let reports=0;
+          const timer=setTimeout(()=>reject(Error('Memory reporter completion timeout')),15000);
+          manager.getReports((process,path,kind,units,amount)=>{
+            reports++;if(units!==Ci.nsIMemoryReporter.UNITS_BYTES||amount<0)return;
+            let totals=processes.get(process);if(!totals){totals={heapAllocated:null,reportedHeap:0};processes.set(process,totals);}
+            if(path.startsWith('explicit/')){
+              const top=path.split('/',2)[1],key=({'window-objects':'windowObjects','js-non-window':'jsNonWindow','heap-overhead':'heapOverhead',images:'images',gfx:'gfx',media:'media'})[top]||'other';
+              groups[key]+=amount;if(kind===Ci.nsIMemoryReporter.KIND_HEAP)totals.reportedHeap+=amount;
+            }else if(['resident','resident-unique','heap-allocated','heap-committed','vsize'].includes(path)){
+              standalone[path]=(standalone[path]||0)+amount;if(path==='heap-allocated')totals.heapAllocated=amount;
+            }
+          },null,()=>{
+            clearTimeout(timer);let unclassified=0,heapProcesses=0;
+            for(const totals of processes.values())if(totals.heapAllocated!==null){unclassified+=totals.heapAllocated-totals.reportedHeap;heapProcesses++;}
+            resolve({method:'anonymized-memory-reporters',reportedProcessCount:processes.size,reports,
+              explicitReportedBytes:Object.values(groups).reduce((a,b)=>a+b,0),explicitGroups:groups,
+              heapUnclassifiedBytes:unclassified,heapReportingProcessCount:heapProcesses,standalone});
+          },null,true); // Raw paths, process labels, descriptions and reports never leave this realm.
+        }));
+        await send('browsingContext.activate',{context:page});return result;
+      },
       performance:seconds=>performanceWindow(child.pid,seconds),
       gpuMode:async page=>page?evaluate(page,()=>{
         const canvas=document.createElement('canvas'),gl=canvas.getContext('webgl');

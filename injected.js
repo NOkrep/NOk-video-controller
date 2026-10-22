@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.3';
+  const EXTENSION_VERSION = '0.7.4';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const VERSION_HISTORY = [
     { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
@@ -269,6 +269,8 @@
     '{0} (Mobil) • {1}p': '{0} (mobile) • {1}p',
     '🚀 1080p FHD MNCDN akışı aranıyor...': '🚀 Looking for a 1080p FHD MNCDN stream…',
     '1080p FHD MNCDN akışı için sayfa yenileniyor...': 'Reloading for the 1080p FHD MNCDN stream…',
+    '🚀 1080p kaynağını yeniden dene': '🚀 Retry 1080p source',
+    'Alternatif 1080p kaynağını yeniden dener; gerekirse sayfayı yeniler. Yenileme bellek içi ayarları ve altyazıları sıfırlar.': 'Retry the alternate 1080p source; reloads if needed. Reloading clears in-memory settings and subtitles.',
     'Video bulunamadı': 'No video found',
     '📡 Medya HTTP yanıtı: {0} ms (son istek)': '📡 Media HTTP response: {0} ms (last request)',
     'CDN ölçümü için erişilebilir medya isteği bulunamadı.': 'No accessible media request found for measurement.',
@@ -1866,12 +1868,20 @@
     },
     getQualities(video, player) {
       // Only the selected player's declared renditions; CDN names cannot prove an inventory.
+      const menu = getNativeQualityMenuOptions(video, true);
       const vjs = findVideoJsPlayer(video, player);
-      if (vjs) return VideoJsAdapter.getQualities(video, vjs);
       const hls = findLibraryPlayer(video, 'hls', player);
-      return hls ? HlsJsAdapter.getQualities(video, hls) : [];
+      const declared = vjs ? VideoJsAdapter.getQualities(video, vjs) : hls ? HlsJsAdapter.getQualities(video, hls) : [];
+      if (!menu.length) return declared;
+      // Use the site's real control for named choices so its own selection state
+      // updates too. Keep additional renditions declared by the bound SDK.
+      const byHeight = new Map(menu.map(item => [item.height, item])), seen = new Set();
+      return [...declared.map(item => byHeight.get(item.height) || item), ...menu]
+        .filter(item => { if (seen.has(item.id)) return false; seen.add(item.id); return true; })
+        .sort((a, b) => b.height - a.height);
     },
     applyQuality(item, video, player) {
+      if (item.qualityApi === 'native-menu') return applyNativeQualityMenu(item, video);
       const vjs = findVideoJsPlayer(video, player);
       if (vjs) return VideoJsAdapter.applyQuality(item, video, vjs);
       const hls = findLibraryPlayer(video, 'hls', player);
@@ -2721,24 +2731,29 @@
     pendingQualityLabel = ''; pendingQualityHeight = 0;
     cachedDiscoveredQualities = [];
   }
-  function getNativeQualityMenuOptions(video) {
+  function getNativeQualityMenuOptions(video, allowNamedPuhu = false) {
     const root = video?.closest?.(QUALITY_PLAYER_ROOT);
     if (!root || root.closest?.('#pvc-controller-popup')) return [];
     // A shared layout containing several videos cannot establish ownership of a menu.
     const ownedVideos = [...root.querySelectorAll('video')].filter(item => item.closest(QUALITY_PLAYER_ROOT) === root);
     if (ownedVideos.length !== 1 || ownedVideos[0] !== video) return [];
-    const nodes = root.querySelectorAll('button[data-plyr="quality"][value], .vjs-resolution-button .vjs-menu-item, .vjs-quality-selector .vjs-menu-item, .jw-settings-submenu-quality button[data-value]');
+    const namedPuhu = allowNamedPuhu && /(^|\.)puhutv\.com$/.test(HOSTNAME);
+    const nodes = root.querySelectorAll('button[data-plyr="quality"][value], .vjs-resolution-button .vjs-menu-item, .vjs-quality-selector .vjs-menu-item, .jw-settings-submenu-quality button[data-value]'
+      + (namedPuhu ? ', .vjs-quality-selector .vjs-quality-item' : ''));
     const options = [], heights = new Set();
     for (const node of nodes) {
       if (node.closest(QUALITY_PLAYER_ROOT) !== root || node.disabled || node.getAttribute('aria-disabled') === 'true') continue;
       // Only a strict numeric resolution is exported to our UI. No arbitrary page text.
       const label = (node.textContent || '').trim();
       const match = label.match(/^(\d{2,4})\s*p?(?:\s*(?:HD|FHD|QHD|UHD|4K|\(HD\)|\(FHD\)))?$/i);
-      const height = match && diagnosticNumber(Number(match[1]), 100, 4320);
+      const named = namedPuhu && node.classList?.contains('vjs-quality-item')
+        && /^(?:Düşük|Standart|Yüksek|Low|Standard|High)$/i.test(label)
+        && /^(?:[1-9]\d{2,3})$/.test(node.id || '');
+      const height = diagnosticNumber(Number(match ? match[1] : named ? node.id : 0), 100, 4320);
       if (!height || heights.has(height)) continue;
       heights.add(height);
       const option = { id: `menu_${height}`, label: `${height}p`, height, qualityApi: 'native-menu' };
-      nativeQualityHandles.set(option, { node, root, video, source: video.currentSrc || video.src || '' });
+      nativeQualityHandles.set(option, { node, root, video, source: video.currentSrc || video.src || '', selectionClass: named ? 'selected' : null });
       options.push(option);
     }
     return options.sort((a, b) => b.height - a.height);
@@ -2799,7 +2814,7 @@
     return Object.freeze({ tick, stop, isActive: video => active?.video === video });
   }
   function hasSelectedAdMarker(video) {
-    const root = video?.closest?.('#channel-player, [data-testid="video-player"], .video-js, .jwplayer, .html5-video-player, .plyr');
+    const root = video?.closest?.('#channel-player, #injected-channel-player, [data-testid="video-player"], .video-js, .jwplayer, .html5-video-player, .plyr');
     if (!root || root.querySelectorAll('video').length !== 1 || !root.contains(video)) return false;
     const visible = node => {
       const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
@@ -3982,8 +3997,9 @@
     let rendition = null;
     try {
       if (chosen.qualityApi === 'native-menu') {
-        const node = nativeQualityHandles.get(chosen)?.node;
-        rendition = node ? node.getAttribute('aria-checked') === 'true' || node.getAttribute('aria-selected') === 'true' : null;
+        const handle = nativeQualityHandles.get(chosen), node = handle?.node;
+        rendition = node ? node.getAttribute('aria-checked') === 'true' || node.getAttribute('aria-selected') === 'true'
+          || !!(handle.selectionClass && node.classList.contains(handle.selectionClass)) : null;
       } else if (chosen.id.startsWith('hls_')) {
         const hls = findLibraryPlayer(video, 'hls', player);
         if (hls) rendition = hls.currentLevel === chosen.index && (!chosen.raw || hls.levels[chosen.index] === chosen.raw);
@@ -4114,11 +4130,12 @@
   }, { capture: true });
 
   function renderDynamicQualityButtons() {
-    if (remotePresentation) { renderRemoteQualities(); return; }
+    if (remotePresentation) { updatePuhuSourceRetryButton(null); renderRemoteQualities(); return; }
     const container = document.getElementById('pvc-dynamic-quality-container');
     if (!container) return;
 
     const selection = findVideoAndPlayer();
+    updatePuhuSourceRetryButton(selection);
     const qualities = discoverStreamQualities(selection);
     updateQualityVerification(selection.video, selection.player);
     const countBadge = document.getElementById('pvc-quality-count-badge');
@@ -4189,29 +4206,62 @@
     }
   }
 
+  let puhuSourceRetryInFlight = false;
+  function canRetryPuhuSource(video, player) {
+    return !remotePresentation && /(^|\.)puhutv\.com$/.test(HOSTNAME) && !!video && video.isConnected !== false
+      && video.readyState > 0 && !detectDrmStatus(video).isDrm && !!player && findVideoJsPlayer(video, player) === player;
+  }
+  function updatePuhuSourceRetryButton(selection) {
+    const button = document.getElementById('pvc-puhu-retry-source-btn');
+    if (!button) return;
+    const player = selection?.video && findVideoJsPlayer(selection.video, selection.player);
+    button.hidden = !canRetryPuhuSource(selection?.video, player);
+    button.disabled = puhuSourceRetryInFlight;
+    button.setAttribute('aria-busy', String(puhuSourceRetryInFlight));
+  }
+  async function retryPuhuSource(event) {
+    event.stopPropagation();
+    const selection = findVideoAndPlayer();
+    const player = findVideoJsPlayer(selection.video, selection.player);
+    if (puhuSourceRetryInFlight || !canRetryPuhuSource(selection.video, player)) return false;
+    puhuSourceRetryInFlight = true; updatePuhuSourceRetryButton(selection);
+    try { await switchToPuhuMncdnDirectly(selection.video, player); return true; }
+    finally { puhuSourceRetryInFlight = false; updatePuhuSourceRetryButton(findVideoAndPlayer()); }
+  }
+
   async function switchToPuhuMncdnDirectly(video, player) {
+    if (!canRetryPuhuSource(video, player)) return;
+    const source = getQualitySourceKey(video, player);
+    const current = () => canRetryPuhuSource(video, player) && findVideoAndPlayer().video === video
+      && getQualitySourceKey(video, player) === source;
     showToast('🚀 1080p FHD MNCDN akışı aranıyor...');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       if (lastCapturedDygApiUrl) {
-        const mnApiUrl = lastCapturedDygApiUrl.replace('akamai=true', 'akamai=false');
-        const res = await fetch(mnApiUrl, { method: 'POST' });
+        const mnApiUrl = new URL(lastCapturedDygApiUrl);
+        if (mnApiUrl.protocol !== 'https:' || mnApiUrl.hostname !== 'dygvideo.dygdigital.com' || mnApiUrl.pathname !== '/api/video_info') return;
+        mnApiUrl.searchParams.set('akamai', 'false');
+        const res = await fetch(mnApiUrl.href, { method: 'POST', signal: controller.signal });
         if (res.ok) {
           const json = await res.json();
           const videoUrl = json && json.data && (json.data.video_url || json.data.hls_url || (json.data.files && json.data.files[0] && json.data.files[0].url));
-          if (videoUrl && videoUrl.includes('mncdn.com')) {
+          const candidate = typeof videoUrl === 'string' ? new URL(videoUrl) : null;
+          if (!current()) return;
+          if (candidate?.protocol === 'https:' && /(^|\.)mncdn\.com$/.test(candidate.hostname)) {
             const mncdn1080Url = videoUrl.replace(/\d+p\.smil/i, '1080p.smil');
             targetPuhuSmilLevel = '1080p.smil';
             smoothPlayerSourceSwitch(player, video, mncdn1080Url, '1080p FHD (MNCDN)');
-            activeForcedQualityId = 'puhu_mn_1080';
-            activeForcedQualityLabel = '1080p (FHD)';
             renderDynamicQualityButtons();
             return;
           }
         }
       }
     } catch (err) {}
+    finally { clearTimeout(timeout); }
+    if (!current()) return;
     showToast('1080p FHD MNCDN akışı için sayfa yenileniyor...');
-    setTimeout(() => window.location.reload(), 400);
+    setTimeout(() => { if (current()) window.location.reload(); }, 400);
   }
 
   let periodicPingTimer = null;
@@ -5056,6 +5106,7 @@
         <div id="pvc-content-quality" class="pvc-section-content">
           <div id="pvc-dynamic-quality-container" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;"></div>
           <p id="pvc-quality-status" class="pvc-settings-note" aria-live="polite">Kalite isteği yok.</p>
+          <button type="button" id="pvc-puhu-retry-source-btn" class="pvc-action-btn" hidden title="Alternatif 1080p kaynağını yeniden dener; gerekirse sayfayı yeniler. Yenileme bellek içi ayarları ve altyazıları sıfırlar.">🚀 1080p kaynağını yeniden dene</button>
         </div>
       </div>
 
@@ -5530,6 +5581,7 @@
       e.stopPropagation();
       reportAnonymousError('USER_MANUAL_DIAGNOSTIC');
     };
+    popup.querySelector('#pvc-puhu-retry-source-btn').onclick = retryPuhuSource;
 
     popup.querySelector('#pvc-close-popup-btn').onclick = (e) => {
       e.stopPropagation();

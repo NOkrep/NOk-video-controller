@@ -20,7 +20,8 @@ const control=async(selector,value)=>driver.evaluate(page,(selector,value,click)
   const snapshot=async(stage,gc=false)=>{
     const collection=gc?await driver.gc(page):null;
     const metrics=await driver.memory(page),resources=await driver.evaluate(page,()=>resourceSnapshot());
-    samples.push({stage,collection,...metrics,resources});
+    const categories=process.argv.includes('--categories')?await driver.memoryCategories(page):undefined;
+    samples.push({stage,collection,...metrics,categories,resources});
     fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'progress.json'),JSON.stringify(samples,null,2)+'\n');
     process.stdout.write(JSON.stringify({stage,privateMiB:Math.round(metrics.process.privateBytes/1048576),resources})+'\n');
   };

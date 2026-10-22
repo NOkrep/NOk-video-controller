@@ -42,3 +42,11 @@ Son v0.7.2 kısa turu iki motorda geçti: geçici sökme/yeniden ekleme yeni con
 Kurulu geçici Firefox ve Chromium tabanlı Edge'de yerel 1080p30 video, iki tekrar, açık/kapalı HUD ve sürükleme ölçümleri tamamlandı. Sürükleme video konumu sorguları Firefox'ta 199/202 → 94/93, Edge'de 386/386 → 98/88 oldu. Firefox sürükleme kare kaybı 28/19 → 14/2; Edge sürüklemede iki sürümde de kayıp 0 idi. CPU örnekleri değişken; genel CPU/GPU kazancı iddia edilmez. Yöntem, GPU sayaç sınırları, kontrol pencereleri ve tüm sayısal sonuçlar [FILTER_PERFORMANCE.md](./FILTER_PERFORMANCE.md) içinde.
 
 Firefox headless tam filtre zinciri başlangıç ölçümünde 150 karenin 99/97'sini düşürdü; statik CSS yeniden yazımı sıfırdı. Bu render maliyeti v0.7.3'te çözülmüş sayılmaz. Görünür tarayıcı/compositor ayrıştırması ve geçerli Firefox GPU ölçümü açık. Bellek native/cache sınıflandırması, Kick UI/reklam ve Puhu/Video.js/yanlış iframe gerçek site kabulü hâlâ tamamlanmadı. Sürüm artışı kullanıcıya bildirildi; ZIP/release/push yapılmadı.
+
+## v0.7.4 — Puhu gerçek menü eşleşmesi ve korunan eski seçenek
+
+Puhu'nun isimli kalite kontrolleri, seçili video sahibinin gerçek menü ID'leriyle eşleştirildi. SDK'nın diğer gerçek seviyeleri korunur. Temiz Firefox tekrarında 1080p / Yüksek / 1920×1080 ve 480p / Düşük / 854×480, eklenti onayıyla birlikte gözlendi. Eski bir akıştaki 1080p metadata / 576p decoded farkı ayrı açık sorun olarak kaydedildi; tek denemeden eski yeniden deneme yönteminin hiç çalışmadığı sonucu çıkarılmadı.
+
+Kullanıcı talebiyle eski manuel `1080p kaynağını yeniden dene` seçeneği kalite bölümüne geri eklendi; daha iyi karşılık doğrulanana kadar korunur. Alternatif kaynak ve gerekirse sayfa yenileme akışı sürer. Tek eşzamanlı istek, seçili video/SDK/source sahipliği, DRM engeli ve kesin CDN host denetimi eklendi; salt deneme başarı olarak işaretlenmez. Yenileme hâlâ RAM ayarlarını sıfırlar, kalıcı depolama kullanılmaz.
+
+Kick gerçek sayfasında IVS sesinin %35 isteğini aldığı görüldü; görünür kontrol eşleşmesi ve gerçek reklam döngüsü henüz doğrulanmadı. Güncel oyuncu kökü reklam denetimine eklendi, sahiplik/görünürlük kısıtları korundu. **166 Node testi geçti.** Canlı kabul kapsamı ve sınırlamalar [LIVE_SITE_VALIDATION.md](./LIVE_SITE_VALIDATION.md) içindedir; hedefin bütünü açık, ZIP/yayın/push yoktur.

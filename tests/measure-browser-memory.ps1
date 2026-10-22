@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][int]$RootProcessId)
+param([Parameter(Mandatory=$true)][int]$RootProcessId, [switch]$PerProcess)
 $ErrorActionPreference = 'Stop'
 # Only the test-owned browser PID and its descendants; no user profiles or command lines.
 $testProcessIds = [System.Collections.Generic.HashSet[int]]::new()
@@ -10,8 +10,14 @@ while ($testPending.Count -gt 0) {
     Get-CimInstance Win32_Process -Filter "ParentProcessId = $testCurrent" | ForEach-Object { $testPending.Enqueue([int]$_.ProcessId) }
 }
 $testRows = @($testProcessIds | ForEach-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
-[pscustomobject]@{
+$testResult = [ordered]@{
     processCount = $testRows.Count
     workingSetBytes = [long](($testRows | Measure-Object WorkingSet64 -Sum).Sum)
     privateBytes = [long](($testRows | Measure-Object PrivateMemorySize64 -Sum).Sum)
-} | ConvertTo-Json -Compress
+}
+if ($PerProcess) {
+    $testResult.rows = @($testRows | ForEach-Object {
+        [pscustomobject]@{ id = $_.Id; privateBytes = $_.PrivateMemorySize64; workingSetBytes = $_.WorkingSet64 }
+    })
+}
+$testResult | ConvertTo-Json -Depth 4 -Compress

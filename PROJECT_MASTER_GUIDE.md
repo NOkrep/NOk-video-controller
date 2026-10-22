@@ -2,7 +2,7 @@
 
 > Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.3 (kaynak geliştirmesi; release/ZIP/push yapılmadı; gerçek site kabulü açık)
+> **Sürüm:** v0.7.4 (kaynak geliştirmesi; release/ZIP/push yapılmadı; gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
 > **Son Güncelleme:** 22 Ekim 2026 — v0.7.1 (yeni raporlar, HUD yaşam döngüsü, isteğe bağlı site bilgisi, iki motor bellek incelemesi)
@@ -661,3 +661,7 @@ Her video kendi isteğe bağlı Web Audio bağlamına sahiptir. Kaldırmada bağ
 ### v0.7.3 — filtre hedef araması ve iki motor performans ölçümü
 
 Filtre sürüklemesi sırasında seçili video WeakRef ile en fazla 200 ms yeniden kullanılır. Medya keşif önbelleğinin değişmesi, açık hedef seçimi veya video kaldırılması beklemeden yeniden keşif yaptırır. Görüntü efektlerinin sırası ve renk sonucu korunur; filtre işlemi bir animasyon karesinde tek son CSS yazımıyla sürer. 159 Node testi geçti. Sentetik 1080p30 dosyada Firefox/Chromium CPU, GPU sayaçları ve kare kaybı ölçümleri FILTER_PERFORMANCE.md içinde; ağır Firefox filtre zinciri ve görünür donanım hızlandırmalı tarayıcı kabulü açık kalır. Release/ZIP/push yapılmadı.
+
+### v0.7.4 — Puhu kaynak denemesi korunur
+
+Standart Puhu kaliteleri gerçek yerel isimli kontrol üzerinden uygulanır; bağlı SDK'nın ek seviyeleri korunur. Temiz Firefox'ta 1080p ve 480p site/görüntü/eklenti eşleşmesi gözlendi. **Kullanıcı kararı: eski manuel 1080p alternatif kaynak/yenileme seçeneği, daha iyi bir çözümle yerini aldığı doğrulanana kadar kaldırılmaz.** Düğme kalite bölümünde ayrı durur; yeniden deneme veya reload 1080p başarı kanıtı değildir. RAM içindeki ayarlar yenilemede sıfırlanır. Video/SDK/source değişimi, DRM ve başka host'ta işlem yapılmaz. Güncel Kick oyuncu kökü reklam sahipliği denetimine eklendi; gerçek reklam kabulü hâlâ açık. 166 Node testi; LIVE_SITE_VALIDATION.md gerçek site kanıtlarını ve sınırlarını tutar. Yeni ZIP/release/push yoktur.

@@ -1,4 +1,4 @@
-# NOk Video Controller (v0.7.3 — kaynak geliştirmesi)
+# NOk Video Controller (v0.7.4 — kaynak geliştirmesi)
 
 > Güncel kaynak çalışması: yeni HUD/medya/gizlilik düzeltmeleri ve iki tarayıcı motorunda ilk bellek ölçümleri [DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md) / [MEMORY_MEASUREMENTS.md](./MEMORY_MEASUREMENTS.md) içinde. Aşağıdaki v0.7.0.1 paket kaydı önceki sürümün kanıtıdır; yeni ZIP veya release hazırlanmadı.
 

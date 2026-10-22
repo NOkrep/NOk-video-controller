@@ -1,6 +1,6 @@
 # Etkin çalışma kapsamı
 
-22 Ekim 2026. Kaynak sürümü **v0.7.3**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+22 Ekim 2026. Kaynak sürümü **v0.7.4**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.
@@ -38,3 +38,14 @@
 - **4 Gerçek site kalite/medya keşfi: açık.** Puhu/Video.js ve bildirilen gömülü oynatıcılar için canlı kabul sürer.
 
 Kaynak klasörü v0.7.3; kullanıcı sürüm artışından ve kalan kapsamdan haberdar edildi. Hedefin bütünü tamamlandı işaretlenmez. Yayın/ZIP/push istenmedi ve yapılmadı.
+
+## v0.7.4 — güncel durum
+
+- Puhu'nun güncel oynatıcısında gerçek 1080p ve 480p görüntü, site seçimi ve eklenti onayıyla doğrulandı; isimli menü eşleşmesi düzeltildi.
+- **Eski manuel 1080p kaynak yeniden deneme düğmesi geri eklendi ve daha iyi bir çözümle yerini aldığı doğrulanana kadar korunacak.** Tek denemede eski akışın 576p kalması, kullanıcının birkaç denemeden sonra HD yakaladığı deneyimini çürütmez. Bu özel kaynağın kalite kabulü açık.
+- Kick'te SDK %35 sesi aldı; görünür ses/hız kontrolü ve gerçek reklam akışı açık. Güncel oyuncu kökü reklam denetiminde tanınır; gerçek reklam başarı iddiası yok.
+- 166 Node testi geçti. Bellek native/cache sınıflandırması, Firefox ağır filtre/GPU ve diğer Video.js/gömülü site kabulü açık kalır. Ayrıntı LIVE_SITE_VALIDATION.md.
+
+Hedef bütünü tamamlanmadı. Sürüm artışı kullanıcıya bildirildi; kaynak klasörü esas, ZIP/yayın/push yapılmadı.
+
+Eski Puhu düğmesinin geri eklenmesi, temiz Firefox'ta üç ardışık yenileme ve her seferinde yeniden görünür/etkin olmasıyla doğrulandı. Bu test HD yakalama kabulü değildir; reklam/önizleme/asıl içerik ayrımı ve eski kaynakta birkaç denemeden sonraki kalite sonucu ayrıca izlenecek. Kullanıcının bu yöntemi daha iyi bir çözüm doğrulanana kadar koruma talebi geçerlidir.
