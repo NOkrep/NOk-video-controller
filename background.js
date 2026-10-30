@@ -41,7 +41,7 @@ browserAPI.action.onClicked.addListener(async (tab) => {
       files: ['frame-protocol.js', 'content.js']
     });
 
-    console.log('[NOkrep] NOk Video Controller sekmeye başarıyla bağlandı.');
+    console.log('[NOkrep] FilmDeck sekmeye başarıyla bağlandı.');
   } catch (error) {
     console.error('[NOkrep] Enjeksiyon hatası:', error);
   }

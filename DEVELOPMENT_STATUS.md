@@ -56,3 +56,9 @@ Kick gerçek sayfasında IVS sesinin %35 isteğini aldığı görüldü; görün
 Tek video sahibinin `.vjs-quality-button .item-quality` kontrolü desteklenir. Doğrudan sayısal metin, nested HD/FullHD ikonlarından ayrılır; native `vjs-checked` okunur ve gerçek menü bir kez tıklanır. Kaynak değişmiş/başka video sahibinden kalan handle reddedilir; ek SDK seviyeleri korunur. Puhu'nun isimli kontrolleri ve eski manuel retry seçeneği sürer. **170 Node testi geçti.**
 
 Temiz kurulu görünür Firefox/Edge'de, bildirilen Video.js örneğinde 1080p ve 480p komutları site ve SDK seçiminde eşleşti; gerçek iframe 1.5x/%40 ses komutunu aldı. Üç rendition aynı resolved URI alanını bildiriyor; görüntü iki motorda da 720p kalıyor ve eklenti bunu doğru biçimde onaylamıyor. Bu yüzden decoded kalite kabulü açık kalır. Ek VHS 2 reset/seek denemesi son kaynakta tutulmadı. Ayrıntı LIVE_SITE_VALIDATION.md; özel site eşleşmesi Git dışındaki notta. Kaynak v0.7.5, yeni release/ZIP/push yok.
+
+## v0.7.6 — FilmDeck adı ve marka yerleşimi
+
+29 Ekim 2026. Ürün adı FilmDeck by NOk; HUD erişilebilir adı ve etkinlik metinleri FilmDeck. Kullanıcının sağladığı yatay logo başlıkta açık zemin üzerinde, mevcut NOk logosu yalnız alt imza alanında gösterilir. Alt imza sekme içeriklerinin dışında kalır; mini modda gizlenir. Görseller extension URL'sinden yüklenir; yükleme hatasında okunur metin yedeği korunur. Depo adresi, eklenti kimliği ve protokol adları değişmedi.
+
+170 Node testi, JS sözdizimi ve iki tarayıcıda yerel kurulu eklenti marka kontrolü geçti. Firefox/Chromium'da Player/Subtitles/Settings, görsel yüklenmesi, alt imzanın sınırları ve hata sonrası metin yedeği doğrulandı; Chromium ekran görüntüleri ayrıca incelendi. Bunlar yeni canlı site kabulü veya sınıf kullanılabilirlik deneyi değildir. Yatay wordmark'tan 16/48/128 kare ikon türetilmedi; önceki kare araç çubuğu ikonları durur. Kaynak sürümü v0.7.6; release/ZIP/push yok.

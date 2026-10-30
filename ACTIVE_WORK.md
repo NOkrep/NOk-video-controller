@@ -1,6 +1,6 @@
 # Etkin çalışma kapsamı
 
-22 Ekim 2026. Kaynak sürümü **v0.7.5**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+29 Ekim 2026. Kaynak sürümü **v0.7.6 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.
@@ -67,3 +67,9 @@ Kick görünür Firefox tekrarı ve eklentisiz kontrolü tamamlandı: video oyna
 Temiz görünür Firefox/Edge'de 1080p ve 480p istekleri site menüsü ve SDK seçiminde eşleşti. Hazır iframe videosu 1.5x ve %40 ses isteğini aldı; gizli readyState 0 üst video seçilmedi. Ancak bu örnekte üç rendition tek bir resolved kaynak adresi bildiriyor, decoded görüntü her iki istekte 720p kalıyor. Eklenti doğru biçimde Not confirmed gösteriyor; **decoded kalite kabulü açık**, bütün site uyumlu/kalite çözüldü denmez. Kanıt LIVE_SITE_VALIDATION.md ve Git dışındaki iki motor özetlerinde. Görüntüyü değiştirmeyen deneysel VHS 2 tampon yolu son kaynakta yoktur.
 
 Sıradaki farklı kabul: bildirilen diğer yanlış/gömülü video siteleri; ayrıca kontrolü gerçekten oluşan Kick VOD/Chromium ve gerçek reklam döngüsü. Eski Puhu manuel retry korunmaya devam eder. Belleğin ilk 34 MiB farkı geriye dönük tek nedene bağlanmadı; ölçülmüş sınırlar MEMORY_MEASUREMENTS.md içindedir. Genel hedef tamamlanmadı.
+
+## v0.7.6 — FilmDeck ürün kimliği
+
+29 Ekim 2026. Kullanıcı ürün adını FilmDeck olarak belirledi. Manifest, güncel README/rehber ve görünen arayüz adları güncellendi. Kullanıcının yatay PNG logosu değiştirilmeden `icons/filmdeck-logo.png` olarak kullanılır; özgün dosya korunur. HUD üstünde FilmDeck, sekmelerin dışında alt bölümde NOk imzası vardır. Küçük kare tarayıcı ikonları yatay logodan üretilmedi. Eklenti ID'si, teknik protokol, izinler ve bellek içi çalışma ilkesi korunur.
+
+170 Node testi ve sözdizimi kontrolü geçti. Geçici Firefox ve Chromium profillerinde yerel sentetik medyayla iki görselin yüklenmesi, üç sekmede alt imzanın konumu, taşma sınırı ve sonradan hataya düşen görselin metin yedeği doğrulandı. Bu tur önceki gerçek site/kalite/reklam kabulünü kapatmaz. Sunum için üç ayrı anlatı ve Canva yerleşim rehberi sohbetin özel çıktı klasöründedir; kullanıcı PDF'si ve ekip bilgileri depoya alınmadı. Yayın/ZIP/push yoktur.

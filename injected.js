@@ -1,5 +1,5 @@
 /**
- * injected.js - NOk Video Controller v0.7.0.1 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.6 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,9 +17,11 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.5';
+  const EXTENSION_VERSION = '0.7.6';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
+  const FILMDECK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.productLogoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.7.6', notes: 'FilmDeck adı, kullanıcı tarafından sağlanan yatay ürün logosu ve yalnız alt bölümde NOk imzası. Teknik kimlikler ve önceki canlı kabul sınırları korunur.' },
     { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
     { version: 'v0.7.0', notes: 'Test adayı: çapraz kökenli iframe için üst sayfada tek HUD, sınırlı komut/durum köprüsü ve tam ekranda kaynak çerçeveye geçiş. Oynatıcıya bağlı reklam işaretinde 16x isteği, mute ve geri alınabilir en düşük kalite; bitişte 1x/önceki ses-kalite. Kick gerçek envanter ve video sahipliği. 135 Node testi; Firefox kurulu geçici eklentiyle yerel iframe, gerçek HLS/Video.js kalite ve dosya medyasında 16x doğrulandı. Edge Video.js kalite zaman aşımı ve gerçek site kabulü açık.' },
     { version: 'v0.6.1', notes: 'Kalite seçenekleri video/oynatıcı/kaynağa bağlandı; native kaynak menüsü ve Video.js resolution-switcher desteği; istek/oynatıcı/görüntü doğrulaması ayrı, zaman aşımı görünür. Çoklu video hedef seçimi. İframe dışı sunum ve reklam aşaması açık; canlı doğrulama bekliyor.' },
@@ -88,7 +90,7 @@
     'Panel animasyonlarını azalt': 'Reduce panel motion',
     'Bu tercihler sayfa yenilenince sıfırlanır.': 'These preferences reset when the page reloads.',
     'Klavye Kısayolları Devre Dışı (Açmak için tıklayın)': 'Keyboard shortcuts off (click to turn on)',
-    'NOk Video Controller Denetim Masası': 'NOk Video Controller panel',
+    'FilmDeck Denetim Masası': 'FilmDeck panel',
     'Dil': 'Language',
     'Dil seçimi yalnızca bu sayfa açıkken tutulur.': 'The language choice lasts only for this page.',
     'Sürüklemek için basılı tutun (Kenarlara 16px yaklaşınca mıknatıslı hizalanır)': 'Drag to move (snaps near screen edges)',
@@ -216,7 +218,7 @@
     'ile şifrelenmiştir. Donanım ses kesintisini önlemek adına Web Audio API ses yükselticisi (%300) devre dışı bırakılmış olup yerel ses (%100), hız, görüntü filtreleri ve altyazı kontrolleri aktif tutulmuştur.': 'encryption. To protect audio playback, Web Audio boosting is disabled. Native volume (up to 100%), speed, picture filters and subtitles remain available.',
     'Anladım, Kapat': 'Understood, close',
     '🛡️ DRM Korumalı Akış ({0})': '🛡️ DRM protected stream ({0})',
-    'NOk Video Controller Aktif (v{0})': 'NOk Video Controller active (v{0})',
+    'FilmDeck Aktif (v{0})': 'FilmDeck active (v{0})',
     '🎬 {0}: Tampon dolduruluyor...': '🎬 {0}: buffering…',
     '✅ {0} Kilitlendi (Akıcı Oynatılıyor)': '✅ {0} locked (playing)',
     'PuhuTV: {0} (Kilitlendi)': 'PuhuTV: {0} (locked)',
@@ -694,11 +696,11 @@
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
       window.postMessage({ type: findVideoAndPlayer().video ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
-      showToast(`NOk Video Controller Aktif (v${EXTENSION_VERSION})`);
+      showToast(`FilmDeck Aktif (v${EXTENSION_VERSION})`);
     }
   });
 
-  console.log(`[NOkrep] NOk Video Controller v${EXTENSION_VERSION} aktif.`);
+  console.log(`[NOkrep] FilmDeck v${EXTENSION_VERSION} aktif.`);
 
   const GITHUB_REPO_URL = 'https://github.com/NOkrep/NOk-video-controller';
   const DEVELOPER_EMAIL = 'ihsanartrk07@gmail.com';
@@ -4963,13 +4965,13 @@
     popup.id = 'pvc-controller-popup';
     popup.className = 'pvc-floating-menu';
     popup.setAttribute('role', 'region');
-    setUiAttribute(popup, 'aria-label', 'NOk Video Controller Denetim Masası');
+    setUiAttribute(popup, 'aria-label', 'FilmDeck Denetim Masası');
     popup.setAttribute('tabindex', '0');
 
     popup.innerHTML = `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Kenarlara 16px yaklaşınca mıknatıslı hizalanır)">
-        <div class="pvc-menu-brand" title="NOk Video Controller v${EXTENSION_VERSION}">
-          <span id="pvc-brand-text" class="pvc-menu-title">NOk</span>
+        <div class="pvc-menu-brand" title="FilmDeck v${EXTENSION_VERSION}">
+          <span id="pvc-brand-text" class="pvc-menu-title">FilmDeck</span>
         </div>
         <div class="pvc-header-actions">
           <button id="pvc-pip-btn" class="pvc-icon-btn" title="Resim İçinde Resim (PiP) Aç/Kapat (Alt+P)" aria-label="Resim İçinde Resim">🖼️</button>
@@ -5190,19 +5192,31 @@
         <button id="pvc-perms-btn" class="pvc-footer-btn pvc-btn-sky" title="Klavye Kısayolları & İzin Rehberi">⌨️ Kısayollar</button>
         <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">⚠️ Teşhis</button>
       </div>
+      <div id="pvc-brand-footer" class="pvc-brand-footer pvc-hide-on-collapse" title="by NOk">
+        <span id="pvc-footer-brand-text" class="pvc-menu-title">NOk</span>
+        <span class="pvc-menu-badge">v${EXTENSION_VERSION}</span>
+      </div>
     `;
 
-    // NOkrep logosu (icons/nok-logo.svg): DOM API ile eklenir; dosya yoksa veya sayfa CSP'si engellerse sessizce kaldırılır.
-    if (/^(chrome|moz)-extension:\/\//.test(NOK_LOGO_URL)) {
-      const brandEl = popup.querySelector('.pvc-menu-brand');
+    // Local brand images keep a text fallback when the asset or page CSP blocks loading.
+    for (const brand of [
+      { selector: '.pvc-menu-brand', url: FILMDECK_LOGO_URL, alt: 'FilmDeck', className: 'pvc-product-logo', fallback: '#pvc-brand-text' },
+      { selector: '#pvc-brand-footer', url: NOK_LOGO_URL, alt: 'NOk', className: 'pvc-brand-logo', fallback: '#pvc-footer-brand-text' }
+    ]) {
+      if (!/^(chrome|moz)-extension:\/\//.test(brand.url)) continue;
+      const brandEl = popup.querySelector(brand.selector);
       if (brandEl) {
         const logoImg = document.createElement('img');
-        logoImg.className = 'pvc-brand-logo';
-        logoImg.alt = 'NOk';
+        logoImg.className = brand.className;
+        logoImg.alt = brand.alt;
         logoImg.draggable = false; // Başlıktaki mousedown sürüklemesini tarayıcının yerel resim sürüklemesi bozmasın
-        logoImg.addEventListener('load', () => { const t = popup.querySelector('#pvc-brand-text'); if (t) t.style.display = 'none'; });
-        logoImg.addEventListener('error', () => logoImg.remove());
-        logoImg.src = NOK_LOGO_URL;
+        logoImg.addEventListener('load', () => { const t = popup.querySelector(brand.fallback); if (t) t.style.display = 'none'; });
+        logoImg.addEventListener('error', () => {
+          logoImg.remove();
+          const fallback = popup.querySelector(brand.fallback);
+          if (fallback) fallback.style.removeProperty('display');
+        });
+        logoImg.src = brand.url;
         brandEl.insertBefore(logoImg, brandEl.firstChild);
       }
     }
@@ -5648,7 +5662,7 @@
         if (hdrSpeed) setUiText(hdrSpeed, `${video.playbackRate || 1.0}x`);
         initAudioGraphForVideo(video);
       }
-      showToast(`NOk Video Controller Aktif (v${EXTENSION_VERSION})`);
+      showToast(`FilmDeck Aktif (v${EXTENSION_VERSION})`);
     }
   }
 

@@ -21,6 +21,7 @@
       const script = document.createElement('script');
       script.src = browserAPI.runtime.getURL('injected.js');
       script.dataset.logoUrl = browserAPI.runtime.getURL('icons/nok-logo.svg');
+      script.dataset.productLogoUrl = browserAPI.runtime.getURL('icons/filmdeck-logo.png');
       script.onload = function () {
         this.remove();
         if (selectedLanguageSignal) {

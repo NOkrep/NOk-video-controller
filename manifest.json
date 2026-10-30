@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "NOk Video Controller",
-  "version": "0.7.5",
+  "name": "FilmDeck by NOk",
+  "version": "0.7.6",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "author": "NOkrep",
@@ -11,7 +11,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "NOk Video Controller",
+    "default_title": "FilmDeck",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -44,6 +44,7 @@
         "injected.js",
         "frame-protocol.js",
         "injected.css",
+        "icons/filmdeck-logo.png",
         "icons/nok-logo.svg"
       ],
       "matches": ["<all_urls>"]

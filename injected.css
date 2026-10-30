@@ -1,5 +1,5 @@
 /**
- * injected.css - NOk Video Controller v0.7.0.1
+ * injected.css - FilmDeck by NOk v0.7.6
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -166,10 +166,34 @@
   height: 24px !important;
   width: auto !important;
   display: inline-block !important;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.35)) !important;
   pointer-events: none !important;
   -webkit-user-drag: none !important;
   user-select: none !important;
+}
+
+.pvc-product-logo {
+  display: block !important;
+  width: 132px !important;
+  max-width: 100% !important;
+  height: 44px !important;
+  object-fit: contain !important;
+  box-sizing: border-box !important;
+  padding: 2px 4px !important;
+  background: #fff !important;
+  border-radius: 6px !important;
+  pointer-events: none !important;
+  -webkit-user-drag: none !important;
+  user-select: none !important;
+}
+
+.pvc-brand-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid var(--pvc-border) !important;
 }
 
 .pvc-menu-badge {

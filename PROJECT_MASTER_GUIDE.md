@@ -1,17 +1,17 @@
-# NOk Video Controller — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
+# FilmDeck by NOk — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
 > Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.5 (kaynak geliştirmesi; release/ZIP/push yapılmadı; gerçek site kabulü açık)
+> **Sürüm:** v0.7.6 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** 22 Ekim 2026 — v0.7.1 (yeni raporlar, HUD yaşam döngüsü, isteğe bağlı site bilgisi, iki motor bellek incelemesi)
+> **Son Güncelleme:** 29 Ekim 2026 — v0.7.6 (FilmDeck adı ve kullanıcı logosu; NOk imzası HUD alt bölümünde)
 
 ---
 
 ## 1. 📌 Yönetici Özeti & Temel Misyon
 
-**NOk Video Controller**, Türkiye'deki ve dünyadaki popüler canlı yayın ile VoD (Video on Demand) platformlarında kullanıcıya video oynatıcı üzerinde eksiksiz hakimiyet sağlayan, **sıfır depolama izinli (Zero-Storage / In-Memory Stateless)**, evrensel uyumluluklu açık kaynaklı bir tarayıcı eklentisidir.
+**FilmDeck by NOk** (önceki adı NOk Video Controller), canlı yayın ve VoD (Video on Demand) oynatıcılarında ortak video kontrolleri sunmayı amaçlayan, **sıfır kalıcı depolama (Zero-Storage / In-Memory Stateless)** ilkesine sahip açık kaynaklı bir tarayıcı eklentisidir. Özellik desteği seçili oynatıcıya bağlıdır; gerçek site kabul sınırları kendi kayıtlarında izlenir.
 
 ### Temel Yetenekler:
 1. **Evrensel Medya ve Shadow DOM Derin Taraması:**
