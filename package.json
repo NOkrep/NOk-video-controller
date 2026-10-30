@@ -1,6 +1,6 @@
 {
   "name": "filmdeck",
-  "version": "0.7.7",
+  "version": "0.7.7.2",
   "private": true,
   "description": "Development checks for the FilmDeck browser extension",
   "scripts": {

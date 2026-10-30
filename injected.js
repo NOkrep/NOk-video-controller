@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.7 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.7.2 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,10 +17,12 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.7';
+  const EXTENSION_VERSION = '0.7.7.2';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const FILMDECK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.productLogoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.7.7.2', notes: 'FilmDeck başlık logosu gizli resim/CSS maskesi yerine görünür IMG ve açık-koyu tema filtresiyle çizilir. NOk imzası ve sürüm Settings > About FilmDeck içinde toplandı. Kaset deck simgeleri tüm katmanları koruyup dış saydam boşluğu azaltarak ek iç boşluk olmadan boyutlandırıldı; özgün kaynak korunur.' },
+    { version: 'v0.7.7.1', notes: 'Kullanıcının mor kaset çiziminden yeni saydam 16/32/48/128 px eklenti simgeleri; 32 px yüksek yoğunluklu araç çubuğu boyutu ve CI ikon doğrulaması. Özgün çizim ve yatay HUD logosu korunur.' },
     { version: 'v0.7.7', notes: 'Tema rengiyle çizilen FilmDeck logosu, ortak SVG kontrol simgeleri, alt by NOk imzası ve Ayarlar > Hakkında sürüm bilgisi. GitHub push/PR kaynak, sürüm sözleşmesi ve Firefox/Chromium yerel HUD testleri; gerçek site kabulü ayrı izlenir.' },
     { version: 'v0.7.6', notes: 'FilmDeck adı, kullanıcı tarafından sağlanan yatay ürün logosu ve yalnız alt bölümde NOk imzası. Teknik kimlikler ve önceki canlı kabul sınırları korunur.' },
     { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
@@ -299,6 +301,7 @@
     'Video henüz bulunamadı': 'No video found yet',
     'Ölçülüyor...': 'Measuring…',
     'Hakkında': 'About',
+    'FilmDeck Hakkında': 'About FilmDeck',
     'Sürüm {0}': 'Version {0}',
     'Video ve altyazı kontrolleri.': 'Video and subtitle controls.',
     'MIT lisansı · Kaynak kodu': 'MIT license · Source code'
@@ -482,6 +485,7 @@
     root.setAttribute('data-pvc-theme', theme.id);
     for (const [key, value] of Object.entries(theme.colors)) root.style.setProperty(`--pvc-${key}`, value);
     root.style.setProperty('--pvc-scheme', theme.scheme);
+    root.style.setProperty('--pvc-logo-filter', theme.scheme === 'dark' ? 'brightness(0) invert(1)' : 'brightness(0)');
   }
   function updateThemeControls() {
     const theme = UI_THEMES.find(item => item.id === currentUiThemeId);
@@ -689,8 +693,10 @@
     createThemePicker(settings, popup);
     const about = document.createElement('details');
     about.id = 'pvc-about'; about.className = 'pvc-about';
-    const aboutSummary = document.createElement('summary'); setUiText(aboutSummary, 'Hakkında');
+    const aboutSummary = document.createElement('summary'); setUiText(aboutSummary, 'FilmDeck Hakkında');
     about.appendChild(aboutSummary);
+    const makerBrand = popup.querySelector('#pvc-brand-footer');
+    if (makerBrand) about.appendChild(makerBrand);
     for (const text of ['FilmDeck by NOk', `Sürüm ${EXTENSION_VERSION}`, 'Video ve altyazı kontrolleri.']) {
       const line = document.createElement('p'); setUiText(line, text); about.appendChild(line);
     }
@@ -5275,9 +5281,7 @@
         logoImg.draggable = false; // Başlıktaki mousedown sürüklemesini tarayıcının yerel resim sürüklemesi bozmasın
         logoImg.addEventListener('load', () => {
           if (brand.className === 'pvc-product-logo') {
-            brandEl.style.setProperty('--pvc-product-mask', `url("${brand.url}")`);
             brandEl.classList.add('pvc-product-ready');
-            brandEl.setAttribute('role', 'img'); brandEl.setAttribute('aria-label', 'FilmDeck');
           }
           const t = popup.querySelector(brand.fallback); if (t) t.style.display = 'none';
         });

@@ -1,10 +1,22 @@
 # Etkin çalışma kapsamı
 
+## v0.7.7.2 — 30 Ekim 2026, görünür amblem ve About FilmDeck
+
+Son kontrol: 180 Node testi ve ikon/sürüm sözleşmesi geçti. Firefox 159.0 ve Chromium tabanlı Edge 152.0.4191.53'te 20 tema, EN/TR, dar pencere, görünür logo ve About FilmDeck yerleşimi geçti. Tam deck'in gerçek boyutlu açık/koyu PNG önizlemesi incelendi; canlı araç çubuğu/HiDPI kabulü ayrıca kullanıcıda doğrulanmalıdır. Kaynak v0.7.7.2, uygulama commit/push/PR yapılmadı.
+
+Çalışma dalı `codex/filmdeck-cassette-icon`, `main` ile aynı `ad90ae4` v0.7.7 commit'inden açılmıştır; önceki HUD/CI değişiklikleri eksik değildir. Gizli IMG + CSS maskesi yolu kaldırıldı; özgün yatay logo görünür IMG ve tema filtresiyle çizilir. Önceki maske tanımı kontrolü gerçek çizimi kanıtlamıyordu; yeni görünür IMG kontrolü eski kaynakta başarısız oldu, düzeltmeden sonra Firefox/Chromium'da geçti. Kullanıcının sitesindeki kesin CSP/çizim nedeni doğrudan ölçülmüş sayılmaz. NOk imzası ve sürüm yalnız Settings → About FilmDeck içindedir. 16/32/48/128 px simgeler tüm kaset deck ve arka katmanları korunarak, ek iç boşluk olmadan boyutlandırıldı; özgün 4096 px dosya değişmedi. Eklentiyi yeniden yükledikten sonra açık sayfa da yenilenmelidir: eski motor aynı sayfanın RAM'inde kalabilir.
+
+`HMI_lessons` ve `others-Puhu` dallarının her birinde yalnız bir ek merge commit'i vardı; tree'leri main geçmişindeki sırasıyla `4d71a35` ve `d79dabb` ile aynıydı. SHA lease ile uzak dallar, ardından yerel dallar silindi. `main` ve çalışma dalı korundu. Uygulama değişiklikleri henüz commit/push/PR yapılmadı; önceki gerçek site/performans hedefleri açık kaldıkları kapsamda korunur.
+
+## v0.7.7.1 — 30 Ekim 2026, kaset simgesi
+
+Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16/32/48/128 px simgeler üretildi; görünür çizim oranı korunup kareye ortalandı ve dış saydam boşluk azaltıldı. Özgün dosyanın SHA-256 özeti değişmedi. Manifest eklenti/toolbar eşlemelerine 32 px boyutu ve CI denetimine aynı boyut eklendi. 179 Node testi ve ikon sözleşmesi geçti; açık/koyu zeminde gerçek boyutlu PNG önizlemesi incelendi. Tarayıcı araç çubuğundaki canlı görünüm ayrıca doğrulanmadı. Çalışma dalı `codex/filmdeck-cassette-icon`; commit/push/PR/yayın yok. Önceki hedeflerin kabul durumu değişmez.
+
 ## v0.7.7 — 30 Ekim 2026, simgeler ve otomatik kalite kontrolleri
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.7 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.7.2 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

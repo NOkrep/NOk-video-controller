@@ -1,5 +1,15 @@
 # Yeni raporlar sonrası kaynak çalışma durumu
 
+## v0.7.7.2 — 30 Ekim 2026: amblem, About ve dal denetimi
+
+180 Node testi, ikon/sürüm sözleşmesi ve gerçek geçici Firefox 159.0 / Chromium tabanlı Edge 152.0.4191.53 HUD testleri geçti: 20 tema, EN/TR, dar pencere, görünür logo, About altındaki NOk/sürüm ve bozuk logo metin yedeği. Tüm katmanları korunan deck PNG'leri açık/koyu zeminde incelendi; tarayıcının gerçek araç çubuğu görünümü bu sayfa içi testten çıkarılmaz.
+
+Dal karşılaştırması main/çalışma dalının aynı v0.7.7 tabanında olduğunu doğruladı. Önceki CSS, IMG öğesini daima gizleyip maskenin çizildiğini varsayıyordu; resmin yüklenmesi ve maskenin CSS değeri boya kabulü değildi. Maske kaldırıldı; görünür ve boyutlandırılmış IMG, açık/koyu temada siyah/beyaz filtreyle kullanılır. Doğrudan görünür IMG kontrolü eski sürümde başarısız oldu. Siteye özgü görünmeme nedeni yerinde ölçülmedi; kontrollü test eksikliği giderildi. NOk imzası ve sürüm Settings → About FilmDeck içinde birleştirildi; sekmelerin dışında NOk kalmadı. Kaset deck simgelerinde tüm katmanlar korunur; yalnız dış saydam boşluk azaltılıp ek iç boşluk kaldırılır; katmanlı 4096 px kaynak değiştirilmedi. Eski iki dalın özgün dosya değişikliği taşımadığı tree karşılaştırmasıyla doğrulandıktan sonra kullanıcı isteğiyle uzak ve yerel referansları silindi. Uygulama kodu yalnız yerel çalışma dalındadır; yeni commit/push/yayın yok.
+
+## v0.7.7.1 — 30 Ekim 2026: yeni kaset simgesi
+
+Araç çubuğu ve eklenti listesi için kullanıcının 4096 px kaset çiziminden 16/32/48/128 px RGBA PNG'ler üretildi. Görünür nesne dışındaki neredeyse saydam boşluk üzerinden sınır belirlendi; oran bozulmadan kareye ortalandı. Özgün PNG değişmedi; yatay HUD logosu ve alt NOk imzası korunur. 32 px eşlemesi hem manifest simgelerine hem action simgelerine eklendi; CI dört boyutun PNG boyutlarını ve eşleşmesini denetler. 179 test / ikon sözleşmesi geçti. Gerçek boyutlu açık/koyu PNG önizlemesi incelendi; canlı toolbar/HiDPI kabulü iddia edilmez. Yerel dal `codex/filmdeck-cassette-icon`; commit/push/PR/yayın yapılmadı.
+
 ## v0.7.7 — 30 Ekim 2026: HUD simgeleri ve GitHub kontrol akışı
 
 FilmDeck yatay logosu özgün alfa kanalı üzerinden tema metin renginde çizilir; sabit beyaz plaka kaldırıldı. Küçük HUD kontrol simgeleri aynı SVG çizgi üslubundadır. Alt imza `by NOk`; sürüm native açılır Ayarlar → Hakkında bölümündedir. Mevcut kullanıcı araç çubuğu ikonları, logo çizimleri, adaptör davranışı, izinler ve RAM ilkesi korunur. Dinamik etiket/dil değişimi SVG düğümlerini korur; mini oynat/duraklat simgesi durumla değişir.
