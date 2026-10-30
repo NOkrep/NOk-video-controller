@@ -69,7 +69,7 @@ function harness(reducedMotion = false) {
     document: { activeElement: null, createElement: tag => new Element(tag),
       getElementById: id => id === popup.id ? popup : popup.querySelector('#' + id) },
     window: { matchMedia: () => ({ matches: reducedMotion }), postMessage() {} },
-    hotkeysEnabled: true, popup,
+    hotkeysEnabled: true, EXTENSION_VERSION: '0.7.7', popup,
     clampPopupToViewport() {}, idleDelaySeconds: 2, idleTimerStep1: null, idleTimerStep2: null,
     setTimeout: fn => { timers.set(++timerId, fn); return timerId; }, clearTimeout: id => timers.delete(id)
   });

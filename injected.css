@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.6
+ * injected.css - FilmDeck by NOk v0.7.7
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -172,29 +172,41 @@
 }
 
 .pvc-product-logo {
-  display: block !important;
-  width: 132px !important;
-  max-width: 100% !important;
-  height: 44px !important;
-  object-fit: contain !important;
-  box-sizing: border-box !important;
-  padding: 2px 4px !important;
-  background: #fff !important;
-  border-radius: 6px !important;
-  pointer-events: none !important;
-  -webkit-user-drag: none !important;
-  user-select: none !important;
+  display: none !important;
+}
+
+.pvc-menu-brand.pvc-product-ready::before {
+  content: '' !important;
+  width: 118px !important;
+  height: 32px !important;
+  background-color: var(--pvc-text) !important;
+  -webkit-mask: var(--pvc-product-mask) center / contain no-repeat !important;
+  mask: var(--pvc-product-mask) center / contain no-repeat !important;
 }
 
 .pvc-brand-footer {
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  gap: 8px !important;
-  margin-top: 8px !important;
-  padding-top: 8px !important;
-  border-top: 1px solid var(--pvc-border) !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  margin-top: 6px !important;
+  padding-top: 4px !important;
+  color: var(--pvc-muted) !important;
+  font: 11px/1.4 system-ui !important;
 }
+
+.pvc-brand-footer .pvc-brand-logo { height: 14px !important; }
+.pvc-brand-footer .pvc-menu-title { font-size: 11px !important; font-weight: 400 !important; color: var(--pvc-muted) !important; }
+#pvc-controller-popup .pvc-ui-icon { display: inline-block !important; width: 18px !important; height: 18px !important; flex: 0 0 18px !important; vertical-align: middle !important; color: currentColor !important; pointer-events: none !important; }
+#pvc-controller-popup [data-pvc-ui-label] { vertical-align: middle !important; }
+#pvc-controller-popup button:has(.pvc-ui-icon), #pvc-controller-popup .pvc-label { gap: 5px !important; }
+#pvc-controller-popup .pvc-label { display: inline-flex !important; align-items: center !important; }
+#pvc-controller-popup .pvc-icon-btn { min-width: 30px !important; min-height: 30px !important; justify-content: center !important; }
+#pvc-controller-popup .pvc-icon-btn { transition: color 150ms ease-out, background-color 150ms ease-out !important; }
+#pvc-controller-popup .pvc-about { margin-top: 10px !important; padding-top: 8px !important; border-top: 1px solid var(--pvc-border) !important; color: var(--pvc-muted) !important; font: 12px/1.6 system-ui !important; }
+#pvc-controller-popup .pvc-about summary { cursor: pointer !important; color: var(--pvc-text) !important; }
+#pvc-controller-popup .pvc-about p { margin: 6px 0 !important; }
+#pvc-controller-popup .pvc-about a { color: var(--pvc-accent-ink) !important; }
 
 .pvc-menu-badge {
   background: var(--pvc-elevated, #1b2a33) !important;

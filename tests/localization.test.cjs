@@ -18,6 +18,13 @@ class Element {
   setAttribute(name, value) { this.attributes[name] = value; }
   getAttribute(name) { return this.attributes[name] ?? null; }
   hasAttribute(name) { return Object.hasOwn(this.attributes, name); }
+  querySelector(selector) {
+    for (const child of this.childNodes.filter(node=>node.nodeType===1)) {
+      if (selector==='[data-pvc-ui-label]' && child.hasAttribute('data-pvc-ui-label')) return child;
+      const nested=child.querySelector(selector);if(nested)return nested;
+    }
+    return null;
+  }
 }
 const text = nodeValue => ({ nodeType: 3, nodeValue });
 function parseMarkup(markup) {
@@ -130,4 +137,16 @@ test('extension metadata has both locales and an English fallback without new pe
     assert.ok(messages.extensionDescription.message);
   }
   assert.deepEqual(manifest.permissions, ['activeTab', 'scripting']); assert.deepEqual(manifest.host_permissions, []);
+});
+
+test('dynamic icon labels translate without replacing SVG geometry or user values', () => {
+  const icon=new Element('SVG',{'data-pvc-i18n-skip':'','aria-hidden':'true'});
+  const label=new Element('SPAN',{'data-pvc-ui-label':''},[text('Oynat')]);
+  const button=new Element('BUTTON',{},[icon,label]);button.value='PRIVATE_VALUE';
+  const h=harness('en-US',{'pvc-controller-popup':button});h.context.button=button;
+  h.run('setUiText(button,"⏸️ Duraklat")');assert.equal(label.textContent,'Pause');
+  h.run('setUiLanguage("tr",false)');assert.equal(label.textContent,'Duraklat');
+  h.run('setUiLanguage("en",false)');assert.equal(label.textContent,'Pause');
+  assert.equal(button.childNodes[0],icon);assert.equal(button.childNodes[1],label);
+  assert.equal(button.value,'PRIVATE_VALUE');assert.equal(icon.getAttribute('aria-hidden'),'true');
 });

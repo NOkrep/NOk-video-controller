@@ -1,5 +1,11 @@
 # Yeni raporlar sonrası kaynak çalışma durumu
 
+## v0.7.7 — 30 Ekim 2026: HUD simgeleri ve GitHub kontrol akışı
+
+FilmDeck yatay logosu özgün alfa kanalı üzerinden tema metin renginde çizilir; sabit beyaz plaka kaldırıldı. Küçük HUD kontrol simgeleri aynı SVG çizgi üslubundadır. Alt imza `by NOk`; sürüm native açılır Ayarlar → Hakkında bölümündedir. Mevcut kullanıcı araç çubuğu ikonları, logo çizimleri, adaptör davranışı, izinler ve RAM ilkesi korunur. Dinamik etiket/dil değişimi SVG düğümlerini korur; mini oynat/duraklat simgesi durumla değişir.
+
+179 Node testi, sürüm/izin/ikon/manifest çalışma dosyası sözleşmesi ve gerçek kurulu Firefox 159.0 / Chromium tabanlı Edge 152.0.4191.53 yerel HUD turları geçti. 20 tema, EN/TR, normal/dar pencere, ses, sekme klavyesi, mini oynat/duraklat ve logo hata yedeği doğrulandı. Playwright yalnız geliştirme bağımlılığıdır; kilitli kurulum lifecycle script'leri kapalı olarak doğrulandı. GitHub Actions akışı Ubuntu/Windows kaynak testleri ve Windows Firefox/Chromium HUD testleri içerir; uzak çalışması, branch protection ve required checks bu yerel sonuçtan çıkarılmaz. TESTING.md kullanım/sınırları açıklar. Yeni ZIP, yayın veya push yok; aşağıdaki tarihsel gerçek site/bellek/GPU kabul sınırları korunur.
+
 22 Ekim 2026 · **v0.7.1 kaynak geliştirmesi**. Bu belge bir release duyurusu değildir. Kaynak klasörü üzerinde çalışılır; kullanıcı istemeden ZIP, yayın veya push yapılmaz. Önceki sürüm kanıtları kendi release notlarında korunur. **152 Node regresyon testi geçti.**
 
 ## Uygulanan düzeltmeler

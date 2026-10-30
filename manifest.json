@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FilmDeck by NOk",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "author": "NOkrep",
@@ -28,15 +28,22 @@
       "matches": [
         "<all_urls>"
       ],
-      "js": ["frame-protocol.js", "content.js"],
-      "css": ["injected.css"],
+      "js": [
+        "frame-protocol.js",
+        "content.js"
+      ],
+      "css": [
+        "injected.css"
+      ],
       "run_at": "document_start",
       "all_frames": true
     }
   ],
   "background": {
     "service_worker": "background.js",
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
   "web_accessible_resources": [
     {
@@ -47,7 +54,9 @@
         "icons/filmdeck-logo.png",
         "icons/nok-logo.svg"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "browser_specific_settings": {

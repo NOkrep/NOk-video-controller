@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.6 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.7 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,10 +17,11 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.6';
+  const EXTENSION_VERSION = '0.7.7';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const FILMDECK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.productLogoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.7.7', notes: 'Tema rengiyle çizilen FilmDeck logosu, ortak SVG kontrol simgeleri, alt by NOk imzası ve Ayarlar > Hakkında sürüm bilgisi. GitHub push/PR kaynak, sürüm sözleşmesi ve Firefox/Chromium yerel HUD testleri; gerçek site kabulü ayrı izlenir.' },
     { version: 'v0.7.6', notes: 'FilmDeck adı, kullanıcı tarafından sağlanan yatay ürün logosu ve yalnız alt bölümde NOk imzası. Teknik kimlikler ve önceki canlı kabul sınırları korunur.' },
     { version: 'v0.7.0.1', notes: 'Düzeltme adayı: iframe filtrelerinde tek bekleyen istek ve en son kullanıcı değerinin korunması; eski oturumda kuyruk/çizim işi iptali. Medya içermeyen DOM değişimlerinde gereksiz keşif engellendi. Video.js eski tamponu yalnızca eşleşen VHS yükleyicileriyle bir kez yeniler. 142 Node testi; Firefox kurulu eklenti, sürekli iframe filtresi ve Firefox/Edge gerçek yerel HLS-Video.js kalite geçişleri geçti. Dizipod ve gerçek site kabulü açık.' },
     { version: 'v0.7.0', notes: 'Test adayı: çapraz kökenli iframe için üst sayfada tek HUD, sınırlı komut/durum köprüsü ve tam ekranda kaynak çerçeveye geçiş. Oynatıcıya bağlı reklam işaretinde 16x isteği, mute ve geri alınabilir en düşük kalite; bitişte 1x/önceki ses-kalite. Kick gerçek envanter ve video sahipliği. 135 Node testi; Firefox kurulu geçici eklentiyle yerel iframe, gerçek HLS/Video.js kalite ve dosya medyasında 16x doğrulandı. Edge Video.js kalite zaman aşımı ve gerçek site kabulü açık.' },
@@ -296,8 +297,53 @@
     '🎬 Güncellendi: {0}': '🎬 Updated: {0}',
     '🎬 Video başarıyla yakalandı!': '🎬 Video found!',
     'Video henüz bulunamadı': 'No video found yet',
-    'Ölçülüyor...': 'Measuring…'
+    'Ölçülüyor...': 'Measuring…',
+    'Hakkında': 'About',
+    'Sürüm {0}': 'Version {0}',
+    'Video ve altyazı kontrolleri.': 'Video and subtitle controls.',
+    'MIT lisansı · Kaynak kodu': 'MIT license · Source code'
   };
+  const plainUiLabel = value => String(value).replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, '');
+  // Keep legacy message keys for existing feedback; control labels no longer need emoji prefixes.
+  for (const [key, value] of Object.entries(UI_MESSAGES)) {
+    const plain = plainUiLabel(key);
+    if (plain !== key && !Object.hasOwn(UI_MESSAGES, plain)) UI_MESSAGES[plain] = plainUiLabel(value);
+  }
+  const UI_ICON_PATHS = {
+    pip: '<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="7" height="5" rx="1"/>',
+    minus: '<path d="M5 12h14"/>', plus: '<path d="M5 12h14M12 5v14"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>',
+    speed: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    volume: '<path d="M11 4 6 8H3v8h3l5 4ZM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
+    video: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/>',
+    subtitles: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4m2 0h4M7 14h7m2 0h1"/>',
+    sliders: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
+    refresh: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/>',
+    folder: '<path d="M3 7V5h6l2 2h10v13H3Z"/>',
+    eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+    headphones: '<path d="M4 14v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="12" width="4" height="8" rx="2"/><rect x="17" y="12" width="4" height="8" rx="2"/>',
+    rewind: '<path d="m11 5-8 7 8 7Zm10 0-8 7 8 7Z"/>',
+    forward: '<path d="m3 5 8 7-8 7Zm10 0 8 7-8 7Z"/>',
+    play: '<path d="m7 4 14 8-14 8Z"/>',
+    pause: '<path d="M8 4v16M16 4v16"/>',
+    keyboard: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h1m4 0h1m4 0h1M6 13h1m4 0h1m4 0h1M7 16h10"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
+    report: '<path d="M5 3h10l4 4v14H5Z"/><path d="M14 3v5h5M9 12h6m-6 4h6"/>',
+    signal: '<path d="M4 19h1M8 15v4m4-8v8m4-12v12m4-16v16"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/>',
+    contrast: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 7h6m-6 5h9m-9 5h6"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1-4 2 2 0 0 1 1-4h3c4 0 4-10-6-10Z"/><path d="M7 9h.01M10 6h.01M15 6h.01M18 9h.01"/>',
+    moon: '<path d="M20 14A8 8 0 0 1 10 4a9 9 0 1 0 10 10Z"/>',
+    shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/>',
+    warning: '<path d="m12 3 10 18H2Z"/><path d="M12 9v5m0 3h.01"/>'
+  };
+  function uiIcon(name) {
+    if (!Object.hasOwn(UI_ICON_PATHS, name)) return '';
+    return `<svg class="pvc-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" data-pvc-i18n-skip>${UI_ICON_PATHS[name]}</svg>`;
+  }
+  // Called only with fixed product labels, never page, report or subtitle content.
+  function uiLabel(icon, text) {
+    return `${uiIcon(icon)}<span data-pvc-ui-label>${text}</span>`;
+  }
   let uiLanguage = 'en';
   const uiOriginalText = new WeakMap();
   const uiOriginalAttributes = new WeakMap();
@@ -327,9 +373,12 @@
   }
   function setUiText(element, source) {
     if (!element) return;
-    const text = uiText(source);
-    if (element.textContent !== text || element.childNodes?.length !== 1 || element.firstChild?.nodeType !== 3) element.textContent = text;
-    if (element.firstChild?.nodeType === 3) uiOriginalText.set(element.firstChild, String(source));
+    const label = element.querySelector?.('[data-pvc-ui-label]');
+    const target = label || element;
+    const original = label ? plainUiLabel(source) : String(source);
+    const text = uiText(original);
+    if (target.textContent !== text || target.childNodes?.length !== 1 || target.firstChild?.nodeType !== 3) target.textContent = text;
+    if (target.firstChild?.nodeType === 3) uiOriginalText.set(target.firstChild, original);
   }
   function setUiAttribute(element, name, source) {
     if (!element) return;
@@ -638,6 +687,20 @@
     settings.insertBefore(accessibility, settings.querySelector('#pvc-section-filters'));
     accessibility.addEventListener('toggle', () => { resetIdleTimer(popup); clampPopupToViewport(popup); });
     createThemePicker(settings, popup);
+    const about = document.createElement('details');
+    about.id = 'pvc-about'; about.className = 'pvc-about';
+    const aboutSummary = document.createElement('summary'); setUiText(aboutSummary, 'Hakkında');
+    about.appendChild(aboutSummary);
+    for (const text of ['FilmDeck by NOk', `Sürüm ${EXTENSION_VERSION}`, 'Video ve altyazı kontrolleri.']) {
+      const line = document.createElement('p'); setUiText(line, text); about.appendChild(line);
+    }
+    const sourceLink = document.createElement('a');
+    sourceLink.href = 'https://github.com/NOkrep/NOk-video-controller';
+    sourceLink.target = '_blank'; sourceLink.rel = 'noopener noreferrer';
+    setUiText(sourceLink, 'MIT lisansı · Kaynak kodu');
+    sourceLink.addEventListener('click', e => e.stopPropagation()); about.appendChild(sourceLink);
+    about.addEventListener('toggle', () => { resetIdleTimer(popup); clampPopupToViewport(popup); });
+    settings.appendChild(about);
     decorateUiComponents(popup);
     applyUiAccessibility(popup);
     activate(0);
@@ -4974,15 +5037,15 @@
           <span id="pvc-brand-text" class="pvc-menu-title">FilmDeck</span>
         </div>
         <div class="pvc-header-actions">
-          <button id="pvc-pip-btn" class="pvc-icon-btn" title="Resim İçinde Resim (PiP) Aç/Kapat (Alt+P)" aria-label="Resim İçinde Resim">🖼️</button>
-          <button id="pvc-hotkeys-toggle-btn" class="pvc-icon-btn pvc-btn-active" title="Klavye Kısayolları Aktif (Kapatmak için tıklayın)" aria-label="Klavye Kısayolları">⌨️</button>
-          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Paneli Küçült / Büyüt" aria-label="Paneli Küçült veya Büyüt">➖</button>
-          <button id="pvc-close-popup-btn" class="pvc-icon-btn pvc-close" title="Kapat (Ctrl+Shift+S)" aria-label="Denetim Masasını Kapat">✕</button>
+          <button id="pvc-pip-btn" class="pvc-icon-btn" title="Resim İçinde Resim (PiP) Aç/Kapat (Alt+P)" aria-label="Resim İçinde Resim">${uiIcon('pip')}</button>
+          <button id="pvc-hotkeys-toggle-btn" class="pvc-icon-btn pvc-btn-active" title="Klavye Kısayolları Aktif (Kapatmak için tıklayın)" aria-label="Klavye Kısayolları">${uiIcon('keyboard')}</button>
+          <button id="pvc-collapse-btn" class="pvc-icon-btn" title="Paneli Küçült / Büyüt" aria-label="Paneli Küçült veya Büyüt">${uiIcon('minus')}</button>
+          <button id="pvc-close-popup-btn" class="pvc-icon-btn pvc-close" title="Kapat (Ctrl+Shift+S)" aria-label="Denetim Masasını Kapat">${uiIcon('close')}</button>
         </div>
       </div>
 
       <label class="pvc-language-row" title="Dil seçimi yalnızca bu sayfa açıkken tutulur.">
-        <span>🌐 <span>Dil</span></span>
+        <span>${uiIcon('globe')} <span>Dil</span></span>
         <select id="pvc-language-select" aria-label="Dil">
           <option value="tr" lang="tr" data-pvc-i18n-skip>Türkçe</option>
           <option value="en" lang="en" data-pvc-i18n-skip>English</option>
@@ -4992,25 +5055,25 @@
       <!-- Küçültülmüş (Collapsed Mini-Pill) Detaylı Bilgi ve Hızlı Kontrol Barı (Madde 6) -->
       <div id="pvc-collapsed-summary-bar">
         <div class="pvc-mini-metrics-row">
-          <span id="pvc-mini-res-val" style="color: var(--pvc-accent-ink, #92bfd5);">🎬 ---</span>
-          <span id="pvc-mini-speed-val" style="color: var(--pvc-text, #edf2f3);">⚡ 1.0x</span>
-          <span id="pvc-mini-vol-val" style="color: var(--pvc-success, #34d399);">🔊 %100 (S)</span>
+          <span id="pvc-mini-res-val" style="color: var(--pvc-accent-ink, #92bfd5);">${uiLabel('video', '---')}</span>
+          <span id="pvc-mini-speed-val" style="color: var(--pvc-text, #edf2f3);">${uiLabel('speed', '1.0x')}</span>
+          <span id="pvc-mini-vol-val" style="color: var(--pvc-success, #34d399);">${uiLabel('volume', '%100 (S)')}</span>
           <span id="pvc-mini-adapter-val" style="color: var(--pvc-accent-ink, #92bfd5); font-size: 9.5px;">Generic</span>
         </div>
         <div class="pvc-mini-quick-controls">
-          <button id="pvc-mini-seek-m10" class="pvc-action-btn" title="10s Geri">⏮️ -10s</button>
-          <button id="pvc-mini-play-pause" class="pvc-action-btn" title="Oynat / Duraklat">⏯️ Oynat</button>
-          <button id="pvc-mini-seek-p10" class="pvc-action-btn" title="10s İleri">⏭️ +10s</button>
-          <button id="pvc-mini-pip-btn" class="pvc-action-btn" title="PiP Aç/Kapat">🖼️ PiP</button>
+          <button id="pvc-mini-seek-m10" class="pvc-action-btn" title="10s Geri">${uiLabel('rewind', '-10s')}</button>
+          <button id="pvc-mini-play-pause" class="pvc-action-btn" title="Oynat / Duraklat">${uiLabel('play', 'Oynat')}</button>
+          <button id="pvc-mini-seek-p10" class="pvc-action-btn" title="10s İleri">${uiLabel('forward', '+10s')}</button>
+          <button id="pvc-mini-pip-btn" class="pvc-action-btn" title="PiP Aç/Kapat">${uiLabel('pip', 'PiP')}</button>
         </div>
       </div>
 
       <!-- Canlı Render Çözünürlüğü Rozeti -->
       <div id="pvc-realtime-res-container" style="padding: 7px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid color-mix(in srgb, var(--pvc-accent) 20%, transparent); display: flex; align-items: center; justify-content: space-between; border-radius: 6px; margin-bottom: 6px;" title="Oynatıcıda o an işlenen video piksel boyutu">
         <span id="pvc-realtime-res-badge" style="font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, monospace; color: var(--pvc-accent-ink, #92bfd5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;" aria-live="polite">
-          🎬 Gerçek: Ölçülüyor...
+          ${uiLabel('video', 'Gerçek: Ölçülüyor...')}
         </span>
-        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: var(--pvc-muted, #a2b6c0); font-size: 12px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile">🔄</button>
+        <button id="pvc-refresh-res-btn" style="background: none; border: none; color: var(--pvc-muted, #a2b6c0); font-size: 12px; cursor: pointer; padding: 2px 4px;" title="Çözünürlük ve Paketleri Yenile">${uiIcon('refresh')}</button>
       </div>
 
       <!-- Basamaklı Adaptör Durumu & Manuel Seçici Barı -->
@@ -5026,16 +5089,16 @@
 
       <!-- DRM Koruma Rozeti -->
       <div id="pvc-drm-status-badge" style="display: none; padding: 5px 10px; background: color-mix(in srgb, var(--pvc-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-warning) 40%, transparent); border-radius: 6px; margin-bottom: 6px; color: var(--pvc-warning, #fbbf24); font-size: 10.5px; font-weight: 600; cursor: pointer;">
-        <span>🛡️ DRM Korumalı Akış (Güvenli Mod)</span>
+        <span>${uiLabel('shield', 'DRM Korumalı Akış (Güvenli Mod)')}</span>
       </div>
 
       <!-- Video Bulunamadı Uyarısı -->
       <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: color-mix(in srgb, var(--pvc-danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-danger) 35%, transparent); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: var(--pvc-danger, #fca5a5);">
-        <div style="font-weight: 700; margin-bottom: 2px;">⚠️ Aktif Oynatıcı Bekleniyor</div>
+        <div style="font-weight: 700; margin-bottom: 2px;">${uiLabel('warning', 'Aktif Oynatıcı Bekleniyor')}</div>
         <div style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px;">Sayfadaki video henüz başlamadı veya farklı bir çerçeve içinde.</div>
         <div style="display: flex; gap: 6px;">
-          <button id="pvc-rescan-btn" style="flex: 1; padding: 3px; background: var(--pvc-elevated, #1b2a33); color: var(--pvc-text, #edf2f3); border: none; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">🔄 Yeniden Tara</button>
-          <button id="pvc-quick-report-btn" style="flex: 1; padding: 3px; background: rgba(255, 255, 255, 0.08); color: var(--pvc-text, #edf2f3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; font-size: 10px; cursor: pointer;">📋 Teşhis Raporu</button>
+          <button id="pvc-rescan-btn" style="flex: 1; padding: 3px; background: var(--pvc-elevated, #1b2a33); color: var(--pvc-text, #edf2f3); border: none; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">${uiLabel('refresh', 'Yeniden Tara')}</button>
+          <button id="pvc-quick-report-btn" style="flex: 1; padding: 3px; background: rgba(255, 255, 255, 0.08); color: var(--pvc-text, #edf2f3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; font-size: 10px; cursor: pointer;">${uiLabel('report', 'Teşhis Raporu')}</button>
         </div>
       </div>
 
@@ -5044,7 +5107,7 @@
         <div class="pvc-section-header" data-target="pvc-content-speed">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">⚡ Oynatma Hızı & Sarma</span>
+            <span class="pvc-label">${uiLabel('speed', 'Oynatma Hızı & Sarma')}</span>
           </div>
           <span id="pvc-hdr-speed-badge" class="pvc-val-badge">1.0x</span>
         </div>
@@ -5061,10 +5124,10 @@
             <button class="pvc-chip-btn" data-speed="2.0">2.0x</button>
           </div>
           <div class="pvc-btn-grid-4" style="margin-top: 6px;">
-            <button id="pvc-seek-m30" class="pvc-action-btn">⏪ -30s</button>
-            <button id="pvc-seek-m10" class="pvc-action-btn">⏮️ -10s</button>
-            <button id="pvc-seek-p10" class="pvc-action-btn">⏭️ +10s</button>
-            <button id="pvc-seek-p30" class="pvc-action-btn">⏩ +30s</button>
+            <button id="pvc-seek-m30" class="pvc-action-btn">${uiLabel('rewind', '-30s')}</button>
+            <button id="pvc-seek-m10" class="pvc-action-btn">${uiLabel('rewind', '-10s')}</button>
+            <button id="pvc-seek-p10" class="pvc-action-btn">${uiLabel('forward', '+10s')}</button>
+            <button id="pvc-seek-p30" class="pvc-action-btn">${uiLabel('forward', '+30s')}</button>
           </div>
         </div>
       </div>
@@ -5074,7 +5137,7 @@
         <div class="pvc-section-header" data-target="pvc-content-audio">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">🔊 Ses Seviyesi & Kanallar</span>
+            <span class="pvc-label">${uiLabel('volume', 'Ses Seviyesi & Kanallar')}</span>
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
             <span id="pvc-hdr-audio-badge" class="pvc-val-badge" style="color: var(--pvc-accent-ink, #92bfd5); background: color-mix(in srgb, var(--pvc-accent) 12%, transparent); border-color: color-mix(in srgb, var(--pvc-accent) 30%, transparent);">STEREO</span>
@@ -5085,7 +5148,7 @@
           <div class="pvc-slider-row">
             <span class="pvc-slider-bound">%0</span>
             <input type="range" id="pvc-volume-slider" aria-label="Ses" min="0" max="300" step="5" value="100" class="pvc-range-slider pvc-gain-normal" title="Ses (%0-%300 Güçlendirici) • Çift tıklayarak %100'e sıfırlayın" />
-            <span class="pvc-slider-bound" style="color: var(--pvc-danger, #f43f5e);" title="Maksimum %300 Ses Güçlendirici">%300 🚀</span>
+            <span class="pvc-slider-bound" style="color: var(--pvc-danger, #f43f5e);" title="Maksimum %300 Ses Güçlendirici">%300</span>
           </div>
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; margin-top: 4px;">
             <div class="pvc-quick-speed-buttons" style="flex: 1 1 100%;">
@@ -5095,8 +5158,8 @@
               <button class="pvc-chip-btn pvc-vol-preset-btn" data-vol="300">%300</button>
             </div>
             <div style="display: flex; gap: 3px;">
-              <button id="pvc-audio-stereo-btn" class="pvc-audio-mode-btn pvc-audio-active" title="Stereo (M)">🎧 Stereo</button>
-              <button id="pvc-audio-mono-btn" class="pvc-audio-mode-btn" title="Mono (M)">🎛️ Mono</button>
+              <button id="pvc-audio-stereo-btn" class="pvc-audio-mode-btn pvc-audio-active" title="Stereo (M)">${uiLabel('headphones', 'Stereo')}</button>
+              <button id="pvc-audio-mono-btn" class="pvc-audio-mode-btn" title="Mono (M)">${uiLabel('sliders', 'Mono')}</button>
             </div>
           </div>
         </div>
@@ -5107,14 +5170,14 @@
         <div class="pvc-section-header" data-target="pvc-content-quality">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">🎬 Akış Paket Kaliteleri</span>
+            <span class="pvc-label">${uiLabel('video', 'Akış Paket Kaliteleri')}</span>
           </div>
           <span id="pvc-quality-count-badge" class="pvc-val-badge">Paketler...</span>
         </div>
         <div id="pvc-content-quality" class="pvc-section-content">
           <div id="pvc-dynamic-quality-container" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;"></div>
           <p id="pvc-quality-status" class="pvc-settings-note" aria-live="polite">Kalite isteği yok.</p>
-          <button type="button" id="pvc-puhu-retry-source-btn" class="pvc-action-btn" hidden title="Alternatif 1080p kaynağını yeniden dener; gerekirse sayfayı yeniler. Yenileme bellek içi ayarları ve altyazıları sıfırlar.">🚀 1080p kaynağını yeniden dene</button>
+          <button type="button" id="pvc-puhu-retry-source-btn" class="pvc-action-btn" hidden title="Alternatif 1080p kaynağını yeniden dener; gerekirse sayfayı yeniler. Yenileme bellek içi ayarları ve altyazıları sıfırlar.">${uiLabel('refresh', '1080p kaynağını yeniden dene')}</button>
         </div>
       </div>
 
@@ -5123,30 +5186,30 @@
         <div class="pvc-section-header" data-target="pvc-content-filters">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">🎨 Görüntü Filtreleri & Gece Kalkanı</span>
+            <span class="pvc-label">${uiLabel('sliders', 'Görüntü Filtreleri & Gece Kalkanı')}</span>
           </div>
           <span id="pvc-hdr-filter-badge" class="pvc-val-badge">Standart</span>
         </div>
         <div id="pvc-content-filters" class="pvc-section-content">
           <div class="pvc-slider-row">
-            <span class="pvc-slider-bound" title="Parlaklık">☀️</span>
+            <span class="pvc-slider-bound" title="Parlaklık">${uiIcon('sun')}</span>
             <input type="range" id="pvc-filter-brightness" aria-label="Parlaklık" min="50" max="150" step="5" value="100" class="pvc-range-slider" title="Parlaklık (%50-%150) • Çift tıkla sıfırla" />
             <span id="pvc-val-brightness" class="pvc-slider-bound">%100</span>
           </div>
           <div class="pvc-slider-row">
-            <span class="pvc-slider-bound" title="Kontrast">◐</span>
+            <span class="pvc-slider-bound" title="Kontrast">${uiIcon('contrast')}</span>
             <input type="range" id="pvc-filter-contrast" aria-label="Kontrast" min="50" max="150" step="5" value="100" class="pvc-range-slider" title="Kontrast (%50-%150) • Çift tıkla sıfırla" />
             <span id="pvc-val-contrast" class="pvc-slider-bound">%100</span>
           </div>
           <div class="pvc-slider-row">
-            <span class="pvc-slider-bound" title="Doygunluk">🌈</span>
+            <span class="pvc-slider-bound" title="Doygunluk">${uiIcon('palette')}</span>
             <input type="range" id="pvc-filter-saturate" aria-label="Doygunluk" min="0" max="200" step="10" value="100" class="pvc-range-slider" title="Doygunluk (%0-%200) • Çift tıkla sıfırla" />
             <span id="pvc-val-saturate" class="pvc-slider-bound">%100</span>
           </div>
           <div class="pvc-btn-grid-3">
-            <button id="pvc-btn-night-shield" class="pvc-action-btn" title="Mavi ışığı azaltan sıcak Gece Kalkanı">🌙 Gece Modu</button>
-            <button id="pvc-btn-invert-color" class="pvc-action-btn" title="Renkleri ters çevir">🔄 Ters Renk</button>
-            <button id="pvc-btn-reset-filters" class="pvc-action-btn" title="Tüm filtreleri sıfırla">♻️ Sıfırla</button>
+            <button id="pvc-btn-night-shield" class="pvc-action-btn" title="Mavi ışığı azaltan sıcak Gece Kalkanı">${uiLabel('moon', 'Gece Modu')}</button>
+            <button id="pvc-btn-invert-color" class="pvc-action-btn" title="Renkleri ters çevir">${uiLabel('contrast', 'Ters Renk')}</button>
+            <button id="pvc-btn-reset-filters" class="pvc-action-btn" title="Tüm filtreleri sıfırla">${uiLabel('refresh', 'Sıfırla')}</button>
           </div>
         </div>
       </div>
@@ -5156,23 +5219,23 @@
         <div class="pvc-section-header" data-target="pvc-content-subtitles">
           <div class="pvc-section-title-wrap">
             <span class="pvc-section-arrow">▼</span>
-            <span class="pvc-label">💬 Harici Altyazı & Senkron</span>
+            <span class="pvc-label">${uiLabel('subtitles', 'Harici Altyazı & Senkron')}</span>
           </div>
           <span id="pvc-sub-offset-badge" class="pvc-val-badge">0ms</span>
         </div>
         <div id="pvc-content-subtitles" class="pvc-section-content">
           <input type="file" id="pvc-sub-file-input" accept=".srt,.vtt" style="display: none !important;" />
           <div class="pvc-btn-grid-2" style="margin-bottom: 6px;">
-            <button id="pvc-sub-load-btn" class="pvc-action-btn" title="RAM üzerinden .srt veya .vtt dosyası yükle">📂 .SRT / .VTT Yükle</button>
-            <button id="pvc-sub-toggle-btn" class="pvc-action-btn pvc-active" title="Altyazı katmanını göster/gizle">👁️ Altyazı: Açık</button>
+            <button id="pvc-sub-load-btn" class="pvc-action-btn" title="RAM üzerinden .srt veya .vtt dosyası yükle">${uiLabel('folder', '.SRT / .VTT Yükle')}</button>
+            <button id="pvc-sub-toggle-btn" class="pvc-action-btn pvc-active" title="Altyazı katmanını göster/gizle">${uiLabel('eye', 'Altyazı: Açık')}</button>
           </div>
           <div id="pvc-sub-status-text" style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             Yüklü altyazı yok (Sıfır Depolama RAM Modu)
           </div>
           <div class="pvc-btn-grid-3">
-            <button id="pvc-sub-sync-m100" class="pvc-action-btn" title="Altyazıyı 100ms geri çek">⏪ -100ms</button>
+            <button id="pvc-sub-sync-m100" class="pvc-action-btn" title="Altyazıyı 100ms geri çek">${uiLabel('rewind', '-100ms')}</button>
             <button id="pvc-sub-sync-reset" class="pvc-action-btn" title="Senkron kaymasını sıfırla">0ms Sıfırla</button>
-            <button id="pvc-sub-sync-p100" class="pvc-action-btn" title="Altyazıyı 100ms ileri al">⏩ +100ms</button>
+            <button id="pvc-sub-sync-p100" class="pvc-action-btn" title="Altyazıyı 100ms ileri al">${uiLabel('forward', '+100ms')}</button>
           </div>
           <details class="pvc-sub-appearance">
             <summary>Altyazı görünümü</summary>
@@ -5188,13 +5251,13 @@
 
       <!-- Footer: Ping, Rehber/Kısayollar ve Teşhis -->
       <div class="pvc-menu-footer" id="pvc-menu-footer">
-        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Medya HTTP yanıt süresini ölç (ağ pingi değildir)">📡 CDN yanıtı</button>
-        <button id="pvc-perms-btn" class="pvc-footer-btn pvc-btn-sky" title="Klavye Kısayolları & İzin Rehberi">⌨️ Kısayollar</button>
-        <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">⚠️ Teşhis</button>
+        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Medya HTTP yanıt süresini ölç (ağ pingi değildir)">${uiLabel('signal', 'CDN yanıtı')}</button>
+        <button id="pvc-perms-btn" class="pvc-footer-btn pvc-btn-sky" title="Klavye Kısayolları & İzin Rehberi">${uiLabel('keyboard', 'Kısayollar')}</button>
+        <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">${uiLabel('report', 'Teşhis')}</button>
       </div>
       <div id="pvc-brand-footer" class="pvc-brand-footer pvc-hide-on-collapse" title="by NOk">
+        <span class="pvc-maker-prefix">by</span>
         <span id="pvc-footer-brand-text" class="pvc-menu-title">NOk</span>
-        <span class="pvc-menu-badge">v${EXTENSION_VERSION}</span>
       </div>
     `;
 
@@ -5210,14 +5273,22 @@
         logoImg.className = brand.className;
         logoImg.alt = brand.alt;
         logoImg.draggable = false; // Başlıktaki mousedown sürüklemesini tarayıcının yerel resim sürüklemesi bozmasın
-        logoImg.addEventListener('load', () => { const t = popup.querySelector(brand.fallback); if (t) t.style.display = 'none'; });
+        logoImg.addEventListener('load', () => {
+          if (brand.className === 'pvc-product-logo') {
+            brandEl.style.setProperty('--pvc-product-mask', `url("${brand.url}")`);
+            brandEl.classList.add('pvc-product-ready');
+            brandEl.setAttribute('role', 'img'); brandEl.setAttribute('aria-label', 'FilmDeck');
+          }
+          const t = popup.querySelector(brand.fallback); if (t) t.style.display = 'none';
+        });
         logoImg.addEventListener('error', () => {
           logoImg.remove();
+          brandEl.classList.remove('pvc-product-ready');
           const fallback = popup.querySelector(brand.fallback);
           if (fallback) fallback.style.removeProperty('display');
         });
         logoImg.src = brand.url;
-        brandEl.insertBefore(logoImg, brandEl.firstChild);
+        brandEl.insertBefore(logoImg, popup.querySelector(brand.fallback));
       }
     }
 
@@ -5323,9 +5394,11 @@
       if (!video) return;
       if (video.paused) {
         video.play().catch(() => {});
+        e.currentTarget.querySelector('svg').outerHTML = uiIcon('pause');
         setUiText(e.currentTarget, '⏸️ Duraklat');
       } else {
         video.pause();
+        e.currentTarget.querySelector('svg').outerHTML = uiIcon('play');
         setUiText(e.currentTarget, '▶️ Oynat');
       }
     };
@@ -5618,7 +5691,7 @@
       resetIdleTimer(popup);
       isCollapsed = !isCollapsed;
       popup.classList.toggle('pvc-collapsed', isCollapsed);
-      popup.querySelector('#pvc-collapse-btn').textContent = isCollapsed ? '➕' : '➖';
+      popup.querySelector('#pvc-collapse-btn').innerHTML = uiIcon(isCollapsed ? 'plus' : 'minus');
       updateRealtimeResolutionBadge();
       clampPopupToViewport(popup);
     };
