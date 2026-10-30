@@ -38,6 +38,8 @@ async function main() {
     await driver.pointerClick(page,'#open');
     await until(driver,page,()=>!!document.querySelector('.pvc-product-ready'),'product logo loaded');
     const evaluate = fn=>driver.evaluate(page,fn);
+    const logo=await evaluate(()=>{const image=document.querySelector('.pvc-product-logo'),style=getComputedStyle(image),rect=image.getBoundingClientRect();return {loaded:image.naturalWidth>0,display:style.display,width:rect.width,height:rect.height};});
+    assert.ok(logo.loaded && logo.display!=='none' && logo.width>=80 && logo.height>=20,'Loaded product image must be visibly rendered; a declared CSS mask is insufficient');
     assert.equal(await evaluate(()=>document.querySelector('#pvc-language-select').value),'en');
     assert.equal(await evaluate(()=>document.querySelector('#pvc-collapse-btn svg')?.getAttribute('aria-hidden')),'true');
     assert.equal(await evaluate(()=>document.querySelector('#pvc-panel-settings').hidden),true);
@@ -51,11 +53,12 @@ async function main() {
     for (const theme of themes) {
       const state = await driver.evaluate(page,theme=>{
         const select=document.querySelector('#pvc-theme-select');select.value=theme;select.dispatchEvent(new Event('change',{bubbles:true}));
-        const brand=document.querySelector('.pvc-menu-brand'),style=getComputedStyle(brand),mask=getComputedStyle(brand,'::before');
-        return {mask:mask.maskImage||mask.webkitMaskImage,ink:mask.backgroundColor,text:style.color,plate:style.backgroundColor};
+        const brand=document.querySelector('.pvc-menu-brand'),style=getComputedStyle(brand),image=document.querySelector('.pvc-product-logo'),picture=getComputedStyle(image),rect=image.getBoundingClientRect();
+        return {display:picture.display,filter:picture.filter,expected:document.querySelector('#pvc-controller-popup').style.getPropertyValue('--pvc-logo-filter'),width:rect.width,height:rect.height,plate:style.backgroundColor};
       },theme);
-      assert.ok(state.mask && state.mask !== 'none',`${theme}: product mask`);
-      assert.equal(state.ink,state.text,`${theme}: logo follows theme text`);
+      assert.ok(state.display!=='none' && state.width>=80 && state.height>=20,`${theme}: visible product image`);
+      assert.ok(state.filter.includes('brightness(0)'),`${theme}: monochrome product image`);
+      assert.equal(state.filter.includes('invert(1)'),state.expected.includes('invert(1)'),`${theme}: logo follows light/dark theme`);
       assert.equal(state.plate,'rgba(0, 0, 0, 0)',`${theme}: no white logo plate`);
     }
     for (const language of ['tr','en']) {
@@ -63,8 +66,12 @@ async function main() {
       const state = await evaluate(()=>{
         document.querySelector('#pvc-about').open=true;
         return {about:document.querySelector('#pvc-about').textContent,volume:document.querySelector('#pvc-volume-slider').value,
+          makerInside:document.querySelector('#pvc-about').contains(document.querySelector('#pvc-brand-footer')),
+          summary:document.querySelector('#pvc-about summary').textContent,
           svg:!!document.querySelector('#pvc-ping-btn svg'),close:document.querySelector('#pvc-close-popup-btn').getAttribute('aria-label')};
       });
+      assert.equal(state.makerInside,true);
+      assert.equal(state.summary,language==='en'?'About FilmDeck':'FilmDeck Hakkında');
       assert.match(state.about,new RegExp(`${language==='en'?'Version':'Sürüm'} ${version.replaceAll('.','\\.')}`));
       assert.equal(state.volume,'40');assert.equal(state.svg,true);assert.ok(state.close);
     }

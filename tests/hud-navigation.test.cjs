@@ -62,6 +62,7 @@ function harness(reducedMotion = false) {
   add('subtitle-heading', 'pvc-section-header', subtitles);
   const file = add('pvc-sub-file-input', '', subtitles); file.value = 'PRIVATE_SUBTITLE.srt';
   add('language', 'pvc-language-row'); add('pvc-adapter-bar'); const footer = add('pvc-menu-footer');
+  add('pvc-brand-footer', 'pvc-brand-footer');
   add('pvc-ping-btn', 'pvc-footer-btn', footer);
   const hotkeys = add('pvc-hotkeys-toggle-btn'); hotkeys.addEventListener('click', () => { hotkeys.retainedListener = true; });
   const timers = new Map(); let timerId = 0;
@@ -95,6 +96,18 @@ test('only Player is shown initially; task groups retain existing controls and h
   assert.equal(h.find('pvc-panel-settings').querySelector('#pvc-hotkeys-toggle-btn'), h.hotkeys);
   h.hotkeys.emit('click'); assert.equal(h.hotkeys.retainedListener, true);
   assert.equal(h.find('pvc-accessibility').hasAttribute('open'), false);
+});
+
+test('NOk signature and version live only inside localized About FilmDeck in Settings', () => {
+  const h=harness();
+  const about=h.find('pvc-about'),brand=h.find('pvc-brand-footer');
+  assert.equal(h.find('pvc-panel-settings').contains(about),true);
+  assert.equal(about.contains(brand),true);
+  assert.equal(h.find('pvc-panel-player').contains(brand),false);
+  assert.match(about.textContent,/About FilmDeck/);
+  assert.match(about.textContent,/Version 0\.7\.7/);
+  h.run('setUiLanguage("tr",false)');
+  assert.match(about.textContent,/FilmDeck Hakkında/);
 });
 
 test('click and vertical arrow/Home/End navigation maintain selection, focus, values and loaded subtitle input', () => {

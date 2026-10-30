@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.7
+ * injected.css - FilmDeck by NOk v0.7.7.2
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -171,17 +171,16 @@
   user-select: none !important;
 }
 
-.pvc-product-logo {
-  display: none !important;
-}
-
-.pvc-menu-brand.pvc-product-ready::before {
-  content: '' !important;
+#pvc-controller-popup .pvc-product-logo {
+  display: block !important;
   width: 118px !important;
   height: 32px !important;
-  background-color: var(--pvc-text) !important;
-  -webkit-mask: var(--pvc-product-mask) center / contain no-repeat !important;
-  mask: var(--pvc-product-mask) center / contain no-repeat !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  filter: var(--pvc-logo-filter, brightness(0) invert(1)) !important;
 }
 
 .pvc-brand-footer {
@@ -195,7 +194,8 @@
   font: 11px/1.4 system-ui !important;
 }
 
-.pvc-brand-footer .pvc-brand-logo { height: 14px !important; }
+#pvc-about .pvc-brand-footer { justify-content: flex-start !important; margin: 12px 0 !important; padding: 0 !important; }
+#pvc-about .pvc-brand-logo { height: 24px !important; }
 .pvc-brand-footer .pvc-menu-title { font-size: 11px !important; font-weight: 400 !important; color: var(--pvc-muted) !important; }
 #pvc-controller-popup .pvc-ui-icon { display: inline-block !important; width: 18px !important; height: 18px !important; flex: 0 0 18px !important; vertical-align: middle !important; color: currentColor !important; pointer-events: none !important; }
 #pvc-controller-popup [data-pvc-ui-label] { vertical-align: middle !important; }

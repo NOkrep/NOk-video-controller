@@ -1,8 +1,8 @@
-# FilmDeck by NOk (v0.7.7 — kaynak geliştirmesi)
+# FilmDeck by NOk (v0.7.7.2 — kaynak geliştirmesi)
 
-> Önceki adı NOk Video Controller. Ürün adı FilmDeck olarak güncellendi; HUD başlığında FilmDeck, alt bölümde NOk imzası kullanılır. Depo bağlantısı ve teknik eklenti kimliği korunur. Kullanıcının yatay logo görseli yeniden çizilmeden kullanılır; küçük araç çubuğu ikonları bu yatay logodan üretilmedi.
+> Önceki adı NOk Video Controller. HUD başlığında FilmDeck, Settings → About FilmDeck bölümünde NOk imzası ve sürüm kullanılır. Depo bağlantısı ve teknik eklenti kimliği korunur. Kullanıcının yatay logo görseli yeniden çizilmeden kullanılır; küçük araç çubuğu ikonları bu yatay logodan üretilmedi.
 
-> 30 Ekim 2026: küçük araç çubuğu/eklenti ikonlarının kaynağı kullanıcının `icons/icon_not_round.png` çizimidir. `icon16.png`, `icon48.png` ve `icon128.png` bu görselin kırpılmadan, saydamlığı korunarak boyutlandırılmış sürümleridir; özgün dosya korunur.
+> 30 Ekim 2026 · v0.7.7.2: araç çubuğu/eklenti simgeleri kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden 16/32/48/128 px üretildi. Tüm kaset deck ve arka katmanları korunur; yalnız görünür çizimin dışındaki saydam boşluk azaltılır. Ek iç boşluk bırakılmadan, oran ve saydamlık korunarak ikon alanına sığdırılır. Katmanlı 4096 px özgün dosya değiştirilmedi. Başlıktaki yatay logo görünür IMG öğesidir; CSS maskesine bağımlı değildir. About FilmDeck yalnız Settings içindedir.
 
 > v0.7.7: HUD kontrol simgeleri ortak SVG çizgi üslubunda, FilmDeck logosu tema renginde, NOk yalnız alt imzada; sürüm Ayarlar → Hakkında içindedir. GitHub push/PR kaynak ve Firefox/Chromium HUD testleri eklendi. Çalıştırma ve sürüm güncelleme: [TESTING.md](TESTING.md). Akışın GitHub'daki ilk çalışması push sonrası gerçekleşir; otomatik yayın yoktur.
 

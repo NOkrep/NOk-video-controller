@@ -46,7 +46,7 @@ function checkExtension(root, {tag, baseVersion, trackedFiles = []} = {}) {
     if (!JSON.parse(read(name)).extensionDescription?.message) throw Error('Missing extension description locale.');
     include(name);
   }
-  for (const size of [16, 48, 128]) {
+  for (const size of [16, 32, 48, 128]) {
     const name = manifest.icons[size];
     if (manifest.action.default_icon[size] !== name) throw Error('Toolbar and extension icon mapping differ.');
     const png = fs.readFileSync(path.join(root, name));
