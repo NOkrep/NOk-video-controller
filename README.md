@@ -2,6 +2,8 @@
 
 > Önceki adı NOk Video Controller. Ürün adı FilmDeck olarak güncellendi; HUD başlığında FilmDeck, alt bölümde NOk imzası kullanılır. Depo bağlantısı ve teknik eklenti kimliği korunur. Kullanıcının yatay logo görseli yeniden çizilmeden kullanılır; küçük araç çubuğu ikonları bu yatay logodan üretilmedi.
 
+> 30 Ekim 2026: küçük araç çubuğu/eklenti ikonlarının kaynağı kullanıcının `icons/icon_not_round.png` çizimidir. `icon16.png`, `icon48.png` ve `icon128.png` bu görselin kırpılmadan, saydamlığı korunarak boyutlandırılmış sürümleridir; özgün dosya korunur.
+
 > Güncel kaynak çalışması: yeni HUD/medya/gizlilik düzeltmeleri ve iki tarayıcı motorunda ilk bellek ölçümleri [DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md) / [MEMORY_MEASUREMENTS.md](./MEMORY_MEASUREMENTS.md) içinde. Aşağıdaki v0.7.0.1 paket kaydı önceki sürümün kanıtıdır; yeni ZIP veya release hazırlanmadı.
 
 > 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
