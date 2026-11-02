@@ -14,9 +14,18 @@ function checkExtension(root, {tag, baseVersion, trackedFiles = []} = {}) {
   const manifest = JSON.parse(read('manifest.json'));
   const version = manifest.version;
   const parts = versionParts(version);
-  if (JSON.parse(read('package.json')).version !== version) throw Error('package.json version differs from manifest.');
+  const packageInfo = JSON.parse(read('package.json'));
+  if (packageInfo.version !== version) throw Error('package.json version differs from manifest.');
   const lock = JSON.parse(read('package-lock.json'));
   if (lock.version !== version || lock.packages?.['']?.version !== version) throw Error('Dependency lock version differs from manifest.');
+  if (packageInfo.license !== 'MIT' || lock.packages?.['']?.license !== 'MIT') throw Error('Package metadata must declare MIT.');
+  const license = read('LICENSE');
+  if (!license.startsWith('MIT License') || !/^Copyright \(c\) \d{4}(?:-\d{4})? .+$/m.test(license)
+      || /<YEAR>|<COPYRIGHT HOLDER>/.test(license)
+      || !license.includes('Permission is hereby granted, free of charge')
+      || !license.includes('copies or substantial portions of the Software.')
+      || !license.includes('THE SOFTWARE IS PROVIDED "AS IS"')) throw Error('LICENSE must contain the MIT grant, holder and conditions.');
+  if (!read('THIRD_PARTY_NOTICES.md').trim()) throw Error('Third-party license notices must be retained.');
   if (read('injected.js').match(/const EXTENSION_VERSION = '([^']+)'/)?.[1] !== version) throw Error('Engine version differs from manifest.');
   if (!read('README.md').split('\n')[0].includes(`(v${version} `)) throw Error('README version differs from manifest.');
   if (tag && tag !== `v${version}`) throw Error('Version tag differs from manifest.');
@@ -71,7 +80,7 @@ if (require.main === module) {
     const ref = process.env.GITHUB_REF || '';
     const result = checkExtension(root, {trackedFiles, baseVersion, tag:ref.startsWith('refs/tags/v') ? ref.slice('refs/tags/'.length) : undefined});
     for (const file of ['injected.js','content.js','background.js','frame-protocol.js']) execFileSync(process.execPath, ['--check', path.join(root,file)], {stdio:'inherit'});
-    console.log(`FilmDeck ${result.version}: version, permissions, locales, icons and ${result.runtimeFiles.length} runtime files verified.`);
+    console.log(`FilmDeck ${result.version}: version, permissions, locales, icons, MIT notices and ${result.runtimeFiles.length} runtime files verified.`);
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }
 module.exports = {checkExtension, versionParts};

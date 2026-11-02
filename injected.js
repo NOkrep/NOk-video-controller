@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.7.2 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.7.3 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,10 +17,11 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.7.2';
+  const EXTENSION_VERSION = '0.7.7.3';
   const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
   const FILMDECK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.productLogoUrl) || '';
   const VERSION_HISTORY = [
+    { version: 'v0.7.7.3', notes: 'MIT LICENSE ve NOkrep markasıyla hak sahibi bildirimi; üçüncü taraf bildirimlerinin kaynak kontrolünde zorunlu olması. Ayrı FilmDeck yayın adaptörü Chrome/Firefox paketlerinde iki lisans dosyasını korur. Oynatıcı davranışı değişmedi; yayın ayrı onayda.' },
     { version: 'v0.7.7.2', notes: 'FilmDeck başlık logosu gizli resim/CSS maskesi yerine görünür IMG ve açık-koyu tema filtresiyle çizilir. NOk imzası ve sürüm Settings > About FilmDeck içinde toplandı. Kaset deck simgeleri tüm katmanları koruyup dış saydam boşluğu azaltarak ek iç boşluk olmadan boyutlandırıldı; özgün kaynak korunur.' },
     { version: 'v0.7.7.1', notes: 'Kullanıcının mor kaset çiziminden yeni saydam 16/32/48/128 px eklenti simgeleri; 32 px yüksek yoğunluklu araç çubuğu boyutu ve CI ikon doğrulaması. Özgün çizim ve yatay HUD logosu korunur.' },
     { version: 'v0.7.7', notes: 'Tema rengiyle çizilen FilmDeck logosu, ortak SVG kontrol simgeleri, alt by NOk imzası ve Ayarlar > Hakkında sürüm bilgisi. GitHub push/PR kaynak, sürüm sözleşmesi ve Firefox/Chromium yerel HUD testleri; gerçek site kabulü ayrı izlenir.' },
