@@ -1,5 +1,9 @@
 # Etkin çalışma kapsamı
 
+## v0.7.7.3 — 3 Kasım 2026, MIT ve dağıtım bildirimleri
+
+Standart LICENSE eklendi: Copyright (c) 2026 İhsan B. Arıtürk (NOkrep). README ve npm metaverisi MIT ile eşleşir; kaynak denetimi eksik/taslak/eksik koşullu lisansı ve boş üçüncü taraf bildirimini reddeder. Yalnız NOk-FilmDeck-Release adaptörünün paket kodu/testleri/README'si güncellendi: Chrome ve Firefox sentetik ZIP'lerinde LICENSE ve THIRD_PARTY_NOTICES.md aynen korunur, eksik/boş bildirim paketlemeyi durdurur ve yasal dosyaların hash'leri paket kaynak kimliğine katılır. Gelir paylaşımı veya ortaklık oranı belirlenmedi. Mevcut güvenlik/Dependabot değişiklikleri korundu. Diğer projelerin lisanslarına ve ortak motor koduna dokunulmadı; gerçek uygulama ZIP'i, commit/push veya mağaza başvurusu yapılmadı. Kaynak, hedef ve ortak motor test kanıtı bu turda ayrı doğrulandı; gerçek yayın kabulü değildir.
+
 ## v0.7.7.2 — 30 Ekim 2026, görünür amblem ve About FilmDeck
 
 Son kontrol: 180 Node testi ve ikon/sürüm sözleşmesi geçti. Firefox 159.0 ve Chromium tabanlı Edge 152.0.4191.53'te 20 tema, EN/TR, dar pencere, görünür logo ve About FilmDeck yerleşimi geçti. Tam deck'in gerçek boyutlu açık/koyu PNG önizlemesi incelendi; canlı araç çubuğu/HiDPI kabulü ayrıca kullanıcıda doğrulanmalıdır. Kaynak v0.7.7.2, uygulama commit/push/PR yapılmadı.
@@ -16,7 +20,7 @@ Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.7.2 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.7.3 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

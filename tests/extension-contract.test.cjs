@@ -9,7 +9,7 @@ const root = path.resolve(__dirname,'..');
 
 function fixture(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(),'filmdeck-contract-'));
-  const paths = checkExtension(root).runtimeFiles.concat(['package.json','package-lock.json','README.md','PROJECT_MASTER_GUIDE.md','ACTIVE_WORK.md']);
+  const paths = checkExtension(root).runtimeFiles.concat(['package.json','package-lock.json','README.md','PROJECT_MASTER_GUIDE.md','ACTIVE_WORK.md','LICENSE','THIRD_PARTY_NOTICES.md']);
   for (const name of new Set(paths)) { fs.mkdirSync(path.dirname(path.join(dir,name)),{recursive:true});fs.copyFileSync(path.join(root,name),path.join(dir,name)); }
   t.after(()=>{assert.equal(path.dirname(dir),os.tmpdir());assert.ok(path.basename(dir).startsWith('filmdeck-contract-'));fs.rmSync(dir,{recursive:true});});
   return dir;
@@ -17,6 +17,18 @@ function fixture(t) {
 function editManifest(dir,change) {
   const file=path.join(dir,'manifest.json'),data=JSON.parse(fs.readFileSync(file,'utf8'));change(data);fs.writeFileSync(file,JSON.stringify(data));
 }
+
+test('license contract rejects missing, incomplete or undeclared MIT licensing and lost third-party notices',t=>{
+  const dir=fixture(t),licensePath=path.join(dir,'LICENSE'),original=fs.readFileSync(licensePath,'utf8');
+  fs.unlinkSync(licensePath);assert.throws(()=>checkExtension(dir),/LICENSE/);
+  fs.writeFileSync(licensePath,'MIT License\nCopyright (c) 2026 Synthetic author\n');assert.throws(()=>checkExtension(dir),/LICENSE/);
+  fs.writeFileSync(licensePath,original.replace(/^Copyright.+$/m,'Copyright (c) 2026 <COPYRIGHT HOLDER>'));assert.throws(()=>checkExtension(dir),/LICENSE/);
+  fs.writeFileSync(licensePath,original);
+  fs.writeFileSync(path.join(dir,'THIRD_PARTY_NOTICES.md'),'');assert.throws(()=>checkExtension(dir),/Third-party/);
+  fs.copyFileSync(path.join(root,'THIRD_PARTY_NOTICES.md'),path.join(dir,'THIRD_PARTY_NOTICES.md'));
+  const file=path.join(dir,'package.json'),meta=JSON.parse(fs.readFileSync(file));meta.license='UNLICENSED';fs.writeFileSync(file,JSON.stringify(meta));
+  assert.throws(()=>checkExtension(dir),/declare MIT/);
+});
 
 test('extension contract accepts current source and matching version tags',()=>{
   const version=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).version;

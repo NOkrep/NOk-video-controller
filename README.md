@@ -1,4 +1,4 @@
-# FilmDeck by NOk (v0.7.7.2 — kaynak geliştirmesi)
+# FilmDeck by NOk (v0.7.7.3 — kaynak geliştirmesi)
 
 > Önceki adı NOk Video Controller. HUD başlığında FilmDeck, Settings → About FilmDeck bölümünde NOk imzası ve sürüm kullanılır. Depo bağlantısı ve teknik eklenti kimliği korunur. Kullanıcının yatay logo görseli yeniden çizilmeden kullanılır; küçük araç çubuğu ikonları bu yatay logodan üretilmedi.
 
@@ -13,7 +13,7 @@
 > Evrensel Medya & Shadow DOM Tespiti, 3-Kademeli Basamaklı Adaptör Mimarisi, Ağ Seviyesinde HLS / SMIL Kalite Kilitleri, Web Audio API Ses Güçlendirici (%300), Görüntü Filtreleri, Bellek İçi Harici Altyazı Motoru ve İzole Klavye Kısayolları.
 
 **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
-**Lisans:** MIT  
+**Lisans:** [MIT](./LICENSE) — Copyright (c) 2026 İhsan B. Arıtürk (NOkrep). Üçüncü taraf bileşenlerin bildirimleri [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) içinde korunur. Her iki dosya Chrome ve Firefox dağıtım paketlerinde bulunmalıdır. Bu lisans ekip içi gelir paylaşımı veya ortaklık oranı belirlemez.<br>
 **Platform:** Firefox (Gecko) & Chromium (Chrome, Brave, Edge, Opera) Manifest V3 WebExtension
 
 ---
@@ -42,7 +42,8 @@
 ## 🛡️ Temel İlkeler
 
 - **Sıfır Depolama (Zero Storage):** Çerez, `localStorage`, `sessionStorage` veya `chrome.storage` kullanılmaz; %100 bellek içi (in-memory stateless) çalışır.
-- **Minimum İzinler:** Yalnızca `activeTab` ve `scripting` izinleri kullanılır; `host_permissions` talep edilmez.
+- **İzin kapsamı:** API izinleri `activeTab` ve `scripting`; `host_permissions` boş. Ayrıca `content_scripts.matches: <all_urls>` ve `all_frames: true`, eşleşen sayfalarda ve iframe’lerde köprü kodunu otomatik çalıştırır; bu kapsam yalnız araç çubuğu tıklamasıyla sınırlı değildir. Ana oynatıcı kancaları sessizce yüklenir; panel kullanıcı isteğiyle açılır.
+- **Permission scope (English):** API permissions are `activeTab` and `scripting`, with no `host_permissions`. The static `<all_urls>` content scripts also run automatically in matching pages and frames, and load the player hooks; access is broader than a toolbar-click-only extension. The panel opens on user request. This review does not change the manifest or site access.
 - **Gizlilik Odaklı Teşhis:** Rapor şeması v2 tam URL, alan adı/IP, kesin saat, izleme konumu ve sayfa konsolu metni içermez. Desteklenen siteler yalnızca sabit platform adıyla, diğer siteler `other` olarak belirtilir. Tarayıcı ailesi, sınırlı oynatıcı durumu ve sabit olay kodları kullanılır.
 - **Kullanıcı Kontrollü Paylaşım:** Otomatik rapor gönderimi yoktur. Açıklama varsayılan olarak kapalıdır; kullanıcı eklerse bu metin otomatik anonimleştirilmez. Rapor önce önizlenir, ardından kullanıcı isterse kopyalayıp paylaşır. E-posta/GitHub hesabı ve sayfa içi panel nedeniyle mutlak anonimlik garantisi verilmez.
 
