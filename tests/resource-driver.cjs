@@ -5,6 +5,7 @@ const root=path.resolve(__dirname,'..');
 function processMemory(pid,perProcess=false){return JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(pid),...(perProcess?['-PerProcess']:[])],{encoding:'utf8',windowsHide:true}));}
 function performanceWindow(pid,seconds){return new Promise((resolve,reject)=>execFile('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-performance.ps1'),'-RootProcessId',String(pid),'-DurationSeconds',String(seconds)],{encoding:'utf8',windowsHide:true},(error,stdout)=>error?reject(error):resolve(JSON.parse(stdout))));}
 async function createDriver(engine,executablePath,packages,options={}){
+  const extensionRoot=options.extensionRoot||root;
   if(engine==='chromium'){
     const {chromium}=require(path.join(packages,'playwright'));
     const context=await chromium.launchPersistentContext('',{executablePath,headless:!options.visible,viewport:options.viewport||{width:1280,height:800},
@@ -19,7 +20,7 @@ async function createDriver(engine,executablePath,packages,options={}){
     const sessions=new Map();let extensionId;
     const session=async page=>{if(!sessions.has(page))sessions.set(page,await context.newCDPSession(page));return sessions.get(page);};
     return {engine,version:browser.version(),
-      install:async()=>{const result=await cdp.send('Extensions.loadUnpacked',{path:root});extensionId=result.id;return result;},
+      install:async()=>{const result=await cdp.send('Extensions.loadUnpacked',{path:extensionRoot});extensionId=result.id;return result;},
       toolbar:async page=>{
         const targets=await cdp.send('Target.getTargets',{filter:[{type:'tab',exclude:false}]});
         const tab=targets.targetInfos.find(info=>info.url===page.url());
@@ -31,6 +32,7 @@ async function createDriver(engine,executablePath,packages,options={}){
       frames:async page=>page.frames().map(target=>{let domain='';try{domain=new URL(target.url()).hostname;}catch(_){}return {target,domain};}),
       hover:(page,selector)=>page.locator(selector).hover({timeout:5000}),
       pointerClick:(page,selector)=>page.locator(selector).click({timeout:5000}),
+      type:(page,text)=>page.keyboard.type(text,{delay:20}),
       reload:page=>page.reload(), activate:page=>page.bringToFront(),
       evaluate:(page,fn,...args)=>page.evaluate(({code,args})=>(0,eval)(`(${code})(...${JSON.stringify(args)})`),{code:String(fn),args}),
       profileStart:async page=>{const client=await session(page);await client.send('Profiler.enable');await client.send('Profiler.setSamplingInterval',{interval:1000});await client.send('Profiler.start');},
@@ -104,7 +106,7 @@ async function createDriver(engine,executablePath,packages,options={}){
     };
     let memoryPage;
     return {engine,version:session.capabilities.browserVersion,
-      install:()=>send('webExtension.install',{extensionData:{type:'path',path:root}}),open,navigate,evaluate,
+      install:()=>send('webExtension.install',{extensionData:{type:'path',path:extensionRoot}}),open,navigate,evaluate,
       activate:page=>send('browsingContext.activate',{context:page}),
       toolbar:async page=>{
         if(!options.toolbarControls)throw Error('Toolbar controls require the isolated-profile opt-in');
@@ -160,6 +162,8 @@ async function createDriver(engine,executablePath,packages,options={}){
           actions:[{type:'pointerMove',origin:'viewport',duration:100,...point},{type:'pointerDown',button:0},{type:'pointerUp',button:0}]}]});
       },
       reload:async page=>{const url=(await send('browsingContext.getTree',{root:page})).contexts[0].url;await send('browsingContext.navigate',{context:page,url,wait:'complete'});},
+      type:(page,text)=>send('input.performActions',{context:page,actions:[{type:'key',id:'nok-report-typing',actions:[...text].flatMap(value=>[
+        {type:'keyDown',value},{type:'keyUp',value},{type:'pause',duration:20}])}]}),
       gc:async page=>{
         memoryPage ||= await open('about:memory');
         const found=await evaluate(memoryPage,()=>{

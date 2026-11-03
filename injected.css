@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.7.8
+ * injected.css - FilmDeck by NOk v0.7.7.9
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -710,6 +710,12 @@
   padding: 16px !important;
   box-sizing: border-box !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* The report stays readable with its dim backdrop; do not re-filter every playing frame. */
+#pvc-error-modal {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .pvc-perm-card {

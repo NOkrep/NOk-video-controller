@@ -1,5 +1,13 @@
 # Etkin çalışma kapsamı
 
+## Tamamlanan dar hedef — I-02 rapor penceresi performansı, 4 Kasım 2026
+
+Firefox 159 ve Chromium tabanlı Edge 152'de oynayan sentetik 1080p30 video üzerinde rapor açılışı, teşhis toplama, JSON önizlemesi ve gerçek klavye olaylarıyla kısa/uzun yorum tepkisi ayrı ölçüldü. JSON hazırlama darboğazı saptanmadı. Raporun ekranı kaplayan backdrop bulanıklığı aynı oturumda açılıp kapatılınca tekrarlanan 3D motor yükü gösterdi. **v0.7.7.9**, yalnız rapor kökünde bu efekti kaldırır; mevcut karartma, canlı önizleme, yorum sınırı, gizlilik ve paylaşım işlevleri korunur. Yeni runtime timer, ağ isteği, izin, depolama veya teşhis alanı yoktur. Kaynak sürümü artışı kullanıcıya bildirildi.
+
+**Kanıt:** eski kaynakta başarısız olan rapor tarayıcı regresyonu iki motorda düzeltme sonrası geçti; EN/TR, metin önizleme, manuel kopyanın önizlemeyle eşleşmesi, özel alanların varsayılan dışlanması ve opt-in geri alma sınandı. 214/214 Node testi ve kaynak/sürüm/izin denetimi geçti. Önce/sonra fonksiyon ölçümlerinin yanında fonksiyon gövdeleri değiştirilmemiş son kaynakla tekrar yapıldı; JS/CSS SHA256 eşleşti. Rapor açık son pencerelerde iki motor da 0/180 düşen video karesi bildirdi; tüm takılmaların çözüldüğü sonucu çıkarılmaz. 5 sıcak + 20 ek aç/kapatta bağlı DOM sabit kaldı; son kaynak kontrolünde GC sonrası kapatılmış rapor kökü/dinleyici hedefi kalmadı. İlk Edge turundaki tek sabit tutulmanın nedeni belirlenmedi; CSS ile giderildiği iddia edilmez.
+
+**Sınırlar ve sonraki işler:** toplam tarayıcı native/cache RAM payı ayrıştırılmadı; D-01 açık. Rapor kapalı bazı pencerelerdeki kare kaybı, soğuk açılış/yazma gecikmesi değişkenliği, gerçek site/iframe aktarım gecikmesi, farklı donanım ve IME/ekran okuyucu kabulü bu dar deneyden tamamlandı sayılmaz. Yeni zorunlu özellik çıkmadı. Yeni yerel rapor tarayıcı testinin CI'a alınması mevcut D-10 kapsamında, medya fixture hazırlığıyla ayrıca düzenlenebilir. Ayrıntılar REPORT_PERFORMANCE.md ve TESTING.md içinde. Önceki v0.7.7.8 commit'i `06e4387` ile korunur; bu v0.7.7.9 çalışmasında commit/push/ZIP/release yapılmadı.
+
 ## Tamamlanan dar hedef — gerçek oynatıcı filtre performansı, 3 Kasım 2026
 
 Kullanıcı önceki dört parçalı hedefi temizleyip Firefox/Chromium gerçek oynatıcı filtre performansı hedefini etkinleştirdi. Bu dar hedefin ölçüm, dinamik yazım darboğazını azaltma, tekrar doğrulama ve sınırları belgeleme adımları v0.7.7.8 kaynak kontrol noktasıyla tamamlandı. Diğer açık işler silinmedi; aşağıdaki tarihsel kayıtlar ve önceki envanter kapsamında kalır. ZIP/release/commit/push yapılmadı.
@@ -36,7 +44,7 @@ Son doğrulama: v0.7.7.5 sürüm/izin/sözdizimi kontrolleri ve 191 Node testi g
 2. İframe ses modu düğmeleri ve tam ekran küçültme durumu: v0.7.7.4 kaynak + yerel iki motorlu regresyon tamam; gerçek site kabulü açık. Konum devamlılığı ve gerçek çift panel iddiası ayrıca incelenecek.
 3. PiP: v0.7.7.5 kaynak + yerel iki motorlu regresyon geçti; gerçek site izinleri ve raporlanan sitelerde kabul açık.
 4. Kalite: v0.7.7.7 ortak playlist/etiket ayrımı ve iki motorlu yerel/iframe kabulü geçti. Bir gerçek örnekte site menüsü de farklı görüntü vermedi; tüm siteye genellenmez. Diğer eksik envanter ve gerçek kaynak geçişi kabulü açık.
-5. Video filtreleri: v0.7.7.8 dar ölçüm/iyileştirme hedefi tamamlandı; statik GPU maliyeti ve yüksek çözünürlük/donanım sınırları kayıtlı. Rapor penceresi performansı ayrı açık iş.
+5. Video filtreleri: v0.7.7.8 dar hedefi tamamlandı; statik GPU maliyeti/yüksek çözünürlük sınırları kayıtlı. Rapor penceresi: v0.7.7.9 dar ölçüm/iyileştirme hedefi tamamlandı; gerçek site/donanım ve native/cache sınırları REPORT_PERFORMANCE.md içinde.
 6. Kalan emoji/SVG envanteri: kullanıcıyla birlikte değiştirme/kaldırma kararı verilecek; toplu sessiz temizlik yapılmayacak.
 
 ### Gelecek özellik — oynatıcıdaki mevcut ses ve altyazı parçaları
@@ -72,7 +80,7 @@ Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.7.8 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.7.9 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

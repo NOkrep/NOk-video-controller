@@ -58,6 +58,14 @@ Statik filtre gerçek videoya ulaşmadan panel kapatılmaz. Pencere başı/sonu 
 
 v0.7.7.8 yerel sonuç: 214 Node testi ve eklenti sözleşmesi; iki motorda iframe filtre/kapanış/reset/durmuş medya kontrolleri geçti. Son kaynak hash'iyle canlı tam ekran altışar filtre penceresi doğrulandı. Firefox'un ek iframe tekrarındaki bir başlangıç zaman aşımı uygulama regresyonu sayılmadı; temiz profil tekrarında test geçti. Güncel gerçek site sonuçları/CPU belirsizlikleri FILTER_PERFORMANCE.md içindedir; uzak CI sonucu değildir.
 
+## Rapor penceresi performansı
+
+Yerel üretilmiş medya hazırsa `node tests/report-performance.cjs --engine=both --label=report-run --compare-blur` görünür iki tarayıcıyı sırayla çalıştırır. İlk/sıcak açılış, teşhis toplama, JSON/önizleme, gerçek kısa/uzun klavye girdisi ve 20 ek aç/kapatta GC sonrası rapor kökü/dinleyici tutulması ayrıdır. Fonksiyon sarmalayıcıları yalnız Git dışı test kopyasına eklenir; `--plain` gerçek kaynakla tekrar yapar (sayfa gözlemcileri kalır). CPU/GPU/kare sayıları ve kaynak JS/CSS hash'leri Git dışı `tests/artifacts/reports-<label>/` altına yazılır. Özel yorum, kaynak URL'si ve ham heap yoktur; kullanıcı panosu değiştirilmez. Aynı anda başka benchmark çalıştırılmamalıdır.
+
+`node tests/report-browser.cjs --engine=firefox` ve `--engine=chromium` gerçek UI tıklamalarıyla raporda backdrop blur olmamasını, canlı ham metin önizlemesini, EN/TR, özel alan varsayılanlarını, opt-in geri almayı, paylaşım URL'lerini ve kopya/önizleme eşitliğini doğrular. Mevcut `tests/artifacts/media/synthetic-av-720p.webm` dosyası gerekir; performans aracı ayrıca yerel 1080p dosyayı kullanır. Eksikse `node tests/prepare-browser-fixtures.cjs --audio-fixture --performance-fixture` yerel FFmpeg ile üretir; çalışma dosyaları bu komutla otomatik indirilmez. Bu iki yeni test mevcut CI'a eklenmedi.
+
+v0.7.7.9 kanıtı ve sınırları REPORT_PERFORMANCE.md içindedir. `npm run check` 214 testi geçti; yerel rapor tarayıcı regresyonları iki motorda geçti. Toplam süreç RAM'i uygulamanın tek başına tüketimi veya sıfır video karesi kaybı evrensel akıcılık garantisi değildir.
+
 ## Sürüm artırma
 
 ```powershell

@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.7.8 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.7.9 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,11 +17,12 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.7.8';
+  const EXTENSION_VERSION = '0.7.7.9';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.7.9', notes: 'Teşhis raporunun tam ekran arka plan bulanıklığı kaldırıldı; karartma ve rapor işlevleri korunur. Oynayan videoda ölçülen GPU render yükünü azaltır. JSON ve yorum davranışı, gizlilik ve izinler değişmedi. İki motorlu ölçüm ve kabul sınırları REPORT_PERFORMANCE.md içinde.' },
     { version: 'v0.7.7.8', notes: 'Oynayan videoda ardışık filtre girdileri video karesine hizalanır; kare gelmezse süre sınırlı geri dönüş, durmuş/eski API videolarda rAF yolu korunur. Kaynak/oturum değişimi eski çizimi iptal eder; kabul edilmiş son değer kapanışta korunur. Filtre sırası/renkleri değişmez. Gerçek Firefox/Chromium CPU/GPU/kare ölçümleri ve kanıt sınırları FILTER_PERFORMANCE.md içinde; bütün sitelerde kasmasızlık garantisi değildir.' },
     { version: 'v0.7.7.7', notes: 'Video.js kalite etiketleri aynı oynatma listesine bağlıysa kalite alanında açıklama ve anonim raporda yalnız sabit playlistMapping kategorisi. Kaynak adresleri paylaşılmaz, seçenekler korunur ve menü seçimi gerçek görüntü değişimi sayılmaz. Gerçek kaynak geçişi ve performans kabulünün kalan kısmı açık.' },
     { version: 'v0.7.7.6', notes: 'YouTube Trusted Types/CSP engeline uyumlu güvenli HTML çizimi; toolbar üzerinde native MAIN enjeksiyonu ve legacy geri dönüş; yükleme sırasında açılış isteğinin korunması. İframe kalite envanteri değişince temel kontroller kilitlenmez; medya/SDK/kaynak değişince eski komutlar reddedilir. İzin/depolama değişmedi; gerçek site kalite, senkron ve filtre performansı kabulü açık.' },
