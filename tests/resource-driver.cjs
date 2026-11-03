@@ -33,6 +33,18 @@ async function createDriver(engine,executablePath,packages,options={}){
       pointerClick:(page,selector)=>page.locator(selector).click({timeout:5000}),
       reload:page=>page.reload(), activate:page=>page.bringToFront(),
       evaluate:(page,fn,...args)=>page.evaluate(({code,args})=>(0,eval)(`(${code})(...${JSON.stringify(args)})`),{code:String(fn),args}),
+      profileStart:async page=>{const client=await session(page);await client.send('Profiler.enable');await client.send('Profiler.setSamplingInterval',{interval:1000});await client.send('Profiler.start');},
+      profileStop:async page=>{
+        const client=await session(page),{profile}=await client.send('Profiler.stop');await client.send('Profiler.disable');
+        const nodes=new Map(profile.nodes.map(node=>[node.id,node])),own=new Map();let totalMicroseconds=0,ownMicroseconds=0;
+        for(let i=0;i<(profile.samples||[]).length;i++){
+          const time=profile.timeDeltas?.[i]||0,node=nodes.get(profile.samples[i]);totalMicroseconds+=time;
+          if(node?.callFrame.url!==`chrome-extension://${extensionId}/injected.js`)continue;
+          ownMicroseconds+=time;const key=(node.callFrame.functionName||'(anonymous)')+':'+(node.callFrame.lineNumber+1);
+          own.set(key,(own.get(key)||0)+time);
+        }
+        return {totalMicroseconds,ownMicroseconds,ownFunctions:[...own].sort((a,b)=>b[1]-a[1]).slice(0,20).map(([location,microseconds])=>({location,microseconds}))};
+      },
       gc:async page=>{await(await session(page)).send('HeapProfiler.collectGarbage');await delay(250);await(await session(page)).send('HeapProfiler.collectGarbage');await delay(100);return 'CDP HeapProfiler.collectGarbage twice, with finalizer turn';},
       memory:async page=>({process:processMemory(pid),heap:await(await session(page)).send('Runtime.getHeapUsage'),dom:await(await session(page)).send('Memory.getDOMCounters')}),
       memoryCategories:async()=>{

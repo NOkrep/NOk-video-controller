@@ -68,8 +68,22 @@ async function main(){
     await driver.evaluate(page,()=>{const input=document.getElementById('pvc-volume-slider');input.value='30';input.dispatchEvent(new Event('input',{bubbles:true}));});
     await until(driver,media,()=>Math.abs(document.querySelector('video').volume-.3)<.01,'control reaches replacement video');
     assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-controller-popup').style.display),'block','HUD stays open across replacement');
+    await click(page,'pvc-tab-settings');
+    const brightness=value=>driver.evaluate(page,value=>{const input=document.getElementById('pvc-filter-brightness');input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));},value);
+    await brightness(115);await until(driver,media,()=>document.querySelector('video').style.filter==='brightness(115%)','remote frame-scheduled filter reaches the selected media');
+    await driver.evaluate(media,()=>window.addEventListener('message',event=>{if(event.source===window&&event.data?.type==='PVC_SOURCE_STATE')window.__testFilterRequest=event.data.payload.state.filters.brightness;}));
+    await brightness(125);await until(driver,media,()=>window.__testFilterRequest===125,'source accepts the final filter');
+    await click(page,'pvc-close-popup-btn');
+    await until(driver,media,()=>document.querySelector('video').style.filter==='brightness(125%)','accepted filter survives session close');
+    await driver.pointerClick(page,'#open');await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','filter controls reopen');
+    await click(page,'pvc-tab-settings');await click(page,'pvc-btn-reset-filters');
+    await until(driver,media,()=>document.querySelector('video').style.filter==='','reset restores native CSS');
+    await driver.evaluate(media,()=>document.querySelector('video').pause());
+    await brightness(120);await until(driver,media,()=>document.querySelector('video').style.filter==='brightness(120%)','paused media stays responsive');
+    await click(page,'pvc-btn-reset-filters');await until(driver,media,()=>document.querySelector('video').style.filter==='','paused reset');
+    await driver.evaluate(media,()=>document.querySelector('video').play());
     for(const target of [page,media])assert.equal(await driver.evaluate(target,()=>document.querySelectorAll('#pvc-controller-popup').length),1,'one HUD per document');
-    console.log(JSON.stringify({engine,browserVersion:driver.version,result:'passed',checks:['remote mono/stereo','collapse into fullscreen','expand out of fullscreen','media replacement keeps HUD/control','single visible HUD']}));
+    console.log(JSON.stringify({engine,browserVersion:driver.version,result:'passed',checks:['remote mono/stereo','collapse into fullscreen','expand out of fullscreen','media replacement keeps HUD/control','filter frame/close/reset/paused','single visible HUD']}));
   }finally{
     try{await driver?.close();}finally{for(const server of [parent,child]){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}}
   }

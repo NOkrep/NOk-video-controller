@@ -1,4 +1,4 @@
-# FilmDeck by NOk (v0.7.7.6 — kaynak geliştirmesi)
+# FilmDeck by NOk (v0.7.7.8 — kaynak geliştirmesi)
 
 > Önceki adı NOk Video Controller. HUD başlığında FilmDeck, Settings → About FilmDeck bölümünde NOk imzası ve sürüm kullanılır. Depo bağlantısı ve teknik eklenti kimliği korunur. Kullanıcının yatay logo görseli yeniden çizilmeden kullanılır; küçük araç çubuğu ikonları bu yatay logodan üretilmedi.
 

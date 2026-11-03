@@ -2,10 +2,10 @@
 
 > Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.7.6 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
+> **Sürüm:** v0.7.7.8 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** 3 Kasım 2026 — v0.7.7.6 (Trusted Types uyumlu UI, native toolbar başlangıcı ve iframe medya sahibi/revizyon ayrımı; YouTube Firefox panel/logo, diğer kabul sınırları ACTIVE_WORK.md içinde)
+> **Son Güncelleme:** 3 Kasım 2026 — v0.7.7.8 (Filtre girdilerinin video karesine hizalanması, son değer/iptal koruması ve gerçek Firefox/Chromium performans ölçümleri; kabul sınırları FILTER_PERFORMANCE.md içinde)
 
 ---
 

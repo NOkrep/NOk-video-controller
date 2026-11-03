@@ -9,7 +9,7 @@ function harness() {
   const context = vm.createContext({window, qualityWatchTimer:null, filterUpdateFrame:null, document:{getElementById:()=>null,addEventListener(){}},
     setTimeout: callback => {timers.set(++next,callback);return next;}, clearTimeout:id=>timers.delete(id),
     cancelAnimationFrame:id=>cancelledFrames.push(id),
-    stopAdWatch(){}, clearPipActivationPrompt(){}, showToast(){}, findVideoAndPlayer:()=>({video:{},player:null}), setSpeed:value=>{calls.push(value);return true;},
+    stopAdWatch(){}, flushVideoFilterDraw(){}, cancelVideoFilterDraw(){}, clearPipActivationPrompt(){}, showToast(){}, findVideoAndPlayer:()=>({video:{},player:null}), setSpeed:value=>{calls.push(value);return true;},
     inputState:state(), session, owner, calls });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'..','frame-protocol.js'),'utf8'),context);
   vm.runInContext(source.slice(source.indexOf('  // FRAME PRESENTATION'),source.indexOf('  // END FRAME PRESENTATION')),context);

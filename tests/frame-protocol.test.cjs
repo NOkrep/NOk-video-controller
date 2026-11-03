@@ -17,6 +17,17 @@ test('protocol round-trips bounded UI state and never relays extra URLs, page te
   assert.equal(JSON.stringify(cleaned).includes('PRIVATE'), false);
 });
 
+test('playlist mapping relays only fixed categories in state and diagnostics',()=>{
+  for(const mapping of ['unknown','shared-playlist','distinct-playlists']){
+    assert.equal(protocol.cleanState(state({playlistMapping:mapping})).playlistMapping,mapping);
+    const input=report();input.quality.playlistMapping=mapping;input.quality.playlistUrl='PRIVATE_SOURCE';
+    assert.equal(protocol.cleanReport(input).quality.playlistMapping,mapping);
+    assert.equal(JSON.stringify(protocol.cleanReport(input)).includes('PRIVATE'),false);
+  }
+  assert.equal(protocol.cleanState(state({playlistMapping:'https://private.invalid/secret'})),null);
+  const input=report();input.quality.playlistMapping='PRIVATE_SOURCE';assert.equal(protocol.cleanReport(input),null);
+});
+
 test('state rejects unknown enums, nonfinite values, out-of-range controls and unbounded lists', () => {
   for (const extra of [{ adapter: 'PRIVATE_LABEL' }, { requestedRate: 16 }, { requestedIndex: 128 }, { height: Infinity }, { fullscreen: 1 }, { hudCollapsed: 'true' },
     { qualities: Array.from({ length: 129 }, () => ({ height: 720, bitrate: 0 })) }, { candidates: Array.from({ length: 33 }, () => ({ height: 720 })) }]) {

@@ -3,7 +3,7 @@ function state(extra = {}) {
   return { owner, revision: 1, hasVideo: true, fullscreen: false, hudCollapsed: false, paused: false, muted: false, pipActive: false,
     width: 1920, height: 1080, rate: 1, requestedRate: 1, volume: 100, requestedVolume: 100, audioMode: 'stereo',
     adapter: 'HlsJsAdapter', forcedAdapter: 'none', drm: false, qualities: [{ height: 1080, bitrate: 5000000 }, { height: 720, bitrate: 2000000 }],
-    verification: 'not-verified', requestedHeight: 0, requestedIndex: -1, decodedMatch: null, renditionMatch: null,
+    verification: 'not-verified', requestedHeight: 0, requestedIndex: -1, decodedMatch: null, renditionMatch: null, playlistMapping: 'unknown',
     subtitleLoaded: false, subtitleEnabled: true, subtitleStatus: 'not-loaded', subtitleOffset: 0,
     appearance: { fontSize: 20, bottom: 8, background: 82, color: 'white' },
     filters: { brightness: 100, contrast: 100, saturate: 100, nightShield: false, invert: false },
@@ -19,6 +19,6 @@ function report(extra = {}) {
       isShadowDom: false, subtitleLoaded: false, subtitleLoadStatus: 'not-loaded', subtitleRenderStatus: 'not-loaded' },
     quality: { control: 'not-implemented', requestedHeight: null, cachedOptionCount: '0', verification: 'not-verified', decodedMatch: null, renditionMatch: null,
       inventoryScope: 'adapter', inventoryCompleteness: 'not-verified', adaptiveMode: 'unknown', playerLevelCount: null, knownResolutionCount: null,
-      manifestObserved: false, declaredLevelCount: null }, cdnMeasurementStatus: 'not-tested', recentEvents: [], problem: 'unspecified', ...extra };
+      manifestObserved: false, declaredLevelCount: null, playlistMapping: 'unknown' }, cdnMeasurementStatus: 'not-tested', recentEvents: [], problem: 'unspecified', ...extra };
 }
 module.exports = { state, report, session, owner };

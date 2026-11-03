@@ -30,6 +30,8 @@ node tests/pip-browser.cjs --engine=firefox
 node tests/pip-browser.cjs --engine=chromium
 node tests/startup-browser.cjs --engine=firefox
 node tests/startup-browser.cjs --engine=chromium
+node tests/quality-mapping-browser.cjs --engine=firefox
+node tests/quality-mapping-browser.cjs --engine=chromium
 ```
 
 İkinci tarayıcı senaryosu ayrı yerel kökenlerde iframe medyası kullanır: Mono/Stereo seçili düğmeleri ve `aria-pressed`, küçültülmüş panelle tam ekrana giriş, orada genişletip normal görünüme dönüş ve aynı anda tek görünür HUD. İki motorlu CI matrisinde çalışır. Gerçek site PiP, ses içeriği doğruluğu veya kalite geçişi kabulü değildir.
@@ -43,6 +45,18 @@ Güvenli UI çizimi destekleyen tarayıcıda `Element.setHTML(..., { sanitizer: 
 İframe medya değiştirme senaryosu, eski video yerine yeni öğenin kontrol edildiğini ve HUD'un açık kaldığını da sınar. Kalite/aday listesi revizyonu yalnız indeks kullanan kalite ve hedef seçimini sınırlar; temel kontroller güncel medya sahibine bağlıdır. Video/SDK/kaynak/srcObject/medya epoch değişiminde sahip değişir; eski komut reddedilir. Sahip karşılaştırması nesneleri güçlü referanslarla tutmaz.
 
 Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromium kurulumu `--browser="C:/.../chrome.exe"` ile verilebilir. Özel test profilleri kişisel profile dokunmaz; test sayfası yalnız localhost kullanır ve yardımcı sürücü sayfa ağını yerel/eklenti kaynaklarıyla sınırlar. Chromium için `--screenshots=true` yerel sentetik ekran görüntülerini Git dışındaki `tests/artifacts/ui-smoke/` klasörüne yazar.
+
+`quality-mapping-browser.cjs`, mevcut Git dışı yerel HLS ve gerçek Video.js çalışma dosyalarını kullanır (`prepare-browser-fixtures.cjs`); dosyaları otomatik indirmez ve mevcut CI'a eklenmiş değildir. Farklı çözünürlüklere bağlı normal akışta gerçek 480p görüntüyü; üç etiketin aynı 720p oynatma listesine bağlandığı akışta uyarıyı, başarısız görüntü doğrulamasını ve raporda yalnız `playlistMapping` kategorisinin aktarılmasını sınar. Ortak kaynak senaryosu ayrı kökenli iframe/üst HUD ile de çalışır. `distinct-playlists` yalnız farklı adres eşleşmesidir, farklı görüntü içeriklerinin kanıtı değildir. Eksik veya erişilemeyen envanter `unknown` kalır. Kaynaklar yalnız RAM içinde karşılaştırılır; yeni ağ isteği yapılmaz, seçenekler kaldırılmaz ve otomatik tampon sıfırlama eklenmez.
+
+## Gerçek oynatıcı filtre performansı
+
+`node tests/live-filter-performance.cjs --url="<public HTTPS page>" --engine=both --label=filter-run` Firefox ve Chromium'u sırayla, geçici görünür profillerde çalıştırır. Hesap kullanılmaz; içerik başlığı, medya adresi ve mutlak izleme konumu raporlanmaz. `--discover` yalnız ana sayfadan herkese açık bir örnek seçmek içindir; hedef adres yalnız süreç RAM'inde iki motor arasında korunur. Varsayılan iki tekrarda nötr/üç filtre/tam zincir/nötr açık/sürükleme/nötr dönüş ölçülür. `--focus` yalnız nötr/sürükleme/dönüşü, `--fullscreen` seçili Video.js kökünün standart fullscreen durumunu sınar. `--profile` Chromium'da yalnız FilmDeck fonksiyon self sürelerinin sayısal özetini ekler; ham CPU profili veya script adresleri dışa çıkmaz. `--compare-timing`, aynı seçili medya üzerinde kare API'si açıkken ve yalnız testte o öğede API yokluğu taklit edilerek rAF geri dönüşünde karşılaştırır; özgün özellik geri yüklenir. `--legacy-first` sıra etkisini kontrol etmek için modları ters sıraya alır. Bu, tüm eski tarayıcıların emülasyonu değildir. Ölçüm pencereleri boyunca başka benchmark başlatılmamalıdır.
+
+Statik filtre gerçek videoya ulaşmadan panel kapatılmaz. Pencere başı/sonu filtre, kaynak/hız/görünürlük/ağ durumu ve girdi yükü kontrol edilir. Düşen kareler kötü performans kanıtıdır; asla sırf yüksek olduğu için dışlanmaz. Sayfa rAF hızından bağımsız test girdisi kullanılır; düşük girdi yükü ve değişen CPU süreç kümesi karşılaştırma sınırıdır. Sonuçlar yalnız Git dışı `tests/artifacts/live-filters-<label>/` altındadır. CPU/GPU sayaçlarının anlamı ve geçersiz ilk deneyler FILTER_PERFORMANCE.md içinde açıklanır. Gerçek site erişiminin değişmesi ölçümün yeniden üretilebilirliğini sınırlayabilir.
+
+`--native-reference` eklentiyi hiç kurmadan aynı CSS dizgilerini testte doğrudan uygular: nötr/üç filtre/tam zincir/dönüş. HUD ve sürükleme ölçümü içermez; ayrı oturumların farkını yalnız eklenti ek yükü olarak yorumlamaya yetmez. Başarısızlık mesajlarında HTTP adresleri maskelenir. Benchmark sırasında tarayıcı/ağ hatası veya geçersiz medya penceresi varsa ham kayıt korunur ve kabul sayılmaz; düşük performanslı ama geçerli pencere elenmez.
+
+v0.7.7.8 yerel sonuç: 214 Node testi ve eklenti sözleşmesi; iki motorda iframe filtre/kapanış/reset/durmuş medya kontrolleri geçti. Son kaynak hash'iyle canlı tam ekran altışar filtre penceresi doğrulandı. Firefox'un ek iframe tekrarındaki bir başlangıç zaman aşımı uygulama regresyonu sayılmadı; temiz profil tekrarında test geçti. Güncel gerçek site sonuçları/CPU belirsizlikleri FILTER_PERFORMANCE.md içindedir; uzak CI sonucu değildir.
 
 ## Sürüm artırma
 

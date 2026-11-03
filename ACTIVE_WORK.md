@@ -1,6 +1,22 @@
 # Etkin çalışma kapsamı
 
+## Tamamlanan dar hedef — gerçek oynatıcı filtre performansı, 3 Kasım 2026
+
+Kullanıcı önceki dört parçalı hedefi temizleyip Firefox/Chromium gerçek oynatıcı filtre performansı hedefini etkinleştirdi. Bu dar hedefin ölçüm, dinamik yazım darboğazını azaltma, tekrar doğrulama ve sınırları belgeleme adımları v0.7.7.8 kaynak kontrol noktasıyla tamamlandı. Diğer açık işler silinmedi; aşağıdaki tarihsel kayıtlar ve önceki envanter kapsamında kalır. ZIP/release/commit/push yapılmadı.
+
+Filtre yazımları video karesine hizalanır; 50 ms geri dönüş ve durmuş/eski API yolu korunur. Son kabul edilmiş değer kapanışta korunur, kaynak/oturum/sahip değişimi eski callback'i iptal eder. Aday geliştirilirken 200 ms hedef önbelleğinin sürekli sürüklemeyle sonsuza uzaması ve toplanmış eski stream eşleşmesi regresyonla yakalanıp düzeltildi; bunlar önceki sürüm hatası diye sunulmaz. Filtre rengi/sırası, site stiline saygı, izin ve RAM-only mimari değişmedi.
+
+**Kanıt:** 214/214 Node testi ve kaynak/sürüm/izin denetimi; son kaynakla Firefox 159 / Chromium tabanlı Edge 152 gerçek kurulu eklentide iframe filtre/kapanış/reset/durmuş medya + HUD durum testi geçti. Son canlı tam ekran kabulünün iki motorda altışar penceresi kaynak SHA256 eşleşmesi, doğru filtre, görünür ve kesintisiz medya ilerlemesiyle geçti; video sayacı sıfır düşen kare bildirdi. Önceki normal/tam ekran aynı-oturum zamanlama karşılaştırmalarında gereksiz stil mutasyonları azaldı; CPU her turda düşmedi. Son canlı örnek 720p/~24fps olduğu için tüm donanım/site/4K60/DRM için kasmasızlık iddiası yoktur. Eklentisiz CSS kontrolü ve statik render maliyeti, geçici CPU sıçramasının ayrıştırılamayan nedeni ve geçersiz ilk keşif turları FILTER_PERFORMANCE.md içinde ayrı belgelenmiştir.
+
+**Sıradaki hedef adayları:** rapor penceresi performansı; bellekte native/cache ayrımı ve uzun kullanım; Kick görünür UI/reklam kabulü; kalan gerçek site kalite/medya/senkron kabulü. Kullanıcı seçiminden önce bu işlerden yeni hedef oluşturulmaz. Güncel filtre hedefinin tamamlanması eski bütünsel uygulama hedefini veya tüm issue'ları tamamlamaz.
+
 ## 3 Kasım 2026 — yeni regresyonların aşamalı takibi
+
+**v0.7.7.7 — kalite kaynağı eşleştirmesi:** raporlanan herkese açık bir Video.js 7.18.1 örneği ayrı Firefox 159 profilinde yeniden incelendi. 480/720/1080 etiketleri tek resolved playlist adresine bağlıydı; FilmDeck paneli kullanılmadan sitenin kendi menüsünden 480p seçildiğinde SDK 480 bildirirken çözülen görüntü 720p kaldı. Yalnız test profilinde, doğru bağlı legacy VHS tamponu bir kez yenilenince de 720p kaldı. Bu gözlem tüm site/içerikler için genellenmez; eski controller'a otomatik flush eklemek bu örneği çözmediğinden üretime böyle bir müdahale eklenmedi.
+
+Seçili Video.js/VHS envanteri yalnız RAM içinde, en fazla 128 seviye ile karşılaştırılır. Farklı yüksekliklerin aynı playlist adresine eşleşmesi kalite alanında EN/TR açıklama gösterir. Yerel/iframe HUD ve teşhis önizlemesi yalnız `playlistMapping: unknown | shared-playlist | distinct-playlists` taşır. Kaynak adresi, içerik adı, izleme konumu veya manifest içeriği aktarılmaz. `distinct-playlists` farklı görüntü içeriğini kanıtlamaz. Eksik envanter bilinmeyen kalır; kalite seçenekleri ve mevcut decoded doğrulama korunur. Yeni ağ isteği, kalıcı depolama, izin, timer veya otomatik kaynak/tampon sıfırlama yoktur.
+
+Kanıt: **207/207 Node testi**, kaynak/sürüm/izin denetimi; Firefox 159 ve Chromium tabanlı Edge 152'de gerçek kurulu eklenti + Video.js/VHS + test amaçlı HLS ile ortak playlist uyarısı ve başarısız 480p doğrulaması, farklı playlist akışında gerçek 480p görüntü, ayrı kökenli iframe/üst HUD uyarısı ve anonim rapor aktarımı geçti. Kalite açıklamaları panel sınırlarına sığdı. Yeni tarayıcı testi mevcut yerel çalışma dosyalarını kullanır; CI'a eklenmedi ve otomatik indirme yapmaz. v0.7.7.6 commit'i `aad4b4c` ile korunur. Bu yeni kaynak kontrol noktası için commit/push/ZIP/yayın yapılmadı. Diğer örneklerde eksik envanter/gerçek kalite geçişi, senkron ve filtre/rapor performansı açık.
 
 **v0.7.7.6 — açılış ve kontrol hedefi:** YouTube'da motor hazırken panelin `innerHTML` ataması `Sink type mismatch violation blocked by CSP` hatasıyla reddedildi. Destekleyen tarayıcıda tüm UI HTML atamaları yerleşik güvenli `setHTML` yoluna geçti; form/SVG/data-* işlevleri korunur, boş listeler parser kullanmadan temizlenir, yeni Trusted Types politikası yaratılmaz. Hesapsız ayrı Firefox 159 profilinde YouTube ana sayfası ve Google API örneğinin herkese açık izleme sayfasında gerçek toolbar üzerinden panel/logo açılışı doğrulandı; oynatma/kalite veya kullanıcı hesabındaki bütün durumların kabulü değildir.
 
@@ -19,8 +35,8 @@ Son doğrulama: v0.7.7.5 sürüm/izin/sözdizimi kontrolleri ve 191 Node testi g
 1. YouTube HUD açılışı: v0.7.7.6 güvenli çizim + Firefox canlı panel/logo kabulü geçti. Oynatıcı/video değişimi: temel komut revizyonu ve sahip yenileme düzeltildi; yerel iki motorlu kabul geçti. Diğer raporlanan siteler ve ses–görüntü senkron kayması açık.
 2. İframe ses modu düğmeleri ve tam ekran küçültme durumu: v0.7.7.4 kaynak + yerel iki motorlu regresyon tamam; gerçek site kabulü açık. Konum devamlılığı ve gerçek çift panel iddiası ayrıca incelenecek.
 3. PiP: v0.7.7.5 kaynak + yerel iki motorlu regresyon geçti; gerçek site izinleri ve raporlanan sitelerde kabul açık.
-4. Kalite: gerçek envanter keşfi ile menü seçiminin decoded görüntüye uygulanması ayrı işler; gerçek site kabulü açık.
-5. Video filtreleri ve rapor penceresi performansı: Firefox/Chromium ölçümü açık.
+4. Kalite: v0.7.7.7 ortak playlist/etiket ayrımı ve iki motorlu yerel/iframe kabulü geçti. Bir gerçek örnekte site menüsü de farklı görüntü vermedi; tüm siteye genellenmez. Diğer eksik envanter ve gerçek kaynak geçişi kabulü açık.
+5. Video filtreleri: v0.7.7.8 dar ölçüm/iyileştirme hedefi tamamlandı; statik GPU maliyeti ve yüksek çözünürlük/donanım sınırları kayıtlı. Rapor penceresi performansı ayrı açık iş.
 6. Kalan emoji/SVG envanteri: kullanıcıyla birlikte değiştirme/kaldırma kararı verilecek; toplu sessiz temizlik yapılmayacak.
 
 ### Gelecek özellik — oynatıcıdaki mevcut ses ve altyazı parçaları
@@ -56,7 +72,7 @@ Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.7.6 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.7.8 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

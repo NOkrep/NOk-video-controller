@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.7.6 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.7.8 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,11 +17,13 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.7.6';
+  const EXTENSION_VERSION = '0.7.7.8';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.7.8', notes: 'Oynayan videoda ardışık filtre girdileri video karesine hizalanır; kare gelmezse süre sınırlı geri dönüş, durmuş/eski API videolarda rAF yolu korunur. Kaynak/oturum değişimi eski çizimi iptal eder; kabul edilmiş son değer kapanışta korunur. Filtre sırası/renkleri değişmez. Gerçek Firefox/Chromium CPU/GPU/kare ölçümleri ve kanıt sınırları FILTER_PERFORMANCE.md içinde; bütün sitelerde kasmasızlık garantisi değildir.' },
+    { version: 'v0.7.7.7', notes: 'Video.js kalite etiketleri aynı oynatma listesine bağlıysa kalite alanında açıklama ve anonim raporda yalnız sabit playlistMapping kategorisi. Kaynak adresleri paylaşılmaz, seçenekler korunur ve menü seçimi gerçek görüntü değişimi sayılmaz. Gerçek kaynak geçişi ve performans kabulünün kalan kısmı açık.' },
     { version: 'v0.7.7.6', notes: 'YouTube Trusted Types/CSP engeline uyumlu güvenli HTML çizimi; toolbar üzerinde native MAIN enjeksiyonu ve legacy geri dönüş; yükleme sırasında açılış isteğinin korunması. İframe kalite envanteri değişince temel kontroller kilitlenmez; medya/SDK/kaynak değişince eski komutlar reddedilir. İzin/depolama değişmedi; gerçek site kalite, senkron ve filtre performansı kabulü açık.' },
     { version: 'v0.7.7.5', notes: 'PiP isteğinde iframe etkileşim yetkisi dolmuşsa kaynak videoda gerçek tıklama onayı; izin politikası/hazırlık/API desteği ayrı sabit teşhis olayları; PiP durumu üst HUD ile eşleşir ve seçili videonun sahibi belge kullanılır. Yerel Firefox/Chromium doğrulaması; gerçek site kabulü ve diğer kalite/performans/medya hedefleri açık.' },
     { version: 'v0.7.7.4', notes: 'İframe ses modu durumunda Stereo/Mono seçili düğmeleri ve aria-pressed eşleşir; HUD küçültme tercihi normal görünüm ve tam ekran arasında aktarılır. Yerel kurulu Firefox/Chromium regresyonu; diğer gerçek site, PiP, kalite ve performans sorunları açık. Mevcut ses/altyazı parçalarını seçme özelliği sonraki işler listesinde.' },
@@ -56,6 +58,7 @@
   // UI-only gettext catalogue. No page content, subtitle cues or report JSON is translated.
   // Language and original DOM text live only in this frame's RAM.
   const UI_MESSAGES = {
+    'Farklı kalite etiketleri aynı oynatma listesine bağlı. Gerçek görüntü kalitesi etiketlerden farklı olabilir.': 'Different quality labels share the same playlist. Actual image quality may differ from the labels.',
     'PiP için bu videoda onay gerekli.': 'Confirm PiP in this video frame.',
     'PiP Aç': 'Open PiP',
     'Vazgeç': 'Cancel',
@@ -865,6 +868,7 @@
     window.postMessage(session ? { type, payload: { session } } : { type }, '*');
   }
   function clearRemoteSession(retire = true, keepOpen = false) {
+    flushVideoFilterDraw();
     clearPipActivationPrompt();
     const hadRemote = remotePresentation || remoteSourceSession;
     if (retire) for (const session of [remotePresentationSession, remoteSourceSession, pendingRemoteSourceSession]) if (session) retiredRemoteSessions.add(session);
@@ -896,7 +900,7 @@
     const next = { video: remoteIdentityToken(video), player: remoteIdentityToken(player), source: getQualitySourceKey(video, player),
       sourceObject: remoteIdentityToken(video?.srcObject), epoch: video ? qualityMediaEpochs.get(video) || 0 : 0 };
     if (remoteSourceTarget && Object.keys(next).some(key => next[key] !== remoteSourceTarget[key])) {
-      remoteSourceOwner = frameProtocol.newSession(); clearPipActivationPrompt();
+      cancelVideoFilterDraw(); remoteSourceOwner = frameProtocol.newSession(); clearPipActivationPrompt();
     }
     remoteSourceTarget = next;
   }
@@ -926,7 +930,7 @@
       qualities: qualities.map(item => ({ height: bounded(item.height, 0, 4320), bitrate: bounded(item.bitrate, 0, 1000000000) })),
       verification: request.verification, requestedHeight: request.requestedHeight || 0,
       requestedIndex: qualities.findIndex(item => item.id === qualityControlState.request?.id),
-      decodedMatch: request.decodedMatch, renditionMatch: request.renditionMatch,
+      decodedMatch: request.decodedMatch, renditionMatch: request.renditionMatch, playlistMapping: request.playlistMapping,
       subtitleLoaded: customSubtitleCues.length > 0, subtitleEnabled: subtitleOverlayEnabled,
       subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs,
       appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
@@ -1049,7 +1053,7 @@
           case 'quality': if (!remoteSourceQualities[value] || !requestQuality(remoteSourceQualities[value], video, player)) throw new Error('quality'); break;
           case 'target': controlledVideo = value < 0 ? null : remoteSourceCandidates[value]; if (value >= 0 && !controlledVideo) throw new Error('target'); break;
           case 'adapter': userForcedAdapterName = value === 'none' ? '' : value; getActiveAdapter(video, player); break;
-          case 'filters': videoFilterState = { ...value }; applyVideoFiltersToElement(video); updateFilterUiBadges(); break;
+          case 'filters': videoFilterState = { ...value }; scheduleVideoFilterUpdate(); break;
           case 'appearance': Object.assign(subtitleAppearance, value); updateSubtitleAppearanceControls();
             if (video.__nokSubtitleTrack?.cues) for (const cue of video.__nokSubtitleTrack.cues) { cue.snapToLines = false; cue.line = 100 - value.bottom; }
             renderCustomSubtitleCue(video); break;
@@ -1138,7 +1142,7 @@
   function renderRemoteQualities() {
     const state = remotePresentation, container = document.getElementById('pvc-dynamic-quality-container');
     if (!state || !container) return;
-    const signature = JSON.stringify([state.owner, state.revision, uiLanguage, state.qualities]);
+    const signature = JSON.stringify([state.owner, state.revision, uiLanguage, state.qualities, state.playlistMapping]);
     if (container.__nokRemoteSignature !== signature) {
       setUiMarkup(container, ''); container.__nokRemoteSignature = signature;
       state.qualities.forEach((quality, index) => {
@@ -1151,6 +1155,10 @@
       });
       const note = document.createElement('span'); note.className = 'pvc-quality-inventory-note';
       setUiText(note, state.qualities.length ? 'Kaynak menüsü ve oynatıcı seviyeleri birlikte listelenir; tüm kaynakların bulunduğu doğrulanmadı.' : 'Bu oynatıcıda kullanılabilir kalite kontrolü bulunamadı.'); container.appendChild(note);
+      if (state.playlistMapping === 'shared-playlist') {
+        const warning = document.createElement('span'); warning.className = 'pvc-quality-inventory-note';
+        setUiText(warning, 'Farklı kalite etiketleri aynı oynatma listesine bağlı. Gerçek görüntü kalitesi etiketlerden farklı olabilir.'); container.appendChild(warning);
+      }
     }
     for (const button of container.querySelectorAll('button')) {
       const selected = state.requestedIndex >= 0 && button.__nokRemoteIndex === state.requestedIndex;
@@ -2837,7 +2845,7 @@
   ];
 
   // A quality choice belongs to a particular media/player/source, never just a label.
-  const qualityControlState = { context: null, request: null, generation: 0 };
+  const qualityControlState = { context: null, request: null, generation: 0, playlistMapping: 'unknown' };
   const qualityMediaEpochs = new WeakMap();
   const qualityObservedVideos = new WeakSet();
   let qualityWatchTimer = null;
@@ -2867,6 +2875,7 @@
       && performance.now() - pending.started < 12000 && ['pending', 'rendition-confirmed'].includes(pending.status);
     qualityControlState.context = video ? { video, player, adapter, source: getQualitySourceKey(video, player), epoch: qualityMediaEpochs.get(video) || 0 } : null;
     qualityControlState.request = expectedSwitch ? pending : null;
+    qualityControlState.playlistMapping = 'unknown';
     qualityControlState.generation++;
     activeForcedQualityId = ''; activeForcedQualityLabel = '';
     pendingQualityLabel = ''; pendingQualityHeight = 0;
@@ -2913,6 +2922,24 @@
     handle.node.click();
     return true; // Invocation only. Decoded dimensions are checked separately.
   }
+  function readVideoJsPlaylistMapping(video, player) {
+    try {
+      const vjs = findVideoJsPlayer(video, player);
+      const vhs = vjs?.tech_?.vhs || vjs?.tech?.({ IWillNotUseThisInPlugins: true })?.vhs;
+      const reps = vhs?.representations?.();
+      if (!Array.isArray(reps) || reps.length < 2 || reps.length > 128) return 'unknown';
+      const sources = new Map(), heights = new Set();
+      for (const rep of reps) {
+        const uri = rep.playlist?.resolvedUri, height = diagnosticNumber(rep.height, 1, 4320);
+        if (!height || typeof uri !== 'string' || !uri) return 'unknown';
+        heights.add(height);
+        if (!sources.has(uri)) sources.set(uri, new Set());
+        sources.get(uri).add(height);
+      }
+      // Compare only in RAM; URLs, headers and playlist contents never leave this function.
+      return heights.size < 2 ? 'unknown' : [...sources.values()].some(group => group.size > 1) ? 'shared-playlist' : 'distinct-playlists';
+    } catch (_) { return 'unknown'; }
+  }
   function readQualityDiagnostics(video, player) {
     const current = qualityContextMatches(video, player);
     const request = current ? qualityControlState.request : null;
@@ -2921,6 +2948,7 @@
         ? 'timed-out' : request?.status || 'not-verified',
       requestedHeight: request?.height || null,
       decodedMatch: request?.decodedMatch ?? null, renditionMatch: request?.renditionMatch ?? null,
+      playlistMapping: current ? qualityControlState.playlistMapping : 'unknown',
       cachedCount: current ? cachedDiscoveredQualities.length : 0,
       menuCount: current ? cachedDiscoveredQualities.filter(item => item.qualityApi === 'native-menu').length : 0 };
   }
@@ -3212,6 +3240,8 @@
     for (const option of cachedDiscoveredQualities) qualityChoiceBindings.set(option, {
       video, player, source: getQualitySourceKey(video, player), epoch: qualityMediaEpochs.get(video) || 0, generation: qualityControlState.generation
     });
+    qualityControlState.playlistMapping = ['VideoJsAdapter', 'PuhuTvAdapter'].includes(adapter.name)
+      ? readVideoJsPlaylistMapping(video, player) : 'unknown';
     return cachedDiscoveredQualities;
   }
 
@@ -3419,6 +3449,47 @@
   const appliedVideoFilters = new WeakMap();
   let lastFilteredVideo = null;
   let filterUpdateFrame = null;
+  let filterVideoDraw = null;
+  function cancelVideoFilterDraw() {
+    const pending = filterVideoDraw; filterVideoDraw = null;
+    if (!pending) return;
+    const video = pending.ref.deref();
+    if (pending.id !== null) video?.cancelVideoFrameCallback?.(pending.id);
+    clearTimeout(pending.timer);
+  }
+  function flushVideoFilterDraw() {
+    const pending = filterVideoDraw;
+    if (!pending) return;
+    cancelVideoFilterDraw();
+    const video = pending.ref.deref();
+    if (!videoFilterDrawMatches(pending, video) || getVideoFilterTarget() !== video) return;
+    applyVideoFiltersToElement();
+  }
+  function videoFilterDrawMatches(pending, video) {
+    return !!pending && !!video && video.isConnected !== false && pending.ref.deref() === video
+      && pending.source === (video.currentSrc || video.src || '') && (pending.stream ? pending.stream.deref() === video.srcObject : !video.srcObject)
+      && pending.epoch === (qualityMediaEpochs.get(video) || 0) && pending.session === remoteSourceSession && pending.owner === remoteSourceOwner;
+  }
+  function queueVideoFilterDraw() {
+    const video = getVideoFilterTarget();
+    if (!video) { cancelVideoFilterDraw(); return; }
+    const playing = video.paused === false && video.readyState >= 2;
+    if (playing && videoFilterDrawMatches(filterVideoDraw, video)) return;
+    cancelVideoFilterDraw();
+    if (!playing || typeof video.requestVideoFrameCallback !== 'function' || typeof video.cancelVideoFrameCallback !== 'function') {
+      applyVideoFiltersToElement(); return;
+    }
+    const pending = { ref: new WeakRef(video), source: video.currentSrc || video.src || '', stream: video.srcObject ? new WeakRef(video.srcObject) : null,
+      epoch: qualityMediaEpochs.get(video) || 0, session: remoteSourceSession, owner: remoteSourceOwner, id: null, timer: null };
+    filterVideoDraw = pending;
+    const draw = () => { if (filterVideoDraw === pending) flushVideoFilterDraw(); };
+    // Video pixels need one update per presented frame; stalled media still gets the final value.
+    try {
+      pending.id = video.requestVideoFrameCallback(() => { if (filterVideoDraw === pending) { pending.id = null; draw(); } });
+      pending.timer = setTimeout(draw, 50);
+    }
+    catch (_) { draw(); }
+  }
   // Dragging changes pixels, not ownership. Reuse a weak target briefly; media
   // discovery invalidation, explicit selection or detachment bypass this cache.
   let videoFilterTargetCache = { at: -Infinity, ref: null, discoveryAt: null, controlledRef: null };
@@ -3450,7 +3521,7 @@
     filterUpdateFrame = requestAnimationFrame(() => {
       filterUpdateFrame = null;
       if (remotePresentation) queueRemoteFilters(videoFilterState);
-      else applyVideoFiltersToElement();
+      else queueVideoFilterDraw();
       updateFilterUiBadges();
     });
   }
@@ -4329,7 +4400,7 @@
 
     const request = qualityControlState.request;
     const signature = JSON.stringify([qualityControlState.generation, uiLanguage,
-      qualities.map(item => [item.id, item.label, item.height, item.sourceLabel, item.representationId])]);
+      qualities.map(item => [item.id, item.label, item.height, item.sourceLabel, item.representationId]), qualityControlState.playlistMapping]);
     const sameRaw = container.__nokQualities?.every((item, i) => item.raw === qualities[i]?.raw);
     if (container.__nokQualitySignature === signature && sameRaw) { updateQualityButtonStates(container); return; }
     const focusedId = container.contains(document.activeElement) ? document.activeElement.__nokQualityId : null;
@@ -4347,6 +4418,10 @@
         ? 'Oynatıcı 1 seviye bildiriyor; kaynakta başka kalite olup olmadığı doğrulanmadı.'
         : 'Oynatıcının bildirdiği seviyeler. “Oynatılan” etiketi anlık görüntü ölçümüdür.');
       container.appendChild(note);
+    }
+    if (qualityControlState.playlistMapping === 'shared-playlist') {
+      const note = document.createElement('span'); note.className = 'pvc-quality-inventory-note';
+      setUiText(note, 'Farklı kalite etiketleri aynı oynatma listesine bağlı. Gerçek görüntü kalitesi etiketlerden farklı olabilir.'); container.appendChild(note);
     }
     if (qualities.length === 0) {
       const message = document.createElement('span');
@@ -4649,6 +4724,7 @@
           ['not-verified', 'pending', 'confirmed', 'decoded-match', 'rendition-confirmed', 'timed-out', 'rejected'], 'not-verified'),
         decodedMatch: recordedQuality.decodedMatch,
         renditionMatch: recordedQuality.renditionMatch,
+        playlistMapping: recordedQuality.playlistMapping,
         inventoryScope: recordedQuality.menuCount > 0 ? 'player-and-source-menu' : hls ? 'bound-hls-player' : 'adapter',
         inventoryCompleteness: 'not-verified',
         adaptiveMode: hls ? hls.manualLevel === -1 ? 'auto' : Number.isInteger(hls.manualLevel) && hls.manualLevel >= 0 ? 'manual' : 'unknown' : 'unknown',

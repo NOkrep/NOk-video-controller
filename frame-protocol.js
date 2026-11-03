@@ -39,7 +39,7 @@
     adapter: choice(adapters), forcedAdapter: choice(adapters), drm: bool,
     qualities: array(shape({ height: num(0, 4320), bitrate: num(0, 1000000000) }), 128),
     verification: choice(verification), requestedHeight: num(0, 4320), requestedIndex: num(-1, 127, true),
-    decodedMatch: nullable(bool), renditionMatch: nullable(bool),
+    decodedMatch: nullable(bool), renditionMatch: nullable(bool), playlistMapping: choice(['unknown', 'shared-playlist', 'distinct-playlists']),
     subtitleLoaded: bool, subtitleEnabled: bool, subtitleStatus: choice(subtitleStatus), subtitleOffset: num(-3600000, 3600000),
     appearance, filters, candidates: array(shape({ height: num(0, 8640, true) }), 32), target: num(-1, 31, true)
   };
@@ -127,7 +127,7 @@
         cachedOptionCount: choice(count), verification: choice(verification), decodedMatch: nullable(bool), renditionMatch: nullable(bool),
         inventoryScope: choice(['player-and-source-menu', 'bound-hls-player', 'adapter']), inventoryCompleteness: choice(['not-verified']),
         adaptiveMode: choice(['auto', 'manual', 'unknown']), playerLevelCount: nullable(choice(count)), knownResolutionCount: nullable(choice(count)),
-        manifestObserved: bool, declaredLevelCount: nullable(choice(count)) }),
+        manifestObserved: bool, declaredLevelCount: nullable(choice(count)), playlistMapping: choice(['unknown', 'shared-playlist', 'distinct-playlists']) }),
       cdnMeasurementStatus: choice(['not-tested', 'no-video', 'no-source', 'timing-unavailable', 'resource-timing', 'head', 'http-rejected', 'timeout', 'blocked', 'unknown']),
       recentEvents: array(cleanEvent, 20), problem: choice(['unspecified', 'detection', 'quality', 'speed', 'volume', 'subtitles', 'pip', 'hud'])
     });
