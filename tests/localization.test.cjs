@@ -103,9 +103,9 @@ test('dynamic labels retain their current source across repeated language switch
 });
 
 test('main panel English text and accessible names contain no untranslated Turkish words', () => {
-  const start = source.indexOf('    popup.innerHTML = `');
-  const end = source.indexOf('\n    `;', start);
-  const literal = source.slice(start + '    popup.innerHTML = '.length, end + '\n    `'.length);
+  const start = source.indexOf('    setUiMarkup(popup, `');
+  const end = source.indexOf('\n    `);', start);
+  const literal = source.slice(start + '    setUiMarkup(popup, '.length, end + '\n    `'.length);
   const h = harness(); h.context.EXTENSION_VERSION = '0.6.1';
   h.context.root = parseMarkup(h.run(literal)); h.run('localizeUi(root)');
   const remaining = [];
@@ -121,7 +121,7 @@ test('main panel English text and accessible names contain no untranslated Turki
 test('all dialog templates translate privacy, deletion and shortcut explanations', () => {
   const h = harness();
   Object.assign(h.context, { EXTENSION_VERSION: '0.6.1', HOSTNAME: 'example.invalid', drm: { keySystem: 'Widevine' }, optionsHtml: '' });
-  const templates = [...source.matchAll(/modal\.innerHTML = (`[\s\S]*?`);/g)];
+  const templates = [...source.matchAll(/setUiMarkup\(modal, (`[\s\S]*?`)\);/g)];
   assert.equal(templates.length, 4);
   for (const template of templates) {
     h.context.root = parseMarkup(h.run(template[1])); h.run('localizeUi(root)');

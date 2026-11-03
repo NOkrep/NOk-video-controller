@@ -56,6 +56,12 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Test installed extension with local synthetic media
         run: npm run test:browser -- --engine=${{ matrix.engine }} --narrow=true
+      - name: Test iframe audio selection and fullscreen HUD state
+        run: node tests/hud-state-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test native PiP and iframe user activation
+        run: node tests/pip-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test real toolbar startup with strict Trusted Types
+        run: node tests/startup-browser.cjs --engine=${{ matrix.engine }}
 
   security:
     name: Dependency security

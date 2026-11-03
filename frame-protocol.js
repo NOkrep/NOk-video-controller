@@ -33,7 +33,7 @@
   const appearance = shape({ fontSize: num(12, 48, true), bottom: num(0, 40, true), background: num(0, 100, true), color: choice(['white', 'yellow']) });
   const filters = shape({ brightness: num(50, 150), contrast: num(50, 150), saturate: num(0, 200), nightShield: bool, invert: bool });
   const stateSpec = {
-    owner: value => cleanSession(value) || undefined, revision, hasVideo: bool, fullscreen: bool, paused: bool, muted: bool,
+    owner: value => cleanSession(value) || undefined, revision, hasVideo: bool, fullscreen: bool, hudCollapsed: bool, paused: bool, muted: bool, pipActive: bool,
     width: num(0, 16384, true), height: num(0, 8640, true), rate: num(0, 16), requestedRate: num(0.25, 3),
     volume: num(0, 100), requestedVolume: num(0, 300), audioMode: choice(['stereo', 'mono']),
     adapter: choice(adapters), forcedAdapter: choice(adapters), drm: bool,
@@ -49,7 +49,7 @@
     audio: choice(['stereo', 'mono']), quality: num(0, 127, true), target: num(-1, 31, true),
     adapter: choice(adapters.filter(item => item !== 'unknown')), filters, appearance,
     'subtitle-visible': bool, 'subtitle-offset': choice([-100, 0, 100]),
-    'hotkeys': bool, 'presentation-active': bool
+    'hotkeys': bool, 'presentation-active': bool, 'hud-collapsed': bool
   };
   function cleanCues(value) {
     if (!Array.isArray(value) || value.length === 0 || value.length > 20000) return undefined;
@@ -90,6 +90,7 @@
   const eventFields = {
     IVS_ATTACHED: [], IVS_CREATED: [], STREAM_DETECTED: [], STREAM_REDIRECTED: [], FULLSCREEN_ENTERED: [], FULLSCREEN_EXITED: [],
     DRM_DETECTED: [], SOURCE_SWITCH_STARTED: [], SOURCE_SWITCH_COMPLETED: [], PIP_FAILED: [], WEB_AUDIO_DRM_SKIPPED: [],
+    PIP_ACTIVATION_REQUIRED: [], PIP_POLICY_BLOCKED: [], PIP_NOT_READY: [], PIP_UNSUPPORTED: [],
     AD_CONTROL_STARTED: [], AD_CONTROL_ENDED: [],
     SPEED_REQUESTED: ['rate'], SPEED_FAILED: [], VOLUME_REQUESTED: ['percent'], AUDIO_MODE_CHANGED: ['mono'], SEEK_REQUESTED: ['delta'],
     QUALITY_REQUESTED: ['height'], QUALITY_REJECTED: [], KICK_SPEED_SYNC: ['reactInvoked', 'ivsInvoked'],
@@ -133,7 +134,7 @@
     return safe || null; // Comments/deletion preference are added only by the presentation's explicit user input.
   }
   function cleanReply(value) {
-    const base = record(value, { owner: value => cleanSession(value) || undefined, id: revision, ok: bool, code: choice(['ok', 'stale', 'failed', 'unsupported', 'timeout']) });
+    const base = record(value, { owner: value => cleanSession(value) || undefined, id: revision, ok: bool, code: choice(['ok', 'stale', 'failed', 'unsupported', 'timeout', 'activation-required', 'policy-blocked', 'not-ready']) });
     if (!base) return null;
     if (Object.hasOwn(value, 'ms')) { const ms = num(0, 60000)(value.ms); if (ms === undefined) return null; base.ms = ms; }
     if (Object.hasOwn(value, 'report')) { const report = cleanReport(value.report); if (!report) return null; base.report = report; }

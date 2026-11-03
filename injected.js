@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.7.3 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.7.6 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,10 +17,14 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.7.3';
-  const NOK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.logoUrl) || '';
-  const FILMDECK_LOGO_URL = (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.productLogoUrl) || '';
+  const EXTENSION_VERSION = '0.7.7.6';
+  const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
+  const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
+  delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.7.6', notes: 'YouTube Trusted Types/CSP engeline uyumlu güvenli HTML çizimi; toolbar üzerinde native MAIN enjeksiyonu ve legacy geri dönüş; yükleme sırasında açılış isteğinin korunması. İframe kalite envanteri değişince temel kontroller kilitlenmez; medya/SDK/kaynak değişince eski komutlar reddedilir. İzin/depolama değişmedi; gerçek site kalite, senkron ve filtre performansı kabulü açık.' },
+    { version: 'v0.7.7.5', notes: 'PiP isteğinde iframe etkileşim yetkisi dolmuşsa kaynak videoda gerçek tıklama onayı; izin politikası/hazırlık/API desteği ayrı sabit teşhis olayları; PiP durumu üst HUD ile eşleşir ve seçili videonun sahibi belge kullanılır. Yerel Firefox/Chromium doğrulaması; gerçek site kabulü ve diğer kalite/performans/medya hedefleri açık.' },
+    { version: 'v0.7.7.4', notes: 'İframe ses modu durumunda Stereo/Mono seçili düğmeleri ve aria-pressed eşleşir; HUD küçültme tercihi normal görünüm ve tam ekran arasında aktarılır. Yerel kurulu Firefox/Chromium regresyonu; diğer gerçek site, PiP, kalite ve performans sorunları açık. Mevcut ses/altyazı parçalarını seçme özelliği sonraki işler listesinde.' },
     { version: 'v0.7.7.3', notes: 'MIT LICENSE ve NOkrep markasıyla hak sahibi bildirimi; üçüncü taraf bildirimlerinin kaynak kontrolünde zorunlu olması. Ayrı FilmDeck yayın adaptörü Chrome/Firefox paketlerinde iki lisans dosyasını korur. Oynatıcı davranışı değişmedi; yayın ayrı onayda.' },
     { version: 'v0.7.7.2', notes: 'FilmDeck başlık logosu gizli resim/CSS maskesi yerine görünür IMG ve açık-koyu tema filtresiyle çizilir. NOk imzası ve sürüm Settings > About FilmDeck içinde toplandı. Kaset deck simgeleri tüm katmanları koruyup dış saydam boşluğu azaltarak ek iç boşluk olmadan boyutlandırıldı; özgün kaynak korunur.' },
     { version: 'v0.7.7.1', notes: 'Kullanıcının mor kaset çiziminden yeni saydam 16/32/48/128 px eklenti simgeleri; 32 px yüksek yoğunluklu araç çubuğu boyutu ve CI ikon doğrulaması. Özgün çizim ve yatay HUD logosu korunur.' },
@@ -52,6 +56,14 @@
   // UI-only gettext catalogue. No page content, subtitle cues or report JSON is translated.
   // Language and original DOM text live only in this frame's RAM.
   const UI_MESSAGES = {
+    'PiP için bu videoda onay gerekli.': 'Confirm PiP in this video frame.',
+    'PiP Aç': 'Open PiP',
+    'Vazgeç': 'Cancel',
+    'Gömülü videodaki PiP Aç düğmesine tıklayın.': 'Click Open PiP inside the embedded video.',
+    'Bu sayfanın izin politikası PiP kullanımını engelliyor.': 'This page’s permissions policy blocks PiP.',
+    'PiP için videonun yüklenmesini bekleyin.': 'Wait for the video to load before opening PiP.',
+    'Bu tarayıcı veya oynatıcı PiP API desteği sunmuyor; varsa tarayıcının yerleşik PiP düğmesini kullanın.': 'This browser or player does not expose the PiP API; use the browser’s built-in PiP button if available.',
+    'PiP isteği uygulanamadı.': 'The PiP request could not be completed.',
     'Site bilgisini rapora ekle (isteğe bağlı)': 'Include site information in the report (optional)',
     'Sayfa alan adı; tam adres ve içerik yolu eklenmez.': 'Page domain only; full address and content path are excluded.',
     'Oynatıcı çerçevesinin alan adı; ana sitenin adı olmayabilir.': 'Player frame domain; this may differ from the main website.',
@@ -375,6 +387,12 @@
     }
     return translated === null ? original : original.replace(original.trim(), () => translated);
   }
+  function setUiMarkup(element, markup) {
+    if (markup === '' && typeof element.replaceChildren === 'function') { element.replaceChildren(); return; }
+    // Native sanitization is Trusted-Types-safe; retain data attributes used by controls.
+    if (typeof element.setHTML === 'function') element.setHTML(markup, { sanitizer: {} });
+    else element.innerHTML = markup; // Legacy browsers without the Sanitizer API keep their existing UI path.
+  }
   function setUiText(element, source) {
     if (!element) return;
     const label = element.querySelector?.('[data-pvc-ui-label]');
@@ -479,7 +497,7 @@
     } };
   });
   let currentUiThemeId = 'atlas';
-  const UI_ROOT_IDS = ['pvc-controller-popup', 'pvc-error-modal', 'pvc-permissions-modal', 'pvc-adapter-modal', 'pvc-drm-modal', 'pvc-quick-toast'];
+  const UI_ROOT_IDS = ['pvc-controller-popup', 'pvc-error-modal', 'pvc-permissions-modal', 'pvc-adapter-modal', 'pvc-drm-modal', 'pvc-quick-toast', 'pvc-pip-activation-container'];
   function applyUiTheme(root) {
     if (!root) return;
     const theme = UI_THEMES.find(item => item.id === currentUiThemeId);
@@ -558,7 +576,7 @@
       if (checkbox.classList.contains('pvc-check-input')) continue;
       checkbox.classList.add('pvc-check-input');
       const visual = document.createElement('span'); visual.className = 'pvc-check-visual'; visual.setAttribute('aria-hidden', 'true');
-      visual.innerHTML = '<svg viewBox="0 0 18 18"><path d="M1 9c0-5 3-8 8-8 5 0 8 4 8 8 0 4-4 8-8 8-4 0-8-4-8-8Z"/><polyline points="1 9 7 14 15 4"/></svg>';
+      setUiMarkup(visual, '<svg viewBox="0 0 18 18"><path d="M1 9c0-5 3-8 8-8 5 0 8 4 8 8 0 4-4 8-8 8-4 0-8-4-8-8Z"/><polyline points="1 9 7 14 15 4"/></svg>');
       checkbox.after(visual);
     }
   }
@@ -584,7 +602,7 @@
       ? 'none' : 'opacity 0.2s ease, transform 0.2s ease', 'important');
   }
   function refreshUiAccessibility(popup) {
-    for (const id of ['pvc-controller-popup', 'pvc-error-modal', 'pvc-permissions-modal', 'pvc-adapter-modal', 'pvc-drm-modal', 'pvc-quick-toast']) {
+    for (const id of UI_ROOT_IDS) {
       applyUiAccessibility(document.getElementById(id));
     }
     updateThemeControls();
@@ -617,7 +635,7 @@
       const icon = document.createElement('span'); icon.className = 'pvc-tab-icon';
       icon.setAttribute('aria-hidden', 'true');
       // Fixed, bundled geometry; no site/user data is interpolated into SVG markup.
-      icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">${group.icon}</svg>`;
+      setUiMarkup(icon, `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">${group.icon}</svg>`);
       const caption = document.createElement('span'); caption.className = 'pvc-tab-caption'; setUiText(caption, group.label);
       tab.appendChild(icon); tab.appendChild(caption); navigation.appendChild(tab); tabs.push(tab);
       const panel = document.createElement('div');
@@ -765,7 +783,8 @@
       startQualityWatch();
       renderDynamicQualityButtons();
       updateRealtimeResolutionBadge();
-      window.postMessage({ type: findVideoAndPlayer().video ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
+      const { video } = findVideoAndPlayer();
+      window.postMessage({ type: video && video.readyState > 0 ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
       showToast(`FilmDeck Aktif (v${EXTENSION_VERSION})`);
     }
   });
@@ -832,18 +851,21 @@
   // FRAME PRESENTATION: bounded UI state; media stays in its owning document.
   const frameProtocol = globalThis.NOkFrameProtocol || null;
   let remotePresentation = null, remotePresentationSession = null;
+  let hudCollapsed = false;
   let remoteSourceSession = null, remoteSourceOwner = null, remoteAncestorFullscreen = false, remoteSourceActive = true;
+  let remoteSourceTarget = null;
   let pendingRemoteSourceSession = null;
   let remoteSourceRevision = 0, remoteSourceSignature = '', remoteSourceQualities = [], remoteSourceCandidates = [];
   let remoteRequestId = 0;
   let remoteFilterQueued = null, remoteFilterFlight = null, remoteFilterIntent = null;
-  const remoteRequests = new Map(), retiredRemoteSessions = new Set(), remoteVideoTokens = new WeakMap();
-  let remoteVideoToken = 0;
+  const remoteRequests = new Map(), retiredRemoteSessions = new Set(), remoteObjectTokens = new WeakMap();
+  let remoteObjectToken = 0;
   function postHudSignal(type) {
     const session = remoteSourceSession || remotePresentationSession;
     window.postMessage(session ? { type, payload: { session } } : { type }, '*');
   }
   function clearRemoteSession(retire = true, keepOpen = false) {
+    clearPipActivationPrompt();
     const hadRemote = remotePresentation || remoteSourceSession;
     if (retire) for (const session of [remotePresentationSession, remoteSourceSession, pendingRemoteSourceSession]) if (session) retiredRemoteSessions.add(session);
     while (retiredRemoteSessions.size > 8) retiredRemoteSessions.delete(retiredRemoteSessions.values().next().value);
@@ -852,6 +874,7 @@
     remoteFilterQueued = null; remoteFilterFlight = null; remoteFilterIntent = null;
     if (filterUpdateFrame !== null) { cancelAnimationFrame(filterUpdateFrame); filterUpdateFrame = null; }
     remotePresentation = null; remotePresentationSession = null; remoteSourceSession = null; remoteSourceOwner = null;
+    remoteSourceTarget = null;
     pendingRemoteSourceSession = null;
     remoteAncestorFullscreen = false; remoteSourceQualities = []; remoteSourceCandidates = [];
     remoteSourceActive = true;
@@ -863,15 +886,29 @@
     }
   }
   function remoteFullscreen() { return remoteAncestorFullscreen || isFullscreenMode(); }
+  function remoteIdentityToken(object) {
+    if (!object || !['object', 'function'].includes(typeof object)) return 0;
+    if (!remoteObjectTokens.has(object)) remoteObjectTokens.set(object, ++remoteObjectToken);
+    return remoteObjectTokens.get(object);
+  }
+  function syncRemoteMediaOwner(video, player) {
+    // Primitive identities avoid retaining a removed video, SDK instance or MediaStream.
+    const next = { video: remoteIdentityToken(video), player: remoteIdentityToken(player), source: getQualitySourceKey(video, player),
+      sourceObject: remoteIdentityToken(video?.srcObject), epoch: video ? qualityMediaEpochs.get(video) || 0 : 0 };
+    if (remoteSourceTarget && Object.keys(next).some(key => next[key] !== remoteSourceTarget[key])) {
+      remoteSourceOwner = frameProtocol.newSession(); clearPipActivationPrompt();
+    }
+    remoteSourceTarget = next;
+  }
   function buildRemoteSourceState() {
     if (!frameProtocol || !remoteSourceSession) return null;
     const selection = findVideoAndPlayer(), { video, player } = selection;
     const qualities = discoverStreamQualities(selection).slice(0, 128);
+    syncRemoteMediaOwner(video, player);
     updateQualityVerification(video, player);
     const candidates = getMediaCandidates().slice(0, 32).map(item => item.video);
-    for (const candidate of candidates) if (!remoteVideoTokens.has(candidate)) remoteVideoTokens.set(candidate, ++remoteVideoToken);
     const signature = JSON.stringify([qualityControlState.generation, userForcedAdapterName,
-      qualities.map(item => [item.id, item.height, item.bitrate, item.sourceLabel, item.representationId]), candidates.map(item => remoteVideoTokens.get(item))]);
+      qualities.map(item => [item.id, item.height, item.bitrate, item.sourceLabel, item.representationId]), candidates.map(remoteIdentityToken)]);
     if (signature !== remoteSourceSignature) {
       remoteSourceSignature = signature; remoteSourceRevision = (remoteSourceRevision + 1) % 2147483647;
     }
@@ -879,8 +916,9 @@
     const request = readQualityDiagnostics(video, player);
     const bounded = (value, min, max, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
     return frameProtocol.cleanState({
-      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(),
+      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(), hudCollapsed,
       paused: video?.paused !== false, muted: video?.muted === true,
+      pipActive: !!video && ((video.ownerDocument || document).pictureInPictureElement === video || video.webkitPresentationMode === 'picture-in-picture'),
       width: Math.round(bounded(video?.videoWidth, 0, 16384)), height: Math.round(bounded(video?.videoHeight, 0, 8640)),
       rate: bounded(video?.playbackRate, 0, 16), requestedRate: targetEnforcedPlaybackRate,
       volume: bounded(video?.volume * 100, 0, 100), requestedVolume: currentAudioVolumePercent, audioMode: currentAudioMode,
@@ -946,7 +984,7 @@
       const timer = setTimeout(() => {
         remoteRequests.delete(id); showToast('Gömülü oynatıcı yanıt vermedi.'); resolve({ ok: false, code: 'timeout' });
       }, name === 'report' || name === 'ping' ? 10000 : 5000);
-      remoteRequests.set(id, { owner: command.owner, session, resolve, timer });
+      remoteRequests.set(id, { owner: command.owner, session, name, resolve, timer });
       window.postMessage({ type: 'PVC_REMOTE_COMMAND', payload: { session, id, command } }, '*');
     });
   }
@@ -987,23 +1025,26 @@
     const reply = frameProtocol?.cleanReply(payload.reply), pending = reply && remoteRequests.get(reply.id);
     if (!pending || pending.owner !== reply.owner || pending.owner !== remotePresentation?.owner) return;
     clearTimeout(pending.timer); remoteRequests.delete(reply.id); pending.resolve(reply);
-    if (!reply.ok) showToast(reply.code === 'stale' ? 'Kalite listesi değişti; yeniden seçin.' : 'Gömülü oynatıcı bu isteği uygulayamadı.');
+    if (!reply.ok) showToast(reply.code === 'stale' ? 'Kalite listesi değişti; yeniden seçin.'
+      : pending.name === 'pip' ? pipFailureMessage(reply.code) : 'Gömülü oynatıcı bu isteği uygulayamadı.');
   }
   async function executeRemoteCommand(payload) {
     if (!frameProtocol || !remoteSourceSession || payload?.session !== remoteSourceSession) return;
     const command = frameProtocol.cleanCommand(payload.command), id = payload.id;
     if (!command || !Number.isInteger(id) || id < 0 || id > 2147483647) return;
-    const session = remoteSourceSession, owner = remoteSourceOwner, state = buildRemoteSourceState();
+    const session = remoteSourceSession, state = buildRemoteSourceState(), owner = remoteSourceOwner;
     let reply = { id, owner, ok: true, code: 'ok' };
-    if (!state || command.owner !== owner || (command.name !== 'refresh' && command.revision !== state.revision)) reply = { ...reply, ok: false, code: 'stale' };
+    // Only index-based choices depend on inventory order. Every media command still pins its owner.
+    if (!state || command.owner !== owner || (['quality', 'target'].includes(command.name) && command.revision !== state.revision)) reply = { ...reply, ok: false, code: 'stale' };
     else {
       try {
         const { video, player } = findVideoAndPlayer(), value = command.value;
-        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys'].includes(command.name)) throw new Error('no-media');
+        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed'].includes(command.name)) throw new Error('no-media');
         switch (command.name) {
           case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
           case 'volume': setAudioVolume(value); break;
           case 'audio': setAudioMode(value); break;
+          case 'hud-collapsed': setHudCollapsed(value); break;
           case 'seek': if (!seekBy(value)) throw new Error('seek'); break;
           case 'quality': if (!remoteSourceQualities[value] || !requestQuality(remoteSourceQualities[value], video, player)) throw new Error('quality'); break;
           case 'target': controlledVideo = value < 0 ? null : remoteSourceCandidates[value]; if (value >= 0 && !controlledVideo) throw new Error('target'); break;
@@ -1020,7 +1061,7 @@
           case 'hotkeys': hotkeysEnabled = value; break;
           case 'presentation-active': remoteSourceActive = value; break;
           case 'play': if (video.paused) await video.play(); else video.pause(); break;
-          case 'pip': if (await togglePictureInPicture() === false) reply = { ...reply, ok: false, code: 'unsupported' }; break;
+          case 'pip': reply = { ...reply, ...await toggleLocalPictureInPicture() }; break;
           case 'ping': { const result = await testCdnPing(false); if (result?.ms !== undefined) reply.ms = result.ms; else reply = { ...reply, ok: false, code: 'failed' }; break; }
           case 'report': reply.report = buildDiagnosticPayload(video ? 'USER_MANUAL_DIAGNOSTIC' : 'NO_VIDEO_FOUND'); break;
           case 'drm-info': break;
@@ -1038,13 +1079,19 @@
     const session = frameProtocol?.cleanSession(payload?.session), state = frameProtocol?.cleanState(payload?.state);
     if (!session || !state || retiredRemoteSessions.has(session) || window !== window.top) return;
     const first = remotePresentationSession !== session;
+    let resumePresentation = false;
     if (first) clearRemoteSession();
     if (remotePresentation && remotePresentation.owner !== state.owner) {
       for (const pending of remoteRequests.values()) { clearTimeout(pending.timer); pending.resolve({ ok: false, code: 'stale' }); }
       remoteRequests.clear();
+      const popup = document.getElementById('pvc-controller-popup');
+      if (popup) { resumePresentation = popup.__nokLastActivity === true; popup.__nokLastActivity = null; }
     }
     remotePresentationSession = session; remotePresentation = state;
+    // The visible top HUD owns the initial preference; later snapshots carry source/fullscreen changes.
+    if (first && state.hudCollapsed !== hudCollapsed) remoteControl('hud-collapsed', hudCollapsed);
     renderRemoteHud();
+    if (resumePresentation) document.getElementById('pvc-controller-popup')?.__nokActivity?.(true);
     if (first) {
       const popup = document.getElementById('pvc-controller-popup'); resetPopupToDefaultPosition(popup); clampPopupToViewport(popup); resetIdleTimer(popup);
     }
@@ -1065,6 +1112,7 @@
     if (remoteRequests.size === 0) {
       currentAudioVolumePercent = state.requestedVolume; targetEnforcedPlaybackRate = state.requestedRate;
       currentAudioMode = state.audioMode; syncRemoteFilters(state); Object.assign(subtitleAppearance, state.appearance);
+      syncAudioModeUi(currentAudioMode); setHudCollapsed(state.hudCollapsed);
       subtitleOverlayEnabled = state.subtitleEnabled; subtitleOffsetMs = state.subtitleOffset;
       value('pvc-speed-slider', state.requestedRate); value('pvc-volume-slider', state.requestedVolume);
       updateVolumeSliderVisualGain(document.getElementById('pvc-volume-slider'), state.requestedVolume);
@@ -1076,6 +1124,7 @@
     text('pvc-hdr-speed-badge', `${state.requestedRate}x`); text('pvc-mini-speed-val', `⚡ ${state.rate}x`);
     text('pvc-hdr-volume-badge', `${state.requestedVolume}%`); text('pvc-mini-vol-val', `🔊 ${state.volume}% (${state.audioMode === 'mono' ? 'M' : 'S'})`);
     text('pvc-hdr-audio-badge', state.audioMode.toUpperCase()); text('pvc-active-adapter-badge', state.adapter);
+    updatePipButtonsState(state.pipActive);
     text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
     text('pvc-sub-offset-badge', `${state.subtitleOffset >= 0 ? '+' : ''}${state.subtitleOffset}ms`);
     text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
@@ -1091,7 +1140,7 @@
     if (!state || !container) return;
     const signature = JSON.stringify([state.owner, state.revision, uiLanguage, state.qualities]);
     if (container.__nokRemoteSignature !== signature) {
-      container.innerHTML = ''; container.__nokRemoteSignature = signature;
+      setUiMarkup(container, ''); container.__nokRemoteSignature = signature;
       state.qualities.forEach((quality, index) => {
         const button = document.createElement('button'); button.className = 'pvc-quality-chip-btn'; button.type = 'button';
         const label = quality.height > 0 ? `${quality.height}p` : quality.bitrate > 0 ? `${(quality.bitrate / 1000000).toFixed(1)} Mb/sn` : `Seviye ${index + 1}`;
@@ -1118,13 +1167,34 @@
     if (!select || !state || document.activeElement === select) return;
     const signature = JSON.stringify([state.owner, state.revision, state.candidates, uiLanguage]);
     if (select.__nokRemoteSignature !== signature) {
-      select.innerHTML = ''; select.__nokRemoteSignature = signature;
+      setUiMarkup(select, ''); select.__nokRemoteSignature = signature;
       const automatic = document.createElement('option'); automatic.value = 'auto'; setUiText(automatic, 'Otomatik seçim'); select.appendChild(automatic);
       state.candidates.forEach((candidate, index) => {
         const option = document.createElement('option'); option.value = String(index); setUiText(option, `Video ${index + 1} · ${candidate.height ? candidate.height + 'p' : '—'}`); select.appendChild(option);
       });
     }
     select.value = state.target < 0 ? 'auto' : String(state.target);
+  }
+  function setHudCollapsed(value) {
+    hudCollapsed = value;
+    const popup = document.getElementById('pvc-controller-popup');
+    if (!popup) return;
+    const changed = popup.classList.contains('pvc-collapsed') !== value;
+    popup.classList.toggle('pvc-collapsed', value);
+    const button = document.getElementById('pvc-collapse-btn');
+    if (button) {
+      if (changed || !button.firstChild) setUiMarkup(button, uiIcon(value ? 'plus' : 'minus'));
+      button.setAttribute('aria-expanded', String(!value));
+    }
+    if (changed) clampPopupToViewport(popup);
+  }
+  function syncAudioModeUi(mode) {
+    setUiText(document.getElementById('pvc-hdr-audio-badge'), mode.toUpperCase());
+    for (const value of ['stereo', 'mono']) {
+      const button = document.getElementById(`pvc-audio-${value}-btn`);
+      button?.classList.toggle('pvc-audio-active', mode === value);
+      button?.setAttribute('aria-pressed', String(mode === value));
+    }
   }
   function syncLocalMediaHud() {
     if (remotePresentation) return;
@@ -1133,9 +1203,7 @@
     if (volume) { volume.value = String(currentAudioVolumePercent); updateVolumeSliderVisualGain(volume, currentAudioVolumePercent); }
     setUiText(document.getElementById('pvc-hdr-speed-badge'), `${targetEnforcedPlaybackRate}x`);
     setUiText(document.getElementById('pvc-hdr-volume-badge'), `${currentAudioVolumePercent}%`);
-    setUiText(document.getElementById('pvc-hdr-audio-badge'), currentAudioMode.toUpperCase());
-    document.getElementById('pvc-audio-stereo-btn')?.classList.toggle('pvc-audio-active', currentAudioMode === 'stereo');
-    document.getElementById('pvc-audio-mono-btn')?.classList.toggle('pvc-audio-active', currentAudioMode === 'mono');
+    syncAudioModeUi(currentAudioMode); setHudCollapsed(hudCollapsed);
     const toggle = document.getElementById('pvc-sub-toggle-btn');
     setUiText(toggle, subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli'); toggle?.classList.toggle('pvc-active', subtitleOverlayEnabled);
     if (customSubtitleCues.length) setUiText(document.getElementById('pvc-sub-status-text'), `💬 Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
@@ -1444,6 +1512,7 @@
     IVS_ATTACHED: [], IVS_CREATED: [], STREAM_DETECTED: [], STREAM_REDIRECTED: [],
     FULLSCREEN_ENTERED: [], FULLSCREEN_EXITED: [], DRM_DETECTED: [],
     SOURCE_SWITCH_STARTED: [], SOURCE_SWITCH_COMPLETED: [], PIP_FAILED: [],
+    PIP_ACTIVATION_REQUIRED: [], PIP_POLICY_BLOCKED: [], PIP_NOT_READY: [], PIP_UNSUPPORTED: [],
     WEB_AUDIO_DRM_SKIPPED: [],
     AD_CONTROL_STARTED: [], AD_CONTROL_ENDED: [],
     SPEED_REQUESTED: ['rate'], SPEED_FAILED: [],
@@ -1756,7 +1825,7 @@
     if (qualityControlState.context?.video?.isConnected === false) {
       resetQualityContext(null, null, GenericAdapter);
       const qualities = document.getElementById('pvc-dynamic-quality-container');
-      if (qualities) { qualities.__nokQualities = null; qualities.__nokQualitySignature = ''; qualities.innerHTML = ''; }
+      if (qualities) { qualities.__nokQualities = null; qualities.__nokQualitySignature = ''; setUiMarkup(qualities, ''); }
       remoteSourceQualities = [];
     }
     const select = document.getElementById('pvc-video-target');
@@ -3039,7 +3108,7 @@
       && select.__nokVideos.every((video, i) => video === candidates[i].video);
     const labelSignature = candidates.map(item => item.video.videoHeight || 0).join(',');
     if (!sameVideos || select.__nokVideoLabels !== labelSignature) {
-      select.innerHTML = '';
+      setUiMarkup(select, '');
       const automatic = document.createElement('option'); automatic.value = 'auto'; setUiText(automatic, 'Otomatik seçim'); select.appendChild(automatic);
       candidates.forEach(({ video }, i) => {
         const option = document.createElement('option'); option.value = String(i);
@@ -3237,10 +3306,12 @@
     });
     video.addEventListener('enterpictureinpicture', () => {
       updatePipButtonsState(true);
+      if (remoteSourceSession) publishRemoteSourceState();
       renderCustomSubtitleCue(video);
     });
     video.addEventListener('leavepictureinpicture', () => {
       updatePipButtonsState(false);
+      if (remoteSourceSession) publishRemoteSourceState();
       renderCustomSubtitleCue(video);
     });
 
@@ -3256,21 +3327,63 @@
   function updatePipButtonsState(isPip) {
     const pipHeaderBtn = document.getElementById('pvc-pip-btn');
     const pipMiniBtn = document.getElementById('pvc-mini-pip-btn');
-    if (pipHeaderBtn) pipHeaderBtn.classList.toggle('pvc-btn-active', isPip);
-    if (pipMiniBtn) pipMiniBtn.classList.toggle('pvc-active', isPip);
+    if (pipHeaderBtn) { pipHeaderBtn.classList.toggle('pvc-btn-active', isPip); pipHeaderBtn.setAttribute('aria-pressed', String(isPip)); }
+    if (pipMiniBtn) { pipMiniBtn.classList.toggle('pvc-active', isPip); pipMiniBtn.setAttribute('aria-pressed', String(isPip)); }
   }
-
+  let pipActivationPrompt = null;
+  function clearPipActivationPrompt() {
+    if (!pipActivationPrompt) return;
+    clearTimeout(pipActivationPrompt.timer); pipActivationPrompt.element.remove(); pipActivationPrompt = null;
+  }
+  function pipFailureMessage(code) {
+    return {
+      'activation-required': 'Gömülü videodaki PiP Aç düğmesine tıklayın.',
+      'policy-blocked': 'Bu sayfanın izin politikası PiP kullanımını engelliyor.',
+      'not-ready': 'PiP için videonun yüklenmesini bekleyin.',
+      unsupported: 'Bu tarayıcı veya oynatıcı PiP API desteği sunmuyor; varsa tarayıcının yerleşik PiP düğmesini kullanın.'
+    }[code] || 'PiP isteği uygulanamadı.';
+  }
+  function showPipActivationPrompt(video) {
+    clearPipActivationPrompt();
+    const ownerDocument = video.ownerDocument || document;
+    const container = ownerDocument.createElement('div'); container.id = 'pvc-pip-activation-container';
+    container.setAttribute('role', 'group'); container.setAttribute('aria-label', 'FilmDeck PiP');
+    const label = ownerDocument.createElement('span'); label.setAttribute('role', 'status');
+    setUiText(label, 'PiP için bu videoda onay gerekli.');
+    const confirm = ownerDocument.createElement('button'); confirm.id = 'pvc-pip-activation'; confirm.type = 'button'; setUiText(confirm, 'PiP Aç');
+    const cancel = ownerDocument.createElement('button'); cancel.type = 'button'; setUiText(cancel, 'Vazgeç');
+    const session = remoteSourceSession, source = video.currentSrc || video.src || '', sourceObject = video.srcObject;
+    confirm.onclick = async event => {
+      event.stopPropagation(); clearPipActivationPrompt();
+      if (video.isConnected === false || findVideoAndPlayer().video !== video || session !== remoteSourceSession
+          || source !== (video.currentSrc || video.src || '') || sourceObject !== video.srcObject) return;
+      // Call before any await: only the real click in this document grants activation.
+      await toggleLocalPictureInPicture(false);
+    };
+    cancel.onclick = event => { event.stopPropagation(); clearPipActivationPrompt(); };
+    for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'keydown', 'keyup', 'wheel']) {
+      container.addEventListener(type, event => { event.stopPropagation(); if (type === 'keydown' && event.key === 'Escape') clearPipActivationPrompt(); });
+    }
+    container.append(label, confirm, cancel);
+    (ownerDocument.fullscreenElement || ownerDocument.body || ownerDocument.documentElement).appendChild(container);
+    applyUiTheme(container); applyUiAccessibility(container);
+    pipActivationPrompt = { element: container, timer: setTimeout(clearPipActivationPrompt, 30000) };
+  }
   async function togglePictureInPicture() {
     if (remotePresentation) return (await remoteControl('pip')).ok;
+    return (await toggleLocalPictureInPicture()).ok;
+  }
+  async function toggleLocalPictureInPicture(offerActivation = true) {
+    clearPipActivationPrompt();
     const { video } = findVideoAndPlayer();
     if (!video) {
-      showToast('PiP için aktif video bulunamadı');
-      return false;
+      addDiagnosticLog('WARN', 'PIP_NOT_READY'); showToast('PiP için aktif video bulunamadı');
+      return { ok: false, code: 'not-ready' };
     }
-
+    const ownerDocument = video.ownerDocument || document;
     try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
+      if (ownerDocument.pictureInPictureElement) {
+        await ownerDocument.exitPictureInPicture();
         updatePipButtonsState(false);
         showToast('🖼️ PiP Modundan Çıkıldı');
       } else if (typeof video.requestPictureInPicture === 'function') {
@@ -3286,18 +3399,17 @@
         video.webkitSetPresentationMode(mode);
         showToast(`🖼️ PiP Modu: ${mode}`);
       } else {
-        if (/firefox/i.test(navigator.userAgent)) {
-          showToast('Firefox: PiP için videonun üzerindeki yerleşik PiP düğmesini kullanın');
-        } else {
-          showToast('Tarayıcınız bu videoda PiP API desteklemiyor');
-        }
-        return false;
+        addDiagnosticLog('WARN', 'PIP_UNSUPPORTED'); showToast(pipFailureMessage('unsupported'));
+        return { ok: false, code: 'unsupported' };
       }
-      return true;
+      return { ok: true, code: 'ok' };
     } catch (err) {
-      addDiagnosticLog('WARN', 'PIP_FAILED');
-      showToast('PiP açılamadı (Video henüz hazır olmayabilir)');
-      return false;
+      const failures = { NotAllowedError: 'activation-required', SecurityError: 'policy-blocked', InvalidStateError: 'not-ready', NotSupportedError: 'unsupported' };
+      const code = Object.hasOwn(failures, err?.name) ? failures[err.name] : 'failed';
+      const event = { 'activation-required': 'PIP_ACTIVATION_REQUIRED', 'policy-blocked': 'PIP_POLICY_BLOCKED', 'not-ready': 'PIP_NOT_READY', unsupported: 'PIP_UNSUPPORTED' }[code] || 'PIP_FAILED';
+      addDiagnosticLog('WARN', event); showToast(pipFailureMessage(code));
+      if (code === 'activation-required' && offerActivation) showPipActivationPrompt(video);
+      return { ok: false, code };
     }
   }
 
@@ -3977,13 +4089,7 @@
       initAudioGraphForVideo(video);
     }
 
-    const stereoBtn = document.getElementById('pvc-audio-stereo-btn');
-    const monoBtn = document.getElementById('pvc-audio-mono-btn');
-    const hdrBadge = document.getElementById('pvc-hdr-audio-badge');
-
-    if (stereoBtn) stereoBtn.className = `pvc-audio-mode-btn ${mode === 'stereo' ? 'pvc-audio-active' : ''}`;
-    if (monoBtn) monoBtn.className = `pvc-audio-mode-btn ${mode === 'mono' ? 'pvc-audio-active' : ''}`;
-    if (hdrBadge) setUiText(hdrBadge, mode.toUpperCase());
+    syncAudioModeUi(mode);
 
     updateCollapsedSummaryBar();
     showToast(`Ses Modu: ${mode === 'mono' ? '🎛️ Mono (Birleşik Kanal)' : '🎧 Stereo (Çift Kanal)'}`);
@@ -4228,7 +4334,7 @@
     if (container.__nokQualitySignature === signature && sameRaw) { updateQualityButtonStates(container); return; }
     const focusedId = container.contains(document.activeElement) ? document.activeElement.__nokQualityId : null;
     container.__nokQualitySignature = signature; container.__nokQualities = qualities;
-    container.innerHTML = '';
+    setUiMarkup(container, '');
     if (qualities.some(q => q.qualityApi === 'native-menu')) {
       const note = document.createElement('span'); note.className = 'pvc-quality-inventory-note';
       setUiText(note, 'Kaynak menüsü ve oynatıcı seviyeleri birlikte listelenir; tüm kaynakların bulunduğu doğrulanmadı.');
@@ -4596,7 +4702,7 @@
 
     const modal = document.createElement('div');
     modal.id = 'pvc-error-modal';
-    modal.innerHTML = `
+    setUiMarkup(modal, `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
           <span>⚠️ Gizlilik Odaklı Teşhis Raporu (v${EXTENSION_VERSION})</span>
@@ -4636,7 +4742,7 @@
           <a id="pvc-open-github-link" href="#" target="_blank" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">🐙 GitHub Issue</a>
         </div>
       </div>
-    `;
+    `);
 
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
@@ -4710,7 +4816,7 @@
 
     const modal = document.createElement('div');
     modal.id = 'pvc-permissions-modal';
-    modal.innerHTML = `
+    setUiMarkup(modal, `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
           <span>🔐 İzinler & Klavye Kısayolları Rehberi (v${EXTENSION_VERSION})</span>
@@ -4737,7 +4843,7 @@
           <button id="pvc-dismiss-perms-btn" class="pvc-modal-btn-secondary" style="width:100%;">Tamam, Kapat</button>
         </div>
       </div>
-    `;
+    `);
 
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
@@ -4783,7 +4889,7 @@
       `;
     }).join('');
 
-    modal.innerHTML = `
+    setUiMarkup(modal, `
       <div class="pvc-modal-card" style="max-height: 85vh; display: flex; flex-direction: column;">
         <div class="pvc-modal-header">
           <span>🧩 Oynatıcı Adaptörü Seçimi (Basamaklı Hat)</span>
@@ -4796,7 +4902,7 @@
           <button id="pvc-dismiss-adapter-btn" class="pvc-modal-btn-secondary" style="width: 100%;">Kapat</button>
         </div>
       </div>
-    `;
+    `);
 
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
@@ -4836,7 +4942,7 @@
 
     const modal = document.createElement('div');
     modal.id = 'pvc-drm-modal';
-    modal.innerHTML = `
+    setUiMarkup(modal, `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
           <span style="color: var(--pvc-warning, #fbbf24);">🛡️ DRM / EME Korumalı Akış Bilgilendirmesi</span>
@@ -4851,7 +4957,7 @@
           <button id="pvc-dismiss-drm-btn" class="pvc-modal-btn-secondary" style="width: 100%;">Anladım, Kapat</button>
         </div>
       </div>
-    `;
+    `);
 
     getActiveContainer().appendChild(modal);
     modal.setAttribute('lang', uiLanguage);
@@ -5038,7 +5144,7 @@
     setUiAttribute(popup, 'aria-label', 'FilmDeck Denetim Masası');
     popup.setAttribute('tabindex', '0');
 
-    popup.innerHTML = `
+    setUiMarkup(popup, `
       <div id="pvc-drag-header" class="pvc-menu-header" title="Sürüklemek için basılı tutun (Kenarlara 16px yaklaşınca mıknatıslı hizalanır)">
         <div class="pvc-menu-brand" title="FilmDeck v${EXTENSION_VERSION}">
           <span id="pvc-brand-text" class="pvc-menu-title">FilmDeck</span>
@@ -5266,7 +5372,7 @@
         <span class="pvc-maker-prefix">by</span>
         <span id="pvc-footer-brand-text" class="pvc-menu-title">NOk</span>
       </div>
-    `;
+    `);
 
     // Local brand images keep a text fallback when the asset or page CSP blocks loading.
     for (const brand of [
@@ -5690,13 +5796,12 @@
     };
 
     // Küçültme / Genişletme (➖ / ➕) (Madde 6)
-    let isCollapsed = false;
     popup.querySelector('#pvc-collapse-btn').onclick = (e) => {
       e.stopPropagation();
       resetIdleTimer(popup);
-      isCollapsed = !isCollapsed;
-      popup.classList.toggle('pvc-collapsed', isCollapsed);
-      popup.querySelector('#pvc-collapse-btn').innerHTML = uiIcon(isCollapsed ? 'plus' : 'minus');
+      setHudCollapsed(!hudCollapsed);
+      if (remotePresentation) remoteControl('hud-collapsed', hudCollapsed);
+      else if (remoteSourceSession) publishRemoteSourceState();
       updateRealtimeResolutionBadge();
       clampPopupToViewport(popup);
     };
@@ -5748,6 +5853,7 @@
     const platform = diagnosticPlatform(HOSTNAME);
     if (platform !== 'other') window.postMessage({ type: `PVC_PLATFORM_${platform}` }, '*');
   }
+  window.__NOK_VIDEO_CONTROLLER_ENGINE_READY__ = true;
   window.postMessage({ type: 'PVC_ENGINE_READY' }, '*');
   startPeriodicPingEngine();
   setTimeout(() => {

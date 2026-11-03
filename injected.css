@@ -1,11 +1,11 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.7.3
+ * injected.css - FilmDeck by NOk v0.7.7.6
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
 
 /* Reference palette: opaque petrol surfaces; brighter text accent for small labels. */
-:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast) {
+:is(#pvc-controller-popup, #pvc-error-modal, #pvc-permissions-modal, #pvc-adapter-modal, #pvc-drm-modal, #pvc-quick-toast, #pvc-pip-activation-container) {
   --pvc-bg: #0a1418;
   --pvc-surface: #142127;
   --pvc-elevated: #1b2a33;
@@ -21,6 +21,26 @@
   --pvc-danger: #f43f5e;
   color-scheme: var(--pvc-scheme, dark) !important;
 }
+
+#pvc-pip-activation-container {
+  position: fixed !important; top: 12px !important; right: 12px !important;
+  z-index: 2147483647 !important; display: flex !important; flex-wrap: wrap !important;
+  align-items: center !important; gap: 8px !important; max-width: calc(100vw - 24px) !important;
+  box-sizing: border-box !important; padding: 12px !important; border-radius: 10px !important;
+  background: var(--pvc-bg) !important; color: var(--pvc-text) !important;
+  border: 1px solid var(--pvc-border) !important; font: 14px/1.4 system-ui !important;
+}
+#pvc-pip-activation-container span { flex: 1 1 100% !important; }
+#pvc-pip-activation-container button {
+  appearance: none !important; min-height: 36px !important; padding: 6px 12px !important;
+  border: 1px solid var(--pvc-border) !important; border-radius: 6px !important;
+  background: var(--pvc-surface) !important; color: var(--pvc-text) !important;
+  font: inherit !important; cursor: pointer !important;
+}
+#pvc-pip-activation-container #pvc-pip-activation { background: var(--pvc-accent) !important; color: var(--pvc-accent-on) !important; }
+#pvc-pip-activation-container button:focus-visible { outline: 2px solid var(--pvc-accent-ink) !important; outline-offset: 2px !important; }
+#pvc-pip-activation-container.pvc-a11y-large-text { font-size: 16px !important; }
+#pvc-pip-activation-container.pvc-a11y-contrast { border-width: 2px !important; }
 
 /* 1. Gezdirilebilir & Yüzen Ana Kontrol HUD Paneli */
 #pvc-controller-popup {

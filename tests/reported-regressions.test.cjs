@@ -3,6 +3,18 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'..','injected.js'),'utf8');
 function section(from,to){const a=source.indexOf(from),b=source.indexOf(to,a);assert.ok(a>=0&&b>a);return source.slice(a,b);}
 
+test('initial open continues iframe discovery when the local video has no metadata',()=>{
+  const posts=[];let listener;
+  const window={addEventListener(type,callback){listener=callback;},postMessage:message=>posts.push(message)};window.parent=window;
+  const context=vm.createContext({window,document:{getElementById:()=>({style:{}})},frameProtocol:null,
+    resetPopupToDefaultPosition(){},clampPopupToViewport(){},resetIdleTimer(){},startQualityWatch(){},
+    renderDynamicQualityButtons(){},updateRealtimeResolutionBadge(){},showToast(){},EXTENSION_VERSION:'test',
+    video:{readyState:0},findVideoAndPlayer:()=>({video:context.video})});
+  vm.runInContext(section("  window.addEventListener('message', (event) => {",'  console.log(`[NOkrep] FilmDeck'),context);
+  listener({source:window,data:{type:'PVC_OPEN_POPUP'}});assert.equal(posts.at(-1).type,'PVC_OPEN_IN_CHILD_FRAMES');
+  context.video.readyState=4;listener({source:window,data:{type:'PVC_OPEN_POPUP'}});assert.equal(posts.at(-1).type,'PVC_HUD_OPENED');
+});
+
 test('YouTube-like classes, unrelated player APIs and unready elements never establish YouTube ownership',()=>{
   let candidate=null;
   const video={readyState:4},other={readyState:4};
@@ -50,7 +62,7 @@ test('removed media releases cached targets, filters, quality context and detach
     document:{getElementById:()=>select},remoteSourceCandidates:[removed,live],
     cachedKickVolOwner:removed,cachedKickVolSetter:()=>{},cachedKickVolHook:{},
     cachedKickSpeedOwner:removed,cachedKickSpeedSetter:()=>{},cachedKickSpeedHook:{}});
-  vm.runInContext(section('  function releaseDetachedMediaState','  function scoreVideoCandidate'),context);
+  vm.runInContext(section('  function setUiMarkup','  function setUiText')+section('  function releaseDetachedMediaState','  function scoreVideoCandidate'),context);
   vm.runInContext('releaseDetachedMediaState()',context);
   for(const key of ['controlledVideo','lastFilteredVideo','cachedKickVolOwner','cachedKickSpeedOwner','cachedKickVolSetter','cachedKickSpeedSetter'])assert.equal(context[key],null,key);
   assert.equal(select.__nokVideos,null);assert.equal(context.qualityControlState.context,null);

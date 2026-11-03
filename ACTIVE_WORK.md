@@ -1,5 +1,41 @@
 # Etkin çalışma kapsamı
 
+## 3 Kasım 2026 — yeni regresyonların aşamalı takibi
+
+**v0.7.7.6 — açılış ve kontrol hedefi:** YouTube'da motor hazırken panelin `innerHTML` ataması `Sink type mismatch violation blocked by CSP` hatasıyla reddedildi. Destekleyen tarayıcıda tüm UI HTML atamaları yerleşik güvenli `setHTML` yoluna geçti; form/SVG/data-* işlevleri korunur, boş listeler parser kullanmadan temizlenir, yeni Trusted Types politikası yaratılmaz. Hesapsız ayrı Firefox 159 profilinde YouTube ana sayfası ve Google API örneğinin herkese açık izleme sayfasında gerçek toolbar üzerinden panel/logo açılışı doğrulandı; oynatma/kalite veya kullanıcı hesabındaki bütün durumların kabulü değildir.
+
+Araç çubuğu tıklaması mevcut activeTab/scripting izinleriyle native MAIN başlatmayı dener; desteklenmezse eski DOM yolu sürer. Logo adresleri yalnız paket varlıkları olarak bellekte aktarılıp silinir. İzole dünyada yükleme sürerken gelen açılış isteği kaybolmaz; başarısız DOM yüklemesi sonraki tıklamada yeniden denenebilir. Metadata'sı olmayan yerel video iframe keşfini durdurmaz.
+
+İframe'de yalnız kalite/aday listesi revizyonunun değişmesi temel hız/ses vb. komutlarını engelliyordu; başarısız regresyonla doğrulanıp ayrıldı. İndeksli kalite/hedef seçimleri liste revizyonuna, tüm medya komutları güncel sahibe bağlıdır. Video, SDK, kaynak, srcObject veya medya epoch değişince sahip yenilenir ve eski komut reddedilir. Sahip anahtarı yalnız ilkel değerler ve WeakMap kimlikleri taşır; eski video/SDK/MediaStream'i güçlü referansla tutmaz. Yerel iki motorlu video değiştirmede HUD açık kaldı ve ses komutu yeni videoya ulaştı. Gerçek rapordaki ses–görüntü kaymasının nedeni henüz ölçülmedi; bu testten çözüldü sonucu çıkarılmaz.
+
+Son kanıt: **204/204 Node testi**, sürüm/izin/varlık/sözdizimi ve diff kontrolleri geçti. Firefox 159 ve Chromium tabanlı Edge 152'de gerçek toolbar + sıkı Trusted Types + teşhis penceresi; Chromium'da engellenmiş DOM başlangıcından native MAIN kurtarma; iki motorda video değiştirme, Mono/Stereo, küçültme/tam ekran ve PiP regresyonları geçti. Sahip değişince yalnız uyanık HUD aktivitesi yeni sahibe yeniden bildirilir; hareketsiz HUD uyandırılmaz. 20 tema, EN/TR ve dar pencere kontrolleri geçti. Yeni başlangıç testi mevcut CI matrisine eklendi; uzak CI henüz çalıştırılmadı. Kaynak v0.7.7.6; commit/push/ZIP/yayın yok. Eski tarayıcıların native Sanitizer API olmayan Trusted Types sayfaları ayrıca kabul gerektirir. Sonraki işler: gerçek kalite geçişi, özel senkron raporu, filtre/rapor performansı ve kullanıcıyla emoji envanteri kararı.
+
+**v0.7.7.5 — PiP kontrol noktası:** ayrı yerel kökenli iframe'de alt çerçevenin geçici etkileşim yetkisi dolduktan sonra üst panel PiP isteği Firefox'ta `NotAllowedError` ile reddedildi; gerçek başarısız tarayıcı regresyonu kaydedildi. Doğrudan PiP yolu korunur. Aynı hata olursa yalnız kaynak videoda gerçek tıklama isteyen küçük onay gösterilir; otomatik tekrar veya iframe izin politikası değiştirme yoktur. Onay kapanış/iptal/30s süre sonunda temizlenir; hedef, kaynak, srcObject veya oturum değişmişse eski videoya işlem yapmaz. PiP işlemi seçili videonun sahibi belgeyi kullanır; üst HUD gerçek PiP durumunu ve aria-pressed bilgisini alır. Sabit `PIP_ACTIVATION_REQUIRED`, `PIP_POLICY_BLOCKED`, `PIP_NOT_READY`, `PIP_UNSUPPORTED` olayları eklenir; ham hata mesajı/stack/adres yoktur. Firefox 159 ve Chromium tabanlı Edge 152'de normal görünümden onayla native PiP açma, üstten kapatma ve tam ekrandan doğrudan açma geçti. Native pencere kapanınca test sekmesinin odağını geri verme yalnız test aracına eklendi. Gerçek raporlanan sitelerde kabul açık; evrensel PiP başarısı iddiası yok.
+
+Son doğrulama: v0.7.7.5 sürüm/izin/sözdizimi kontrolleri ve 191 Node testi geçti. İki motorda önceki iframe Mono/Stereo/küçültme testi ve 20 tema + EN/TR + dar pencere UI testi tekrar geçti. Yeni PiP tarayıcı senaryosu CI'a eklendi; uzak CI çalıştırılmadı. Sentetik onay ekranının yerleşimi incelendi. Kaynak checkpoint'i; commit/push/ZIP/yayın yok. Tarayıcı kuralı: [requestPictureInPicture exceptions](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestPictureInPicture#exceptions).
+
+**v0.7.7.4 kaynak kontrol noktası:** iframe'den gelen ses modu yalnız rozeti güncelliyor, seçili düğmeleri güncellemiyordu; ortak ses modu UI güncellemesi ve aria-pressed eklendi. Küçültme tercihi her popup'ın yerel closure'ında ayrıydı; oturum/sahip/revizyon kontrollü boolean komut ve durum aktarımıyla normal/tam ekran arasında eşleşir. Kaynak değişmediğinde top HUD'un ilk tercihi korunur; koordinatlar çerçeveler arasında gönderilmez. Kaynak regresyonları ve kurulu eklentiyle Firefox 159 / Chromium tabanlı Edge 152 yerel iframe testleri geçti. Gerçek raporlanan sitelerde kabul açık; konum farkı veya gerçek çift HUD bütünüyle çözüldü denmez. YouTube temiz profil denemesi yükleme aşamasında kaldı ve sonraki tarayıcı komutu hata verdi; kök neden/başarı kanıtı değildir. Yeni tarayıcı senaryosu mevcut CI matrisine eklendi; uzak CI henüz çalıştırılmadı. Sürüm kullanıcıya bildirilir; commit/push/ZIP/yayın yok.
+
+1. YouTube HUD açılışı: v0.7.7.6 güvenli çizim + Firefox canlı panel/logo kabulü geçti. Oynatıcı/video değişimi: temel komut revizyonu ve sahip yenileme düzeltildi; yerel iki motorlu kabul geçti. Diğer raporlanan siteler ve ses–görüntü senkron kayması açık.
+2. İframe ses modu düğmeleri ve tam ekran küçültme durumu: v0.7.7.4 kaynak + yerel iki motorlu regresyon tamam; gerçek site kabulü açık. Konum devamlılığı ve gerçek çift panel iddiası ayrıca incelenecek.
+3. PiP: v0.7.7.5 kaynak + yerel iki motorlu regresyon geçti; gerçek site izinleri ve raporlanan sitelerde kabul açık.
+4. Kalite: gerçek envanter keşfi ile menü seçiminin decoded görüntüye uygulanması ayrı işler; gerçek site kabulü açık.
+5. Video filtreleri ve rapor penceresi performansı: Firefox/Chromium ölçümü açık.
+6. Kalan emoji/SVG envanteri: kullanıcıyla birlikte değiştirme/kaldırma kararı verilecek; toplu sessiz temizlik yapılmayacak.
+
+### Gelecek özellik — oynatıcıdaki mevcut ses ve altyazı parçaları
+
+Kullanıcı talebi: videoda zaten sunulan birden çok ses parçası (örneğin orijinal/dublaj) ve altyazı seçenekleri FilmDeck üzerinden listelenip seçilebilsin. Harici SRT/VTT yüklemeden ayrı bir özelliktir; bu aşamada uygulanmayacak.
+
+- Yalnız seçili video/oynatıcıya bağlı gerçek parça envanteri; dil/etiket, etkin seçim ve altyazıyı kapatma durumu.
+- Native medya veya ilgili adaptörün sunduğu API üzerinden seçim; kaynak/oynatıcı değişince listeyi yenileme, eski hedefe komut göndermeme.
+- Desteklenmeyen veya erişilemeyen parça listesi için açık durum; seçenek uydurma, DRM aşma ve yeni izin/depolama yok.
+- EN/TR, klavye/ekran okuyucu ve iframe/tam ekran eşleşmesi; parça adları, altyazı içeriği ve içerik kimlikleri otomatik teşhis raporuna alınmayacak.
+
+Ham raporlar ve özel test alan adları bu paylaşılan iş listesine kopyalanmaz. Mevcut Puhu manuel kaynak yeniden deneme seçeneği korunur.
+
+Son doğrulama (v0.7.7.4): `npm run check` — 184/184 test; JS sözdizimi ve diff boşluk kontrolü geçti. `hud-state-browser.cjs` Firefox 159 ve Chromium tabanlı Edge 152'de geçti. Mevcut `ui-smoke.cjs` iki motorda 20 tema, EN/TR ve dar pencereyle geçti. Bu kanıtlar yerel kurulu eklenti senaryolarıdır; canlı site veya uzak GitHub CI sonucu değildir.
+
 ## v0.7.7.3 — 3 Kasım 2026, MIT ve dağıtım bildirimleri
 
 Standart LICENSE eklendi: Copyright (c) 2026 İhsan B. Arıtürk (NOkrep). README ve npm metaverisi MIT ile eşleşir; kaynak denetimi eksik/taslak/eksik koşullu lisansı ve boş üçüncü taraf bildirimini reddeder. Yalnız NOk-FilmDeck-Release adaptörünün paket kodu/testleri/README'si güncellendi: Chrome ve Firefox sentetik ZIP'lerinde LICENSE ve THIRD_PARTY_NOTICES.md aynen korunur, eksik/boş bildirim paketlemeyi durdurur ve yasal dosyaların hash'leri paket kaynak kimliğine katılır. Gelir paylaşımı veya ortaklık oranı belirlenmedi. Mevcut güvenlik/Dependabot değişiklikleri korundu. Diğer projelerin lisanslarına ve ortak motor koduna dokunulmadı; gerçek uygulama ZIP'i, commit/push veya mağaza başvurusu yapılmadı. Kaynak, hedef ve ortak motor test kanıtı bu turda ayrı doğrulandı; gerçek yayın kabulü değildir.
@@ -20,7 +56,7 @@ Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.7.3 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.7.6 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

@@ -126,6 +126,12 @@ test('events reject unknown fields, nested objects, invalid values and prototype
   assert.deepEqual(events[4].details, { percent: 125 });
 });
 
+test('PiP diagnostics retain only fixed categories, never exception content',()=>{
+  const h=harness();h.run(`for(const event of ['PIP_ACTIVATION_REQUIRED','PIP_POLICY_BLOCKED','PIP_NOT_READY','PIP_UNSUPPORTED'])addDiagnosticLog('WARN',event,{message:'PRIVATE_URL',stack:'PRIVATE_STACK'});`);
+  const events=h.payload().recentEvents;assert.equal(events.length,4);assert.ok(events.every(event=>Object.keys(event.details).length===0));
+  assert.equal(JSON.stringify(events).includes('PRIVATE'),false);
+});
+
 test('platform and domain stay undisclosed until the user opts into the preview', () => {
   const h = harness();
   assert.equal(h.payload().platformScope, 'unlisted');

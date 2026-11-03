@@ -738,14 +738,15 @@ test('manual HTTP probe uses HEAD without credentials/referrer and never GET fal
 });
 
 test('content relay sends only fixed frame-open signal and reinjection adds no duplicate listener', () => {
-  const events = [], sent = [], selfPosts = [];
+  const events = [], sent = [], selfPosts = [], scripts = [];
   const parent = {}, window = { parent, postMessage: payload => selfPosts.push(payload), addEventListener: (type, cb) => events.push(cb) };
   const document = {
-    readyState: 'loading', head: { appendChild() {} }, createElement: () => ({ dataset: {} }),
+    readyState: 'loading', head: { appendChild(script) { scripts.push(script); } }, createElement: () => ({ dataset: {}, remove() {} }),
     querySelectorAll: () => [{ contentWindow: { postMessage: payload => sent.push(payload) } }]
   };
   const context = vm.createContext({ window, document, chrome: { runtime: { getURL: path => 'extension:///' + path } } });
   vm.runInContext(content, context);
+  scripts[0].onload(); scripts[1].onload();
   events[0]({ source: parent, data: { type: 'NOK_FRAME_OPEN', privateData: 'SECRET' } });
   assert.deepEqual(JSON.parse(JSON.stringify(sent)), [{ type: 'NOK_FRAME_HIDE' }]);
   assert.deepEqual(JSON.parse(JSON.stringify(selfPosts)), [{ type: 'PVC_HIDE_POPUP' }, { type: 'PVC_OPEN_IF_MEDIA' }]);

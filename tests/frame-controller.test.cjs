@@ -9,7 +9,7 @@ function harness() {
   const context = vm.createContext({window, qualityWatchTimer:null, filterUpdateFrame:null, document:{getElementById:()=>null,addEventListener(){}},
     setTimeout: callback => {timers.set(++next,callback);return next;}, clearTimeout:id=>timers.delete(id),
     cancelAnimationFrame:id=>cancelledFrames.push(id),
-    stopAdWatch(){}, showToast(){}, findVideoAndPlayer:()=>({video:{},player:null}), setSpeed:value=>{calls.push(value);return true;},
+    stopAdWatch(){}, clearPipActivationPrompt(){}, showToast(){}, findVideoAndPlayer:()=>({video:{},player:null}), setSpeed:value=>{calls.push(value);return true;},
     inputState:state(), session, owner, calls });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'..','frame-protocol.js'),'utf8'),context);
   vm.runInContext(source.slice(source.indexOf('  // FRAME PRESENTATION'),source.indexOf('  // END FRAME PRESENTATION')),context);
@@ -18,15 +18,52 @@ function harness() {
   context.renderRemoteHud=()=>{}; context.resetPopupToDefaultPosition=()=>{}; context.clampPopupToViewport=()=>{}; context.resetIdleTimer=()=>{};
   return {context,posts,calls,timers,cancelledFrames,run:code=>vm.runInContext(code,context)};
 }
-test('source controller rejects stale owner or inventory revision before invoking a setter',async()=>{
+test('source controller rejects stale owner or indexed inventory revision before invoking a setter',async()=>{
   const h=harness(); h.run('remoteSourceSession=session; remoteSourceOwner=owner');
-  h.context.command={name:'speed',owner,revision:0,value:1.5};
+  h.context.command={name:'quality',owner,revision:0,value:0};
   await h.run('executeRemoteCommand({session,id:1,command})');
   assert.deepEqual(h.calls,[]); assert.equal(h.posts.at(-1).payload.reply.code,'stale');
   h.context.command={name:'speed',owner:'c'.repeat(32),revision:1,value:1.5};
   await h.run('executeRemoteCommand({session,id:2,command})'); assert.deepEqual(h.calls,[]);
   h.context.command={name:'speed',owner,revision:1,value:1.5};
   await h.run('executeRemoteCommand({session,id:3,command})'); assert.deepEqual(h.calls,[1.5]); assert.equal(h.posts.at(-1).payload.reply.ok,true);
+});
+
+test('inventory-only changes cannot disable speed controls on the same media owner',async()=>{
+  const h=harness();h.run('remoteSourceSession=session;remoteSourceOwner=owner');
+  h.context.command={name:'speed',owner,revision:0,value:1.5};
+  await h.run('executeRemoteCommand({session,id:1,command})');
+  assert.deepEqual(h.calls,[1.5]);assert.equal(h.posts.at(-1).payload.reply.ok,true);
+});
+
+test('media ownership changes for a new video, player, source, stream object or media epoch, but not inventory-only changes',()=>{
+  const h=harness();h.context.getQualitySourceKey=video=>video?.src||'';h.context.qualityMediaEpochs=new WeakMap();
+  h.context.video={src:'one'};h.context.player={};h.run('remoteSourceOwner=owner;syncRemoteMediaOwner(video,player)');
+  assert.equal(h.run('remoteSourceOwner'),owner);
+  h.run('syncRemoteMediaOwner(video,player)');assert.equal(h.run('remoteSourceOwner'),owner);
+  for(const change of ['video={src:"one"}','player={}','video.src="two"','video.srcObject={}','qualityMediaEpochs.set(video,1)']){
+    const previous=h.run('remoteSourceOwner');h.run(change+';syncRemoteMediaOwner(video,player)');
+    assert.notEqual(h.run('remoteSourceOwner'),previous,change);
+  }
+  assert.ok(Object.values(h.run('remoteSourceTarget')).every(value=>value===null||typeof value!=='object'),'owner snapshot must not retain media/player objects');
+  h.run('clearRemoteSession()');assert.equal(h.run('remoteSourceTarget'),null);
+});
+
+test('a source replacement discovered during command validation rejects the old owner without applying its setter',async()=>{
+  const h=harness();h.run('remoteSourceSession=session;remoteSourceOwner=owner');
+  h.context.buildRemoteSourceState=()=>{h.run('remoteSourceOwner="e".repeat(32)');return {...h.context.inputState,owner:'e'.repeat(32)};};
+  h.context.command={name:'speed',owner,revision:1,value:2};
+  await h.run('executeRemoteCommand({session,id:1,command})');
+  assert.deepEqual(h.calls,[]);assert.equal(h.posts.at(-1).payload.reply.code,'stale');
+});
+
+test('owner replacement reasserts activity for an awake HUD without waking an idle HUD',()=>{
+  for(const active of [true,false]){
+    const h=harness(),calls=[];const popup={__nokLastActivity:active,__nokActivity:value=>calls.push([value,h.run('remotePresentation.owner')])};
+    h.context.document.getElementById=id=>id==='pvc-controller-popup'?popup:null;
+    h.run('remotePresentation=inputState;remotePresentationSession=session;acceptRemoteState({session,state:{...inputState,owner:"e".repeat(32)}})');
+    assert.deepEqual(calls,active?[[true,'e'.repeat(32)]]:[]);
+  }
 });
 
 test('unready source waits and retries the same session when metadata arrives',()=>{
@@ -41,6 +78,23 @@ test('unready source waits and retries the same session when metadata arrives',(
   assert.equal(h.run('remoteSourceSession'),session);
   assert.equal(h.run('pendingRemoteSourceSession'),null);
   assert.equal(h.posts.at(-1).type,'PVC_HUD_OPENED');
+});
+
+test('collapse commands keep source and presentation state aligned across fullscreen handover',async()=>{
+  const h=harness(); h.run('remoteSourceSession=session;remoteSourceOwner=owner');
+  h.context.command={name:'hud-collapsed',owner,revision:1,value:true};
+  await h.run('executeRemoteCommand({session,id:1,command})');
+  assert.equal(h.posts.at(-1).payload.reply.ok,true);
+  assert.equal(h.run('hudCollapsed'),true);
+  h.context.command.value=false;
+  await h.run('executeRemoteCommand({session,id:2,command})');
+  assert.equal(h.run('hudCollapsed'),false);
+});
+
+test('a newly delegated source inherits the already collapsed top HUD',()=>{
+  const h=harness();h.run('hudCollapsed=true;acceptRemoteState({session,state:inputState})');
+  assert.equal(h.posts.at(-1).payload.command.name,'hud-collapsed');
+  assert.equal(h.posts.at(-1).payload.command.value,true);
 });
 test('source controller drops a previous session and malformed commands without a reply or action',async()=>{
   const h=harness(); h.run('remoteSourceSession=session; remoteSourceOwner=owner');

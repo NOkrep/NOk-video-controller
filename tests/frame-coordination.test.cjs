@@ -27,7 +27,10 @@ function tree(remote = false) {
         querySelectorAll: () => f.children.map(child => child.element), addEventListener: (type, callback) => { f.docListeners[type] = callback; } },
       chrome: { runtime: { getURL: file => 'extension:///' + file } }
     });
-    executing = f; if (remote) vm.runInContext(protocol, f.context); vm.runInContext(content, f.context); executing = null;
+    executing = f; if (remote) vm.runInContext(protocol, f.context); vm.runInContext(content, f.context);
+    // The main-world model below represents a ready engine; startup delay has its own regression tests.
+    Object.assign(f.window.__NOK_VIDEO_CONTROLLER_BOOT_STATE__,{loading:false,ready:true});
+    executing = null;
     frames.push(f); return f;
   }
   function local(f, type, payload) {
