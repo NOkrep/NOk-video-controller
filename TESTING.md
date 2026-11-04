@@ -66,6 +66,10 @@ Yerel üretilmiş medya hazırsa `node tests/report-performance.cjs --engine=bot
 
 v0.7.7.9 kanıtı ve sınırları REPORT_PERFORMANCE.md içindedir. `npm run check` 214 testi geçti; yerel rapor tarayıcı regresyonları iki motorda geçti. Toplam süreç RAM'i uygulamanın tek başına tüketimi veya sıfır video karesi kaybı evrensel akıcılık garantisi değildir.
 
+## Uzun bellek ölçümü (D-01)
+
+`node tests/memory-soak.cjs --engine=firefox|chromium --condition=native|passive|active [--label=run] [--minutes=4] [--replacements=60] [--no-forced] [--quick]` aynı yerel dosyayla uzun oynatma ve video değişimi ölçer. `--no-forced` değişimler sırasında toplamayı tarayıcıya bırakır. Eksik dosyayı `prepare-browser-fixtures.cjs --audio-fixture` üretir. Sonuçlar Git dışı `tests/artifacts/memory-soak-<label>/` altındadır; sentetik tek sayfa ölçümüdür, CI'a eklenmedi. Kapsam ve sınırlar MEMORY_MEASUREMENTS.md içindedir.
+
 ## HUD yeri ve sayfa geçişleri (I-08)
 
 `node tests/hud-continuity-browser.cjs --engine=firefox|chromium [--headless=true] [--report=true]` kurulu eklentiyle yerel sentetik sayfalarda çalışır ve iki motorlu CI matrisindedir. Üst sayfa ve iframe tam ekranında panel yerini; video/iframe değişimi, geç gelen video ve boş iframe akışlarında tek görünür paneli, panelin açık kalmasını, "video yok" uyarısını ve komutun yeni videoya ulaşmasını sınar. `--report=true` başarısız olmadan koordinatları yazar. Gerçek site kabulü değildir.

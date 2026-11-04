@@ -21,7 +21,7 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Güncel dallar: Codex `codex/filmdeck-cassette-icon`, Claude `claude/i-07-control-sync` (adları ilk işlerinden kalmıştır; içerikleri o işle sınırlı değildir).
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
 - **Git durumu ayrımı:** v0.7.7.9 commit'i artık mevcut. Geçmiş çalışma notlarındaki “commit yapılmadı” o turun bitiş durumudur. 4 Kasım Claude kontrolü: `d70940e` için uzak CI'ın 5 işi başarılı; `main` ruleset ile korumalı (PR ve 4 zorunlu kontrol; `Dependency security` zorunlu değil). v0.7.7.9 `main`'dedir (#111); mağaza başvurusu veya dağıtım yok.
-- **Aktif hedef:** bu devir başlangıcında aktif hedef kaydı yok. I-01 ve I-02'nin aşağıda belirtilen dar hedefleri tamamlandı. I-07 kullanıcı kararıyla askıda. I-08'in yerel kapsamı tamamlandı; gerçek site kabulü açık. Sıradaki öneri D-01; henüz başlanmış/atanmış iş değildir.
+- **Aktif hedef:** bu devir başlangıcında aktif hedef kaydı yok. I-01 ve I-02'nin aşağıda belirtilen dar hedefleri tamamlandı. I-07 kullanıcı kararıyla askıda. I-08'in yerel kapsamı ve D-01'in dar hedefi tamamlandı; gerçek site kabulleri açık. Sıradaki öneri I-03; henüz başlanmış/atanmış iş değildir.
 - **Lisans:** MIT; mevcut LICENSE telif satırı `Copyright (c) 2026 İhsan B. Arıtürk (NOkrep)`. LICENSE ve THIRD_PARTY_NOTICES.md dağıtımda korunur. Ekip içi gelir/ortaklık paylaşımı bu metinle belirlenmiş sayılmaz; diğer projelerin lisansları değiştirilmez.
 
 ## 3. Bozulmaması gereken mimari ve gizlilik sınırları
@@ -110,7 +110,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 
 | Kod | İş | Durum / kapsam |
 |---|---|---|
-| D-01 | Uzun süreli bellek kararlılığı | Önceki kısa ölçüm/nesne temizliği var. Uzun oynatma, SPA/değişim, boost/mono ve toplam native/cache ayrımı açık. |
+| D-01 | Uzun süreli bellek kararlılığı | **Dar hedef tamam (4 Kasım):** 15 dakikalık oynatma ve 90 video değişiminde eklentiye özgü büyüyen sızıntı bulunmadı; Edge renderer büyümesi eklentisiz de aynı. Firefox'ta boost'lu videoların askıdaki bağlamları tarayıcı toplayana kadar geçici bellek tutar. Saatlik oynatma, gerçek MSE/HLS, 4K, çok sekme maliyeti ve tahsisin kesin nedeni açık. MEMORY_MEASUREMENTS.md. |
 | D-02 | Dialog ve adaptör klavye erişilebilirliği | Başlangıç odağı, Tab çevrimi, Escape ve odağı geri verme; gerçek seçilebilir adaptör kontrolü. |
 | D-03 | Ekran okuyucu ve gerçek %200 zoom | CSS ölçeği/otomatik test bunun yerine geçmez. Uzun metin, hedef boyutu ve duyurular açık. |
 | D-04 | Fullscreen tema/erişilebilirlik tutarlılığı | Tercihler çerçeve belleğinde; kaynak HUD'a aynı tercihlerin aktarımı açık. |
@@ -127,7 +127,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
 
-Önerilen sıra: **D-01 → I-03 → I-04**, ardından kalan kalite/PiP/gerçek site kabulü ve erişilebilirlik. I-07 askıdadır; aşağıdaki hedef metni yalnız kullanıcı ona dönerse geçerlidir. Kullanıcı önceliği değiştirebilir. Tek geniş “her şeyi düzelt” hedefi yerine her biri kanıtlanabilir kapsamla yürütülür.
+Önerilen sıra: **I-03 → I-04**, ardından kalan kalite/PiP/gerçek site kabulü ve erişilebilirlik. I-07 askıdadır; aşağıdaki hedef metni yalnız kullanıcı ona dönerse geçerlidir. Kullanıcı önceliği değiştirebilir. Tek geniş “her şeyi düzelt” hedefi yerine her biri kanıtlanabilir kapsamla yürütülür.
 
 > Firefox ve Chromium’da kontrolün sonradan kaybolması ve ses–görüntü kayması raporunu incele. Medya, oynatıcı ve kaynak değişimlerinde komutların seçili videoya ulaştığını doğrula; senkron kaymasını kontrol kaybından ayrı ölç. Kanıtlanan nedenleri düzelt, aynı akışları tekrar doğrula ve üretilemeyen belirtileri açıkça belgele. Kullanıcı gizliliğini ve RAM-only mimariyi koru. Her sürüm artışını bildir. İşi kendi dalında commit'le, push et ve PR bağlantısını bildir; PR ve merge kullanıcıdadır, ZIP veya release ayrıca istenmedikçe yapılmasın.
 
