@@ -4,10 +4,11 @@
 
 Ürün kodu ve sürüm değişmedi (v0.7.9).
 
-- **Tek Python:** Claude hook'u, `tool-security.mjs` ve SkillSpector ortamı `D:/NOk-Tools/third-party/runtimes/python/3.12.14` kullanıyor. Yedi kapsam yeni tabandan aynı sonucu verdi, onaylar geçerli kaldı, hook denemeleri geçti.
+- **Tek Python:** Claude hook'u, `tool-security.mjs` ve SkillSpector ortamı `D:/NOk-Tools/third-party/runtimes/python/3.12.10` kullanıyor. Kullanıcı Python Software Foundation imzasını tercih etti; python.org'da daha yeni 3.12 Windows paketi yok. Sekiz kapsam yeni tabandan aynı sonucu verdi, onaylar geçerli kaldı, hook denemeleri geçti.
+- **Engelli beceri:** Kullanıcı kararıyla Claude bağlantısı kaldırıldı, kaynak dosyalar değişmedi. `doctus` ve `glove` UI işi `emil-design-eng`'e geçti.
 - **`ensure` koruması:** `ensure` ve `prepare` kurulu kapsamları reddediyor. Yeni test önce başarısız oldu, düzeltmeyle 31 guard testi geçti.
 - **`nok-release`:** Hedef proje yolu dosya başvurusu sanıldığı için tarama eksikti. İfade düzeltildi, tarama PASS.
-- **Açık:** Codex hook'unun Python'u (N-009) ve engelli motor becerisinin bağlantıları (N-010) kullanıcı kararında. Ayrıntı `D:/NOk-Tools/AGENT_NOTES.md`.
+- **Açık:** Codex hook'unun Python'u (N-009) ve Codex tarafındaki bağlantı (N-010) Codex'te. Ayrıntı `D:/NOk-Tools/AGENT_NOTES.md`.
 
 **I-12 incelemesi (kod değişmedi, sürdürülecek):**
 
