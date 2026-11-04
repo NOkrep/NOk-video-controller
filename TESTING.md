@@ -66,6 +66,10 @@ Yerel üretilmiş medya hazırsa `node tests/report-performance.cjs --engine=bot
 
 v0.7.7.9 kanıtı ve sınırları REPORT_PERFORMANCE.md içindedir. `npm run check` 214 testi geçti; yerel rapor tarayıcı regresyonları iki motorda geçti. Toplam süreç RAM'i uygulamanın tek başına tüketimi veya sıfır video karesi kaybı evrensel akıcılık garantisi değildir.
 
+## Ses–görüntü senkron ölçümü (I-07)
+
+`node tests/prepare-browser-fixtures.cjs --av-fixture` yerel FFmpeg ile 2 saniyede bir flaş ve bip içeren Git dışı HLS üretir. Mevcut `hls/` videolarında ses yoktur. `node tests/av-sync-browser.cjs --engine=firefox|chromium --scenario=graph-first|native-first|edge|long --label=run` gerçek Hls.js ve kurulu eklentiyle çalışır; Web Audio çıkışı sıfır kazançtan geçtiği için hoparlöre bip gitmez. Sonuç pozitifse görüntü sesin önündedir. Değerler grafik içinden ölçülür, sabit paylar içerir; pencereleri birbiriyle karşılaştırın. `valid:false`, pencere arka planda kaldığı için kanıt sayılmaz; o turu tekrarlayın. CI'a eklenmedi; gerçek site veya hoparlör algısı kabulü değildir.
+
 ## Sürüm artırma
 
 ```powershell

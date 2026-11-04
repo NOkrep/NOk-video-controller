@@ -21,7 +21,7 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Yeni dallar güncel `main`'den açılır. Claude'un devir dalı: `claude/agent-handoff`.
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
 - **Git durumu ayrımı:** v0.7.7.9 commit'i artık mevcut. Geçmiş çalışma notlarındaki “commit yapılmadı” o turun bitiş durumudur. 4 Kasım Claude kontrolü: `d70940e` için uzak CI'ın 5 işi başarılı; `main` ruleset ile korumalı (PR ve 4 zorunlu kontrol; `Dependency security` zorunlu değil). v0.7.7.9 `main`'dedir (#111); mağaza başvurusu veya dağıtım yok.
-- **Aktif hedef:** bu devir başlangıcında aktif hedef kaydı yok. I-01 ve I-02'nin aşağıda belirtilen dar hedefleri tamamlandı. Sıradaki öneri I-07; henüz başlanmış/atanmış iş değildir.
+- **Aktif hedef:** bu devir başlangıcında aktif hedef kaydı yok. I-01 ve I-02'nin aşağıda belirtilen dar hedefleri tamamlandı. I-07 kullanıcı kararıyla askıda. Sıradaki öneri I-08; henüz başlanmış/atanmış iş değildir.
 - **Lisans:** MIT; mevcut LICENSE telif satırı `Copyright (c) 2026 İhsan B. Arıtürk (NOkrep)`. LICENSE ve THIRD_PARTY_NOTICES.md dağıtımda korunur. Ekip içi gelir/ortaklık paylaşımı bu metinle belirlenmiş sayılmaz; diğer projelerin lisansları değiştirilmez.
 
 ## 3. Bozulmaması gereken mimari ve gizlilik sınırları
@@ -95,7 +95,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 | I-04 | Gerçek reklam döngüsü | Açık: gerçek işarette giriş/çıkış, uygulanmış hız/kalite ve güvenli geri yükleme. Kaynak/sentetik testler var. |
 | I-05 | Eksik kalite seçenekleri | Açık: sitenin kendi menüsünde olanları seçili player envanteriyle karşılaştırmak. Site menüsünde de yoksa otomatik hata değil. |
 | I-06 | Seçim var, görüntü değişmiyor | Kısmi: ortak playlist teşhisi eklendi. Diğer örneklerin decoded geçişi/gerçek kaynağı açık; menü seçimini başarı sayma. |
-| I-07 | Kontrolün sonradan kaybolması ve ses–görüntü kayması | **Sıradaki öneri.** Kaynak: [#104](https://github.com/NOkrep/NOk-video-controller/issues/104) (Firefox, Hls.js, üst çerçeve, tek video). Sahiplik düzeltmeleri ağırlıkla iframe/medya değişimine yöneliktir; bu rapor iframe değildir ve bağlantıları ölçülmedi. Rapordaki 20 olay yalnız istekleri gösterir, kaybolma anı yoktur. Üretim kodu, rapor ve testlerde kayma ölçümü yok; önce güncel kaynakta yeniden üretim ve ölçüm yöntemi gerekir. Kullanıcıya göre sorun, hatırladığı kadarıyla çözecek bir değişiklik yapılmadığı için büyük olasılıkla sürüyor; bu henüz sınanmadı. |
+| I-07 | Kontrolün sonradan kaybolması ve ses–görüntü kayması | **Askıda (kullanıcı kararı, 4 Kasım).** Sentetik Hls.js ölçümü kayma birikimi veya komut kaybı üretmedi; gerçek site otomasyon profilini bot korumasıyla geçirmedi; kök neden bulunmadı (ACTIVE_WORK.md, `tests/av-sync-browser.cjs`). Kaynak: [#104](https://github.com/NOkrep/NOk-video-controller/issues/104) (Firefox, Hls.js, üst çerçeve, tek video). Sahiplik düzeltmeleri ağırlıkla iframe/medya değişimine yöneliktir; bu rapor iframe değildir ve bağlantıları ölçülmedi. Rapordaki 20 olay yalnız istekleri gösterir, kaybolma anı yoktur. Üretim kodu, rapor ve testlerde kayma ölçümü yok; önce güncel kaynakta yeniden üretim ve ölçüm yöntemi gerekir. Kullanıcıya göre sorun, hatırladığı kadarıyla çözecek bir değişiklik yapılmadığı için büyük olasılıkla sürüyor; bu henüz sınanmadı. |
 | I-08 | HUD konumu, sayfa geçişi, olası çift panel | Kısmi: küçültme eşleşmesi düzeltildi. Konum devamlılığı, SPA geçişi ve gerçek çift panel olup olmadığı açık. |
 | I-09 | Raporlanan sitelerde PiP | Kısmi: yerel onay çözümü geçti; gerçek site izinleri ve normal/fullscreen geçişleri açık. |
 | I-10 | Kontrol düzeltmelerinin gerçek site regresyonu | Mono/Stereo, geç keşif, beklenmedik aç/kapat, TRT hız korumasını raporlanan akışta sınamak; yapılanı baştan yazmamak. |
@@ -126,11 +126,23 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
 
-Önerilen sıra: **I-07 → I-08 → D-01 → I-03 → I-04**, ardından kalan kalite/PiP/gerçek site kabulü ve erişilebilirlik. Kullanıcı önceliği değiştirebilir. Tek geniş “her şeyi düzelt” hedefi yerine her biri kanıtlanabilir kapsamla yürütülür.
+Önerilen sıra: **I-08 → D-01 → I-03 → I-04**, ardından kalan kalite/PiP/gerçek site kabulü ve erişilebilirlik. I-07 askıdadır; aşağıdaki hedef metni yalnız kullanıcı ona dönerse geçerlidir. Kullanıcı önceliği değiştirebilir. Tek geniş “her şeyi düzelt” hedefi yerine her biri kanıtlanabilir kapsamla yürütülür.
 
 > Firefox ve Chromium’da kontrolün sonradan kaybolması ve ses–görüntü kayması raporunu incele. Medya, oynatıcı ve kaynak değişimlerinde komutların seçili videoya ulaştığını doğrula; senkron kaymasını kontrol kaybından ayrı ölç. Kanıtlanan nedenleri düzelt, aynı akışları tekrar doğrula ve üretilemeyen belirtileri açıkça belgele. Kullanıcı gizliliğini ve RAM-only mimariyi koru. Her sürüm artışını bildir. İşi kendi dalında commit'le, push et ve PR bağlantısını bildir; PR ve merge kullanıcıdadır, ZIP veya release ayrıca istenmedikçe yapılmasın.
 
 İlk adım düzeltme değil, #104 akışını güncel kaynakta yeniden üretmek ve kaymayı ölçecek yöntemi kurmaktır. Web Audio gecikmesi yalnız sınanacak bir hipotezdir. Bu metin öneridir; aktif hedef oluşturma/başlatma talimatı değildir. Bir belirti yeniden üretilemiyorsa sırf başka test geçti diye “çözüldü” deme. Sentetik fixture ile komut sahipliği regresyonu ve gerçek rapordaki senkron kabulü ayrı kanıtlardır.
+
+### Değerlendirilip reddedilen seçenekler
+
+Bu seçenekler silinmez. Gerektiğinde gerekçesiyle kullanıcıya yeniden sorulabilir; kullanıcı onaylamadan uygulanmaz.
+
+| Seçenek | Karar ve gerekçe (4 Kasım 2026) | Yeniden değerlendirme |
+|---|---|---|
+| I-07 ölçüm kopyası: kullanıcının normal Firefox'unda geçici eklenti, işaret düğmeleri ve yalnız sayısal dışa aktarım | Reddedildi: kullanıcı hesaplı tarayıcısının teste girmesini ve oraya bir şey eklenmesini istemiyor. Taslaklar kenarda: `tests/av-live-probe.js`, `tests/prepare-av-live-copy.cjs`, `tests/av-live-copy-check.cjs`. **Hiç çalıştırılmadı, doğrulanmadı.** | Gerçek site kanıtı başka yolla alınamazsa sorulabilir. |
+| `gh` kurup PR'ları ajanın açması | Reddedildi: `main` kuralı onay istemediği için token checkler geçince merge'ü teknik olarak engellemez; kullanıcı PR ve merge'ü kendinde tuttu. | Tam otomasyon istenirse; ayrı bot hesabı seçeneğiyle birlikte. |
+| Üretim veya mağaza sırlarını GitHub Secrets/Environment'ta tutmak | Reddedildi: sırlar GitHub'a girmez; workflow'u değiştirebilen ajan sırra dolaylı ulaşabilir. | Kullanıcı ayrıca gündeme getirirse. |
+
+**Ajan paneli önerisi (açık):** Kullanıcı canlı testin ajanın tarayıcı panelinde, doğrulamayı kendisi tamamlayarak birlikte yapılmasını öneriyor. Kullanıcının doğrulamayı tamamlaması ajan sınırına aykırı değildir; ajan doğrulamayı çözmez ve otomasyon işaretini gizlemez. Bu yolun açık sorusu, panelde FilmDeck'in kurulup kurulamayacağıdır; henüz sınanmadı.
 
 ## 9. Kaynaklar, komutlar ve kabul seviyesi
 
