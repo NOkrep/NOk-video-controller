@@ -121,7 +121,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-08 | Ek Uiverse animasyonları | İsteğe bağlı denemeler; zorunlu hata düzeltmesi değil. |
 | D-09 | Form/tooltip referansları | Uygun kullanım bekleyen adaylar; sırf referans var diye eklenmez. |
 | D-10 | Git/CI takibi | **Tamam (4 Kasım):** `report` zorunlu işe, `quality-mapping` zorunlu olmayan `Browser media` işine eklendi. Hangi testin neden yerelde kaldığı TESTING.md'de. `Browser media` kararlı görülürse zorunlu kontrollere alınması kullanıcı kararıdır. |
-| D-11 | Çalışma kayıtlarının sadeleştirilmesi | Güncel durumla tarihsel kayıtları ayırmak; eski kanıtları silmemek. Bu devir bir giriş noktası sağlar, bütün eski belgeler temizlendi sayılmaz. |
+| D-11 | Çalışma kayıtlarının sadeleştirilmesi | **Tamam (4 Kasım):** ACTIVE_WORK.md kısa güncel durumla başlıyor; eski kayıtlar değiştirilmeden WORK_HISTORY.md'ye taşındı; belge haritası §9'da. Eski belgelerin içeriği yeniden yazılmadı, kendi tarihlerinin kanıtıdır. |
 | D-12 | Git, CI/CD ve yayın otomasyonu | Kullanıcı hedefi: adım adım komut kopyalamak yerine, ajanın kullanıcı talebi ve onayıyla yürütüp izlediği genel yapı. FilmDeck'in hedefi yalnız GitHub ve eklenti mağazalarıdır; sunucu dağıtımı yoktur. Commit ve push ajandadır; PR ve merge kullanıcıda; mağaza gönderimi sürüm ve hedef onayı ister. Mağaza ve diğer sırlar GitHub'a girmez; ajan gerekmedikçe erişmez. |
 | D-13 | Alan adlı raporların gizli kanalı | Yayın öncesi karar: alan adı içeren raporun public issue yerine özel kanala gitmesi. Rapor UI'ı değişeceği için ayrı iştir; henüz uygulanmadı. |
 | D-14 | Firefox veri toplama beyanı | AMO'nun `data_collection_permissions` gereksinimi mağaza başvurusundan önce resmî kaynaktan doğrulanacak. Manifest ve yayın hedefinde alan yok. |
@@ -136,7 +136,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 4. **Yerel kapsam tamam (v0.7.9.1):** I-12.
 5. **Yerel kapsam tamam (v0.7.9.2):** D-04.
 6. **Tamam:** D-10.
-7. D-11.
+7. **Tamam:** D-11.
 
 Bu seçim, aşağıdaki önceki önerinin önüne geçer. Önceki öneri kayıt için durur.
 
@@ -171,7 +171,9 @@ Bu seçenekler silinmez. Gerektiğinde gerekçesiyle kullanıcıya yeniden sorul
 | Son performans | FILTER_PERFORMANCE.md, REPORT_PERFORMANCE.md |
 | Bellek | MEMORY_MEASUREMENTS.md; tarihli kısa/uzun deneyleri ayır |
 | Tasarım / HMI | HMI_REVIEW.md, ANIMATION_DETAILS.md, DESIGN_REFERENCES.md |
-| Güncel/tarihsel iş kaydı | Bu dosya + ACTIVE_WORK.md; RELEASE_ROADMAP.md eski v0.6→0.7 planıdır |
+| Güncel iş kaydı | Bu dosya + ACTIVE_WORK.md (başında kısa güncel durum) |
+| Tarihsel kayıt | WORK_HISTORY.md (eski iş kayıtları, değiştirilmeden), DEVELOPMENT_STATUS.md, RELEASE_NOTES_v0.7.0*.md; RELEASE_ROADMAP.md eski v0.6→0.7 planıdır. PROJECT_MASTER_GUIDE.md §5 sürüm evrimidir |
+| Sürüm değiştirme | `node scripts/set-version.cjs <sürüm>`; manifest, paket, motor, CSS, README, kılavuz ve ACTIVE_WORK birlikte güncellenir |
 | Testlerin kurulumu ve sınırları | TESTING.md, package.json, .github/workflows/quality.yml |
 
 Node 24 önerilir, en az 22. `npm run check` kaynak/sürüm/izin/lisans + Node test kapısıdır. UI değişince ilgili gerçek kurulu Firefox/Chromium testini çalıştır; yeni ters örnek veya kaynak değişikliği yokken bütün benchmark'ları gereksiz tekrar etme.

@@ -5,7 +5,8 @@
 > **Sürüm:** v0.7.9.2 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** 4 Kasım 2026 — v0.7.7.9 (Raporun oynayan video arkasındaki backdrop bulanıklığı kaldırıldı; JSON/gizlilik davranışı korunur. İki motorlu açılış/yazma/render ve kaynak birikimi ölçümleri REPORT_PERFORMANCE.md içinde; önceki filtre kanıtı FILTER_PERFORMANCE.md içinde.)
+> **Bu belgenin yeri:** Mimari başvuru kaynağıdır. Güncel durum ve açık işler PROJECT_HANDOFF.md ile ACTIVE_WORK.md içindedir; §5 ve altındaki tarihli kayıtlar kendi sürümlerine aittir.
+> **Son mimari güncelleme:** 4 Kasım 2026 — v0.7.7.9 (Raporun oynayan video arkasındaki backdrop bulanıklığı kaldırıldı; JSON/gizlilik davranışı korunur. İki motorlu açılış/yazma/render ve kaynak birikimi ölçümleri REPORT_PERFORMANCE.md içinde; önceki filtre kanıtı FILTER_PERFORMANCE.md içinde.) Sonraki iframe protokolü değişiklikleri FRAME_PRESENTATION.md içindedir.
 
 ---
 
