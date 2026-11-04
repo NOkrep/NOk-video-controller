@@ -138,6 +138,12 @@
     const base = record(value, { owner: value => cleanSession(value) || undefined, id: revision, ok: bool, code: choice(['ok', 'stale', 'failed', 'unsupported', 'timeout', 'activation-required', 'policy-blocked', 'not-ready']) });
     if (!base) return null;
     if (Object.hasOwn(value, 'ms')) { const ms = num(0, 60000)(value.ms); if (ms === undefined) return null; base.ms = ms; }
+    if (Object.hasOwn(value, 'ageMinutes')) { const age = num(0, 1440)(value.ageMinutes); if (age === undefined) return null; base.ageMinutes = age; }
+    if (Object.hasOwn(value, 'pingStatus')) {
+      const status = choice(['no-video', 'no-source', 'timing-unavailable', 'resource-timing', 'head', 'http-rejected', 'timeout', 'blocked'])(value.pingStatus);
+      if (status === undefined) return null;
+      base.pingStatus = status;
+    }
     if (Object.hasOwn(value, 'report')) { const report = cleanReport(value.report); if (!report) return null; base.report = report; }
     return base;
   }

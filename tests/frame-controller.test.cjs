@@ -186,6 +186,17 @@ test('old iframe snapshots cannot overwrite a slider intent before dispatch or b
 });
 
 test('closing a remote session cancels an unsent animation-frame filter update',()=>{
-  const h=harness();h.run('remotePresentation=inputState;remotePresentationSession=session;filterUpdateFrame=7;clearRemoteSession()');
+  const h=harness();let applied=0;h.context.applyVideoFiltersToElement=()=>{applied++;};
+  h.run('remotePresentation=inputState;remotePresentationSession=session;filterUpdateFrame=7;clearRemoteSession()');
   assert.deepEqual(h.cancelledFrames,[7]);assert.equal(h.run('filterUpdateFrame'),null);
+  assert.equal(applied,0,'the presenting frame has no video to apply it to');
+});
+
+test('a source frame still applies an accepted filter when its session closes before the next frame',()=>{
+  const h=harness();let applied=0;h.context.applyVideoFiltersToElement=()=>{applied++;};
+  h.run('remoteSourceSession=session;filterUpdateFrame=7;clearRemoteSession()');
+  assert.deepEqual(h.cancelledFrames,[7]);assert.equal(h.run('filterUpdateFrame'),null);
+  assert.equal(applied,1,'accepted value reaches the video');
+  h.run('remoteSourceSession=session;clearRemoteSession()');
+  assert.equal(applied,1,'no pending frame, nothing extra to apply');
 });

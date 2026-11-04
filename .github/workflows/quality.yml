@@ -62,6 +62,8 @@ jobs:
         run: node tests/hud-continuity-browser.cjs --engine=${{ matrix.engine }} --headless=true
       - name: Test dialog keyboard behaviour
         run: node tests/dialog-keyboard-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test CDN measurement outcomes and their explanations
+        run: node tests/cdn-measure-browser.cjs --engine=${{ matrix.engine }}
       - name: Test native PiP and iframe user activation
         run: node tests/pip-browser.cjs --engine=${{ matrix.engine }}
       - name: Test real toolbar startup with strict Trusted Types

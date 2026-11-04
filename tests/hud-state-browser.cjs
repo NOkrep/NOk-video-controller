@@ -75,7 +75,10 @@ async function main(){
     await brightness(125);await until(driver,media,()=>window.__testFilterRequest===125,'source accepts the final filter');
     await click(page,'pvc-close-popup-btn');
     await until(driver,media,()=>document.querySelector('video').style.filter==='brightness(125%)','accepted filter survives session close');
+    await driver.evaluate(page,()=>{window.__testOwner=null;});
     await driver.pointerClick(page,'#open');await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','filter controls reopen');
+    // The panel opens before the iframe session is back; controls act on the source only after that.
+    const reopenStarted=Date.now();await until(driver,page,()=>typeof window.__testOwner==='string','reopened panel reaches the source');const reopenToSourceMs=Date.now()-reopenStarted;
     await click(page,'pvc-tab-settings');await click(page,'pvc-btn-reset-filters');
     await until(driver,media,()=>document.querySelector('video').style.filter==='','reset restores native CSS');
     await driver.evaluate(media,()=>document.querySelector('video').pause());
@@ -83,7 +86,7 @@ async function main(){
     await click(page,'pvc-btn-reset-filters');await until(driver,media,()=>document.querySelector('video').style.filter==='','paused reset');
     await driver.evaluate(media,()=>document.querySelector('video').play());
     for(const target of [page,media])assert.equal(await driver.evaluate(target,()=>document.querySelectorAll('#pvc-controller-popup').length),1,'one HUD per document');
-    console.log(JSON.stringify({engine,browserVersion:driver.version,result:'passed',checks:['remote mono/stereo','collapse into fullscreen','expand out of fullscreen','media replacement keeps HUD/control','filter frame/close/reset/paused','single visible HUD']}));
+    console.log(JSON.stringify({engine,browserVersion:driver.version,result:'passed',reopenToSourceMs,checks:['remote mono/stereo','collapse into fullscreen','expand out of fullscreen','media replacement keeps HUD/control','filter frame/close/reset/paused','single visible HUD']}));
   }finally{
     try{await driver?.close();}finally{for(const server of [parent,child]){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}}
   }

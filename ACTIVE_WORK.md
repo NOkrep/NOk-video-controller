@@ -1,6 +1,22 @@
 # Etkin çalışma kapsamı
 
-## Araç sisteminde tek Python, I-12 bulguları — 4 Kasım 2026
+## I-12 yerel kapsam tamam, v0.7.9.1 — 4 Kasım 2026
+
+Yeni `tests/cdn-measure-browser.cjs`, kurulu eklentiyle yerel sunuculara karşı Firefox 159 ve Edge 152'de çalışır. Düzeltmeden önce yeni birim testleri ve tarayıcı testi başarısız oldu.
+
+- **Düzeltilen hata:** Oynatıcı iframe içindeyse başarısız ölçüm açıklamasız kalıyordu: kaynak çerçevenin bildirimi bastırılıyor, yanıt nedeni taşımıyordu. Yanıta sabit değerli `pingStatus` ve sınırlı `ageMinutes` eklendi, görünen çerçeve nedeni kendisi söylüyor. Adres veya kaynak bilgisi taşınmaz.
+- **Düğme:** Ölçülemeyince "Sonuç yok" yazıyor ve nedeni ipucunda; önceki değer ve renk kalmıyor. Sayının ipucu kaynağını söylüyor: son medya isteği veya ayrı HEAD isteği.
+- **`hud-state` testindeki aralıklı hatalar:** Testi sınarken 10 turda 2 hata çıktı; `main`'de de 15 turda 2. İki ayrı neden bulundu:
+  - **Test yarışı:** Panel yeniden açılınca iframe oturumu birkaç milisaniye sonra bağlanıyor, test bu aralıkta Sıfırla'ya basıyordu. Test artık bağlantıyı bekliyor. Ölçülen aralık çoğunlukla 1–3 ms, en çok 118 ms. Ürün kodu değişmedi; bu aralıkta verilen komut kaybolabilir.
+  - **Ürün hatası:** Kaynak çerçeve filtreyi kabul edip çizimi sonraki kareye bırakıyordu. Panel o karede kapanırsa kare iptal ediliyor, son ayar videoya uygulanmıyordu. `clearRemoteSession` artık bekleyen değeri uygular.
+- **Eski kayıt:** Elle ölçümde yaşı yazılır ("5 dk önceki istek"). Sessiz yenileme 2 dakikadan eski kaydı güncel göstermez ve kendi yazdığı sayıyı geri alır; elle alınmış sonuç silinmez.
+- **Metinler:** Yeni iki dilli açıklamalar her sitede ölçüm sözü vermiyor; kısıtın oynatmayı etkilemediğini belirtiyor.
+
+**Kanıt:** 222/222 Node testi. CDN tarayıcı testi iki motorda 1200 ve 420 piksel genişlikte geçti: son medya isteği, HEAD, HEAD reddi, CORS engeli, 4 saniye zaman aşımı, görünür istek yok, iframe içinde HEAD ve iframe içinde CORS engeli. Ekran görüntüsüyle görsel kontrol yapıldı; bölünen düğme metni bu kontrolde görülüp kısaltıldı. `hud-state` iki motorda 30'ar turda hatasız. Yeni test CI matrisine eklendi.
+
+**Sınırlar:** Sentetik yerel kabuldür. Gerçek CDN yanıtları ve tarayıcının zamanlama kaydının gerçekten dolması sınanmadı; yaş mantığı birim testiyle kapsandı. 4 saniye süresi değişmedi.
+
+## Araç sisteminde tek Python — 4 Kasım 2026
 
 Ürün kodu ve sürüm değişmedi (v0.7.9).
 
@@ -10,12 +26,7 @@
 - **`nok-release`:** Hedef proje yolu dosya başvurusu sanıldığı için tarama eksikti. İfade düzeltildi, tarama PASS.
 - **NOk-Tools kapandı:** Codex hook'unu aynı Python'a aldı ve kendi bağlantısını kaldırdı (N-009, N-010). Bağımsız denetim: iki istemcide 9 bağlantı ve 1 `DO_NOT_LINK`, sekiz `check` onaylı, `Test-NOkTools.ps1` PASS, araç kodunda Codex runtime yolu yok. Açık iş notu kalmadı. Ayrıntı `D:/NOk-Tools/AGENT_NOTES.md`.
 
-**I-12 incelemesi (kod değişmedi, sürdürülecek):**
-
-- Oynatıcı iframe içindeyse başarısız ölçüm açıklamasız kalıyor: kaynak çerçevenin bildirimi bastırılıyor, yanıt nedeni taşımıyor.
-- Sonuç hangi yöntemle ölçüldüğünü düğmede göstermiyor; başarısız ölçümden sonra düğmenin rengi eski kalıyor.
-- Sessiz yenileme zamanlama bulamazsa eski sayı düğmede kalıyor. Kaynak zamanlama kaydı dolarsa son kayıt güncel gibi görünebilir.
-- Plan: nedeni protokol yanıtına sınırlı bir alan olarak eklemek, iki dilde açık mesajlar yazmak, sayının yaşını göstermek, "ölçülemedi" durumunu düğmede göstermek. Kurulu eklentiyle iki motorda sınanacak.
+B6-C kullanıcı kararıyla ertelendi; kullanıcı isteyince başlar.
 
 ## Araç sistemi etiketleri, lisans paketlemesi ve panel sınaması — 4 Kasım 2026
 

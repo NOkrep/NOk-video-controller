@@ -78,6 +78,10 @@ test('reply relay permits only bounded manual timing and validated diagnostic pa
   assert.equal(cleaned.ms, 40); assert.equal(cleaned.report.frame.context, 'iframe');
   assert.equal(JSON.stringify(cleaned).includes('PRIVATE'), false);
   assert.equal(protocol.cleanReply({ id: 1, owner, ok: true, code: 'ok', ms: Infinity }), null);
+  assert.equal(protocol.cleanReply({ id: 1, owner, ok: false, code: 'failed', pingStatus: 'blocked' }).pingStatus, 'blocked');
+  assert.equal(protocol.cleanReply({ id: 1, owner, ok: true, code: 'ok', ms: 40, ageMinutes: 3 }).ageMinutes, 3);
+  assert.equal(protocol.cleanReply({ id: 1, owner, ok: false, code: 'failed', pingStatus: 'https://private.invalid/' }), null);
+  assert.equal(protocol.cleanReply({ id: 1, owner, ok: true, code: 'ok', ms: 40, ageMinutes: 1e9 }), null);
   assert.equal(protocol.cleanReply({ id: 1, owner, ok: true, code: 'ok', report: {} }), null);
   for(const code of ['activation-required','policy-blocked','not-ready'])assert.equal(protocol.cleanReply({id:1,owner,ok:false,code}).code,code);
   assert.equal(protocol.cleanReply({id:1,owner,ok:false,code:'PRIVATE_EXCEPTION'}),null);

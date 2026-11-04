@@ -16,7 +16,7 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 
 - **Ürün:** FilmDeck by NOk. Önceki ad NOk Video Controller; ara ad CineDeck'ti. Teknik repo adı ve Firefox kimliği korunur.
 - **Çıkış noktası:** sitelerin farklı ve eksik video arayüzlerinden doğan kullanıcı bıkkınlığı. Bilgisayarda video/film/dizi izleyen kullanıcıya ortak kontroller sunmak. Basit kullanımda hız/ses/kalite; daha ayrıntılı işler ayrı sekmeler ve katlanabilir alanlarda.
-- **Kaynak sürümü:** `0.7.9`, `main`'de (#115, `fff5ccf`, 4 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
+- **Kaynak sürümü:** `0.7.9.1`, `claude/workTogether` dalında (`main` birleşmesi kullanıcıda). `main` son kontrolde `0.7.9` idi (#115, `fff5ccf`, 4 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
 - **Dallar (kullanıcı kararı, 4 Kasım 2026; önceki "mevcut dalda devam" notunun yerine geçer):** Her ajanın `main`'den açılmış tek bir uzun ömürlü dalı vardır: Codex `codex/…`, Claude `claude/…`. İş veya düzeltme başına yeni dal açılmaz; güncellik için `main` bu dala merge edilir. Aynı checkout kullanılır; kullanıcı ajan değiştirirken dal ve temiz durum doğrulanır. Bu yüzden devirden önce iş commit'lenmiş olmalıdır. Ajan kendi dalına commit atar ve push eder; **PR'ı ve merge'ü kullanıcı yapar**, ajan özeti ve PR bağlantısını bildirir. Karşı ajanın dalına doğrudan commit atılmaz; ikinci checkout/worktree istenmeden açılmaz.
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Güncel dallar: Codex `codex/filmdeck-cassette-icon`, Claude `claude/workTogether`. Codex dalının adı ilk işinden kalmıştır; içeriği o işle sınırlı değildir.
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
@@ -102,7 +102,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 | I-09 | Raporlanan sitelerde PiP | Kısmi: yerel onay çözümü geçti; gerçek site izinleri ve normal/fullscreen geçişleri açık. |
 | I-10 | Kontrol düzeltmelerinin gerçek site regresyonu | Mono/Stereo, geç keşif, beklenmedik aç/kapat, TRT hız korumasını raporlanan akışta sınamak; yapılanı baştan yazmamak. |
 | I-11 | Altyazı sonrası bekleme/görünmeme | Ağ beklemesi, etkin cue boşluğu, disabled ve gerçek çizim hatası ayrılacak. |
-| I-12 | CDN yanıt ölçümünün anlaşılması | Kaynak/timing/izin sınırını anlaşılır anlatmak; her sitede ölçüm sözü vermemek. |
+| I-12 | CDN yanıt ölçümünün anlaşılması | **Yerel kapsam tamam (v0.7.9.1):** düğme yöntemi ve ölçülememe nedenini gösteriyor, iframe oynatıcıda açıklama kayıp değil, eski kayıt yaşıyla bildiriliyor. Altı sunucu yanıtı ve iki iframe senaryosu iki motorda sınandı. Gerçek CDN'lerde kabul açık. |
 | I-13 | Kalan emoji ve simgeler | Envanter çıkarılıp kullanıcıyla SVG/kaldırma kararı verilecek. |
 
 Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi daha sonra düzeltildi; kesin hata diye tutma. Aynı yapıştırılmış rapor iki ayrı issue değildir. “Eksik kalite” kullanıcının site menüsünde karşılaştırdığı durumdur; “hiç kalite görünmüyor” ayrı durumdur. Ham raporlar ve alan adları bu belgeye taşınmaz.
@@ -132,8 +132,8 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 
 1. **Tamam:** Katalogdaki üç eski durum etiketi (N-002).
 2. **Tamam:** `NOk-FilmDeck-Release` lisans paketlemesini Codex commit'ledi (`b1d933c`, `codex/ww28-private-evidence`). O deponun PR ve merge'ü kullanıcıda.
-3. **Seçildi, başlamadı:** Canlı test için C yolu: önce panelde eklentisiz site gözlemi, sonra hesapsız temiz profilde gerçek FilmDeck (bu bölümün sonundaki sınama).
-4. I-12: inceleme yapıldı, kod değişmedi (ACTIVE_WORK.md).
+3. **Ertelendi (kullanıcı, 4 Kasım):** Canlı test için C yolu seçildi ama kullanıcı şimdilik yapmak istemiyor: önce panelde eklentisiz site gözlemi, sonra hesapsız temiz profilde gerçek FilmDeck (bu bölümün sonundaki sınama). Kullanıcı isteyince başlar; yeniden sormaya gerek yok.
+4. **Yerel kapsam tamam (v0.7.9.1):** I-12.
 5. D-04.
 6. D-10.
 7. D-11.

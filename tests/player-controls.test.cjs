@@ -780,6 +780,72 @@ test('manual HTTP probe uses HEAD without credentials/referrer and never GET fal
   assert.equal(h.timers.size, 0);
 });
 
+function pingButton(h) {
+  const button = { style: {}, attributes: {}, textContent: '', getAttribute(name) { return this.attributes[name] ?? null; }, setAttribute(name, value) { this.attributes[name] = value; } };
+  h.context.document.getElementById = id => id === 'pvc-ping-btn' ? button : null;
+  return button;
+}
+
+test('embedded player measurement failures explain the reason in the visible frame', async () => {
+  const h = harness(); h.context.remotePresentation = {};
+  h.context.remoteControl = async () => ({ ok: false, code: 'failed', pingStatus: 'blocked' });
+  assert.equal(await h.run('testCdnPing(false)'), null);
+  assert.equal(h.run('lastPingStatus'), 'blocked');
+  assert.match(h.toasts.at(-1), /izin vermedi/);
+  h.context.remoteControl = async () => ({ ok: true, code: 'ok', ms: 40, pingStatus: 'head' });
+  assert.equal((await h.run('testCdnPing(false)')).method, 'head');
+  assert.match(h.toasts.at(-1), /40 ms \(HEAD\)/);
+  const before = h.toasts.length;
+  h.context.remoteControl = async () => ({ ok: false, code: 'timeout' });
+  assert.equal(await h.run('testCdnPing(false)'), null);
+  assert.equal(h.toasts.length, before, 'the transport layer already announced its own timeout');
+});
+
+test('old passive timing states its age and is not refreshed as current', async () => {
+  const h = harness(); h.video.paused = true;
+  h.context.performance.now = () => 6 * 60000;
+  h.context.performance.getEntriesByType = () => [{ name: 'https://cdn.invalid/part.m4s', requestStart: 100, responseStart: 140, responseEnd: 60000 }];
+  const manual = await h.run('testCdnPing(false)');
+  assert.equal(manual.ageMinutes, 5); assert.match(h.toasts.at(-1), /40 ms \(5 dk önceki istek\)/);
+  assert.equal(await h.run('testCdnPing(true)'), null);
+  assert.equal(h.run('lastPingStatus'), 'timing-unavailable');
+  assert.equal(h.requests.length, 0);
+});
+
+test('CDN button shows the method, clears stale passive values and reports failures', async () => {
+  const h = harness(); const button = pingButton(h); h.run('uiLanguage = "tr"');
+  h.context.performance.getEntriesByType = () => [{ name: 'https://cdn.invalid/part.m4s', requestStart: 100, responseStart: 140 }];
+  await h.run('testCdnPing(true)');
+  assert.match(button.textContent, /40 ms/); assert.match(button.attributes.title, /son medya isteğinden/i);
+  assert.notEqual(button.style.color, undefined);
+  h.context.performance.getEntriesByType = () => [];
+  await h.run('testCdnPing(true)');
+  assert.match(button.textContent, /CDN yanıtı/); assert.equal(button.style.color, ''); assert.match(button.attributes.title, /Her sitede ölçülemez/);
+  h.video.currentSrc = 'https://cdn.invalid/video.mp4';
+  h.context.fetch = async () => { throw new Error('CORS PRIVATE_URL'); };
+  await h.run('testCdnPing(false)');
+  assert.match(button.textContent, /Sonuç yok/); assert.match(button.style.color, /muted/);
+  assert.match(button.attributes.title, /izin vermedi/); assert.equal(button.attributes.title.includes('PRIVATE_URL'), false);
+  h.context.fetch = async () => ({ ok: true });
+  await h.run('testCdnPing(false)');
+  assert.match(button.attributes.title, /HEAD/);
+  h.context.performance.getEntriesByType = () => [];
+  await h.run('testCdnPing(true)');
+  assert.match(button.textContent, /\d+ ms/, 'a manual result is not cleared by the silent refresh');
+});
+
+test('every CDN outcome has an English translation', () => {
+  const h = harness(); h.run('uiLanguage = "en"');
+  for (const key of ['no-video', 'no-source', 'http-rejected', 'timeout', 'blocked']) {
+    const text = h.run(`CDN_STATUS_MESSAGES[${JSON.stringify(key)}]`);
+    assert.notEqual(h.run(`uiText(${JSON.stringify(text)})`), text, key);
+  }
+  for (const text of ['CDN_UNAVAILABLE_MESSAGE', 'CDN_BUTTON_DEFAULT_TITLE', 'CDN_BUTTON_PASSIVE_TITLE', 'CDN_BUTTON_HEAD_TITLE'])
+    assert.notEqual(h.run(`uiText(${text})`), h.run(text), text);
+  assert.equal(h.run('uiText("📡 Medya HTTP yanıtı: 40 ms (5 dk önceki istek)")'), '📡 Media HTTP response: 40 ms (request 5 min ago)');
+  assert.equal(h.run('uiText("📡 Sonuç yok")'), '📡 No result');
+});
+
 test('content relay sends only fixed frame-open signal and reinjection adds no duplicate listener', () => {
   const events = [], sent = [], selfPosts = [], scripts = [];
   const parent = {}, window = { parent, postMessage: payload => selfPosts.push(payload), addEventListener: (type, cb) => events.push(cb) };
