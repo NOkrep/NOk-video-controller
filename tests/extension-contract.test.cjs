@@ -59,7 +59,7 @@ test('runtime inventory rejects path traversal and malformed icon dimensions',t=
   assert.throws(()=>checkExtension(dir),/Invalid 16px/);
 });
 test('private and generated paths cannot enter tracked source',()=>{
-  for(const file of ['PRIVATE_TEST_NOTES.md','SITE_COMPATIBILITY.md','tests/artifacts/heap.json','dist/package.zip','.env','keys/example.key'])
+  for(const file of ['PRIVATE_TEST_NOTES.md','SITE_COMPATIBILITY.md','LOCAL_AGENT_PROCEDURE.md','tests/artifacts/heap.json','dist/package.zip','.env','keys/example.key'])
     assert.throws(()=>checkExtension(root,{trackedFiles:[file]}),/Private or generated/);
 });
 test('version command synchronizes current metadata while preserving Firefox identity',t=>{
