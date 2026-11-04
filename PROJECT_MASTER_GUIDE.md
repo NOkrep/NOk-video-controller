@@ -2,10 +2,10 @@
 
 > Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.7.3 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
+> **Sürüm:** v0.7.7.9 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
-> **Son Güncelleme:** 3 Kasım 2026 — v0.7.7.3 (MIT LICENSE, hak sahibi metaverisi ve ayrı FilmDeck yayın adaptöründe lisans koruması; oynatıcı davranışı değişmedi)
+> **Son Güncelleme:** 4 Kasım 2026 — v0.7.7.9 (Raporun oynayan video arkasındaki backdrop bulanıklığı kaldırıldı; JSON/gizlilik davranışı korunur. İki motorlu açılış/yazma/render ve kaynak birikimi ölçümleri REPORT_PERFORMANCE.md içinde; önceki filtre kanıtı FILTER_PERFORMANCE.md içinde.)
 
 ---
 
@@ -57,6 +57,8 @@
 ---
 
 ## 2. 🏛️ Mimari Tasarım & Çalışma Prensibi
+
+**v0.7.7.6 yol ayrımı:** aşağıdaki DOM script akışı sessiz otomatik başlangıç ve legacy geri dönüşü anlatır. Kullanıcının araç çubuğu tıklamasında background önce mevcut activeTab/scripting yetkisiyle `world: MAIN` üzerinden motor/protokolü hazırlar, sonra izole relay'e açık kullanıcı niyetini bildirir. Firefox 121–127 gibi MAIN desteği olmayan sürümlerde eski DOM yolu korunur; minimum sürüm veya izinler artırılmaz. UI, destek varsa yerleşik güvenli HTML API'siyle çizilir; site güvenlik politikasını gevşeten Trusted Types politikası oluşturulmaz. İframe komutları oturum + güncel medya sahibine bağlanır; yalnız indeksli kalite/hedef seçimleri ayrıca envanter revizyonu ister.
 
 Manifest V3 kısıtlamaları altında hem Firefox (Gecko) hem Chromium tarayıcılarda sayfa içi oynatıcı değişkenlerine erişmek için iki katmanlı hibrit enjeksiyon modeli kullanılmıştır:
 

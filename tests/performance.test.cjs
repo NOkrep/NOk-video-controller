@@ -3,6 +3,18 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {filterWindowProblems}=require('./filter-window.cjs');
+
+test('filter measurement rejects mismatched or stalled windows but keeps genuine dropped frames',()=>{
+  const sample={initialFilter:'brightness(115%)',filter:'brightness(115%)',sourceStable:true,visibility:'visible',paused:false,
+    rate:1,mediaSeconds:6,totalFrames:144,droppedFrames:90,waitingEvents:0,minimumReadyState:4,styleWrites:0};
+  assert.deepEqual(filterWindowProblems(sample,false,'brightness(115%)'),[],'poor performance must remain measurable');
+  for(const [change,problem] of [[{filter:''},'filter-not-applied'],[{initialFilter:''},'filter-not-applied'],[{sourceStable:false},'source-changed'],
+    [{visibility:'hidden'},'hidden'],[{paused:true},'playback-not-comparable'],[{mediaSeconds:0},'playback-not-comparable'],[{rate:2},'playback-not-comparable'],
+    [{waitingEvents:1},'buffering'],[{minimumReadyState:1},'buffering']])assert.ok(filterWindowProblems({...sample,...change},false,'brightness(115%)').includes(problem));
+  assert.deepEqual(filterWindowProblems({...sample,styleWrites:50},true,''),[]);
+  assert.ok(filterWindowProblems(sample,true,'').includes('filter-not-applied'));
+});
 const source = fs.readFileSync(path.join(__dirname, '..', 'injected.js'), 'utf8');
 function section(from, to) {
   const a = source.indexOf(from), b = source.indexOf(to, a);
@@ -19,19 +31,86 @@ function mediaStyle(value = '', priority = '') {
   };
 }
 function filters(value = '', priority = '') {
-  const frames = new Map(); let frameId = 0, discoveries = 0;
+  const frames = new Map(),timers=new Map(); let frameId = 0, discoveries = 0,timerId=0;
   const video = { style: mediaStyle(value, priority), isConnected: true };
   const context = vm.createContext({ video, remotePresentation: null, videoFilterState: { brightness: 100, contrast: 100, saturate: 100, nightShield: false, invert: false },
     clock: 0, performance: { now: () => context.clock }, mediaDiscoveryCache: { at: 0 }, controlledVideo: null,
+    remoteSourceSession:null,remoteSourceOwner:null,qualityMediaEpochs:new WeakMap(),
+    setTimeout(callback){timers.set(++timerId,callback);return timerId;},clearTimeout(id){timers.delete(id);},cancelAnimationFrame(id){frames.delete(id);},
     document: { getElementById: () => null },
     findVideoAndPlayer() { discoveries++; return { video: context.video }; },
     requestAnimationFrame(callback) { frames.set(++frameId, callback); return frameId; },
     showToast() {}, setUiText() {}
   });
   vm.runInContext(section('  const appliedVideoFilters', '  function parseTimecodeToSeconds'), context);
-  return { video, context, frames, run: code => vm.runInContext(code, context), get discoveries() { return discoveries; },
+  return { video, context, frames,timers, run: code => vm.runInContext(code, context), get discoveries() { return discoveries; },
     flush() { const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn()); } };
 }
+
+function playingFrameVideo(h){
+  const callbacks=new Map(),cancelled=[];let id=0;h.video.paused=false;h.video.readyState=4;
+  h.video.requestVideoFrameCallback=fn=>{callbacks.set(++id,fn);return id;};
+  h.video.cancelVideoFrameCallback=id=>{cancelled.push(id);callbacks.delete(id);};
+  return {callbacks,cancelled,flush(){const values=[...callbacks.values()];callbacks.clear();values.forEach(fn=>fn());}};
+}
+
+test('playing filters coalesce to the next video frame with the latest value and cancel their fallback',()=>{
+  const h=filters(),frame=playingFrameVideo(h);
+  for(let value=110;value<=130;value++){h.context.value=value;h.run('videoFilterState.brightness=value;scheduleVideoFilterUpdate()');h.flush();}
+  assert.equal(h.video.style.writes.length,0);assert.equal(frame.callbacks.size,1);assert.equal(h.timers.size,1);
+  frame.flush();assert.equal(h.video.style.getPropertyValue('filter'),'brightness(130%)');
+  assert.equal(h.video.style.writes.length,1);assert.equal(h.timers.size,0);
+  assert.deepEqual(frame.cancelled,[],'a consumed video callback must not make a redundant native cancellation');
+  h.run('resetVideoFilters()');h.flush();frame.flush();assert.equal(h.video.style.getPropertyValue('filter'),'');
+});
+
+test('video-frame filters have a bounded fallback; paused and unsupported media remain immediately responsive',()=>{
+  const h=filters(),frame=playingFrameVideo(h);
+  h.run('videoFilterState.brightness=120;scheduleVideoFilterUpdate()');h.flush();
+  const late=[...frame.callbacks.values()][0];[...h.timers.values()][0]();
+  assert.equal(h.video.style.getPropertyValue('filter'),'brightness(120%)');assert.equal(frame.callbacks.size,0);
+  h.video.paused=true;h.run('videoFilterState.brightness=130;scheduleVideoFilterUpdate()');h.flush();
+  assert.equal(h.video.style.getPropertyValue('filter'),'brightness(130%)');late();assert.equal(h.video.style.writes.length,2);
+  h.video.paused=false;delete h.video.requestVideoFrameCallback;
+  h.run('videoFilterState.brightness=140;scheduleVideoFilterUpdate()');h.flush();assert.equal(h.video.style.getPropertyValue('filter'),'brightness(140%)');
+});
+
+test('an accepted draw can flush on close, but stale media/source/session callbacks never apply',()=>{
+  for(const replacement of ['video.isConnected=false','video.currentSrc="replacement"','video.srcObject={}','qualityMediaEpochs.set(video,1)','remoteSourceSession="next"','remoteSourceOwner="next"']){
+    const h=filters(),frame=playingFrameVideo(h);h.run('remoteSourceSession="original";remoteSourceOwner="original";videoFilterState.brightness=120;scheduleVideoFilterUpdate()');h.flush();
+    const late=[...frame.callbacks.values()][0];h.run(replacement+';flushVideoFilterDraw()');late();
+    assert.equal(h.video.style.writes.length,0,replacement);assert.equal(h.timers.size,0);
+  }
+  const h=filters(),frame=playingFrameVideo(h);h.run('videoFilterState.brightness=125;scheduleVideoFilterUpdate()');h.flush();
+  h.run('flushVideoFilterDraw()');assert.equal(h.video.style.getPropertyValue('filter'),'brightness(125%)');assert.equal(frame.callbacks.size,0);assert.equal(h.timers.size,0);
+});
+
+test('a fresh input after same-element source replacement supersedes the old video-frame callback',()=>{
+  const h=filters(),frame=playingFrameVideo(h);
+  h.run('video.currentSrc="first";videoFilterState.brightness=120;scheduleVideoFilterUpdate()');h.flush();
+  const stale=[...frame.callbacks.values()][0];
+  h.run('video.currentSrc="second";videoFilterState.brightness=130;scheduleVideoFilterUpdate()');h.flush();
+  stale();frame.flush();assert.equal(h.video.style.getPropertyValue('filter'),'brightness(130%)');
+  assert.equal(h.video.style.writes.length,1);assert.equal(h.timers.size,0);
+});
+
+test('continuous scheduled writes never extend the 200ms media selection cache indefinitely',()=>{
+  for(const playing of [false,true]){
+    const h=filters(),frame=playing?playingFrameVideo(h):null;
+    for(let index=0;index<26;index++){
+      h.context.clock=index*16;h.run('videoFilterState.brightness=110;scheduleVideoFilterUpdate()');h.flush();
+      if(index%2===0)frame?.flush();
+    }
+    frame?.flush();assert.equal(h.discoveries,2,'target ownership is rechecked during a continuous drag');
+  }
+});
+
+test('a collected old stream cannot match a video whose stream was removed',()=>{
+  const h=filters();playingFrameVideo(h);h.video.srcObject={};
+  h.run('videoFilterState.brightness=120;scheduleVideoFilterUpdate()');h.flush();
+  h.run('video.srcObject=null;filterVideoDraw.stream={deref:()=>undefined};flushVideoFilterDraw()');
+  assert.equal(h.video.style.writes.length,0);
+});
 
 test('200 picture input updates coalesce to one discovery and one final style write', () => {
   const h = filters();

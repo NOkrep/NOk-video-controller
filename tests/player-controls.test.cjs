@@ -392,6 +392,49 @@ function videoJsNativeMenu(h,captions=['1080p','720p','480p']){
   return {...menu,state};
 }
 
+test('Video.js shared playlist mapping is bounded, read-only and belongs to the selected player',()=>{
+  const h=harness();
+  const reps=[480,720,1080].map(height=>({height,playlist:{resolvedUri:'https://cdn.invalid/PRIVATE_SOURCE?TOKEN'}}));
+  const player={currentTime(){},playbackRate(){},tech_:{vhs:{representations:()=>reps}}};
+  h.video.parentElement={player};h.context.activePlayer=player;
+  assert.equal(h.run('readVideoJsPlaylistMapping(video,activePlayer)'),'shared-playlist');
+  reps[2].playlist.resolvedUri='https://cdn.invalid/other';
+  assert.equal(h.run('readVideoJsPlaylistMapping(video,activePlayer)'),'shared-playlist');
+  reps[1].playlist.resolvedUri='https://cdn.invalid/middle';
+  assert.equal(h.run('readVideoJsPlaylistMapping(video,activePlayer)'),'distinct-playlists');
+  delete reps[1].playlist.resolvedUri;
+  assert.equal(h.run('readVideoJsPlaylistMapping(video,activePlayer)'),'unknown');
+  h.video.parentElement=null;
+  assert.equal(h.run('readVideoJsPlaylistMapping(video,activePlayer)'),'unknown');
+  h.video.parentElement={player};player.tech_.vhs.representations=()=>Array(129).fill(reps[0]);
+  assert.equal(h.run('readVideoJsPlaylistMapping(video,activePlayer)'),'unknown');
+  assert.equal(h.requests.length,0);
+});
+
+test('shared source warning keeps real menu choices and requires decoded quality evidence',()=>{
+  const h=harness(),ui=qualityUi(h),menu=videoJsNativeMenu(h);
+  const reps=[480,720,1080].map(height=>({id:String(height),height,playlist:{resolvedUri:'PRIVATE_PLAYLIST'},enabled:()=>true}));
+  const player={currentTime(){},playbackRate(){},tech_:{vhs:{representations:()=>reps}}};
+  h.video.parentElement={player};h.context.activePlayer=player;h.video.videoHeight=720;
+  h.run('renderDynamicQualityButtons()');
+  assert.equal(ui.container.querySelectorAll('button').length,3);
+  assert.ok(ui.container.childNodes.some(n=>/same playlist/.test(n.textContent)));
+  h.run('setUiLanguage("tr",false);renderDynamicQualityButtons()');
+  assert.ok(ui.container.childNodes.some(n=>/aynı oynatma listesine/.test(n.textContent)));
+  h.run('setUiLanguage("en",false);renderDynamicQualityButtons()');
+  h.run('requestQuality(cachedDiscoveredQualities[0],video,activePlayer)');
+  h.context.performance.now=()=>13000;h.run('updateQualityVerification(video,activePlayer)');
+  assert.deepEqual(menu.calls,['1080p']);
+  assert.equal(h.run('qualityControlState.request.status'),'timed-out');
+  assert.equal(h.run('readQualityDiagnostics(video,activePlayer).playlistMapping'),'shared-playlist');
+  assert.equal(JSON.stringify(h.json('readQualityDiagnostics(video,activePlayer)')).includes('PRIVATE'),false);
+  reps.forEach((rep,index)=>{rep.playlist.resolvedUri='PRIVATE_PLAYLIST_'+index;});
+  h.run('renderDynamicQualityButtons()');
+  assert.equal(ui.container.childNodes.some(n=>/same playlist/.test(n.textContent)),false,'mapping changes refresh the note even if menu labels stay the same');
+  h.video.currentSrc='replacement';
+  assert.equal(h.run('readQualityDiagnostics(video,activePlayer).playlistMapping'),'unknown');
+});
+
 test('Video.js plugin captions ignore nested HD badges and verify the real selected class separately from decoded frames',()=>{
   const h=harness(),menu=videoJsNativeMenu(h,['1080p','720p','480p','Auto','Watch 2160p']);h.video.videoHeight=720;
   assert.deepEqual(h.json('discoverStreamQualities().map(q=>[q.height,q.label])'),[[1080,'1080p'],[720,'720p'],[480,'480p']]);
@@ -738,14 +781,15 @@ test('manual HTTP probe uses HEAD without credentials/referrer and never GET fal
 });
 
 test('content relay sends only fixed frame-open signal and reinjection adds no duplicate listener', () => {
-  const events = [], sent = [], selfPosts = [];
+  const events = [], sent = [], selfPosts = [], scripts = [];
   const parent = {}, window = { parent, postMessage: payload => selfPosts.push(payload), addEventListener: (type, cb) => events.push(cb) };
   const document = {
-    readyState: 'loading', head: { appendChild() {} }, createElement: () => ({ dataset: {} }),
+    readyState: 'loading', head: { appendChild(script) { scripts.push(script); } }, createElement: () => ({ dataset: {}, remove() {} }),
     querySelectorAll: () => [{ contentWindow: { postMessage: payload => sent.push(payload) } }]
   };
   const context = vm.createContext({ window, document, chrome: { runtime: { getURL: path => 'extension:///' + path } } });
   vm.runInContext(content, context);
+  scripts[0].onload(); scripts[1].onload();
   events[0]({ source: parent, data: { type: 'NOK_FRAME_OPEN', privateData: 'SECRET' } });
   assert.deepEqual(JSON.parse(JSON.stringify(sent)), [{ type: 'NOK_FRAME_HIDE' }]);
   assert.deepEqual(JSON.parse(JSON.stringify(selfPosts)), [{ type: 'PVC_HIDE_POPUP' }, { type: 'PVC_OPEN_IF_MEDIA' }]);

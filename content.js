@@ -5,6 +5,10 @@
 (() => {
   const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
   const frameProtocol = globalThis.NOkFrameProtocol;
+  // Isolated-world RAM survives reinjection; early toolbar clicks must wait for the engine.
+  const boot = window.__NOK_VIDEO_CONTROLLER_BOOT_STATE__ ||= { loading: false, ready: false, pendingOpen: false };
+  if (window.__NOK_VIDEO_CONTROLLER_MAIN_READY__ === true) { boot.ready = true; boot.loading = false; }
+  delete window.__NOK_VIDEO_CONTROLLER_MAIN_READY__;
   let selectedLanguageSignal = null;
   let selectedPlatformSignal = null;
   const platformSignals = new Set(['kick', 'trt', 'now', 'puhu', 'youtube', 'twitch', 'reddit', 'x',
@@ -17,6 +21,9 @@
    * işi bitince DOM'dan temizleriz (kod bellekte çalışmaya devam eder).
    */
   function injectMainWorldScript(autoOpen = false) {
+    boot.pendingOpen ||= autoOpen;
+    if (boot.loading) return;
+    boot.loading = true;
     try {
       const script = document.createElement('script');
       script.src = browserAPI.runtime.getURL('injected.js');
@@ -24,14 +31,17 @@
       script.dataset.productLogoUrl = browserAPI.runtime.getURL('icons/filmdeck-logo.png');
       script.onload = function () {
         this.remove();
+        boot.loading = false; boot.ready = true;
         if (selectedLanguageSignal) {
           window.postMessage({ type: selectedLanguageSignal === 'NOK_LANGUAGE_TR' ? 'PVC_APPLY_LANGUAGE_TR' : 'PVC_APPLY_LANGUAGE_EN' }, '*');
         }
         if (selectedPlatformSignal) window.postMessage({ type: selectedPlatformSignal.replace('NOK_PLATFORM_', 'PVC_APPLY_PLATFORM_') }, '*');
-        if (autoOpen) {
+        if (boot.pendingOpen) {
+          boot.pendingOpen = false;
           window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
         }
       };
+      script.onerror = function () { this.remove(); boot.loading = false; boot.ready = false; };
       const helper = document.createElement('script');
       helper.src = browserAPI.runtime.getURL('frame-protocol.js');
       const appendMain = function () { this.remove(); (document.head || document.documentElement).appendChild(script); };
@@ -39,6 +49,7 @@
       helper.onerror = appendMain; // A blocked helper leaves legacy local-frame controls available.
       (document.head || document.documentElement).appendChild(helper);
     } catch (e) {
+      boot.loading = false;
       console.error('[NOkrep:Content] Main World script enjekte edilemedi:', e);
     }
   }
@@ -49,10 +60,16 @@
   if (!window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__) {
     window.__NOK_VIDEO_CONTROLLER_CONTENT_LOADED__ = true;
     // Otomatik enjeksiyonda kancaları sessizce tak; kullanıcı toolbar ikonuna bastıysa doğrudan aç
-    injectMainWorldScript(toolbarRequested);
+    if (boot.ready) {
+      if (toolbarRequested) window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
+    } else injectMainWorldScript(toolbarRequested);
   } else {
     // Kullanıcı ikona tekrar tıkladıysa popup'ı aç/kapat
-    if (toolbarRequested) window.postMessage({ type: 'PVC_TOOLBAR_TOGGLE' }, '*');
+    if (toolbarRequested) {
+      if (boot.ready) window.postMessage({ type: 'PVC_TOOLBAR_TOGGLE' }, '*');
+      else if (boot.loading) boot.pendingOpen = !boot.pendingOpen;
+      else injectMainWorldScript(true);
+    }
     return;
   }
 

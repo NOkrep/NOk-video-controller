@@ -17,8 +17,19 @@ test('protocol round-trips bounded UI state and never relays extra URLs, page te
   assert.equal(JSON.stringify(cleaned).includes('PRIVATE'), false);
 });
 
+test('playlist mapping relays only fixed categories in state and diagnostics',()=>{
+  for(const mapping of ['unknown','shared-playlist','distinct-playlists']){
+    assert.equal(protocol.cleanState(state({playlistMapping:mapping})).playlistMapping,mapping);
+    const input=report();input.quality.playlistMapping=mapping;input.quality.playlistUrl='PRIVATE_SOURCE';
+    assert.equal(protocol.cleanReport(input).quality.playlistMapping,mapping);
+    assert.equal(JSON.stringify(protocol.cleanReport(input)).includes('PRIVATE'),false);
+  }
+  assert.equal(protocol.cleanState(state({playlistMapping:'https://private.invalid/secret'})),null);
+  const input=report();input.quality.playlistMapping='PRIVATE_SOURCE';assert.equal(protocol.cleanReport(input),null);
+});
+
 test('state rejects unknown enums, nonfinite values, out-of-range controls and unbounded lists', () => {
-  for (const extra of [{ adapter: 'PRIVATE_LABEL' }, { requestedRate: 16 }, { requestedIndex: 128 }, { height: Infinity }, { fullscreen: 1 },
+  for (const extra of [{ adapter: 'PRIVATE_LABEL' }, { requestedRate: 16 }, { requestedIndex: 128 }, { height: Infinity }, { fullscreen: 1 }, { hudCollapsed: 'true' },
     { qualities: Array.from({ length: 129 }, () => ({ height: 720, bitrate: 0 })) }, { candidates: Array.from({ length: 33 }, () => ({ height: 720 })) }]) {
     assert.equal(protocol.cleanState(state(extra)), null);
   }
@@ -30,6 +41,8 @@ test('commands reconstruct only known fields and enforce owner, revision and con
   assert.deepEqual(json(protocol.cleanCommand(input)), { name: 'speed', owner, revision: 3, value: 1.5 });
   for (const name of ['fetch', '__proto__', 'constructor', 'evaluate', 'toString']) assert.equal(protocol.cleanCommand({ ...input, name }), null);
   for (const extra of [{ owner: 'PRIVATE_ID' }, { value: 16 }, { value: NaN }, { revision: 1.5 }, { revision: 2147483648 }]) assert.equal(protocol.cleanCommand({ ...input, ...extra }), null);
+  assert.equal(protocol.cleanCommand({...input,name:'hud-collapsed',value:'true'}),null);
+  assert.equal(protocol.cleanCommand({...input,name:'hud-collapsed',value:true}).value,true);
 });
 
 test('subtitle transfer is explicit, bounded, sorted plain cue data with no filenames or source metadata', () => {
@@ -57,6 +70,14 @@ test('reply relay permits only bounded manual timing and validated diagnostic pa
   assert.equal(JSON.stringify(cleaned).includes('PRIVATE'), false);
   assert.equal(protocol.cleanReply({ id: 1, owner, ok: true, code: 'ok', ms: Infinity }), null);
   assert.equal(protocol.cleanReply({ id: 1, owner, ok: true, code: 'ok', report: {} }), null);
+  for(const code of ['activation-required','policy-blocked','not-ready'])assert.equal(protocol.cleanReply({id:1,owner,ok:false,code}).code,code);
+  assert.equal(protocol.cleanReply({id:1,owner,ok:false,code:'PRIVATE_EXCEPTION'}),null);
+});
+
+test('PiP failure categories cross frames without copying exception messages or arbitrary details',()=>{
+  const recentEvents=['PIP_ACTIVATION_REQUIRED','PIP_POLICY_BLOCKED','PIP_NOT_READY','PIP_UNSUPPORTED'].map(event=>({ageSeconds:0,level:'WARN',event,details:{message:'PRIVATE_URL',stack:'PRIVATE_STACK'}}));
+  const cleaned=protocol.cleanReport(report({recentEvents}));
+  assert.equal(cleaned.recentEvents.length,4);assert.equal(JSON.stringify(cleaned).includes('PRIVATE'),false);
 });
 
 test('ephemeral session tokens are validated, unique and module reinjection preserves the frozen API', () => {

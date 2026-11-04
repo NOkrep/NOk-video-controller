@@ -5,25 +5,48 @@ const root=path.resolve(__dirname,'..');
 function processMemory(pid,perProcess=false){return JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(pid),...(perProcess?['-PerProcess']:[])],{encoding:'utf8',windowsHide:true}));}
 function performanceWindow(pid,seconds){return new Promise((resolve,reject)=>execFile('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-performance.ps1'),'-RootProcessId',String(pid),'-DurationSeconds',String(seconds)],{encoding:'utf8',windowsHide:true},(error,stdout)=>error?reject(error):resolve(JSON.parse(stdout))));}
 async function createDriver(engine,executablePath,packages,options={}){
+  const extensionRoot=options.extensionRoot||root;
   if(engine==='chromium'){
     const {chromium}=require(path.join(packages,'playwright'));
     const context=await chromium.launchPersistentContext('',{executablePath,headless:!options.visible,viewport:options.viewport||{width:1280,height:800},
       ignoreDefaultArgs:['--disable-extensions'],args:['--enable-unsafe-extension-debugging']});
     const browser=context.browser(),cdp=await browser.newBrowserCDPSession();
-    await context.route('**/*',route=>(/^(?:chrome-extension:|http:\/\/127\.0\.0\.1:\d+\/)/.test(route.request().url())
-      ||options.allowWeb&&/^https?:/.test(route.request().url()))?route.continue():route.abort());
+    await context.route('**/*',route=>{
+      const url=route.request().url();
+      if(options.blockDomEngine&&/^chrome-extension:.*\/(?:injected|frame-protocol)\.js$/.test(url))return route.abort();
+      return (/^(?:chrome-extension:|http:\/\/127\.0\.0\.1:\d+\/)/.test(url)||options.allowWeb&&/^https?:/.test(url))?route.continue():route.abort();
+    });
     const pid=(await cdp.send('SystemInfo.getProcessInfo')).processInfo.find(p=>p.type==='browser').id;
-    const sessions=new Map();
+    const sessions=new Map();let extensionId;
     const session=async page=>{if(!sessions.has(page))sessions.set(page,await context.newCDPSession(page));return sessions.get(page);};
     return {engine,version:browser.version(),
-      install:()=>cdp.send('Extensions.loadUnpacked',{path:root}),
+      install:async()=>{const result=await cdp.send('Extensions.loadUnpacked',{path:extensionRoot});extensionId=result.id;return result;},
+      toolbar:async page=>{
+        const targets=await cdp.send('Target.getTargets',{filter:[{type:'tab',exclude:false}]});
+        const tab=targets.targetInfos.find(info=>info.url===page.url());
+        if(!tab)throw Error('Chromium test tab target missing');
+        return cdp.send('Extensions.triggerAction',{id:extensionId,targetId:tab.targetId});
+      },
       open:async url=>{const page=await context.newPage();await page.goto(url,{waitUntil:options.allowWeb?'domcontentloaded':'load'});return page;},
       navigate:(page,url)=>page.goto(url,{waitUntil:options.allowWeb?'domcontentloaded':'load'}),
       frames:async page=>page.frames().map(target=>{let domain='';try{domain=new URL(target.url()).hostname;}catch(_){}return {target,domain};}),
       hover:(page,selector)=>page.locator(selector).hover({timeout:5000}),
       pointerClick:(page,selector)=>page.locator(selector).click({timeout:5000}),
-      reload:page=>page.reload(),
+      type:(page,text)=>page.keyboard.type(text,{delay:20}),
+      reload:page=>page.reload(), activate:page=>page.bringToFront(),
       evaluate:(page,fn,...args)=>page.evaluate(({code,args})=>(0,eval)(`(${code})(...${JSON.stringify(args)})`),{code:String(fn),args}),
+      profileStart:async page=>{const client=await session(page);await client.send('Profiler.enable');await client.send('Profiler.setSamplingInterval',{interval:1000});await client.send('Profiler.start');},
+      profileStop:async page=>{
+        const client=await session(page),{profile}=await client.send('Profiler.stop');await client.send('Profiler.disable');
+        const nodes=new Map(profile.nodes.map(node=>[node.id,node])),own=new Map();let totalMicroseconds=0,ownMicroseconds=0;
+        for(let i=0;i<(profile.samples||[]).length;i++){
+          const time=profile.timeDeltas?.[i]||0,node=nodes.get(profile.samples[i]);totalMicroseconds+=time;
+          if(node?.callFrame.url!==`chrome-extension://${extensionId}/injected.js`)continue;
+          ownMicroseconds+=time;const key=(node.callFrame.functionName||'(anonymous)')+':'+(node.callFrame.lineNumber+1);
+          own.set(key,(own.get(key)||0)+time);
+        }
+        return {totalMicroseconds,ownMicroseconds,ownFunctions:[...own].sort((a,b)=>b[1]-a[1]).slice(0,20).map(([location,microseconds])=>({location,microseconds}))};
+      },
       gc:async page=>{await(await session(page)).send('HeapProfiler.collectGarbage');await delay(250);await(await session(page)).send('HeapProfiler.collectGarbage');await delay(100);return 'CDP HeapProfiler.collectGarbage twice, with finalizer turn';},
       memory:async page=>({process:processMemory(pid),heap:await(await session(page)).send('Runtime.getHeapUsage'),dom:await(await session(page)).send('Memory.getDOMCounters')}),
       memoryCategories:async()=>{
@@ -50,7 +73,7 @@ async function createDriver(engine,executablePath,packages,options={}){
   // Mozilla's documented switch is process-local; only this isolated test gets it.
   const size=options.viewport?['--width',String(options.viewport.width),'--height',String(options.viewport.height)]:[];
   const child=spawn(executablePath,[...(!options.visible?['--headless']:[]),'--no-remote','--new-instance','--profile',profile,'--remote-debugging-port','0',...size,'about:blank'],
-    {windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,...(options.memoryControls?{MOZ_REMOTE_ALLOW_SYSTEM_ACCESS:'1'}:{})}});
+    {windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,...(options.memoryControls||options.toolbarControls?{MOZ_REMOTE_ALLOW_SYSTEM_ACCESS:'1'}:{})}});
   const requests=new Map();let socket,id=0;
   const send=(method,params={})=>new Promise((resolve,reject)=>{
     const request=++id,timer=setTimeout(()=>{requests.delete(request);reject(Error('BiDi timeout: '+method));},20000);
@@ -73,7 +96,7 @@ async function createDriver(engine,executablePath,packages,options={}){
       }
     });
     const session=await send('session.new',{capabilities:{alwaysMatch:{acceptInsecureCerts:false}}});
-    await send('session.subscribe',{events:['network.beforeRequestSent']});await send('network.addIntercept',{phases:['beforeRequestSent']});
+    if(!options.allowWeb){await send('session.subscribe',{events:['network.beforeRequestSent']});await send('network.addIntercept',{phases:['beforeRequestSent']});}
     const navigate=(page,url)=>send('browsingContext.navigate',{context:page,url,wait:options.allowWeb?'interactive':'complete'});
     const open=async url=>{const page=(await send('browsingContext.create',{type:'tab'})).context;await navigate(page,url);return page;};
     const evaluate=async(page,fn,...args)=>{
@@ -83,7 +106,35 @@ async function createDriver(engine,executablePath,packages,options={}){
     };
     let memoryPage;
     return {engine,version:session.capabilities.browserVersion,
-      install:()=>send('webExtension.install',{extensionData:{type:'path',path:root}}),open,navigate,evaluate,
+      install:()=>send('webExtension.install',{extensionData:{type:'path',path:extensionRoot}}),open,navigate,evaluate,
+      activate:page=>send('browsingContext.activate',{context:page}),
+      toolbar:async page=>{
+        if(!options.toolbarControls)throw Error('Toolbar controls require the isolated-profile opt-in');
+        await send('browsingContext.activate',{context:page});
+        const windows=(await send('browsingContext.getTree',{'moz:scope':'chrome'})).contexts;
+        const chromeWindow=windows.find(item=>item.url.startsWith('chrome://browser/'));
+        if(!chromeWindow)throw Error('Firefox test chrome context missing');
+        const clicked=await evaluate(chromeWindow.context,()=>{
+          const id='nok-video-controller_nokrep_local-browser-action';
+          const widget=document.getElementById(id);
+          if(widget){
+            const button=widget.querySelector('.unified-extensions-item-action-button')||widget;
+            button.click();return true;
+          }
+          document.getElementById('unified-extensions-button')?.click();return false;
+        });
+        if(!clicked){
+          for(let i=0;i<30;i++){
+            if(await evaluate(chromeWindow.context,()=>{
+              const item=document.querySelector('[data-extensionid="nok-video-controller@nokrep.local"]');
+              const button=item?.querySelector('.unified-extensions-item-action-button');
+              if(!button)return false;button.click();return true;
+            }))return;
+            await delay(100);
+          }
+          throw Error('Firefox test toolbar widget missing');
+        }
+      },
       frames:async page=>{
         const tree=(await send('browsingContext.getTree',{root:page})).contexts[0],frames=[];
         const visit=node=>{let domain='';try{domain=new URL(node.url).hostname;}catch(_){}
@@ -111,6 +162,8 @@ async function createDriver(engine,executablePath,packages,options={}){
           actions:[{type:'pointerMove',origin:'viewport',duration:100,...point},{type:'pointerDown',button:0},{type:'pointerUp',button:0}]}]});
       },
       reload:async page=>{const url=(await send('browsingContext.getTree',{root:page})).contexts[0].url;await send('browsingContext.navigate',{context:page,url,wait:'complete'});},
+      type:(page,text)=>send('input.performActions',{context:page,actions:[{type:'key',id:'nok-report-typing',actions:[...text].flatMap(value=>[
+        {type:'keyDown',value},{type:'keyUp',value},{type:'pause',duration:20}])}]}),
       gc:async page=>{
         memoryPage ||= await open('about:memory');
         const found=await evaluate(memoryPage,()=>{
