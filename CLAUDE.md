@@ -8,6 +8,7 @@
 - Kısa başlangıç özeti ver: mevcut sürüm/dal, tamamlanan son iş, açık hedef, korunacak sınırlar ve ilk güvenli adım. Aynı dosyayı iki ajan eşzamanlı düzenlemeden sahipliği belirle.
 - Her sürüm artışında kullanıcıya sürüm/değişiklik/kanıt/açık işler bildir. Bitişte devir ve iş kaydını güncelle; geçmiş kanıtları silme. İlgili testleri çalıştırmadan başarı iddiası yapma.
 - **Yetki (kullanıcı, 4 Kasım 2026):** ajan kapsamı belli işi kendi dalına commit'ler, o dalı push eder ve PR açar; bunlar için ayrıca onay istemez. **Merge yalnız kullanıcıdadır.** Tag, ZIP/release ve mağaza/canlı yayın ayrıca istenmedikçe yapılmaz; verilmiş aynı kapsamlı yetkiyi gereksiz tekrar onaylatma.
+- **Sırlar:** SSH anahtarı ve diğer üretim sırları GitHub'a hiç girmez. Ajan gerekmedikçe bunlara erişmez. Gerekirse ve iş kullanıcının kendi yürütebileceğini aşıyorsa nedenini açıklayıp o işlem için izin ister; karar kullanıcınındır.
 - **Dal düzeni:** her ajan kendi dalında çalışır: Codex `codex/…`, Claude `claude/…`. Kullanıcı ajan değiştirirken dal ve temiz durum doğrulanır; ilerleme PR/merge ile paylaşılır. Karşı ajanın dalına doğrudan commit atılmaz. Merge kullanıcı kararıdır.
 - **Sürüm düzeni:** `1.0.0` ilk stabil çıkış; `0.x.0` milestone; `0.0.x` küçük geliştirme; `0.0.0.x` çok küçük değişiklik ve dördüncü bölüm **en fazla 9**. `0.7.7.9` sonrası küçük adım `0.7.8`'dir, `0.7.7.10` değil. Ayrıntı: PROJECT_HANDOFF.md §5.
 
