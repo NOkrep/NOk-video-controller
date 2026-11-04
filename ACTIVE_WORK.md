@@ -1,5 +1,20 @@
 # Etkin çalışma kapsamı
 
+## D-02 yerel kapsam tamam, v0.7.9 — 4 Kasım 2026
+
+Yeni `tests/dialog-keyboard-browser.cjs` kurulu eklentide gerçek klavye olaylarıyla çalışır. Düzeltmeden önce iki motorda da rapor, kısayol, adaptör ve DRM pencerelerinde başlangıç odağı, Tab çevrimi, Escape ve odağı geri verme yoktu. Pencere açıkken `m` arkadaki ses modunu değiştiriyordu, çünkü kısayol dinleyicisi yakalama aşamasında çalışır. Adaptör seçenekleri ve DRM rozeti klavyeyle kullanılamıyordu.
+
+- Dört pencere ortak `activateUiDialog` davranışına geçti: `role="dialog"`, `aria-modal`, başlıkla adlandırma, içeride başlayan odak, Tab çevrimi, Escape, odağın açan düğmeye dönmesi. Pencere içinde eklenti kısayolları ve site tuşları çalışmaz.
+- Yazılmış rapor açıklaması varsa Escape pencereyi kapatmaz.
+- Adaptör seçenekleri ve DRM rozeti gerçek düğme oldu. Görsel kontrol yapıldı. Klavye eylemi olduğu için animasyon eklenmedi.
+- **I-08 düzeltmesi:** Test Firefox'ta v0.7.8'deki bir yarışı yakaladı: iframe tam ekrandan çıkışta yer geçici görünüm boyutuna göre hesaplanıyor, panel 8 turun 2'sinde 4 piksel kayıyordu. Geçişten hemen sonraki boyut değişiminde yer yeniden uygulanır; düzeltmeden sonra 16 turda kayma yok.
+
+**Kanıt:** 217/217 Node testi ve kaynak/sürüm/izin denetimi. Son kaynakla (`injected.js` SHA256 `dc825596…`) Firefox 159 ve Edge 152'de `dialog-keyboard`, iki kez `hud-continuity`, `hud-state`, `pip`, `startup`, `report` ve dar pencereli `ui-smoke` geçti. Yeni dialog testi CI matrisine eklendi; uzak sonucu bu kayıt yazılırken görülmedi.
+
+**Araçlar:** `D:/NOk-Tools` README, katalog, güvenlik kayıtları ve yapı okundu. `Test-NOkTools.ps1` 164 dosyada PASS, 10 Claude bağlantısı doğru. Profilden `emil-design-eng`, `systematic-debugging` ve `verification-before-completion` `check` onayıyla kullanıldı. Yeni araç kurulmadı.
+
+**Sınırlar:** Sentetik yerel kabuldür. Gerçek ekran okuyucu, açık `select` listesinde Escape ve tarayıcı tam ekranında Escape davranışı sınanmadı. Tarayıcı Escape ile tam ekrandan çıkabilir. Bu turda gerçek DRM yok; rozet testte zorla gösterildi.
+
 ## D-01 dar hedef tamam — 4 Kasım 2026
 
 `tests/memory-soak.cjs`, eklentisiz / pasif / aktif koşulları iki motorda uzun oynatma ve 90 video değişimiyle karşılaştırdı. Eklentiye özgü büyüyen sızıntı bulunmadı, bu yüzden üretim kodu ve sürüm değişmedi (v0.7.8).
@@ -121,7 +136,7 @@ Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.8 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.9 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

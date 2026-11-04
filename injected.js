@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.8 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.9 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,11 +17,12 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.8';
+  const EXTENSION_VERSION = '0.7.9';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.9', notes: 'Rapor, kısayol, adaptör ve DRM pencereleri gerçek dialog oldu: odak içeride başlar, Tab dışarı çıkmaz, Escape kapatır, odak açan düğmeye döner; yazılmış rapor açıklaması Escape ile kaybolmaz. Pencere açıkken eklenti kısayolları ve site tuşları tetiklenmez. Adaptör seçenekleri ve DRM rozeti klavyeyle kullanılabilen gerçek düğmelerdir. Firefox tam ekran çıkışında panel yerini kaydıran görünüm yarışı giderildi. Yerel iki motorlu klavye kabulü; ekran okuyucu ve gerçek site kabulü açık.' },
     { version: 'v0.7.8', notes: 'Açık panel, üst sayfadaki video kaybolup oynatıcı iframe içinde gelince kapatıp açmaya gerek kalmadan videoyu yeniden bulur. Taşınan panelin yeri video değişiminde korunur ve iframe oynatıcıda tam ekrana giriş/çıkışta oranla aktarılır. Video yok uyarısı paneli ekran dışına taşırmaz. Aktarılan yalnız 0-1 arası panel oranıdır; izin, depolama ve rapor alanı değişmedi. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.7.9', notes: 'Teşhis raporunun tam ekran arka plan bulanıklığı kaldırıldı; karartma ve rapor işlevleri korunur. Oynayan videoda ölçülen GPU render yükünü azaltır. JSON ve yorum davranışı, gizlilik ve izinler değişmedi. İki motorlu ölçüm ve kabul sınırları REPORT_PERFORMANCE.md içinde.' },
     { version: 'v0.7.7.8', notes: 'Oynayan videoda ardışık filtre girdileri video karesine hizalanır; kare gelmezse süre sınırlı geri dönüş, durmuş/eski API videolarda rAF yolu korunur. Kaynak/oturum değişimi eski çizimi iptal eder; kabul edilmiş son değer kapanışta korunur. Filtre sırası/renkleri değişmez. Gerçek Firefox/Chromium CPU/GPU/kare ölçümleri ve kanıt sınırları FILTER_PERFORMANCE.md içinde; bütün sitelerde kasmasızlık garantisi değildir.' },
@@ -857,6 +858,7 @@
   const frameProtocol = globalThis.NOkFrameProtocol || null;
   let remotePresentation = null, remotePresentationSession = null;
   let hudCollapsed = false, hudPlacement = null; // Placement stays null until the user moves the panel.
+  let hudPlacementResyncUntil = 0; // A fullscreen change can report its final viewport just after the handover.
   let localVideoSeen = false, localSearchAfterLoss = false, topBeforeNoVideoAlert = null;
   // The alert makes the panel taller. A low panel moves up to stay on screen and returns once the alert clears.
   function setNoVideoAlertVisible(show) {
@@ -990,6 +992,7 @@
       const target = getActiveContainer(); if (popup.parentElement !== target) target.appendChild(popup);
       popup.classList.add('pvc-in-fullscreen'); popup.style.display = 'block';
       syncLocalMediaHud();
+      hudPlacementResyncUntil = Date.now() + 1500;
       applyHudPlacement(popup); clampPopupToViewport(popup); resetIdleTimer(popup);
     } else if (popup) { popup.style.display = 'none'; popup.classList.remove('pvc-in-fullscreen'); }
     publishRemoteSourceState();
@@ -1122,7 +1125,8 @@
     renderRemoteHud();
     if (resumePresentation) document.getElementById('pvc-controller-popup')?.__nokActivity?.(true);
     if (leftFullscreen && state.hudPlacement) {
-      hudPlacement = state.hudPlacement; applyHudPlacement(document.getElementById('pvc-controller-popup'));
+      hudPlacement = state.hudPlacement; hudPlacementResyncUntil = Date.now() + 1500;
+      applyHudPlacement(document.getElementById('pvc-controller-popup'));
     }
     if (first) {
       const popup = document.getElementById('pvc-controller-popup'); if (!wasOpen) resetPopupToDefaultPosition(popup); clampPopupToViewport(popup); resetIdleTimer(popup);
@@ -4365,6 +4369,8 @@
   window.addEventListener('keydown', (e) => {
     const activeEl = document.activeElement || (document.activeElement && document.activeElement.shadowRoot && document.activeElement.shadowRoot.activeElement);
     if (isEditableTarget(e.target) || isEditableTarget(activeEl)) return;
+    // This capture listener runs before an open FilmDeck dialog can keep its keys to itself.
+    if (e.target?.closest?.(UI_DIALOG_SELECTOR) || activeEl?.closest?.(UI_DIALOG_SELECTOR)) return;
 
     // Ctrl + Shift + S -> HUD Gizle / Göster (Kısayollar kapalı olsa dahi çalışır)
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyS') {
@@ -4785,6 +4791,45 @@
     showErrorModal(buildDiagnosticPayload(errorCode));
   }
 
+  // Shared dialog behaviour: named by its title, focus starts inside, Tab stays inside,
+  // Escape closes, and focus returns to the control that opened it.
+  const UI_DIALOG_SELECTOR = '[role="dialog"][id^="pvc-"]';
+  const UI_DIALOG_FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function closeUiDialog(modal) {
+    if (modal.__nokClose) modal.__nokClose(); else modal.remove();
+  }
+  function activateUiDialog(modal, { initial = null, keepOnEscape = () => false } = {}) {
+    const opener = document.activeElement;
+    const title = modal.querySelector('.pvc-modal-header > span');
+    if (title) { title.id = `${modal.id}-title`; modal.setAttribute('aria-labelledby', title.id); }
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    // Clicking plain text focuses the dialog itself, so the next Tab cannot leave it.
+    modal.tabIndex = -1;
+    const focusable = () => [...modal.querySelectorAll(UI_DIALOG_FOCUSABLE)].filter(item => item.getClientRects().length > 0);
+    modal.__nokClose = () => {
+      modal.remove();
+      if (opener?.isConnected && opener !== document.body) { try { opener.focus({ preventScroll: true }); } catch (_) {} }
+    };
+    modal.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        if (!keepOnEscape()) { e.preventDefault(); closeUiDialog(modal); }
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = focusable();
+      if (!items.length) { e.preventDefault(); modal.focus(); return; }
+      const at = items.indexOf(document.activeElement);
+      if (e.shiftKey ? at <= 0 : at === -1 || at === items.length - 1) {
+        e.preventDefault();
+        items[e.shiftKey ? items.length - 1 : 0].focus();
+      }
+    });
+    modal.addEventListener('keyup', e => e.stopPropagation());
+    (modal.querySelector(initial || UI_DIALOG_FOCUSABLE) || modal).focus();
+  }
+
   function showErrorModal(payload) {
     const existing = document.getElementById('pvc-error-modal');
     if (existing) existing.remove();
@@ -4868,7 +4913,7 @@
     ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keyup'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         e.stopPropagation();
-        if (e.target === modal) modal.remove();
+        if (e.target === modal && !e.type.startsWith('key')) closeUiDialog(modal);
       });
     });
 
@@ -4913,7 +4958,7 @@
     ghLink.addEventListener('click', prepareShare);
     refreshLinks();
 
-    modal.querySelector('#pvc-close-modal-btn').onclick = (e) => { e.stopPropagation(); modal.remove(); };
+    modal.querySelector('#pvc-close-modal-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
     modal.querySelector('#pvc-copy-payload-btn').onclick = async (e) => {
       e.stopPropagation();
       try {
@@ -4923,6 +4968,8 @@
         showToast('Kopyalanamadı. Önizlemedeki JSON’u seçip elle kopyalayın.');
       }
     };
+    // Escape must not discard a comment the user has already typed.
+    activateUiDialog(modal, { keepOnEscape: () => feedbackInput.value.length > 0 });
   }
 
   function showPermissionsGuideModal() {
@@ -4935,7 +4982,7 @@
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
           <span>🔐 İzinler & Klavye Kısayolları Rehberi (v${EXTENSION_VERSION})</span>
-          <button id="pvc-close-perms-btn">✕</button>
+          <button id="pvc-close-perms-btn" aria-label="Kapat">✕</button>
         </div>
         <div class="pvc-modal-body">
           <div class="pvc-perm-card">
@@ -4967,12 +5014,13 @@
     decorateUiComponents(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
-        if (e.target === modal) modal.remove();
+        if (e.target === modal) closeUiDialog(modal);
         else e.stopPropagation();
       });
     });
-    document.getElementById('pvc-close-perms-btn').onclick = (e) => { e.stopPropagation(); modal.remove(); };
-    document.getElementById('pvc-dismiss-perms-btn').onclick = (e) => { e.stopPropagation(); modal.remove(); };
+    document.getElementById('pvc-close-perms-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
+    document.getElementById('pvc-dismiss-perms-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
+    activateUiDialog(modal, { initial: '#pvc-dismiss-perms-btn' });
   }
 
   function showAdapterPickerModal() {
@@ -4994,13 +5042,13 @@
     ].map(opt => {
       const isSelected = (!userForcedAdapterName && opt.name === '') || (userForcedAdapterName === opt.name);
       return `
-        <div class="pvc-adapter-option ${isSelected ? 'pvc-adapter-selected' : ''}" data-adapter="${opt.name}" style="padding: 10px 12px; background: ${isSelected ? 'color-mix(in srgb, var(--pvc-accent) 15%, transparent)' : 'rgba(255, 255, 255, 0.03)'}; border: 1px solid ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+        <button type="button" class="pvc-adapter-option ${isSelected ? 'pvc-adapter-selected' : ''}" data-adapter="${opt.name}" aria-pressed="${isSelected}" style="display: block; width: 100%; box-sizing: border-box; text-align: left; font: inherit; color: inherit; padding: 10px 12px; background: ${isSelected ? 'color-mix(in srgb, var(--pvc-accent) 15%, transparent)' : 'rgba(255, 255, 255, 0.03)'}; border: 1px solid ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
+          <span style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
             <span style="font-weight: 700; font-size: 13px; color: ${isSelected ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-text, #edf2f3)'};">${opt.label}</span>
             <span class="pvc-val-badge" style="font-size: 10px;">${opt.tier}</span>
-          </div>
-          <div style="font-size: 11px; color: var(--pvc-muted, #a2b6c0);">${opt.desc}</div>
-        </div>
+          </span>
+          <span style="display: block; font-size: 11px; color: var(--pvc-muted, #a2b6c0);">${opt.desc}</span>
+        </button>
       `;
     }).join('');
 
@@ -5008,7 +5056,7 @@
       <div class="pvc-modal-card" style="max-height: 85vh; display: flex; flex-direction: column;">
         <div class="pvc-modal-header">
           <span>🧩 Oynatıcı Adaptörü Seçimi (Basamaklı Hat)</span>
-          <button id="pvc-close-adapter-btn">✕</button>
+          <button id="pvc-close-adapter-btn" aria-label="Kapat">✕</button>
         </div>
         <div class="pvc-modal-body" style="overflow-y: auto; flex: 1;">
           ${optionsHtml}
@@ -5026,7 +5074,7 @@
     decorateUiComponents(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
-        if (e.target === modal) modal.remove();
+        if (e.target === modal) closeUiDialog(modal);
         else e.stopPropagation();
       });
     });
@@ -5034,18 +5082,19 @@
     modal.querySelectorAll('.pvc-adapter-option').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (remotePresentation) { remoteControl('adapter', el.getAttribute('data-adapter') || 'none'); modal.remove(); return; }
+        if (remotePresentation) { remoteControl('adapter', el.getAttribute('data-adapter') || 'none'); closeUiDialog(modal); return; }
         userForcedAdapterName = el.getAttribute('data-adapter');
         const newAdapter = getActiveAdapter(video, player);
         renderDynamicQualityButtons();
         updateRealtimeResolutionBadge();
         showToast(userForcedAdapterName ? `Adaptör: ${newAdapter.name}` : 'Adaptör: Otomatik Mod');
-        modal.remove();
+        closeUiDialog(modal);
       });
     });
 
-    document.getElementById('pvc-close-adapter-btn').onclick = (e) => { e.stopPropagation(); modal.remove(); };
-    document.getElementById('pvc-dismiss-adapter-btn').onclick = (e) => { e.stopPropagation(); modal.remove(); };
+    document.getElementById('pvc-close-adapter-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
+    document.getElementById('pvc-dismiss-adapter-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
+    activateUiDialog(modal, { initial: '.pvc-adapter-selected' });
   }
 
   function showDrmInfoModal() {
@@ -5061,7 +5110,7 @@
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
           <span style="color: var(--pvc-warning, #fbbf24);">🛡️ DRM / EME Korumalı Akış Bilgilendirmesi</span>
-          <button id="pvc-close-drm-btn">✕</button>
+          <button id="pvc-close-drm-btn" aria-label="Kapat">✕</button>
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
@@ -5081,13 +5130,14 @@
     decorateUiComponents(modal);
     ['click', 'mousedown', 'pointerdown'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
-        if (e.target === modal) modal.remove();
+        if (e.target === modal) closeUiDialog(modal);
         else e.stopPropagation();
       });
     });
     modal.querySelector('#pvc-drm-key-system').textContent = drm.keySystem;
-    document.getElementById('pvc-close-drm-btn').onclick = (e) => { e.stopPropagation(); modal.remove(); };
-    document.getElementById('pvc-dismiss-drm-btn').onclick = (e) => { e.stopPropagation(); modal.remove(); };
+    document.getElementById('pvc-close-drm-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
+    document.getElementById('pvc-dismiss-drm-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
+    activateUiDialog(modal, { initial: '#pvc-dismiss-drm-btn' });
   }
 
   function resetIdleTimer(popup) {
@@ -5161,7 +5211,9 @@
 
   window.addEventListener('resize', () => {
     const popup = document.getElementById('pvc-controller-popup');
-    if (popup) clampPopupToViewport(popup);
+    if (!popup) return;
+    if (hudPlacement && Date.now() < hudPlacementResyncUntil) applyHudPlacement(popup);
+    else clampPopupToViewport(popup);
   });
 
   // The normal and fullscreen panels of an embedded player are separate elements in separate
@@ -5344,9 +5396,9 @@
       <label class="pvc-video-target-row"><span>Video hedefi</span><select id="pvc-video-target" aria-label="Video hedefi"><option value="auto">Otomatik seçim</option></select></label>
 
       <!-- DRM Koruma Rozeti -->
-      <div id="pvc-drm-status-badge" style="display: none; padding: 5px 10px; background: color-mix(in srgb, var(--pvc-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-warning) 40%, transparent); border-radius: 6px; margin-bottom: 6px; color: var(--pvc-warning, #fbbf24); font-size: 10.5px; font-weight: 600; cursor: pointer;">
+      <button type="button" id="pvc-drm-status-badge" style="display: none; width: 100%; box-sizing: border-box; text-align: left; font-family: inherit; padding: 5px 10px; background: color-mix(in srgb, var(--pvc-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-warning) 40%, transparent); border-radius: 6px; margin-bottom: 6px; color: var(--pvc-warning, #fbbf24); font-size: 10.5px; font-weight: 600; cursor: pointer;">
         <span>${uiLabel('shield', 'DRM Korumalı Akış (Güvenli Mod)')}</span>
-      </div>
+      </button>
 
       <!-- Video Bulunamadı Uyarısı -->
       <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: color-mix(in srgb, var(--pvc-danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-danger) 35%, transparent); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: var(--pvc-danger, #fca5a5);">

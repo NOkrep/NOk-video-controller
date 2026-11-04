@@ -66,6 +66,10 @@ Yerel üretilmiş medya hazırsa `node tests/report-performance.cjs --engine=bot
 
 v0.7.7.9 kanıtı ve sınırları REPORT_PERFORMANCE.md içindedir. `npm run check` 214 testi geçti; yerel rapor tarayıcı regresyonları iki motorda geçti. Toplam süreç RAM'i uygulamanın tek başına tüketimi veya sıfır video karesi kaybı evrensel akıcılık garantisi değildir.
 
+## Dialog klavye davranışı (D-02)
+
+`node tests/dialog-keyboard-browser.cjs --engine=firefox|chromium [--report=true] [--screenshots=true]` kurulu eklentide gerçek klavye olaylarıyla çalışır ve iki motorlu CI matrisindedir. Rapor, kısayol, adaptör ve DRM pencerelerinde klavyeyle açmayı, ARIA adlandırmayı, başlangıç odağını, Tab çevrimini, kısayol ve site tuşu sızıntısını, Escape'i ve odağın geri dönmesini; adaptörde klavyeyle seçimi ve iframe sunumunu sınar. Gerçek DRM kullanmaz, ekran okuyucu kabulü değildir. `--screenshots=true` yalnız Chromium'da Git dışı `tests/artifacts/dialog-keyboard/` altına görüntü yazar.
+
 ## Uzun bellek ölçümü (D-01)
 
 `node tests/memory-soak.cjs --engine=firefox|chromium --condition=native|passive|active [--label=run] [--minutes=4] [--replacements=60] [--no-forced] [--quick]` aynı yerel dosyayla uzun oynatma ve video değişimi ölçer. `--no-forced` değişimler sırasında toplamayı tarayıcıya bırakır. Eksik dosyayı `prepare-browser-fixtures.cjs --audio-fixture` üretir. Sonuçlar Git dışı `tests/artifacts/memory-soak-<label>/` altındadır; sentetik tek sayfa ölçümüdür, CI'a eklenmedi. Kapsam ve sınırlar MEMORY_MEASUREMENTS.md içindedir.
