@@ -1,5 +1,18 @@
 # Etkin çalışma kapsamı
 
+## I-08 yerel kapsam tamam, v0.7.8 — 4 Kasım 2026
+
+Yeni `tests/hud-continuity-browser.cjs`, kurulu eklentiyle Firefox 159 ve Edge 152'de panel konumunu, her çerçevedeki görünür panel sayısını ve komut ulaşımını ölçtü. Düzeltmeden önce dört hata yeniden üretildi; test önce başarısız, düzeltmeden sonra geçti.
+
+- **#97:** Açık paneldeki üst sayfa videosu kaybolup oynatıcı iframe'de gelince panel kapatılıp açılana kadar "video yok" kalıyordu. Çocuk çerçeve araması yalnız açılışta başlıyordu. Panel artık video kaybında aramayı yeniliyor, yerel video dönerse aramayı kapatıyor.
+- **#110:** İframe oynatıcıda normal ve tam ekran paneli ayrı öğelerdir; yer paylaşılmadığı için tam ekranda varsayılan köşeye atlıyordu. Yer, boş alanın 0–1 oranıyla iki yönde aktarılır. Sayfa koordinatı, adres veya medya konumu taşınmaz.
+- **Kaynak değişimi:** Açık ve taşınmış panel her yeni oturumda köşeye dönüyordu; artık yerini korur. Kapatıp açınca varsayılan köşeye dönüş belgelenmiş davranıştır, korunur.
+- **Uyarı:** "Video yok" uyarısı alttaki paneli ekran dışına taşırıyordu. Panel uyarı süresince yukarı çıkar, uyarı kalkınca kullanıcının yerine döner.
+
+**Kanıt:** 217/217 Node testi ve kaynak/sürüm/izin denetimi. İki motorda yeni süreklilik testi ile `hud-state`, `pip`, `startup` ve dar pencereli `ui-smoke` geçti. Yeni test CI matrisine eklendi; uzak sonucu bu kayıt yazılırken görülmedi.
+
+**Sınırlar:** Sentetik yerel kabuldür; gerçek site kabulü açık. Taranan akışlarda çift görünür panel (#80) ve kendiliğinden kapanma (#94) üretilmedi; gerçek sitelerde olmadığı kanıtlanmadı. Video kaybolmayıp `readyState 0` ile kalan geçişte iframe araması yenilenmez: bir reklam çerçevesinin kontrolü alma riski nedeniyle bilinçli bırakıldı. Commit ve push yapıldı; `main` birleşmesi kullanıcıdadır.
+
 ## I-07 askıda — 4 Kasım 2026
 
 Kullanıcı I-07'yi askıya aldı. Üretim kodu ve sürüm değişmedi. Kök neden bulunmadı; sorun çözüldü denemez.
@@ -100,7 +113,7 @@ Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.7.9 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.8 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

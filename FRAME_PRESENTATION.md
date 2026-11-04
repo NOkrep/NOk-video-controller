@@ -15,6 +15,7 @@ Kaynak veya üst iframe tam ekrana alınırsa tek görünür HUD kaynak çerçev
 ## Veri sınırı
 
 - Otomatik durum yalnızca sabit adaptör/durum kodları, teknik medya değerleri, boyutlar, sayısal kalite seçenekleri, sıra/yükseklik tabanlı video adayları ve yerel kontrol değerlerinden oluşur. URL, başlık, kaynak adresi, izleme konumu, dosya adı veya cue metni yoktur.
+- v0.7.8: Kullanıcı paneli taşıdıysa yeri, boş görünüm alanının 0–1 oranı olarak iki yönde aktarılır (`hudPlacement`, `hud-placement`). Sayfa koordinatı, adres veya izleme konumu değildir; sayfa yenilenince veya panel kapatılıp açılınca sıfırlanır.
 - En fazla 128 kalite ve 32 video adayı aktarılır. Bu sınırın üstü listelenmez; tüm kaynağın bulunduğu iddiası yapılmaz. Ham envanter kimlikleri/SDK nesneleri yalnızca kaynak çerçevenin RAM'inde kalır.
 - Kullanıcı dosyayı seçerse altyazı cue'ları açık `subtitle-load` komutuyla seçili kaynak dalına aktarılır; otomatik durumla geri taşınmaz ve rapora girmez. Dosya üstte 4MB, aktarımda 20.000 cue/2 milyon metin karakteri ile sınırlıdır. Metin DOM'a `textContent` ile çizilir.
 - Teşhis sadece kullanıcı isterse kaynaktan üstteki önizlemeye gelir. Tekrar allowlist süzgecinden geçer; açıklama ve silme tercihi daha sonra üst önizlemede kullanıcı tarafından eklenir. Ağla otomatik gönderim yoktur.

@@ -45,6 +45,15 @@ test('commands reconstruct only known fields and enforce owner, revision and con
   assert.equal(protocol.cleanCommand({...input,name:'hud-collapsed',value:true}).value,true);
 });
 
+test('panel placement travels only as bounded ratios', () => {
+  const input = { name: 'hud-placement', owner, revision: 3 };
+  assert.deepEqual(json(protocol.cleanCommand({ ...input, value: { x: .25, y: 1, url: 'SECRET' } })).value, { x: .25, y: 1 });
+  for (const value of [null, { x: 1.5, y: 0 }, { x: -.1, y: 0 }, { x: 0 }, { x: '0', y: 0 }, { x: NaN, y: 0 }]) assert.equal(protocol.cleanCommand({ ...input, value }), null);
+  assert.deepEqual(json(protocol.cleanState(state({ hudPlacement: { x: .5, y: .5, label: 'SECRET' } }))).hudPlacement, { x: .5, y: .5 });
+  assert.equal(protocol.cleanState(state({ hudPlacement: null })).hudPlacement, null);
+  assert.equal(protocol.cleanState(state({ hudPlacement: { x: 2, y: 0 } })), null);
+});
+
 test('subtitle transfer is explicit, bounded, sorted plain cue data with no filenames or source metadata', () => {
   const cue = { start: 1, end: 2, text: '<b>plain</b>', filename: 'PRIVATE_NAME' };
   const command = protocol.cleanCommand({ name: 'subtitle-load', owner, revision: 1, value: [cue] });

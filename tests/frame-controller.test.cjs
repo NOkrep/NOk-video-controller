@@ -59,7 +59,7 @@ test('a source replacement discovered during command validation rejects the old 
 
 test('owner replacement reasserts activity for an awake HUD without waking an idle HUD',()=>{
   for(const active of [true,false]){
-    const h=harness(),calls=[];const popup={__nokLastActivity:active,__nokActivity:value=>calls.push([value,h.run('remotePresentation.owner')])};
+    const h=harness(),calls=[];const popup={style:{},__nokLastActivity:active,__nokActivity:value=>calls.push([value,h.run('remotePresentation.owner')])};
     h.context.document.getElementById=id=>id==='pvc-controller-popup'?popup:null;
     h.run('remotePresentation=inputState;remotePresentationSession=session;acceptRemoteState({session,state:{...inputState,owner:"e".repeat(32)}})');
     assert.deepEqual(calls,active?[[true,'e'.repeat(32)]]:[]);
@@ -95,6 +95,34 @@ test('a newly delegated source inherits the already collapsed top HUD',()=>{
   const h=harness();h.run('hudCollapsed=true;acceptRemoteState({session,state:inputState})');
   assert.equal(h.posts.at(-1).payload.command.name,'hud-collapsed');
   assert.equal(h.posts.at(-1).payload.command.value,true);
+});
+test('panel placement follows a new source, and a visible panel is not sent back to the corner',async()=>{
+  const h=harness();let reset=0;h.context.resetPopupToDefaultPosition=()=>{reset++;};
+  const popup={style:{display:'block'}};h.context.document.getElementById=id=>id==='pvc-controller-popup'?popup:null;
+  h.run('hudPlacement={x:.25,y:.75};acceptRemoteState({session,state:inputState})');
+  assert.equal(reset,0,'an open panel keeps its place when a source takes over');
+  const command=h.posts.map(item=>item.payload?.command).find(item=>item?.name==='hud-placement');
+  assert.deepEqual(JSON.parse(JSON.stringify(command.value)),{x:.25,y:.75});
+  const next=harness();let nextReset=0;next.context.resetPopupToDefaultPosition=()=>{nextReset++;};
+  next.context.document.getElementById=id=>id==='pvc-controller-popup'?{style:{display:'none'}}:null;
+  next.run('acceptRemoteState({session,state:inputState})');
+  assert.equal(nextReset,1,'a hidden panel still opens at the default corner');
+  assert.equal(next.posts.some(item=>item.payload?.command?.name==='hud-placement'),false,'an untouched panel sends no placement');
+});
+
+test('a source stores placement without media, and leaving fullscreen brings the source placement back',async()=>{
+  const h=harness();h.run('remoteSourceSession=session;remoteSourceOwner=owner');h.context.findVideoAndPlayer=()=>({video:null,player:null});
+  h.context.command={name:'hud-placement',owner,revision:1,value:{x:.5,y:.25}};
+  await h.run('executeRemoteCommand({session,id:1,command})');
+  assert.equal(h.posts.at(-1).payload.reply.ok,true);
+  assert.deepEqual(JSON.parse(JSON.stringify(h.run('hudPlacement'))),{x:.5,y:.25});
+  const top=harness();let applied=0;top.context.applyHudPlacement=()=>{applied++;};
+  top.context.document.getElementById=id=>id==='pvc-controller-popup'?{style:{display:'block'}}:null;
+  top.run('acceptRemoteState({session,state:inputState})');
+  top.context.inputState={...top.context.inputState,fullscreen:true,hudPlacement:{x:.1,y:.2}};top.run('acceptRemoteState({session,state:inputState})');
+  assert.equal(applied,0,'no placement change while the source panel is shown');
+  top.context.inputState={...top.context.inputState,fullscreen:false};top.run('acceptRemoteState({session,state:inputState})');
+  assert.equal(applied,1);assert.deepEqual(JSON.parse(JSON.stringify(top.run('hudPlacement'))),{x:.1,y:.2});
 });
 test('source controller drops a previous session and malformed commands without a reply or action',async()=>{
   const h=harness(); h.run('remoteSourceSession=session; remoteSourceOwner=owner');
