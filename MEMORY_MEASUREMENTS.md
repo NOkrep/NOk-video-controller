@@ -137,7 +137,7 @@ Aynı videoda 15 dakikalık `active` oynatmada Firefox 581 MiB civarında düz k
 | Edge `native` | 90 | 0 | 357 → 508 | 482 |
 | Edge `active` | 0–2 | 8–14 | 452 → 586 | 545 |
 
-Firefox ölçüm süresince (yaklaşık 5 dakika) kaldırılmış videoları eklentisiz de toplamadı; bu eklentiye özgü değildir. Ancak boost/mono kullanılan her video askıda bir `AudioContext` tutar ve toplanana kadar 90 değişimde kontrollerin yaklaşık 100–130 MiB üstüne çıkar. Bellek zorlanmış toplamayla geri döner, bu yüzden kalıcı sızıntı değildir. Edge kendi toplamasıyla bağlamları topladı. Her videoya bir bağlam açılması başarısız olmadı: 91 videonun hepsi bağlandı, en çok bir bağlam çalıştı.
+Firefox ölçüm süresince (yaklaşık 5 dakika) kaldırılmış videoları eklentisiz de toplamadı; bu eklentiye özgü değildir. Ancak boost/mono kullanılan her video askıda bir `AudioContext` tutar ve toplanana kadar 90 değişimde kontrollerin yaklaşık 100–200 MiB üstüne çıkar (681 MiB'a karşı 90. değişimde 482 ve 582 MiB; kontroller inip çıktığı için aralık geniştir). Bellek zorlanmış toplamayla geri döner, bu yüzden kalıcı sızıntı değildir. Edge kendi toplamasıyla bağlamları topladı. Her videoya bir bağlam açılması başarısız olmadı: 91 videonun hepsi bağlandı, en çok bir bağlam çalıştı.
 
 **Düzeltme yapılmadı:** Bağlamı kaldırmada kapatmak, sonradan aynı öğeyi geri ekleyen sitelerde geri alınamaz biçimde sessiz video üretir (v0.7.2 kararı). 90 boost'lu video değişimi seyrek ve geri alınabilir bir maliyet olduğundan bu riske değmez.
 
