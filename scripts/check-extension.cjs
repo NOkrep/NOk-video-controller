@@ -62,7 +62,7 @@ function checkExtension(root, {tag, baseVersion, trackedFiles = []} = {}) {
     if (png.length < 24 || png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a' || png.readUInt32BE(16) !== size || png.readUInt32BE(20) !== size) throw Error(`Invalid ${size}px PNG icon.`);
   }
   for (const name of trackedFiles) {
-    if (/^(?:tests\/artifacts\/|tmp\/|dist\/|node_modules\/)|^(?:SITE_COMPATIBILITY|ACCEPTANCE_STATUS|PRIVATE_TEST_NOTES)\.md$|(?:^|\/)\.env(?:\.|$)|\.(?:pem|key)$/i.test(name)) throw Error(`Private or generated file is tracked: ${name}`);
+    if (/^(?:tests\/artifacts\/|tmp\/|dist\/|node_modules\/)|^(?:SITE_COMPATIBILITY|ACCEPTANCE_STATUS|PRIVATE_TEST_NOTES|LOCAL_AGENT_PROCEDURE)\.md$|(?:^|\/)\.env(?:\.|$)|\.(?:pem|key)$/i.test(name)) throw Error(`Private or generated file is tracked: ${name}`);
   }
   return {version, runtimeFiles:[...payload].sort()};
 }

@@ -1,5 +1,17 @@
 # Etkin çalışma kapsamı
 
+## Claude Code devir kabulü ve kullanıcı kararları — 4 Kasım 2026
+
+Claude Code handoff, yerel prosedür ve kılavuzu okudu; Git durumunu kendi doğruladı. `npm run check` ve `hud-state-browser.cjs` Firefox 159 / Edge 152'de geçti; `ACCEPTANCE.json` hash'leri güncel JS/CSS ile eşleşti; `d70940e` uzak CI'ı başarılı, `main` ruleset ile korumalı. Canlı site kabulü yapılmadı.
+
+Kullanıcı kararları: ajanlar ayrı dallarda çalışır ve PR/merge ile ilerler; sürüm düzeni `0.x.0` milestone / `0.0.x` küçük / `0.0.0.x` çok küçük (en fazla 9); issue sürümü bayatlık kanıtı değildir; alan adlı diagnostic issue'lar geliştirmede bilinçli olarak tutulur ve eskiyenleri kullanıcı siler; Git, CI/CD ve yayın için genel otomasyon istenir (D-12); commit ve PR ajana devredildi, merge kullanıcıda kaldı. Kullanıcı v0.7.7.9'u `main`'e birleştirdi (#111). Ayrıntı PROJECT_HANDOFF.md §2, §3, §5 ve §7.
+
+Bu işte üretim kodu ve sürüm değişmedi; yalnız belgeler ve özel dosya CI kontrolü güncellendi. Dal `claude/agent-handoff`, taban `main` (`9c28a3e`). Aktif hedef yok; I-07 öneri olarak kalır.
+
+## Codex / Claude Code ortak devir kaydı — 4 Kasım 2026
+
+Güncel giriş noktası PROJECT_HANDOFF.md: mimari sınırlar, son sürüm kanıtları, I-01..I-13 ve D-01..D-11 envanteri ve önerilen I-07 hedefi. Yerel/Git dışı LOCAL_AGENT_PROCEDURE.md ortak araç/beceri, güvenlik, Git/CI, release ve ajanlar arası devir prosedürünü içerir. AGENTS.md/CLAUDE.md okuma sırasını yönlendirir; mevcut merkez kuralları korunur. Devir başlangıcında kaynak v0.7.7.9, HEAD `d70940e`, çalışma ağacı temizdi; v0.7.7.8 de `06e4387` ile commitlidir. Eski “commit yapılmadı” kayıtları kendi tarihlerine aittir. Aktif hedef yok; I-07 öneridir. Bu devirde runtime/sürüm değiştirilmedi, eski testler yeniden çalıştırılmadı; sözleşme/bağlantı/envanter ve mevcut JS/CSS kanıt kimlikleri kontrol edildi. Claude'un okuma/kabul özeti ve canlı hook/uzak CI durumu bu dosya oluşturmayla doğrulanmış sayılmaz. Commit/push/ZIP/yayın yapılmadı.
+
 ## Tamamlanan dar hedef — I-02 rapor penceresi performansı, 4 Kasım 2026
 
 Firefox 159 ve Chromium tabanlı Edge 152'de oynayan sentetik 1080p30 video üzerinde rapor açılışı, teşhis toplama, JSON önizlemesi ve gerçek klavye olaylarıyla kısa/uzun yorum tepkisi ayrı ölçüldü. JSON hazırlama darboğazı saptanmadı. Raporun ekranı kaplayan backdrop bulanıklığı aynı oturumda açılıp kapatılınca tekrarlanan 3D motor yükü gösterdi. **v0.7.7.9**, yalnız rapor kökünde bu efekti kaldırır; mevcut karartma, canlı önizleme, yorum sınırı, gizlilik ve paylaşım işlevleri korunur. Yeni runtime timer, ağ isteği, izin, depolama veya teşhis alanı yoktur. Kaynak sürümü artışı kullanıcıya bildirildi.

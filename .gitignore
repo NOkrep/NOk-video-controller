@@ -7,6 +7,8 @@ node_modules/
 /SITE_COMPATIBILITY.md
 /ACCEPTANCE_STATUS.md
 /PRIVATE_TEST_NOTES.md
+# Local cross-agent operating procedure; do not publish operator context.
+/LOCAL_AGENT_PROCEDURE.md
 /icons/kullanıldı
 /icons/old
 /icons/eski ikonlar/
