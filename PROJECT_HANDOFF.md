@@ -131,9 +131,9 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 **Kullanıcının seçtiği öncelikler (4 Kasım):** Codex kendi araç sistemi notlarını kapattı ve yedi beceri kapsamının onayını yeniledi (`D:/NOk-Tools/AGENT_NOTES.md` N-001, N-004, N-006; geçerlilik 11 Kasım akşamına kadar). Claude şu işleri ele alır:
 
 1. **Tamam:** Katalogdaki üç eski durum etiketi (N-002).
-2. **Karar bekliyor:** `NOk-FilmDeck-Release` içindeki commit'lenmemiş lisans paketlemesi (N-008). Testler geçiyor; `codex/ww28-private-evidence` dalında olduğu için kim commit'leyeceği kullanıcıda.
-3. **Karar bekliyor:** Canlı test yolu. FilmDeck panele kurulamıyor (bu bölümün sonundaki sınama).
-4. I-12.
+2. **Tamam:** `NOk-FilmDeck-Release` lisans paketlemesini Codex commit'ledi (`b1d933c`, `codex/ww28-private-evidence`). O deponun PR ve merge'ü kullanıcıda.
+3. **Seçildi, başlamadı:** Canlı test için C yolu: önce panelde eklentisiz site gözlemi, sonra hesapsız temiz profilde gerçek FilmDeck (bu bölümün sonundaki sınama).
+4. I-12: inceleme yapıldı, kod değişmedi (ACTIVE_WORK.md).
 5. D-04.
 6. D-10.
 7. D-11.

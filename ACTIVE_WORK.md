@@ -1,5 +1,21 @@
 # Etkin çalışma kapsamı
 
+## Araç sisteminde tek Python, I-12 bulguları — 4 Kasım 2026
+
+Ürün kodu ve sürüm değişmedi (v0.7.9).
+
+- **Tek Python:** Claude hook'u, `tool-security.mjs` ve SkillSpector ortamı `D:/NOk-Tools/third-party/runtimes/python/3.12.14` kullanıyor. Yedi kapsam yeni tabandan aynı sonucu verdi, onaylar geçerli kaldı, hook denemeleri geçti.
+- **`ensure` koruması:** `ensure` ve `prepare` kurulu kapsamları reddediyor. Yeni test önce başarısız oldu, düzeltmeyle 31 guard testi geçti.
+- **`nok-release`:** Hedef proje yolu dosya başvurusu sanıldığı için tarama eksikti. İfade düzeltildi, tarama PASS.
+- **Açık:** Codex hook'unun Python'u (N-009) ve engelli motor becerisinin bağlantıları (N-010) kullanıcı kararında. Ayrıntı `D:/NOk-Tools/AGENT_NOTES.md`.
+
+**I-12 incelemesi (kod değişmedi, sürdürülecek):**
+
+- Oynatıcı iframe içindeyse başarısız ölçüm açıklamasız kalıyor: kaynak çerçevenin bildirimi bastırılıyor, yanıt nedeni taşımıyor.
+- Sonuç hangi yöntemle ölçüldüğünü düğmede göstermiyor; başarısız ölçümden sonra düğmenin rengi eski kalıyor.
+- Sessiz yenileme zamanlama bulamazsa eski sayı düğmede kalıyor. Kaynak zamanlama kaydı dolarsa son kayıt güncel gibi görünebilir.
+- Plan: nedeni protokol yanıtına sınırlı bir alan olarak eklemek, iki dilde açık mesajlar yazmak, sayının yaşını göstermek, "ölçülemedi" durumunu düğmede göstermek. Kurulu eklentiyle iki motorda sınanacak.
+
 ## Araç sistemi etiketleri, lisans paketlemesi ve panel sınaması — 4 Kasım 2026
 
 Ürün kodu ve sürüm değişmedi (v0.7.9).
