@@ -16,11 +16,11 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 
 - **Ürün:** FilmDeck by NOk. Önceki ad NOk Video Controller; ara ad CineDeck'ti. Teknik repo adı ve Firefox kimliği korunur.
 - **Çıkış noktası:** sitelerin farklı ve eksik video arayüzlerinden doğan kullanıcı bıkkınlığı. Bilgisayarda video/film/dizi izleyen kullanıcıya ortak kontroller sunmak. Basit kullanımda hız/ses/kalite; daha ayrıntılı işler ayrı sekmeler ve katlanabilir alanlarda.
-- **Kaynak sürümü:** `0.7.9`, `claude/workTogether` dalında (`main` birleşmesi kullanıcıda). `main` son kontrolde `0.7.8` idi (#114, `2a651bc`). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
+- **Kaynak sürümü:** `0.7.9`, `main`'de (#115, `fff5ccf`, 4 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
 - **Dallar (kullanıcı kararı, 4 Kasım 2026; önceki "mevcut dalda devam" notunun yerine geçer):** Her ajanın `main`'den açılmış tek bir uzun ömürlü dalı vardır: Codex `codex/…`, Claude `claude/…`. İş veya düzeltme başına yeni dal açılmaz; güncellik için `main` bu dala merge edilir. Aynı checkout kullanılır; kullanıcı ajan değiştirirken dal ve temiz durum doğrulanır. Bu yüzden devirden önce iş commit'lenmiş olmalıdır. Ajan kendi dalına commit atar ve push eder; **PR'ı ve merge'ü kullanıcı yapar**, ajan özeti ve PR bağlantısını bildirir. Karşı ajanın dalına doğrudan commit atılmaz; ikinci checkout/worktree istenmeden açılmaz.
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Güncel dallar: Codex `codex/filmdeck-cassette-icon`, Claude `claude/workTogether`. Codex dalının adı ilk işinden kalmıştır; içeriği o işle sınırlı değildir.
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
-- **Git durumu ayrımı:** v0.7.7.9 commit'i artık mevcut. Geçmiş çalışma notlarındaki “commit yapılmadı” o turun bitiş durumudur. 4 Kasım Claude kontrolü: `d70940e` için uzak CI'ın 5 işi başarılı; `main` ruleset ile korumalı (PR ve 4 zorunlu kontrol; `Dependency security` zorunlu değil). v0.7.8 `main`'dedir (#114); mağaza başvurusu veya dağıtım yok.
+- **Git durumu ayrımı:** v0.7.7.9 commit'i artık mevcut. Geçmiş çalışma notlarındaki “commit yapılmadı” o turun bitiş durumudur. 4 Kasım Claude kontrolü: `d70940e` için uzak CI'ın 5 işi başarılı; `main` ruleset ile korumalı (PR ve 4 zorunlu kontrol; `Dependency security` zorunlu değil). v0.7.9 `main`'dedir (#115); mağaza başvurusu veya dağıtım yok.
 - **Aktif hedef:** bu devir başlangıcında aktif hedef kaydı yok. I-01 ve I-02'nin aşağıda belirtilen dar hedefleri tamamlandı. I-07 kullanıcı kararıyla askıda. I-08 ve D-02'nin yerel kapsamı, D-01'in dar hedefi tamamlandı; gerçek site ve ekran okuyucu kabulleri açık. Sıradaki öneri I-03; henüz başlanmış/atanmış iş değildir.
 - **Lisans:** MIT; mevcut LICENSE telif satırı `Copyright (c) 2026 İhsan B. Arıtürk (NOkrep)`. LICENSE ve THIRD_PARTY_NOTICES.md dağıtımda korunur. Ekip içi gelir/ortaklık paylaşımı bu metinle belirlenmiş sayılmaz; diğer projelerin lisansları değiştirilmez.
 
@@ -78,7 +78,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 
 ## 5. Kullanıcı kararları
 
-- **Sürüm numarası:** `1.0.0` en stabil ilk çıkış sürümüdür. Öncesinde `0.x.0` milestone geçişi, `0.0.x` küçük geliştirme, `0.0.0.x` çok küçük değişikliktir. Dördüncü bölüm **en fazla 9** olur: `0.7.7.9` sonrası küçük adım `0.7.8`'dir, `0.7.7.10` değil. Üretim kodu değişmeyen belge/devir işinde sürüm artırılmaz.
+- **Sürüm numarası:** `1.0.0` en stabil ilk çıkış sürümüdür. Öncesinde `0.x.0` milestone geçişi, `0.0.x` küçük geliştirme, `0.0.0.x` çok küçük değişikliktir. Üçüncü ve dördüncü bölüm **en fazla 9** olur (üçüncü bölüm kararı: kullanıcı, 4 Kasım). `0.7.7.9` sonrası küçük adım `0.7.8`, `0.7.9` sonrası küçük adım `0.8.0`'dır; `0.7.7.10` veya `0.7.10` olmaz. `0.7.9` üstüne çok küçük değişiklik `0.7.9.1`, `0.7.9.9` sonrası `0.8.0` olur. Üretim kodu değişmeyen belge/devir işinde sürüm artırılmaz.
 - Varsayılan arayüz İngilizce, Türkçe seçilebilir; tercihler RAM'de. UI çevirisi kullanıcı yorumuna/altyazıya/JSON'a uygulanmaz.
 - Üç temel dikey sekme: Player, Subtitles, Settings. Video renkleri Settings'te, adaptör Player'da. Seçili sekme/yüzey birleşimi german_7619 referansından uyarlanır; native klavye/ARIA korunur.
 - **20 tema korunuyor; finalist beşi kullanıcı henüz seçmedi.** Kendiliğinden ayıklama veya yeni renk sistemi yok.
@@ -127,6 +127,18 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-14 | Firefox veri toplama beyanı | AMO'nun `data_collection_permissions` gereksinimi mağaza başvurusundan önce resmî kaynaktan doğrulanacak. Manifest ve yayın hedefinde alan yok. |
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
+
+**Kullanıcının seçtiği öncelikler (4 Kasım):** Önce Codex kendi araç sistemi notlarını kapatır ve beceri onaylarını yeniler (`D:/NOk-Tools/AGENT_NOTES.md` N-006). Bitince Claude şu işleri ele alır:
+
+1. Katalogdaki üç eski durum etiketi (N-002).
+2. `NOk-FilmDeck-Release` içindeki commit'lenmemiş lisans paketlemesi: `codex/ww28-private-evidence` dalında, sahibi belirsiz.
+3. Ajan panelinde birlikte canlı test denemesi.
+4. I-12.
+5. D-04.
+6. D-10.
+7. D-11.
+
+Bu seçim, aşağıdaki önceki önerinin önüne geçer. Önceki öneri kayıt için durur.
 
 Önerilen sıra: **I-03 → I-04**, ardından kalan kalite/PiP/gerçek site kabulü ve erişilebilirlik. I-07 askıdadır; aşağıdaki hedef metni yalnız kullanıcı ona dönerse geçerlidir. Kullanıcı önceliği değiştirebilir. Tek geniş “her şeyi düzelt” hedefi yerine her biri kanıtlanabilir kapsamla yürütülür.
 

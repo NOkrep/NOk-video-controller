@@ -1,5 +1,9 @@
 # Etkin çalışma kapsamı
 
+## v0.7.9 main'de, öncelikler ve sürüm kararı — 4 Kasım 2026
+
+v0.7.9 `main`'e birleşti (#115, `fff5ccf`). Kullanıcı üçüncü sürüm bölümünü de 9 ile sınırladı; `0.7.9` sonrası küçük adım `0.8.0`'dır. Öncelik sırası PROJECT_HANDOFF.md §8'dedir: Codex önce araç sistemi notlarını kapatıp beceri onaylarını yeniler, sonra Claude listeye başlar.
+
 ## Chromium başlangıç testindeki aralıklı hata — 4 Kasım 2026
 
 Yalnız belge içeren `be3fc1c` commit'inde `Browser smoke (chromium)` başlangıç testi kırmızı oldu. Hata yerelde 10 turun 3'ünde üretildi. Ürün kodu ve sürüm değişmedi (v0.7.9).
