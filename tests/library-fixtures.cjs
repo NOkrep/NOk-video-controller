@@ -1,10 +1,11 @@
 const fs=require('node:fs'),path=require('node:path');
-const artifactRoot=path.join(__dirname,'artifacts');
-function serveLibraryAsset(request,response){
+const artifactRoot=path.join(__dirname,'artifacts'),committedRoot=path.join(__dirname,'fixtures');
+function serveLibraryAsset(request,response,{committedHls=false}={}){
   const route=request.url.split('?')[0];
   const match=route.match(/^\/(runtime\/(?:hls|video)\.min\.js|hls\/(?:master|480|720|1080)\.m3u8|hls\/(?:480|720|1080)-\d{3}\.ts)$/);
   if(!match)return false;
-  const file=path.join(artifactRoot,match[1]);
+  // The small committed HLS lets CI test real playback without a local encoder.
+  const file=path.join(committedHls&&match[1].startsWith('hls/')?committedRoot:artifactRoot,match[1]);
   if(!fs.existsSync(file)){response.writeHead(404);response.end();return true;}
   response.writeHead(200,{'Content-Type':file.endsWith('.js')?'application/javascript':file.endsWith('.m3u8')?'application/vnd.apple.mpegurl':'video/mp2t'});
   fs.createReadStream(file).pipe(response);return true;

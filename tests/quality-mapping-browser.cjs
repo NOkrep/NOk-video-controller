@@ -9,7 +9,7 @@ const engine=args.engine||'firefox';
     res.writeHead(200,{'Content-Type':'application/vnd.apple.mpegurl'});
     res.end('#EXTM3U\n'+[480,720,1080].map((height,index)=>`#EXT-X-STREAM-INF:BANDWIDTH=${600000+index*1500000},RESOLUTION=${Math.round(height*16/9)}x${height}\n/hls/720.m3u8\n`).join(''));return;
   }
-  if(serveLibraryAsset(req,res))return;
+  if(serveLibraryAsset(req,res,{committedHls:true}))return;
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
   res.end(libraryHtml('videojs').replace("'/hls/master.m3u8'",req.url==='/shared'?"'/shared/master.m3u8'":"'/hls/master.m3u8'"));
 });

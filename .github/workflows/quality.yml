@@ -68,6 +68,33 @@ jobs:
         run: node tests/pip-browser.cjs --engine=${{ matrix.engine }}
       - name: Test real toolbar startup with strict Trusted Types
         run: node tests/startup-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test report window privacy and rendering
+        run: node tests/report-browser.cjs --engine=${{ matrix.engine }} --headless=true
+
+  # Separate from the required smoke job: it depends on the runner's H.264 support and a pinned download.
+  media:
+    name: Browser media (${{ matrix.engine }})
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [firefox, chromium]
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Download checksum-pinned player runtimes
+        run: node tests/prepare-browser-fixtures.cjs --runtimes-only --download-runtimes
+      - name: Test quality labels against real Video.js playback
+        run: node tests/quality-mapping-browser.cjs --engine=${{ matrix.engine }}
 
   security:
     name: Dependency security

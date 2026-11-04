@@ -120,7 +120,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-07 | Finalist beş tema | Kullanıcı seçimi bekliyor, 20 tema korunuyor. |
 | D-08 | Ek Uiverse animasyonları | İsteğe bağlı denemeler; zorunlu hata düzeltmesi değil. |
 | D-09 | Form/tooltip referansları | Uygun kullanım bekleyen adaylar; sırf referans var diye eklenmez. |
-| D-10 | Git/CI takibi | v0.7.7.9 commit'i ve uzak CI başarısı doğrulandı (4 Kasım). Yeni kalite/rapor tarayıcı ve performans testleri yerel; CI'a entegrasyon için fixture bağımlılıkları ayrıca ele alınmalı. |
+| D-10 | Git/CI takibi | **Tamam (4 Kasım):** `report` zorunlu işe, `quality-mapping` zorunlu olmayan `Browser media` işine eklendi. Hangi testin neden yerelde kaldığı TESTING.md'de. `Browser media` kararlı görülürse zorunlu kontrollere alınması kullanıcı kararıdır. |
 | D-11 | Çalışma kayıtlarının sadeleştirilmesi | Güncel durumla tarihsel kayıtları ayırmak; eski kanıtları silmemek. Bu devir bir giriş noktası sağlar, bütün eski belgeler temizlendi sayılmaz. |
 | D-12 | Git, CI/CD ve yayın otomasyonu | Kullanıcı hedefi: adım adım komut kopyalamak yerine, ajanın kullanıcı talebi ve onayıyla yürütüp izlediği genel yapı. FilmDeck'in hedefi yalnız GitHub ve eklenti mağazalarıdır; sunucu dağıtımı yoktur. Commit ve push ajandadır; PR ve merge kullanıcıda; mağaza gönderimi sürüm ve hedef onayı ister. Mağaza ve diğer sırlar GitHub'a girmez; ajan gerekmedikçe erişmez. |
 | D-13 | Alan adlı raporların gizli kanalı | Yayın öncesi karar: alan adı içeren raporun public issue yerine özel kanala gitmesi. Rapor UI'ı değişeceği için ayrı iştir; henüz uygulanmadı. |
@@ -135,7 +135,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 3. **Ertelendi (kullanıcı, 4 Kasım):** Canlı test için C yolu seçildi ama kullanıcı şimdilik yapmak istemiyor: önce panelde eklentisiz site gözlemi, sonra hesapsız temiz profilde gerçek FilmDeck (bu bölümün sonundaki sınama). Kullanıcı isteyince başlar; yeniden sormaya gerek yok.
 4. **Yerel kapsam tamam (v0.7.9.1):** I-12.
 5. **Yerel kapsam tamam (v0.7.9.2):** D-04.
-6. D-10.
+6. **Tamam:** D-10.
 7. D-11.
 
 Bu seçim, aşağıdaki önceki önerinin önüne geçer. Önceki öneri kayıt için durur.

@@ -1,5 +1,13 @@
 # Etkin çalışma kapsamı
 
+## D-10: CI kapsamı — 4 Kasım 2026
+
+Ürün kodu değişmedi. `report-browser` canvas videosuyla üretilmiş dosya istemeden çalışıyor ve zorunlu `Browser smoke` işine girdi. `quality-mapping` için depoya 1,1 MiB sentetik HLS eklendi; Video.js SHA-256 eşleşmesiyle iniyor. Sunucunun H.264 desteği önceden bilinmediği için ayrı ve zorunlu olmayan `Browser media` işindedir. Sınıflandırma TESTING.md'de.
+
+**Kanıt:** `report` iki motorda, `quality-mapping` iki motorda 5'er turda geçti, 224/224 Node testi. Uzak CI sonucu commit'ten sonra doğrulanacak.
+
+**Gözlem:** `77bbb35` commit'inde `Browser smoke (firefox)` ilk adımda (`ui-smoke`) bir kez başarısız oldu. Yerelde 10 turda tekrarlamadı, sonraki commit'te geçti. Günlük okunamadığı için neden bilinmiyor; kapatılmış sayılmaz.
+
 ## D-04 yerel kapsam tamam, v0.7.9.2 — 4 Kasım 2026
 
 Oynatıcı iframe içindeyken tam ekran paneli kaynak çerçevede ayrı açılıyor, üst paneldeki tema ve erişilebilirlik tercihleri oraya geçmiyordu. Yeni test eski kodda "fullscreen panel uses the chosen preferences" adımında başarısız oldu.

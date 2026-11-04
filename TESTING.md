@@ -46,7 +46,18 @@ Güvenli UI çizimi destekleyen tarayıcıda `Element.setHTML(..., { sanitizer: 
 
 Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromium kurulumu `--browser="C:/.../chrome.exe"` ile verilebilir. Özel test profilleri kişisel profile dokunmaz; test sayfası yalnız localhost kullanır ve yardımcı sürücü sayfa ağını yerel/eklenti kaynaklarıyla sınırlar. Chromium için `--screenshots=true` yerel sentetik ekran görüntülerini Git dışındaki `tests/artifacts/ui-smoke/` klasörüne yazar.
 
-`quality-mapping-browser.cjs`, mevcut Git dışı yerel HLS ve gerçek Video.js çalışma dosyalarını kullanır (`prepare-browser-fixtures.cjs`); dosyaları otomatik indirmez ve mevcut CI'a eklenmiş değildir. Farklı çözünürlüklere bağlı normal akışta gerçek 480p görüntüyü; üç etiketin aynı 720p oynatma listesine bağlandığı akışta uyarıyı, başarısız görüntü doğrulamasını ve raporda yalnız `playlistMapping` kategorisinin aktarılmasını sınar. Ortak kaynak senaryosu ayrı kökenli iframe/üst HUD ile de çalışır. `distinct-playlists` yalnız farklı adres eşleşmesidir, farklı görüntü içeriklerinin kanıtı değildir. Eksik veya erişilemeyen envanter `unknown` kalır. Kaynaklar yalnız RAM içinde karşılaştırılır; yeni ağ isteği yapılmaz, seçenekler kaldırılmaz ve otomatik tampon sıfırlama eklenmez.
+`quality-mapping-browser.cjs`, depodaki küçük sentetik HLS'i (`tests/fixtures/hls`, üretim: `prepare-browser-fixtures.cjs --committed-hls`) ve gerçek Video.js çalışma dosyasını kullanır. Testin kendisi dosya indirmez; Video.js'i `prepare-browser-fixtures.cjs --runtimes-only --download-runtimes` SHA-256 eşleşmesiyle indirir. CI'da zorunlu olmayan `Browser media` işindedir, çünkü sunucunun H.264 desteğine bağlıdır. Farklı çözünürlüklere bağlı normal akışta gerçek 480p görüntüyü; üç etiketin aynı 720p oynatma listesine bağlandığı akışta uyarıyı, başarısız görüntü doğrulamasını ve raporda yalnız `playlistMapping` kategorisinin aktarılmasını sınar. Ortak kaynak senaryosu ayrı kökenli iframe/üst HUD ile de çalışır. `distinct-playlists` yalnız farklı adres eşleşmesidir, farklı görüntü içeriklerinin kanıtı değildir. Eksik veya erişilemeyen envanter `unknown` kalır. Kaynaklar yalnız RAM içinde karşılaştırılır; yeni ağ isteği yapılmaz, seçenekler kaldırılmaz ve otomatik tampon sıfırlama eklenmez.
+
+## CI'da olan ve yerelde kalan testler (D-10)
+
+| Yer | Testler | Neden |
+|---|---|---|
+| Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `pip`, `startup`, `report` | Üretilmiş dosya istemez, kısa sürer |
+| Zorunlu olmayan CI (`Browser media`) | `quality-mapping` | Sunucunun H.264 desteğine ve sabitlenmiş Video.js indirmesine bağlı |
+| Yerel: ölçüm | `filter-performance`, `report-performance`, `memory-soak`, `chromium-memory`, `native-media-retention`, `resource-investigation`, `av-sync-browser` | Süre, bellek ve GPU ölçer veya uzun sürer; paylaşımlı CI makinesinde sonuç anlamlı değildir |
+| Yerel: gerçek site | `live-filter-performance`, `live-player-*`, `videojs-site-acceptance`, `puhu-retry-acceptance` | Dış siteye bağlıdır, hesap ve bot koruması değişkendir |
+| Yerel: geniş fixture | `browser-integration`, `firefox-integration` | Üretilmiş medya ve özel tarayıcı yolları ister; ana davranışları CI'daki testler kapsar |
+| Kenarda, çalıştırılmadı | `av-live-probe`, `prepare-av-live-copy`, `av-live-copy-check` | Reddedilen I-07 planının taslakları (PROJECT_HANDOFF.md §8) |
 
 ## Gerçek oynatıcı filtre performansı
 
