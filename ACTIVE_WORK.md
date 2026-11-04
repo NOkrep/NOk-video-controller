@@ -1,5 +1,14 @@
 # Etkin çalışma kapsamı
 
+## Araç sistemi etiketleri, lisans paketlemesi ve panel sınaması — 4 Kasım 2026
+
+Ürün kodu ve sürüm değişmedi (v0.7.9).
+
+- **Codex onay yenilemesi doğrulandı:** Yedi `check` onaylı, 20 bağlantı kayıtlı kaynaklarla aynı, `Test-NOkTools.ps1` PASS. `superpowers/nok-reviewed` tarayıcıda ham BLOCKED (52/HIGH) döndü; aynı dört bulguyu kullanıcı onayladı, ham rapor duruyor.
+- **N-002 kapandı:** Katalogdaki üç etiket güncellendi. `newInstallGateAutomatic` artık `false`, çünkü otomatik tarama kapısı yoktur.
+- **Lisans paketlemesi incelendi, commit edilmedi:** `NOk-FilmDeck-Release` testleri 11/11 geçti. Gerçek kaynakla iki hedef de 16 dosya seçiyor; `LICENSE` ve `THIRD_PARTY_NOTICES.md` içeride, özel notlar dışarıda. Sürüm paketlenmedi, mağazaya gönderilmedi. Değişiklik Codex'in dalındadır (N-008).
+- **Panel:** FilmDeck kurulamıyor. Ayrıntı PROJECT_HANDOFF.md §8.
+
 ## v0.7.9 main'de, öncelikler ve sürüm kararı — 4 Kasım 2026
 
 v0.7.9 `main`'e birleşti (#115, `fff5ccf`). Kullanıcı üçüncü sürüm bölümünü de 9 ile sınırladı; `0.7.9` sonrası küçük adım `0.8.0`'dır. Öncelik sırası PROJECT_HANDOFF.md §8'dedir: Codex önce araç sistemi notlarını kapatıp beceri onaylarını yeniler, sonra Claude listeye başlar.

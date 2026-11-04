@@ -128,11 +128,11 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
 
-**Kullanıcının seçtiği öncelikler (4 Kasım):** Önce Codex kendi araç sistemi notlarını kapatır ve beceri onaylarını yeniler (`D:/NOk-Tools/AGENT_NOTES.md` N-006). Bitince Claude şu işleri ele alır:
+**Kullanıcının seçtiği öncelikler (4 Kasım):** Codex kendi araç sistemi notlarını kapattı ve yedi beceri kapsamının onayını yeniledi (`D:/NOk-Tools/AGENT_NOTES.md` N-001, N-004, N-006; geçerlilik 11 Kasım akşamına kadar). Claude şu işleri ele alır:
 
-1. Katalogdaki üç eski durum etiketi (N-002).
-2. `NOk-FilmDeck-Release` içindeki commit'lenmemiş lisans paketlemesi: `codex/ww28-private-evidence` dalında, sahibi belirsiz.
-3. Ajan panelinde birlikte canlı test denemesi.
+1. **Tamam:** Katalogdaki üç eski durum etiketi (N-002).
+2. **Karar bekliyor:** `NOk-FilmDeck-Release` içindeki commit'lenmemiş lisans paketlemesi (N-008). Testler geçiyor; `codex/ww28-private-evidence` dalında olduğu için kim commit'leyeceği kullanıcıda.
+3. **Karar bekliyor:** Canlı test yolu. FilmDeck panele kurulamıyor (bu bölümün sonundaki sınama).
 4. I-12.
 5. D-04.
 6. D-10.
@@ -156,7 +156,9 @@ Bu seçenekler silinmez. Gerektiğinde gerekçesiyle kullanıcıya yeniden sorul
 | `gh` kurup PR'ları ajanın açması | Reddedildi: `main` kuralı onay istemediği için token checkler geçince merge'ü teknik olarak engellemez; kullanıcı PR ve merge'ü kendinde tuttu. | Tam otomasyon istenirse; ayrı bot hesabı seçeneğiyle birlikte. |
 | Üretim veya mağaza sırlarını GitHub Secrets/Environment'ta tutmak | Reddedildi: sırlar GitHub'a girmez; workflow'u değiştirebilen ajan sırra dolaylı ulaşabilir. | Kullanıcı ayrıca gündeme getirirse. |
 
-**Ajan paneli önerisi (açık):** Kullanıcı canlı testin ajanın tarayıcı panelinde, doğrulamayı kendisi tamamlayarak birlikte yapılmasını öneriyor. Kullanıcının doğrulamayı tamamlaması ajan sınırına aykırı değildir; ajan doğrulamayı çözmez ve otomasyon işaretini gizlemez. Bu yolun açık sorusu, panelde FilmDeck'in kurulup kurulamayacağıdır; henüz sınanmadı.
+**Ajan paneli önerisi:** Kullanıcı canlı testin ajanın tarayıcı panelinde, doğrulamayı kendisi tamamlayarak birlikte yapılmasını önerdi. Kullanıcının doğrulamayı tamamlaması ajan sınırına aykırı değildir; ajan doğrulamayı çözmez ve otomasyon işaretini gizlemez.
+
+**Panel sınaması (4 Kasım):** FilmDeck panele kurulamıyor. Panel gömülü bir Chromium 152'dir; `chrome://` sayfaları açılmıyor, sayfada eklenti API'si yok, araçlarda eklenti yükleme yolu yok. Panel yalnız siteyi eklentisiz gözlemek için kullanılabilir: MSE, H.264, PiP ve tam ekran var, Widevine yok (DRM'li içerik oynamaz), `navigator.webdriver` `false`. Yol seçimi kullanıcıdadır.
 
 ## 9. Kaynaklar, komutlar ve kabul seviyesi
 
