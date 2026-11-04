@@ -26,7 +26,15 @@ async function createDriver(engine,executablePath,packages,options={}){
     const sessions=new Map();let extensionId;
     const session=async page=>{if(!sessions.has(page))sessions.set(page,await context.newCDPSession(page));return sessions.get(page);};
     return {engine,version:browser.version(),
-      install:async()=>{const result=await cdp.send('Extensions.loadUnpacked',{path:extensionRoot});extensionId=result.id;return result;},
+      install:async()=>{
+        const result=await cdp.send('Extensions.loadUnpacked',{path:extensionRoot});extensionId=result.id;
+        // The browser drops a toolbar action that arrives before a new install's worker registers its listener.
+        for(const end=Date.now()+10000;;await delay(20)){
+          const worker=context.serviceWorkers().find(item=>item.url().startsWith(`chrome-extension://${extensionId}/`));
+          if(worker&&await worker.evaluate(()=>chrome.action.onClicked.hasListeners()).catch(()=>false))return result;
+          if(Date.now()>end)throw Error('Extension worker did not register its toolbar listener');
+        }
+      },
       toolbar:async page=>{
         const targets=await cdp.send('Target.getTargets',{filter:[{type:'tab',exclude:false}]});
         const tab=targets.targetInfos.find(info=>info.url===page.url());

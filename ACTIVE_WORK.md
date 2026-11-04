@@ -1,5 +1,15 @@
 # Etkin çalışma kapsamı
 
+## Chromium başlangıç testindeki aralıklı hata — 4 Kasım 2026
+
+Yalnız belge içeren `be3fc1c` commit'inde `Browser smoke (chromium)` başlangıç testi kırmızı oldu. Hata yerelde 10 turun 3'ünde üretildi. Ürün kodu ve sürüm değişmedi (v0.7.9).
+
+**Kök neden:** Eklenti yeni kurulduğunda service worker hedefi görünür, ama `onClicked` dinleyicisi henüz kayıtlı olmayabilir. Tarayıcı bu aralıkta gelen araç çubuğu eylemini düşürür. Test kurulumdan hemen sonra tıkladığı için panel açılmıyordu. v0.7.9'a özgü değildir: tanı betiğinde `main` (v0.7.8) 20 turun 18'inde, güncel kod 19'unda aynı hatayı verdi. Testin normal adımlarında oran daha düşüktür, çünkü tıklamadan önce başka işler yapar.
+
+**Düzeltme:** `tests/resource-driver.cjs` Chromium kurulumunda dinleyici kaydını bekliyor. Araç çubuğunu kullanan bütün Chromium testleri bundan yararlanır.
+
+**Kullanıcı etkisi:** Uyuyan worker yolunda 20 turda kayıp tıklama yok; bunun 17 turunda worker tıklama anında gerçekten kapalıydı. Kalan kullanıcı etkisi, eklenti kurulduktan sonraki ilk yarım saniyede yapılan tıklamayla sınırlıdır; ikinci tıklama çalışır. Bu yüzden ürün kodu değiştirilmedi.
+
 ## Ortak araç sistemi: notlar ve hook Python'u — 4 Kasım 2026
 
 Ürün kodu ve sürüm değişmedi (v0.7.9). Kullanıcı kararıyla iki değişiklik yapıldı, ikisi de bu deponun dışındadır:
