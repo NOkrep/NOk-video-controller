@@ -10,7 +10,7 @@ function element(){const classes=new Set(),attributes={};return {style:{},classe
 test('remote audio snapshots update selected buttons and accessibility state in both directions',()=>{
   const elements=Object.fromEntries(['pvc-controller-popup','pvc-audio-stereo-btn','pvc-audio-mono-btn','pvc-hdr-audio-badge'].map(id=>[id,element()]));
   const target={tagName:'BODY',appendChild(){}};elements['pvc-controller-popup'].parentElement=target;
-  const context=vm.createContext({document:{getElementById:id=>elements[id]||null},remotePresentation:state({audioMode:'mono'}),
+  const context=vm.createContext({applyHudPreferences(){},document:{getElementById:id=>elements[id]||null},remotePresentation:state({audioMode:'mono'}),
     remoteRequests:new Map(),getActiveContainer:()=>target,setUiText(el,text){if(el)el.textContent=text;},
     syncRemoteFilters(){},subtitleAppearance:{},updateVolumeSliderVisualGain(){},updateFilterUiBadges(){},
     updateSubtitleAppearanceControls(){},renderRemoteQualities(){},renderRemoteTargets(){},

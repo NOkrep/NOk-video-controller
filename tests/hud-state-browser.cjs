@@ -45,16 +45,27 @@ async function main(){
     }));
     await click(page,'pvc-collapse-btn');
     await until(driver,media,()=>window.__testHudCollapsed===true,'source collapse acknowledgement');
+    // D-04: theme and accessibility choices follow the panel into and out of iframe fullscreen.
+    const themeIds=await driver.evaluate(page,()=>[...document.getElementById('pvc-theme-select').options].map(option=>option.value));
+    const chooseTheme=(target,id)=>driver.evaluate(target,id=>{const select=document.getElementById('pvc-theme-select');select.value=id;select.dispatchEvent(new Event('change',{bubbles:true}));},id);
+    const firstTheme=themeIds[3],secondTheme=themeIds[7];assert.ok(firstTheme&&secondTheme&&firstTheme!==secondTheme,'two distinct themes');
+    await chooseTheme(page,firstTheme);await click(page,'pvc-a11y-largeText');await click(page,'pvc-a11y-keepVisible');
     await driver.pointerClick(page,'#fullscreen');
     await until(driver,media,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block'
       &&document.querySelector('#pvc-controller-popup').classList.contains('pvc-collapsed'),'fullscreen keeps collapsed');
     await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='none','top hidden in fullscreen');
     await click(media,'pvc-collapse-btn');await until(driver,media,audioMatches,'fullscreen mono selected');
+    const prefs=()=>{const popup=document.getElementById('pvc-controller-popup');return {theme:popup.getAttribute('data-pvc-theme'),select:document.getElementById('pvc-theme-select').value,large:popup.classList.contains('pvc-a11y-large-text'),contrast:popup.classList.contains('pvc-a11y-contrast'),largeBox:document.getElementById('pvc-a11y-largeText').checked,keepBox:document.getElementById('pvc-a11y-keepVisible').checked,contrastBox:document.getElementById('pvc-a11y-highContrast').checked};};
+    assert.deepEqual(await driver.evaluate(media,prefs),{theme:firstTheme,select:firstTheme,large:true,contrast:false,largeBox:true,keepBox:true,contrastBox:false},'fullscreen panel uses the chosen preferences');
+    await chooseTheme(media,secondTheme);await click(media,'pvc-a11y-highContrast');
     await click(media,'pvc-audio-stereo-btn');
     await driver.evaluate(page,()=>document.exitFullscreen());
     await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block'
       &&!document.querySelector('#pvc-controller-popup').classList.contains('pvc-collapsed')
       &&document.querySelector('#pvc-audio-stereo-btn')?.getAttribute('aria-pressed')==='true','normal state restored');
+    await until(driver,page,id=>document.getElementById('pvc-controller-popup').getAttribute('data-pvc-theme')===id&&document.getElementById('pvc-controller-popup').classList.contains('pvc-a11y-contrast'),'top panel receives fullscreen preference changes',secondTheme);
+    assert.deepEqual(await driver.evaluate(page,prefs),{theme:secondTheme,select:secondTheme,large:true,contrast:true,largeBox:true,keepBox:true,contrastBox:true},'top panel controls match');
+    await click(page,'pvc-a11y-highContrast');await click(page,'pvc-a11y-largeText');await click(page,'pvc-a11y-keepVisible');
     await driver.evaluate(page,()=>window.addEventListener('message',event=>{
       if(event.source===window&&event.data?.type==='PVC_REMOTE_STATE')window.__testOwner=event.data.payload.state.owner;
     }));

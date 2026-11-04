@@ -1,5 +1,16 @@
 # Etkin çalışma kapsamı
 
+## D-04 yerel kapsam tamam, v0.7.9.2 — 4 Kasım 2026
+
+Oynatıcı iframe içindeyken tam ekran paneli kaynak çerçevede ayrı açılıyor, üst paneldeki tema ve erişilebilirlik tercihleri oraya geçmiyordu. Yeni test eski kodda "fullscreen panel uses the chosen preferences" adımında başarısız oldu.
+
+- Üst panel yeni kaynağa ve her değişiklikte `hud-preferences` komutu gönderir; kaynak durumu tam ekrandaki değişikliği geri taşır. Bekleyen komut varken gelen eski durum seçimi ezmez.
+- Protokolden yalnız tema kimliği ve dört doğru/yanlış değer geçer. RAM'de kalır, rapora girmez, yeni izin yok.
+
+**Kanıt:** `hud-state` testi iki motorda; gerçek tam ekrana giriş, tercihlerin kontrollerle birlikte eşleşmesi, tam ekranda değişiklik ve çıkışta geri gelme. Birim testleri protokol sınırlarını ve bekleyen komut sırasını kapsar.
+
+**Sınırlar:** Sentetik yerel kabuldür; gerçek ekran okuyucu ve tema görünümünün gerçek sitelerde kabulü açık.
+
 ## I-12 yerel kapsam tamam, v0.7.9.1 — 4 Kasım 2026
 
 Yeni `tests/cdn-measure-browser.cjs`, kurulu eklentiyle yerel sunuculara karşı Firefox 159 ve Edge 152'de çalışır. Düzeltmeden önce yeni birim testleri ve tarayıcı testi başarısız oldu.

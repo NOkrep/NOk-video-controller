@@ -1,6 +1,7 @@
 const session = 'a'.repeat(32), owner = 'b'.repeat(32);
 function state(extra = {}) {
-  return { owner, revision: 1, hasVideo: true, fullscreen: false, hudCollapsed: false, hudPlacement: null, paused: false, muted: false, pipActive: false,
+  return { owner, revision: 1, hasVideo: true, fullscreen: false, hudCollapsed: false, hudPlacement: null,
+    hudPreferences: { theme: 'atlas', keepVisible: false, largeText: false, highContrast: false, reduceMotion: false }, paused: false, muted: false, pipActive: false,
     width: 1920, height: 1080, rate: 1, requestedRate: 1, volume: 100, requestedVolume: 100, audioMode: 'stereo',
     adapter: 'HlsJsAdapter', forcedAdapter: 'none', drm: false, qualities: [{ height: 1080, bitrate: 5000000 }, { height: 720, bitrate: 2000000 }],
     verification: 'not-verified', requestedHeight: 0, requestedIndex: -1, decodedMatch: null, renditionMatch: null, playlistMapping: 'unknown',

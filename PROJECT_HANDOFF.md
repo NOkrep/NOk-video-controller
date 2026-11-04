@@ -16,7 +16,7 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 
 - **Ürün:** FilmDeck by NOk. Önceki ad NOk Video Controller; ara ad CineDeck'ti. Teknik repo adı ve Firefox kimliği korunur.
 - **Çıkış noktası:** sitelerin farklı ve eksik video arayüzlerinden doğan kullanıcı bıkkınlığı. Bilgisayarda video/film/dizi izleyen kullanıcıya ortak kontroller sunmak. Basit kullanımda hız/ses/kalite; daha ayrıntılı işler ayrı sekmeler ve katlanabilir alanlarda.
-- **Kaynak sürümü:** `0.7.9.1`, `claude/workTogether` dalında (`main` birleşmesi kullanıcıda). `main` son kontrolde `0.7.9` idi (#115, `fff5ccf`, 4 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
+- **Kaynak sürümü:** `0.7.9.2`, `claude/workTogether` dalında (`main` birleşmesi kullanıcıda). `main` son kontrolde `0.7.9` idi (#115, `fff5ccf`, 4 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
 - **Dallar (kullanıcı kararı, 4 Kasım 2026; önceki "mevcut dalda devam" notunun yerine geçer):** Her ajanın `main`'den açılmış tek bir uzun ömürlü dalı vardır: Codex `codex/…`, Claude `claude/…`. İş veya düzeltme başına yeni dal açılmaz; güncellik için `main` bu dala merge edilir. Aynı checkout kullanılır; kullanıcı ajan değiştirirken dal ve temiz durum doğrulanır. Bu yüzden devirden önce iş commit'lenmiş olmalıdır. Ajan kendi dalına commit atar ve push eder; **PR'ı ve merge'ü kullanıcı yapar**, ajan özeti ve PR bağlantısını bildirir. Karşı ajanın dalına doğrudan commit atılmaz; ikinci checkout/worktree istenmeden açılmaz.
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Güncel dallar: Codex `codex/filmdeck-cassette-icon`, Claude `claude/workTogether`. Codex dalının adı ilk işinden kalmıştır; içeriği o işle sınırlı değildir.
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
@@ -114,7 +114,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-01 | Uzun süreli bellek kararlılığı | **Dar hedef tamam (4 Kasım):** 15 dakikalık oynatma ve 90 video değişiminde eklentiye özgü büyüyen sızıntı bulunmadı; Edge renderer büyümesi eklentisiz de aynı. Firefox'ta boost'lu videoların askıdaki bağlamları tarayıcı toplayana kadar geçici bellek tutar. Saatlik oynatma, gerçek MSE/HLS, 4K, çok sekme maliyeti ve tahsisin kesin nedeni açık. MEMORY_MEASUREMENTS.md. |
 | D-02 | Dialog ve adaptör klavye erişilebilirliği | **Yerel kapsam tamam (v0.7.9):** başlangıç odağı, Tab çevrimi, Escape, odağı geri verme ve klavyeyle adaptör seçimi iki motorda sınandı. Gerçek ekran okuyucu, açık `select` listesinde ve tarayıcı tam ekranında Escape davranışı açık. |
 | D-03 | Ekran okuyucu ve gerçek %200 zoom | CSS ölçeği/otomatik test bunun yerine geçmez. Uzun metin, hedef boyutu ve duyurular açık. |
-| D-04 | Fullscreen tema/erişilebilirlik tutarlılığı | Tercihler çerçeve belleğinde; kaynak HUD'a aynı tercihlerin aktarımı açık. |
+| D-04 | Fullscreen tema/erişilebilirlik tutarlılığı | **Yerel kapsam tamam (v0.7.9.2):** tema ve dört erişilebilirlik anahtarı iframe tam ekranına geçer, oradaki değişiklik çıkınca korunur; iki motorda sınandı. Gerçek sitede kabul açık. |
 | D-05 | İstenen ve gerçekleşen ses/hız geri bildirimi | Raporlarda ayrım var; ana UI'da ayrışmayı anlaşılır gösterme açık. |
 | D-06 | Mevcut ses ve altyazı parçalarını seçme | Kullanıcının gelecek özellik talebi; orijinal/dublaj ve hazır altyazılar. Harici SRT'den ayrı; henüz uygulanmadı. |
 | D-07 | Finalist beş tema | Kullanıcı seçimi bekliyor, 20 tema korunuyor. |
@@ -134,7 +134,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 2. **Tamam:** `NOk-FilmDeck-Release` lisans paketlemesini Codex commit'ledi (`b1d933c`, `codex/ww28-private-evidence`). O deponun PR ve merge'ü kullanıcıda.
 3. **Ertelendi (kullanıcı, 4 Kasım):** Canlı test için C yolu seçildi ama kullanıcı şimdilik yapmak istemiyor: önce panelde eklentisiz site gözlemi, sonra hesapsız temiz profilde gerçek FilmDeck (bu bölümün sonundaki sınama). Kullanıcı isteyince başlar; yeniden sormaya gerek yok.
 4. **Yerel kapsam tamam (v0.7.9.1):** I-12.
-5. D-04.
+5. **Yerel kapsam tamam (v0.7.9.2):** D-04.
 6. D-10.
 7. D-11.
 

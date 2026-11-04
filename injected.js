@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.9.1 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.9.2 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,11 +17,12 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.9.1';
+  const EXTENSION_VERSION = '0.7.9.2';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.9.2', notes: 'İframe oynatıcıda tema ve erişilebilirlik tercihleri panelle birlikte tam ekrana geçer ve tam ekranda yapılan değişiklikler çıkınca korunur. Taşınan yalnız tema kimliği ve dört anahtardır; RAM dışına çıkmaz, rapora girmez. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.9.1', notes: 'CDN yanıtı ölçümü anlaşılır oldu: düğme sonucun son medya isteğinden mi ayrı HEAD isteğinden mi geldiğini söyler, ölçülemeyince nedenini gösterir. Oynatıcı iframe içindeyken başarısız ölçüm artık açıklamasız kalmaz. Eski kayıt yaşıyla bildirilir ve güncel gibi gösterilmez. Her sitede ölçüm sözü verilmez. İframe oynatıcıda panel kapatıldığı anda son filtre ayarının kaybolması düzeltildi. Yeni izin, depolama veya rapor alanı yok. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.9', notes: 'Rapor, kısayol, adaptör ve DRM pencereleri gerçek dialog oldu: odak içeride başlar, Tab dışarı çıkmaz, Escape kapatır, odak açan düğmeye döner; yazılmış rapor açıklaması Escape ile kaybolmaz. Pencere açıkken eklenti kısayolları ve site tuşları tetiklenmez. Adaptör seçenekleri ve DRM rozeti klavyeyle kullanılabilen gerçek düğmelerdir. Firefox tam ekran çıkışında panel yerini kaydıran görünüm yarışı giderildi. Yerel iki motorlu klavye kabulü; ekran okuyucu ve gerçek site kabulü açık.' },
     { version: 'v0.7.8', notes: 'Açık panel, üst sayfadaki video kaybolup oynatıcı iframe içinde gelince kapatıp açmaya gerek kalmadan videoyu yeniden bulur. Taşınan panelin yeri video değişiminde korunur ve iframe oynatıcıda tam ekrana giriş/çıkışta oranla aktarılır. Video yok uyarısı paneli ekran dışına taşırmaz. Aktarılan yalnız 0-1 arası panel oranıdır; izin, depolama ve rapor alanı değişmedi. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
@@ -552,7 +553,7 @@
       select.appendChild(group);
     }
     label.appendChild(select); details.appendChild(label);
-    select.addEventListener('change', e => { e.stopPropagation(); setUiTheme(select.value); });
+    select.addEventListener('change', e => { e.stopPropagation(); setUiTheme(select.value); syncHudPreferences(); });
     const controls = document.createElement('div'); controls.className = 'pvc-theme-controls';
     for (const [delta, text] of [[-1, 'Önceki'], [1, 'Sonraki']]) {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'pvc-action-btn';
@@ -560,6 +561,7 @@
       button.addEventListener('click', e => {
         e.stopPropagation(); const index = UI_THEMES.findIndex(theme => theme.id === currentUiThemeId);
         setUiTheme(UI_THEMES[(index + delta + UI_THEMES.length) % UI_THEMES.length].id);
+        syncHudPreferences();
       }); controls.appendChild(button);
     }
     const position = document.createElement('span'); position.id = 'pvc-theme-position'; position.setAttribute('aria-live', 'polite'); controls.appendChild(position);
@@ -599,7 +601,7 @@
   }
   // END UI COMPONENTS
 
-  // Presentation preferences are kept in this frame only; never added to diagnostics.
+  // Presentation preferences stay in RAM and reach only the panel's other frame; never added to diagnostics.
   const hudAccessibility = {
     keepVisible: false, largeText: false, highContrast: false,
     reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
@@ -620,6 +622,29 @@
     updateThemeControls();
     resetIdleTimer(popup);
     clampPopupToViewport(popup);
+  }
+  const HUD_ACCESSIBILITY_KEYS = ['keepVisible', 'largeText', 'highContrast', 'reduceMotion'];
+  function currentHudPreferences() {
+    return { theme: currentUiThemeId, ...Object.fromEntries(HUD_ACCESSIBILITY_KEYS.map(key => [key, hudAccessibility[key]])) };
+  }
+  // Applies the other frame's choice without echoing it back or waking an idle panel.
+  function applyHudPreferences(next) {
+    if (!next) return;
+    if (next.theme === currentUiThemeId && HUD_ACCESSIBILITY_KEYS.every(key => next[key] === hudAccessibility[key])) return;
+    if (UI_THEMES.some(theme => theme.id === next.theme)) currentUiThemeId = next.theme;
+    for (const key of HUD_ACCESSIBILITY_KEYS) {
+      hudAccessibility[key] = next[key];
+      const checkbox = document.getElementById(`pvc-a11y-${key}`);
+      if (checkbox) checkbox.checked = next[key];
+    }
+    for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id));
+    updateThemeControls();
+    const popup = document.getElementById('pvc-controller-popup');
+    if (popup && popup.style.display !== 'none') clampPopupToViewport(popup);
+  }
+  function syncHudPreferences() {
+    if (remotePresentation) remoteControl('hud-preferences', currentHudPreferences());
+    else if (remoteSourceSession) publishRemoteSourceState();
   }
   // END HUD ACCESSIBILITY
 
@@ -708,6 +733,7 @@
       checkbox.addEventListener('change', e => {
         e.stopPropagation(); hudAccessibility[key] = checkbox.checked;
         refreshUiAccessibility(popup);
+        syncHudPreferences();
       });
     }
     const shortcutRow = document.createElement('div'); shortcutRow.className = 'pvc-setting-row';
@@ -952,7 +978,7 @@
     const request = readQualityDiagnostics(video, player);
     const bounded = (value, min, max, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
     return frameProtocol.cleanState({
-      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(), hudCollapsed, hudPlacement,
+      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(), hudCollapsed, hudPlacement, hudPreferences: currentHudPreferences(),
       paused: video?.paused !== false, muted: video?.muted === true,
       pipActive: !!video && ((video.ownerDocument || document).pictureInPictureElement === video || video.webkitPresentationMode === 'picture-in-picture'),
       width: Math.round(bounded(video?.videoWidth, 0, 16384)), height: Math.round(bounded(video?.videoHeight, 0, 8640)),
@@ -1076,13 +1102,14 @@
     else {
       try {
         const { video, player } = findVideoAndPlayer(), value = command.value;
-        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed', 'hud-placement'].includes(command.name)) throw new Error('no-media');
+        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed', 'hud-placement', 'hud-preferences'].includes(command.name)) throw new Error('no-media');
         switch (command.name) {
           case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
           case 'volume': setAudioVolume(value); break;
           case 'audio': setAudioMode(value); break;
           case 'hud-collapsed': setHudCollapsed(value); break;
           case 'hud-placement': hudPlacement = value; break;
+          case 'hud-preferences': applyHudPreferences(value); break;
           case 'seek': if (!seekBy(value)) throw new Error('seek'); break;
           case 'quality': if (!remoteSourceQualities[value] || !requestQuality(remoteSourceQualities[value], video, player)) throw new Error('quality'); break;
           case 'target': controlledVideo = value < 0 ? null : remoteSourceCandidates[value]; if (value >= 0 && !controlledVideo) throw new Error('target'); break;
@@ -1138,6 +1165,7 @@
     // The visible top HUD owns the initial preference; later snapshots carry source/fullscreen changes.
     if (first && state.hudCollapsed !== hudCollapsed) remoteControl('hud-collapsed', hudCollapsed);
     if (first && hudPlacement) remoteControl('hud-placement', hudPlacement);
+    if (first) remoteControl('hud-preferences', currentHudPreferences());
     renderRemoteHud();
     if (resumePresentation) document.getElementById('pvc-controller-popup')?.__nokActivity?.(true);
     if (leftFullscreen && state.hudPlacement) {
@@ -1164,6 +1192,7 @@
     if (remoteRequests.size === 0) {
       currentAudioVolumePercent = state.requestedVolume; targetEnforcedPlaybackRate = state.requestedRate;
       currentAudioMode = state.audioMode; syncRemoteFilters(state); Object.assign(subtitleAppearance, state.appearance);
+      applyHudPreferences(state.hudPreferences);
       syncAudioModeUi(currentAudioMode); setHudCollapsed(state.hudCollapsed);
       subtitleOverlayEnabled = state.subtitleEnabled; subtitleOffsetMs = state.subtitleOffset;
       value('pvc-speed-slider', state.requestedRate); value('pvc-volume-slider', state.requestedVolume);

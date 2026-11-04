@@ -68,6 +68,7 @@ function harness(reducedMotion = false) {
   const hotkeys = add('pvc-hotkeys-toggle-btn'); hotkeys.addEventListener('click', () => { hotkeys.retainedListener = true; });
   const timers = new Map(); let timerId = 0;
   const context = vm.createContext({
+    remotePresentation: null, remoteSourceSession: null,
     document: { activeElement: null, createElement: tag => new Element(tag),
       getElementById: id => id === popup.id ? popup : popup.querySelector('#' + id) },
     window: { matchMedia: () => ({ matches: reducedMotion }), postMessage() {} },

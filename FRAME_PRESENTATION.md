@@ -21,7 +21,7 @@ Kaynak veya üst iframe tam ekrana alınırsa tek görünür HUD kaynak çerçev
 - Teşhis sadece kullanıcı isterse kaynaktan üstteki önizlemeye gelir. Tekrar allowlist süzgecinden geçer; açıklama ve silme tercihi daha sonra üst önizlemede kullanıcı tarafından eklenir. Ağla otomatik gönderim yoktur.
 - Aktif olmayan/idle-hidden üst panel kaynağın 750ms envanter taramasını/durum aktarımını durdurur. Bekleyen doğrulama, mevcut video referansında kontrol edilebilir. Yeniden etkileşim/tam ekran aktarımı tekrar açar. Reklam denetimi bağımsızdır.
 
-Sıfır kalıcı depolama korunur. `postMessage` ve sayfa DOM'u gizli iletişim kanalı değildir: sayfa betikleri Main World verilerini gözleyebilir/etkileyebilir. Token/şema kontrolü kötü niyetli sayfaya karşı izolasyon veya mutlak anonimlik garantisi değildir. Yeni ağ/uzak kod/depolama yetkisi verilmez. Tema ve erişilebilirlik tercihleri halen çerçeveye özeldir; tam ekran geçişinde bunların iki ayrı panel arasında eşitlenmesi kapsam dışındaki bilinen sunum sınırıdır. Dil sabit sinyallerle eşitlenir.
+Sıfır kalıcı depolama korunur. `postMessage` ve sayfa DOM'u gizli iletişim kanalı değildir: sayfa betikleri Main World verilerini gözleyebilir/etkileyebilir. Token/şema kontrolü kötü niyetli sayfaya karşı izolasyon veya mutlak anonimlik garantisi değildir. Yeni ağ/uzak kod/depolama yetkisi verilmez. Tema ve erişilebilirlik tercihleri (v0.7.9.2) panelin iki çerçevesi arasında sınırlı `hud-preferences` komutu ve durum alanıyla eşitlenir: yalnız tema kimliği ve dört doğru/yanlış değer taşınır, RAM'de kalır, rapora girmez. Dil sabit sinyallerle eşitlenir.
 
 ## Kanıt
 
