@@ -1,5 +1,16 @@
 # Etkin çalışma kapsamı
 
+## Ortak araç sistemi: notlar ve hook Python'u — 4 Kasım 2026
+
+Ürün kodu ve sürüm değişmedi (v0.7.9). Kullanıcı kararıyla iki değişiklik yapıldı, ikisi de bu deponun dışındadır:
+
+- **Ajanlar arası notlar:** `D:/NOk-Tools/AGENT_NOTES.md` oluşturuldu. Bir ajan diğerinin alanında sorun görürse düzeltmez, buraya not bırakır. İşe başlarken kendine açık notları okur. `AGENTS.md` ve `CLAUDE.md` bu dosyaya yönlendiriyor.
+- **Claude hook'u:** `D:/NOk-Tools/third-party/runtimes/python/3.12.4` içindeki imzalı Python'a taşındı, Codex runtime'ına bağımlılığı kalktı.
+
+**Kanıt:** Deneme komutu Bash ve PowerShell'de engellendi, normal komut ikisinde de çalıştı. 8 sentetik kararda eski ve yeni Python aynı sonucu verdi. 30 guard testi ve `Test-NOkTools.ps1` (164 dosya) geçti.
+
+**Sınırlar:** Hook bir OS güvenlik sınırı değildir; kapsamı yine Bash ve PowerShell araçlarıdır. SkillSpector ortamı, yani `ensure`, hâlâ Codex runtime'ına bağlıdır. Açık maddeler `AGENT_NOTES.md` içindedir.
+
 ## D-02 yerel kapsam tamam, v0.7.9 — 4 Kasım 2026
 
 Yeni `tests/dialog-keyboard-browser.cjs` kurulu eklentide gerçek klavye olaylarıyla çalışır. Düzeltmeden önce iki motorda da rapor, kısayol, adaptör ve DRM pencerelerinde başlangıç odağı, Tab çevrimi, Escape ve odağı geri verme yoktu. Pencere açıkken `m` arkadaki ses modunu değiştiriyordu, çünkü kısayol dinleyicisi yakalama aşamasında çalışır. Adaptör seçenekleri ve DRM rozeti klavyeyle kullanılamıyordu.
