@@ -58,6 +58,8 @@ jobs:
         run: npm run test:browser -- --engine=${{ matrix.engine }} --narrow=true
       - name: Test iframe audio selection and fullscreen HUD state
         run: node tests/hud-state-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test HUD place, page transitions and single visible panel
+        run: node tests/hud-continuity-browser.cjs --engine=${{ matrix.engine }} --headless=true
       - name: Test native PiP and iframe user activation
         run: node tests/pip-browser.cjs --engine=${{ matrix.engine }}
       - name: Test real toolbar startup with strict Trusted Types

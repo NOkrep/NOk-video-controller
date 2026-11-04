@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.7.9 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.8 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,11 +17,12 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.7.9';
+  const EXTENSION_VERSION = '0.7.8';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.8', notes: 'Açık panel, üst sayfadaki video kaybolup oynatıcı iframe içinde gelince kapatıp açmaya gerek kalmadan videoyu yeniden bulur. Taşınan panelin yeri video değişiminde korunur ve iframe oynatıcıda tam ekrana giriş/çıkışta oranla aktarılır. Video yok uyarısı paneli ekran dışına taşırmaz. Aktarılan yalnız 0-1 arası panel oranıdır; izin, depolama ve rapor alanı değişmedi. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.7.9', notes: 'Teşhis raporunun tam ekran arka plan bulanıklığı kaldırıldı; karartma ve rapor işlevleri korunur. Oynayan videoda ölçülen GPU render yükünü azaltır. JSON ve yorum davranışı, gizlilik ve izinler değişmedi. İki motorlu ölçüm ve kabul sınırları REPORT_PERFORMANCE.md içinde.' },
     { version: 'v0.7.7.8', notes: 'Oynayan videoda ardışık filtre girdileri video karesine hizalanır; kare gelmezse süre sınırlı geri dönüş, durmuş/eski API videolarda rAF yolu korunur. Kaynak/oturum değişimi eski çizimi iptal eder; kabul edilmiş son değer kapanışta korunur. Filtre sırası/renkleri değişmez. Gerçek Firefox/Chromium CPU/GPU/kare ölçümleri ve kanıt sınırları FILTER_PERFORMANCE.md içinde; bütün sitelerde kasmasızlık garantisi değildir.' },
     { version: 'v0.7.7.7', notes: 'Video.js kalite etiketleri aynı oynatma listesine bağlıysa kalite alanında açıklama ve anonim raporda yalnız sabit playlistMapping kategorisi. Kaynak adresleri paylaşılmaz, seçenekler korunur ve menü seçimi gerçek görüntü değişimi sayılmaz. Gerçek kaynak geçişi ve performans kabulünün kalan kısmı açık.' },
@@ -855,7 +856,25 @@
   // FRAME PRESENTATION: bounded UI state; media stays in its owning document.
   const frameProtocol = globalThis.NOkFrameProtocol || null;
   let remotePresentation = null, remotePresentationSession = null;
-  let hudCollapsed = false;
+  let hudCollapsed = false, hudPlacement = null; // Placement stays null until the user moves the panel.
+  let localVideoSeen = false, localSearchAfterLoss = false, topBeforeNoVideoAlert = null;
+  // The alert makes the panel taller. A low panel moves up to stay on screen and returns once the alert clears.
+  function setNoVideoAlertVisible(show) {
+    const alert = document.getElementById('pvc-no-video-alert'), next = show ? 'block' : 'none';
+    if (!alert || alert.style.display === next) return;
+    const popup = document.getElementById('pvc-controller-popup');
+    const before = popup?.getBoundingClientRect().top;
+    alert.style.display = next;
+    if (!popup || popup.style.display === 'none') return;
+    if (show) {
+      clampPopupToViewport(popup);
+      topBeforeNoVideoAlert = popup.getBoundingClientRect().top !== before ? before : null;
+    } else if (topBeforeNoVideoAlert !== null) {
+      popup.style.setProperty('top', `${Math.round(topBeforeNoVideoAlert)}px`, 'important');
+      topBeforeNoVideoAlert = null;
+      clampPopupToViewport(popup);
+    }
+  }
   let remoteSourceSession = null, remoteSourceOwner = null, remoteAncestorFullscreen = false, remoteSourceActive = true;
   let remoteSourceTarget = null;
   let pendingRemoteSourceSession = null;
@@ -921,7 +940,7 @@
     const request = readQualityDiagnostics(video, player);
     const bounded = (value, min, max, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
     return frameProtocol.cleanState({
-      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(), hudCollapsed,
+      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(), hudCollapsed, hudPlacement,
       paused: video?.paused !== false, muted: video?.muted === true,
       pipActive: !!video && ((video.ownerDocument || document).pictureInPictureElement === video || video.webkitPresentationMode === 'picture-in-picture'),
       width: Math.round(bounded(video?.videoWidth, 0, 16384)), height: Math.round(bounded(video?.videoHeight, 0, 8640)),
@@ -956,7 +975,7 @@
       window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*'); return;
     }
     remoteSourceSession = session; remoteSourceOwner = frameProtocol.newSession();
-    remoteSourceRevision = 0; remoteSourceSignature = '';
+    remoteSourceRevision = 0; remoteSourceSignature = ''; hudPlacement = null;
     const popup = document.getElementById('pvc-controller-popup'); if (popup) popup.style.display = 'none';
     monitorVideoResolution(video);
     postHudSignal('PVC_HUD_OPENED');
@@ -971,7 +990,7 @@
       const target = getActiveContainer(); if (popup.parentElement !== target) target.appendChild(popup);
       popup.classList.add('pvc-in-fullscreen'); popup.style.display = 'block';
       syncLocalMediaHud();
-      clampPopupToViewport(popup); resetIdleTimer(popup);
+      applyHudPlacement(popup); clampPopupToViewport(popup); resetIdleTimer(popup);
     } else if (popup) { popup.style.display = 'none'; popup.classList.remove('pvc-in-fullscreen'); }
     publishRemoteSourceState();
   }
@@ -1044,12 +1063,13 @@
     else {
       try {
         const { video, player } = findVideoAndPlayer(), value = command.value;
-        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed'].includes(command.name)) throw new Error('no-media');
+        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed', 'hud-placement'].includes(command.name)) throw new Error('no-media');
         switch (command.name) {
           case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
           case 'volume': setAudioVolume(value); break;
           case 'audio': setAudioMode(value); break;
           case 'hud-collapsed': setHudCollapsed(value); break;
+          case 'hud-placement': hudPlacement = value; break;
           case 'seek': if (!seekBy(value)) throw new Error('seek'); break;
           case 'quality': if (!remoteSourceQualities[value] || !requestQuality(remoteSourceQualities[value], video, player)) throw new Error('quality'); break;
           case 'target': controlledVideo = value < 0 ? null : remoteSourceCandidates[value]; if (value >= 0 && !controlledVideo) throw new Error('target'); break;
@@ -1084,6 +1104,9 @@
     const session = frameProtocol?.cleanSession(payload?.session), state = frameProtocol?.cleanState(payload?.state);
     if (!session || !state || retiredRemoteSessions.has(session) || window !== window.top) return;
     const first = remotePresentationSession !== session;
+    // A panel the user already has open keeps its place when a new source takes over.
+    const wasOpen = document.getElementById('pvc-controller-popup')?.style.display === 'block';
+    const leftFullscreen = !first && remotePresentation?.fullscreen === true && state.fullscreen === false;
     let resumePresentation = false;
     if (first) clearRemoteSession();
     if (remotePresentation && remotePresentation.owner !== state.owner) {
@@ -1095,10 +1118,14 @@
     remotePresentationSession = session; remotePresentation = state;
     // The visible top HUD owns the initial preference; later snapshots carry source/fullscreen changes.
     if (first && state.hudCollapsed !== hudCollapsed) remoteControl('hud-collapsed', hudCollapsed);
+    if (first && hudPlacement) remoteControl('hud-placement', hudPlacement);
     renderRemoteHud();
     if (resumePresentation) document.getElementById('pvc-controller-popup')?.__nokActivity?.(true);
+    if (leftFullscreen && state.hudPlacement) {
+      hudPlacement = state.hudPlacement; applyHudPlacement(document.getElementById('pvc-controller-popup'));
+    }
     if (first) {
-      const popup = document.getElementById('pvc-controller-popup'); resetPopupToDefaultPosition(popup); clampPopupToViewport(popup); resetIdleTimer(popup);
+      const popup = document.getElementById('pvc-controller-popup'); if (!wasOpen) resetPopupToDefaultPosition(popup); clampPopupToViewport(popup); resetIdleTimer(popup);
     }
   }
   function renderRemoteHud() {
@@ -1135,9 +1162,8 @@
     text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
     document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
     text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
-    for (const [id, show] of [['pvc-drm-status-badge', state.drm], ['pvc-no-video-alert', !state.hasVideo]]) {
-      const element = document.getElementById(id); if (element) element.style.display = show ? 'block' : 'none';
-    }
+    const drmBadge = document.getElementById('pvc-drm-status-badge'); if (drmBadge) drmBadge.style.display = state.drm ? 'block' : 'none';
+    setNoVideoAlertVisible(!state.hasVideo);
     renderRemoteQualities(); renderRemoteTargets();
   }
   function renderRemoteQualities() {
@@ -3267,6 +3293,20 @@
     }
   }
 
+  // An open top panel that loses its video on a page transition must look in frames again;
+  // otherwise a player that arrives in an iframe stays unfound until the panel is reopened.
+  function resumeFrameSearchAfterVideoLoss(video) {
+    if (window.parent !== window || remoteSourceSession) return;
+    if (document.getElementById('pvc-controller-popup')?.style.display !== 'block') return;
+    if (video) {
+      localVideoSeen = true;
+      if (localSearchAfterLoss) { localSearchAfterLoss = false; postHudSignal('PVC_HUD_OPENED'); }
+    } else if (localVideoSeen) {
+      localVideoSeen = false; localSearchAfterLoss = true;
+      window.postMessage({ type: 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
+    }
+  }
+
   function updateRealtimeResolutionBadge() {
     if (remotePresentation) { renderRemoteHud(); return; }
     const { video, player } = findVideoAndPlayer();
@@ -3293,10 +3333,8 @@
       badge.style.color = 'var(--pvc-muted, #a2b6c0)';
     }
 
-    const noVideoAlert = document.getElementById('pvc-no-video-alert');
-    if (noVideoAlert) {
-      noVideoAlert.style.display = video ? 'none' : 'block';
-    }
+    setNoVideoAlertVisible(!video);
+    resumeFrameSearchAfterVideoLoss(video);
     if (video) {
       updateDrmHudBadge(video);
       const adapter = getActiveAdapter(video, player);
@@ -5090,6 +5128,7 @@
   // Açılış sağ üsttedir; kullanıcı her iki modda da paneli yatay/dikey taşıyabilir.
   function resetPopupToDefaultPosition(popup) {
     if (!popup || isFullscreenMode()) return;
+    hudPlacement = null; topBeforeNoVideoAlert = null;
     popup.style.setProperty('top', `${HUD_DEFAULT_TOP}px`, 'important');
     popup.style.setProperty('right', `${HUD_RAIL_RIGHT}px`, 'important');
     popup.style.setProperty('left', 'auto', 'important');
@@ -5124,6 +5163,31 @@
     const popup = document.getElementById('pvc-controller-popup');
     if (popup) clampPopupToViewport(popup);
   });
+
+  // The normal and fullscreen panels of an embedded player are separate elements in separate
+  // documents, so their shared place travels as a ratio of the free viewport space.
+  function hudFreeSpace(rect) {
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    return { x: Math.max(0, vw - rect.width - 2 * EDGE_MARGIN), y: Math.max(0, vh - rect.height - 2 * EDGE_MARGIN) };
+  }
+  function rememberHudPlacement(popup) {
+    topBeforeNoVideoAlert = null; // The user's new place wins over an earlier automatic move.
+    const rect = popup.getBoundingClientRect(), free = hudFreeSpace(rect);
+    const ratio = (start, span) => span > 0 ? Math.round(Math.max(0, Math.min(1, (start - EDGE_MARGIN) / span)) * 1000) / 1000 : 0;
+    hudPlacement = { x: ratio(rect.left, free.x), y: ratio(rect.top, free.y) };
+    if (remotePresentation) remoteControl('hud-placement', hudPlacement);
+    else if (remoteSourceSession) publishRemoteSourceState();
+  }
+  function applyHudPlacement(popup) {
+    if (!hudPlacement || !popup || popup.style.display === 'none') return;
+    const free = hudFreeSpace(popup.getBoundingClientRect());
+    popup.style.setProperty('left', `${Math.round(EDGE_MARGIN + hudPlacement.x * free.x)}px`, 'important');
+    popup.style.setProperty('top', `${Math.round(EDGE_MARGIN + hudPlacement.y * free.y)}px`, 'important');
+    popup.style.setProperty('right', 'auto', 'important');
+    popup.style.setProperty('bottom', 'auto', 'important');
+    clampPopupToViewport(popup);
+  }
 
   function makeDraggable(popup, header) {
     // Not: HUD üzerindeki olay izolasyonu (stopPropagation) 'mouseup' olayını document'a ulaştırmaz.
@@ -5200,6 +5264,8 @@
         window.removeEventListener('pointerup', endDrag, true);
         window.removeEventListener('pointercancel', endDrag, true);
         window.removeEventListener('blur', endDrag, true);
+        const moved = popup.getBoundingClientRect();
+        if (moved.left !== startLeft || moved.top !== startTop) rememberHudPlacement(popup);
       };
 
       window.addEventListener('mousemove', onMouseMove, true);
@@ -5902,7 +5968,7 @@
     }
     syncFullscreenElements();
     popup.style.display = wasClosed ? 'block' : 'none';
-    if (!wasClosed) { stopAdWatch(); postHudSignal('PVC_HUD_CLOSED'); }
+    if (!wasClosed) { stopAdWatch(); postHudSignal('PVC_HUD_CLOSED'); localVideoSeen = false; localSearchAfterLoss = false; }
     if (popup.style.display === 'block') {
       if (wasClosed) resetPopupToDefaultPosition(popup);
       clampPopupToViewport(popup);

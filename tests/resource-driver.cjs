@@ -2,8 +2,14 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {spawn,execFileSync,execFile}=require('node:child_process');
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const root=path.resolve(__dirname,'..');
-function processMemory(pid,perProcess=false){return JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(pid),...(perProcess?['-PerProcess']:[])],{encoding:'utf8',windowsHide:true}));}
-function performanceWindow(pid,seconds){return new Promise((resolve,reject)=>execFile('pwsh.exe',['-NoProfile','-File',path.join(__dirname,'measure-browser-performance.ps1'),'-RootProcessId',String(pid),'-DurationSeconds',String(seconds)],{encoding:'utf8',windowsHide:true},(error,stdout)=>error?reject(error):resolve(JSON.parse(stdout))));}
+// PowerShell 7 when present, otherwise the Windows PowerShell shipped with the OS.
+let measurementShell;
+function shell(){
+  if(!measurementShell){try{execFileSync('pwsh.exe',['-NoProfile','-Command','exit 0'],{stdio:'ignore',windowsHide:true});measurementShell='pwsh.exe';}catch(_){measurementShell='powershell.exe';}}
+  return measurementShell;
+}
+function processMemory(pid,perProcess=false){return JSON.parse(execFileSync(shell(),['-NoProfile','-File',path.join(__dirname,'measure-browser-memory.ps1'),'-RootProcessId',String(pid),...(perProcess?['-PerProcess']:[])],{encoding:'utf8',windowsHide:true}));}
+function performanceWindow(pid,seconds){return new Promise((resolve,reject)=>execFile(shell(),['-NoProfile','-File',path.join(__dirname,'measure-browser-performance.ps1'),'-RootProcessId',String(pid),'-DurationSeconds',String(seconds)],{encoding:'utf8',windowsHide:true},(error,stdout)=>error?reject(error):resolve(JSON.parse(stdout))));}
 async function createDriver(engine,executablePath,packages,options={}){
   const extensionRoot=options.extensionRoot||root;
   if(engine==='chromium'){

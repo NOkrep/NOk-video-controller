@@ -1,5 +1,34 @@
 # Etkin çalışma kapsamı
 
+## D-01 dar hedef tamam — 4 Kasım 2026
+
+`tests/memory-soak.cjs`, eklentisiz / pasif / aktif koşulları iki motorda uzun oynatma ve 90 video değişimiyle karşılaştırdı. Eklentiye özgü büyüyen sızıntı bulunmadı, bu yüzden üretim kodu ve sürüm değişmedi (v0.7.8).
+
+15 dakikalık oynatmada iki motorda da sürekli büyüme yoktu. Edge'deki değişim başına yaklaşık 1 MiB renderer artışı eklentisiz de aynıdır ve 60 değişimden sonra yatay hale geliyor. Firefox'ta boost/mono kullanılan kaldırılmış videoların askıdaki `AudioContext`leri tarayıcı toplayana kadar kalıyor: 90 değişimde kontrollerin yaklaşık 100–200 MiB üstü, zorlanmış toplamayla geri dönüyor. Bağlamı erken kapatmak geri eklenen videoyu sessiz bırakacağı için değiştirilmedi.
+
+**Sınırlar:** Sentetik tek sayfa ve 15 dakikadır. Saatlik oynatma, gerçek MSE/HLS sitesi, 4K, çok sekme maliyeti ve tahsisin kesin nedeni açık. Ayrıntı MEMORY_MEASUREMENTS.md.
+
+## I-08 yerel kapsam tamam, v0.7.8 — 4 Kasım 2026
+
+Yeni `tests/hud-continuity-browser.cjs`, kurulu eklentiyle Firefox 159 ve Edge 152'de panel konumunu, her çerçevedeki görünür panel sayısını ve komut ulaşımını ölçtü. Düzeltmeden önce dört hata yeniden üretildi; test önce başarısız, düzeltmeden sonra geçti.
+
+- **#97:** Açık paneldeki üst sayfa videosu kaybolup oynatıcı iframe'de gelince panel kapatılıp açılana kadar "video yok" kalıyordu. Çocuk çerçeve araması yalnız açılışta başlıyordu. Panel artık video kaybında aramayı yeniliyor, yerel video dönerse aramayı kapatıyor.
+- **#110:** İframe oynatıcıda normal ve tam ekran paneli ayrı öğelerdir; yer paylaşılmadığı için tam ekranda varsayılan köşeye atlıyordu. Yer, boş alanın 0–1 oranıyla iki yönde aktarılır. Sayfa koordinatı, adres veya medya konumu taşınmaz.
+- **Kaynak değişimi:** Açık ve taşınmış panel her yeni oturumda köşeye dönüyordu; artık yerini korur. Kapatıp açınca varsayılan köşeye dönüş belgelenmiş davranıştır, korunur.
+- **Uyarı:** "Video yok" uyarısı alttaki paneli ekran dışına taşırıyordu. Panel uyarı süresince yukarı çıkar, uyarı kalkınca kullanıcının yerine döner.
+
+**Kanıt:** 217/217 Node testi ve kaynak/sürüm/izin denetimi. İki motorda yeni süreklilik testi ile `hud-state`, `pip`, `startup` ve dar pencereli `ui-smoke` geçti. Yeni test CI matrisine eklendi; uzak sonucu bu kayıt yazılırken görülmedi.
+
+**Sınırlar:** Sentetik yerel kabuldür; gerçek site kabulü açık. Taranan akışlarda çift görünür panel (#80) ve kendiliğinden kapanma (#94) üretilmedi; gerçek sitelerde olmadığı kanıtlanmadı. Video kaybolmayıp `readyState 0` ile kalan geçişte iframe araması yenilenmez: bir reklam çerçevesinin kontrolü alma riski nedeniyle bilinçli bırakıldı. Commit ve push yapıldı; `main` birleşmesi kullanıcıdadır.
+
+## I-07 askıda — 4 Kasım 2026
+
+Kullanıcı I-07'yi askıya aldı. Üretim kodu ve sürüm değişmedi. Kök neden bulunmadı; sorun çözüldü denemez.
+
+**Kanıt:** yeni `tests/av-sync-browser.cjs`, gerçek Hls.js, kurulu eklenti ve 2 saniyede bir flaş + bip içeren sentetik HLS ile Firefox 159 ve Edge 152'de çalıştı. #104'teki hızlı komut dizisi, grafiğin önce/sonra oluşması, ses 0, boost 200, duraklat/devam ve 4 dakikalık oynatma kayma birikimi üretmedi: 1x değerleri yaklaşık 18–54 ms, 1,5x–2x değerleri yaklaşık 44–102 ms aralığında kaldı; hız, ses ve sarma komutları videoya ulaştı. Değerler Web Audio grafiği içindendir, sabit fixture/gecikme payları içerir ve hoparlör algısını kanıtlamaz. `graph-first` ve `native-first` turları tek tekrardır. Bu koşulda Web Audio hipotezi desteklenmedi.
+
+**Sınır:** #104'ün gerçek sitesinde sınanamadı: site otomasyonlu test profilini bot korumasıyla geçirmedi. Ölçüm kopyası fikri reddedildi ve taslakları hiç çalıştırılmadan kenarda bırakıldı. Gerekçe ve yeniden değerlendirme koşulu PROJECT_HANDOFF.md §8'de. Ajan panelinde birlikte test önerisi açık bir seçenek olarak kayıtlı.
+
 ## Claude Code devir kabulü ve kullanıcı kararları — 4 Kasım 2026
 
 Claude Code handoff, yerel prosedür ve kılavuzu okudu; Git durumunu kendi doğruladı. `npm run check` ve `hud-state-browser.cjs` Firefox 159 / Edge 152'de geçti; `ACCEPTANCE.json` hash'leri güncel JS/CSS ile eşleşti; `d70940e` uzak CI'ı başarılı, `main` ruleset ile korumalı. Canlı site kabulü yapılmadı.
@@ -92,7 +121,7 @@ Kullanıcının `icons/filmdeck_kaset_tam_radyus_4096.png` çiziminden saydam 16
 
 HUD'da ortak SVG çizgi simgeleri, tema rengini izleyen FilmDeck logo maskesi ve alt `by NOk` imzası uygulandı. Sürüm Ayarlar → Hakkında bölümüne taşındı; kullanıcının araç çubuğu ikonları ve özgün çizimleri korunur. 179 Node testi ve Firefox/Chromium normal/dar pencere HUD kontrolleri geçti. GitHub push/PR için kaynak/sürüm/izin/çalışma dosyaları ile iki motorlu sentetik HUD kontrol akışı hazır; uzak işçide ilk çalışma push sonrasıdır. Komutlar ve kanıt sınırları TESTING.md içinde. Önceki gerçek site/performans hedefleri bu UI/CI işiyle kapatılmadı. Commit, push, ZIP veya release yapılmadı.
 
-30 Ekim 2026. Kaynak sürümü **v0.7.7.9 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
+30 Ekim 2026. Kaynak sürümü **v0.7.8 — FilmDeck by NOk**. Önceki v0.7.0.1 çalışması korunur; yeni kullanıcı raporları mevcut hedefin devamıdır. Tamamlanmış dil/tema/iframe filtre kuyruğu işleri yeniden yapılmaz. Kullanıcı istemeden ZIP, pre-release, normal release veya push hazırlanmaz. Kaynak klasörü esas alınır.
 
 1. **Bellek:** ayrı Firefox test profilinde eklentisiz/kapalı/açık ve tekrarlı aç-kapat/video değiştirme ölçümü; süreç belleği ile JS/nesne tutulması ayrımı; kişisel tarayıcı geçmişi ve ham heap rapora girmez.
 2. **Yanlış video ve geç keşif:** yüklenmemiş veya görünmeyen gömülü oynatıcıların çalışan videonun önüne geçmesini engelle; gerçek API/video sahipliğiyle adaptör seç; kullanıcı seçimini koru.

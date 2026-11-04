@@ -63,7 +63,7 @@ Uzun video oynatma, yoğun SPA/video değiştirme, sesli gerçek dosyada boost/m
 
 ## Tekrar çalıştırma
 
-Node.js, PowerShell 7 ve zaten kurulu browser/Playwright kullanılır; scriptler dependency/browser indirmez. Windows sandbox browser başlatmayı engellerse yalnız test komutu için uygulama onayı gerekir. Örnekler:
+Node.js, PowerShell 7 (yoksa Windows PowerShell) ve zaten kurulu browser/Playwright kullanılır; scriptler dependency/browser indirmez. Windows sandbox browser başlatmayı engellerse yalnız test komutu için uygulama onayı gerekir. Örnekler:
 
 ```powershell
 node tests/firefox-integration.cjs --browser="C:/Program Files/Mozilla Firefox/firefox.exe" --memory
@@ -103,6 +103,52 @@ Tam tur ham sayısal kanıtları Git dışındaki `tests/artifacts/resource-{chr
 node tests/prepare-browser-fixtures.cjs --audio-fixture
 node tests/resource-investigation.cjs --engine=firefox --browser="<firefox.exe>" --label=memory-check --assert-clean
 node tests/resource-investigation.cjs --engine=chromium --browser="<Chromium browser.exe>" --packages="<Playwright node_modules>" --label=memory-check --assert-clean
+```
+
+## D-01 v0.7.8: uzun oynatma ve 90 video değişimi
+
+4 Kasım 2026. Yeni `tests/memory-soak.cjs`, Firefox 159 ve Edge 152'de aynı yerel 720p30/Opus dosyasını üç koşulla karşılaştırır: eklentisiz (`native`), kurulu ama panel açılmamış (`passive`), panel açık ve her videoda boost/mono (`active`). Sonuçlardaki kaynak SHA256, ölçülen v0.7.8 `injected.js` ile eşleşir. Üretim kodu değişmedi. Her koşul ayrı geçici profildir; farklar yaklaşık sınırdır, kesin eklenti maliyeti diye çıkarılmaz.
+
+**Sonuç:** Eklentiye özgü büyüyen bir sızıntı bulunmadı. Görülen büyüme tarayıcı renderer'ında ve eklentisiz de oluşuyor. Tek eklentiye özgü fark, Firefox'ta boost/mono kullanılan kaldırılmış videoların tarayıcı toplayana kadar geçici bellek tutması.
+
+### Uzun oynatma
+
+Aynı videoda 15 dakikalık `active` oynatmada Firefox 581 MiB civarında düz kaldı (dakika 5–15: 580–582). Edge 340'tan 347–356 MiB bandına çıktı ve yükselmeye devam etmedi; JS heap 2–2,7 MiB, dinleyici sayısı 136'da sabit kaldı. Canlı video ve bağlam birer tane kaldı. 4 dakikalık üç koşullu turda da büyüme yoktu.
+
+### 60 video değişimi, toplama sonrası
+
+| Koşul | Edge başlangıç → 60 değişim (MiB) | Edge renderer (MiB) | Firefox başlangıç → 60 değişim (MiB) |
+|---|---:|---:|---:|
+| `native` | 288 → 486 | 81 → 276 | 454 → 458 |
+| `passive` | 322 → 524 | 109 → 304 | 458 → 463 |
+| `active` | 340 → 580 | 122 → 319 | 474 → 518 |
+
+- **Edge:** Toplam artışın neredeyse tamamı renderer'dadır ve üç koşulda aynıdır (+195, +195, +197 MiB). İkinci yarıdaki eğim 1,03 / 1,05 / 0,99 MiB/değişimdir. GC'siz 90 değişimlik turda hem eklentisiz (505 → 508) hem `active` (583 → 586) 60. değişimden sonra yatay hale geldi. JS heap, DOM ve dinleyici birikmedi. Kesin tahsis nedeni (decoder, cache veya allocator) belirlenmedi.
+- **Firefox:** `explicit` grupları düz kaldı. `active` koşulunda `gfx` panel açıkken 68 → 96 MiB oldu, panel kapanınca 68'e döndü. `passive` JS farkı yaklaşık 2,6 MiB'tır. Eğim 0,06 MiB/değişimin altındadır.
+- **Panel:** Edge `active` GPU süreci panel açıkken 120 → 154, kapandıktan sonra 119 MiB oldu.
+
+### Tarayıcının kendi toplaması (GC zorlanmadan 90 değişim)
+
+| Tur | Canlı kaldırılmış video | Canlı `AudioContext` | Toplam private (MiB) | Sonra zorlanmış toplama |
+|---|---:|---:|---:|---:|
+| Firefox `native` | 90 | 0 | 482–557, inip çıkıyor | 454 |
+| Firefox `passive` | 90 | 0 | 496–582, inip çıkıyor | 462 |
+| Firefox `active` | 90 | 90 (1'i çalışıyor) | 597 → 681, sürekli artıyor | 496 |
+| Edge `native` | 90 | 0 | 357 → 508 | 482 |
+| Edge `active` | 0–2 | 8–14 | 452 → 586 | 545 |
+
+Firefox ölçüm süresince (yaklaşık 5 dakika) kaldırılmış videoları eklentisiz de toplamadı; bu eklentiye özgü değildir. Ancak boost/mono kullanılan her video askıda bir `AudioContext` tutar ve toplanana kadar 90 değişimde kontrollerin yaklaşık 100–200 MiB üstüne çıkar (681 MiB'a karşı 90. değişimde 482 ve 582 MiB; kontroller inip çıktığı için aralık geniştir). Bellek zorlanmış toplamayla geri döner, bu yüzden kalıcı sızıntı değildir. Edge kendi toplamasıyla bağlamları topladı. Her videoya bir bağlam açılması başarısız olmadı: 91 videonun hepsi bağlandı, en çok bir bağlam çalıştı.
+
+**Düzeltme yapılmadı:** Bağlamı kaldırmada kapatmak, sonradan aynı öğeyi geri ekleyen sitelerde geri alınamaz biçimde sessiz video üretir (v0.7.2 kararı). 90 boost'lu video değişimi seyrek ve geri alınabilir bir maliyet olduğundan bu riske değmez.
+
+### Sınırlar
+
+Sentetik sessiz Opus dosyası, arka planda çalışan tarayıcı ve tek sayfadır. 15 dakikalık oynatma saatler boyu kararlılığı kanıtlamaz. GC'siz turlar tek tekrardır ve Firefox'un daha uzun bekleyişte toplayıp toplamadığı ölçülmedi. Gerçek MSE/HLS sitesi, 4K, çok sekme/iframe başına eklenti maliyeti ve farklı donanım ölçülmedi. Ham sayılar Git dışı `tests/artifacts/memory-soak-{soak,natural,long}/` altındadır.
+
+```powershell
+node tests/memory-soak.cjs --engine=firefox --condition=active --label=soak
+node tests/memory-soak.cjs --engine=firefox --condition=active --label=natural --no-forced --minutes=1 --replacements=90
+node tests/memory-soak.cjs --engine=chromium --condition=active --label=long --minutes=15 --replacements=0
 ```
 
 ## v0.7.4: kategori ölçümü ve eklentisiz video değiştirme kontrolü

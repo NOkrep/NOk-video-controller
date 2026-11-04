@@ -32,8 +32,9 @@
   const revision = num(0, 2147483647, true);
   const appearance = shape({ fontSize: num(12, 48, true), bottom: num(0, 40, true), background: num(0, 100, true), color: choice(['white', 'yellow']) });
   const filters = shape({ brightness: num(50, 150), contrast: num(50, 150), saturate: num(0, 200), nightShield: bool, invert: bool });
+  const placement = shape({ x: num(0, 1), y: num(0, 1) }); // Panel place as viewport ratios; never page coordinates or media position.
   const stateSpec = {
-    owner: value => cleanSession(value) || undefined, revision, hasVideo: bool, fullscreen: bool, hudCollapsed: bool, paused: bool, muted: bool, pipActive: bool,
+    owner: value => cleanSession(value) || undefined, revision, hasVideo: bool, fullscreen: bool, hudCollapsed: bool, hudPlacement: nullable(placement), paused: bool, muted: bool, pipActive: bool,
     width: num(0, 16384, true), height: num(0, 8640, true), rate: num(0, 16), requestedRate: num(0.25, 3),
     volume: num(0, 100), requestedVolume: num(0, 300), audioMode: choice(['stereo', 'mono']),
     adapter: choice(adapters), forcedAdapter: choice(adapters), drm: bool,
@@ -49,7 +50,7 @@
     audio: choice(['stereo', 'mono']), quality: num(0, 127, true), target: num(-1, 31, true),
     adapter: choice(adapters.filter(item => item !== 'unknown')), filters, appearance,
     'subtitle-visible': bool, 'subtitle-offset': choice([-100, 0, 100]),
-    'hotkeys': bool, 'presentation-active': bool, 'hud-collapsed': bool
+    'hotkeys': bool, 'presentation-active': bool, 'hud-collapsed': bool, 'hud-placement': placement
   };
   function cleanCues(value) {
     if (!Array.isArray(value) || value.length === 0 || value.length > 20000) return undefined;

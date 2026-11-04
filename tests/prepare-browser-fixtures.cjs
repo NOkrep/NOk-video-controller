@@ -26,6 +26,13 @@ function digest(data){return crypto.createHash('sha256').update(data).digest('he
       '-f','lavfi','-i','anullsrc=r=48000:cl=stereo','-t','30','-c:v','libvpx','-deadline','realtime','-cpu-used','8',
       '-b:v','1500k','-c:a','libopus','-b:a','32k','-shortest','-y',perfMedia]);
   }
+  if(process.argv.includes('--av-fixture')){ // I-07: white flash and 1 kHz beep start together every 2 s.
+    const avDir=path.join(output,'hls-av'),avPlaylist=path.join(avDir,'av.m3u8');fs.mkdirSync(avDir,{recursive:true});
+    const tone="if(lt(mod(t\\,2)\\,0.05)\\,0.8*sin(2*PI*1000*t)\\,0)";
+    if(force||!fs.existsSync(avPlaylist))run(['-f','lavfi','-i',"color=c=black:s=640x360:r=30,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='lt(mod(t\\,2)\\,0.1)'",
+      '-f','lavfi','-i',`aevalsrc='${tone}|${tone}':s=48000:d=300`,'-t','300','-c:v','libx264','-preset','ultrafast','-crf','30','-pix_fmt','yuv420p',
+      '-g','60','-keyint_min','60','-sc_threshold','0','-c:a','aac','-b:a','96k','-hls_time','2','-hls_playlist_type','vod','-hls_segment_filename',path.join(avDir,'av-%03d.ts'),'-y',avPlaylist]);
+  }
   for(const height of [480,720,1080]){
     const playlist=path.join(hlsDir,height+'.m3u8');
     if(force||!fs.existsSync(playlist))run(['-i',media,'-t','24','-vf',`scale=-2:${height}`,'-an','-c:v','libx264','-preset','ultrafast','-crf','30','-pix_fmt','yuv420p',
