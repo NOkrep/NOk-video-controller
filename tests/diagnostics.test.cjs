@@ -28,7 +28,7 @@ class Element {
   setAttribute(name, value) { (this.attributes ||= {})[name] = value; }
   getAttribute(name) { return this.attributes?.[name] ?? null; }
   hasAttribute(name) { return Object.hasOwn(this.attributes || {}, name); }
-  querySelector(selector) { return this.children[selector.slice(1)] || null; }
+  focus() {} querySelector(selector) { return this.children[selector.slice(1)] || null; }
   addEventListener(type, callback) { (this.listeners[type] ||= []).push(callback); }
   emit(type) { for (const callback of this.listeners[type] || []) callback({ target: this, stopPropagation() {} }); }
   remove() { this.removed = true; }

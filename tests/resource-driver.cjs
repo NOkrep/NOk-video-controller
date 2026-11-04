@@ -26,7 +26,15 @@ async function createDriver(engine,executablePath,packages,options={}){
     const sessions=new Map();let extensionId;
     const session=async page=>{if(!sessions.has(page))sessions.set(page,await context.newCDPSession(page));return sessions.get(page);};
     return {engine,version:browser.version(),
-      install:async()=>{const result=await cdp.send('Extensions.loadUnpacked',{path:extensionRoot});extensionId=result.id;return result;},
+      install:async()=>{
+        const result=await cdp.send('Extensions.loadUnpacked',{path:extensionRoot});extensionId=result.id;
+        // The browser drops a toolbar action that arrives before a new install's worker registers its listener.
+        for(const end=Date.now()+10000;;await delay(20)){
+          const worker=context.serviceWorkers().find(item=>item.url().startsWith(`chrome-extension://${extensionId}/`));
+          if(worker&&await worker.evaluate(()=>chrome.action.onClicked.hasListeners()).catch(()=>false))return result;
+          if(Date.now()>end)throw Error('Extension worker did not register its toolbar listener');
+        }
+      },
       toolbar:async page=>{
         const targets=await cdp.send('Target.getTargets',{filter:[{type:'tab',exclude:false}]});
         const tab=targets.targetInfos.find(info=>info.url===page.url());
@@ -39,6 +47,7 @@ async function createDriver(engine,executablePath,packages,options={}){
       hover:(page,selector)=>page.locator(selector).hover({timeout:5000}),
       pointerClick:(page,selector)=>page.locator(selector).click({timeout:5000}),
       type:(page,text)=>page.keyboard.type(text,{delay:20}),
+      press:(page,key)=>page.keyboard.press(key),
       reload:page=>page.reload(), activate:page=>page.bringToFront(),
       evaluate:(page,fn,...args)=>page.evaluate(({code,args})=>(0,eval)(`(${code})(...${JSON.stringify(args)})`),{code:String(fn),args}),
       profileStart:async page=>{const client=await session(page);await client.send('Profiler.enable');await client.send('Profiler.setSamplingInterval',{interval:1000});await client.send('Profiler.start');},
@@ -170,6 +179,10 @@ async function createDriver(engine,executablePath,packages,options={}){
       reload:async page=>{const url=(await send('browsingContext.getTree',{root:page})).contexts[0].url;await send('browsingContext.navigate',{context:page,url,wait:'complete'});},
       type:(page,text)=>send('input.performActions',{context:page,actions:[{type:'key',id:'nok-report-typing',actions:[...text].flatMap(value=>[
         {type:'keyDown',value},{type:'keyUp',value},{type:'pause',duration:20}])}]}),
+      press:(page,key)=>{ // Same key names as Playwright, as WebDriver key values.
+        const codes={Tab:'',Escape:'',Enter:'',' ':' '},parts=key.split('+'),value=codes[parts.at(-1)]||parts.at(-1),shift=parts.includes('Shift');
+        return send('input.performActions',{context:page,actions:[{type:'key',id:'nok-key-press',actions:[...(shift?[{type:'keyDown',value:''}]:[]),{type:'keyDown',value},{type:'keyUp',value},...(shift?[{type:'keyUp',value:''}]:[])]}]});
+      },
       gc:async page=>{
         memoryPage ||= await open('about:memory');
         const found=await evaluate(memoryPage,()=>{
