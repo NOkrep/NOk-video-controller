@@ -35,6 +35,12 @@ Odak halkası metin alanında soluklaştırıldı, tam güçteki halka çizgiler
 
 Sıradaki denemeler (anahtar eğrileri ve parıltı, düğmenin iç kapağı) uygulanmadı. Ölçümde sorun çıkmadı ama tek donanım örneğidir ve kullanıcı yalnız rapor penceresini seçti.
 
+## v0.7.16 panel tooltip'i (D-09)
+
+Kaynak: [vinodjangid07 tooltip](https://uiverse.io/vinodjangid07/funny-panther-79) kaynak kodu doğrulanamadığı için kullanılmadı; tooltip projenin kendi kodudur, bu yüzden THIRD_PARTY_NOTICES.md değişmedi. Tek öğe panelin içindedir, tema ve erişilebilirlik ayarlarını oradan alır. Yalnız Adaptör, CDN ve kalite durumlarında kullanılır; diğer ipuçları tarayıcının `title` ipucu olarak kaldı. Form örneği hâlâ uygulanmadı.
+
+Hareket: 125 ms opacity ve `scale(0.97)`, hedefe bakan çıkış noktası. Yan öğeye geçişte ve klavyede giriş hareketi yoktur. Kapanış anlıktır.
+
 ## Hareket azaltma ve sonraki tasarım denemesi
 
 Settings → Accessibility → Reduce motion başlangıçta işletim sistemi tercihini izler ve RAM'de değiştirilebilir. Açıkken düğmenin yer değiştirmesi, switch/check geçişleri ve loader animasyonu devre dışıdır. Kontroller çalışmayı sürdürür. Bu nedenle animasyon görülmediğinde önce bu tercih kontrol edilmelidir.

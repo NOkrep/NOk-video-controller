@@ -44,7 +44,7 @@ async function main(){
       await driver.evaluate(page,()=>{document.getElementById('pvc-quick-toast')?.remove();document.getElementById('pvc-ping-btn').click();});
       await until(driver,page,()=>{const b=document.getElementById('pvc-ping-btn');return b.getAttribute('aria-busy')==='false'&&!b.disabled;},'measurement finished');
       const read=await driver.evaluate(page,()=>{const b=document.getElementById('pvc-ping-btn'),t=document.getElementById('pvc-quick-toast'),r=t?.getBoundingClientRect();
-        return {label:b.textContent.trim(),title:b.title,color:b.style.color,toast:t?.textContent||'',buttonFits:b.scrollWidth<=b.clientWidth+1,labelLines:b.querySelector('[data-pvc-ui-label]').getClientRects().length,toastFits:!!r&&r.left>=0&&r.right<=innerWidth};});
+        return {label:b.textContent.trim(),title:b.getAttribute('data-pvc-tip'),color:b.style.color,toast:t?.textContent||'',buttonFits:b.scrollWidth<=b.clientWidth+1,labelLines:b.querySelector('[data-pvc-ui-label]').getClientRects().length,toastFits:!!r&&r.left>=0&&r.right<=innerWidth};});
       assert.equal(read.buttonFits,true,`${kind} button text overflows: ${read.label}`);assert.equal(read.labelLines,1,`${kind} button label wraps: ${read.label}`);assert.equal(read.toastFits,true,`${kind} toast leaves the viewport: ${read.toast}`);
       await page.close?.();
       return read;

@@ -4,15 +4,24 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.15**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
-- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-10, D-11.
-- **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-09 (tooltip), I-11, D-06.
+- **Sürüm:** Kaynak sürümü **v0.7.16**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11.
+- **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, I-11, D-06.
 - **Codex'te:** I-13.
 - **Kapandı:** D-07; finalist seçilmeyecek, 20 tema kalıyor.
 - **Karar bekliyor:** B5 kesin sürüm kuralı.
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+
+## D-09 panel tooltip'i, v0.7.16 — 6 Kasım 2026
+
+- **Değişen:** Adaptör rozeti, CDN düğmesi, kalite düğmeleri ve kalite durum satırındaki açıklamalar tarayıcı ipucundan kendi tooltip'imize geçti. Adaptör açıklaması artık seviyesini anlatır; kalite düğmesi ve durum satırı isteğin gerçek durumunu anlatır. Kalite düğmelerindeki "1080p • 1080p" gibi görünen etiketi tekrar eden eski ipucu kaldırıldı, varsa bit hızı yazar. Gömülü oynatıcıda düğmeler için ipucu yoktu, artık var.
+- **Davranış:** Fare 400 ms sonra açar, yana geçişte bekletmez, imleç metne gidebilir, basınca kapanır. Klavye odakta hemen açar, Esc yalnız tooltip'i kapatır. Dokunmatikte düğmede 500 ms basılı tutma işlemi çalıştırmadan açar, rozet ve durumda kısa dokunuş yeter. Rozet ve durum satırı yalnız açıklaması varken Tab ile ulaşılır. Zamanlayıcı ve pencere dinleyicisi yalnız açılırken ve açıkken vardır.
+- **Testle bulunan hata:** Genel azaltılmış hareket kuralı tooltip'e işlemiyordu (aynı ağırlık, önce geliyor); ayrı kural eklendi.
+- **Kanıt:** 268/268 Node; 14 tarayıcı testi iki motorda (28/28), yeni `tooltip` dahil. Kalite açıklamaları gerçek Video.js ile `quality-mapping` içinde. Görsel kontrol Edge'de, büyük yazı ve yüksek kontrast dahil. Uzak CI görülmedi.
+- **Sınır:** Dokunmatik sentetik olaylarla sınandı, gerçek telefonda değil. Ekran okuyucuda dinlenmedi, yalnız `aria-describedby` bağlantısı doğrulandı.
+- **Yan bulgu (değiştirilmedi):** Büyük yazıda "CDN yanıtı" düğmesinde sözcük harf ortasından bölünüyor. Bu değişiklikten gelmiyor.
 
 ## D-08 rapor animasyonları, ölçüm ve kare kaybı bildirimi, v0.7.15 — 5 Kasım 2026
 

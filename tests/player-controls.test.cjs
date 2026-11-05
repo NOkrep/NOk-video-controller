@@ -45,6 +45,7 @@ function harness(host = 'example.invalid') {
     pendingQualityLabel: '', pendingQualityHeight: 0, pendingTimeoutTimer: null,
     fetch: async (url, options) => { requests.push({ url, options }); return { ok: true }; }
   });
+  vm.runInContext(section('  // UI TOOLTIP', '  // END UI TOOLTIP'), context);
   vm.runInContext(section('  const UI_MESSAGES', '  // END UI LOCALIZATION')
     + section('  const mediaLibraryBindings', '  function hookIvsInstance')
     + section('  const TrtAdapter', '  function updateCollapsedSummaryBar')
@@ -683,6 +684,7 @@ function qualityUi(h) {
     contains(node) { return node === this || this.childNodes.some(child => child.nodeType === 1 && child.contains(node)); }
     querySelectorAll(tag) { return this.childNodes.filter(node => node.tagName === tag.toUpperCase()); }
     setAttribute(name, value) { this.attributes[name] = value; }
+    removeAttribute(name) { delete this.attributes[name]; }
     getAttribute(name) { return this.attributes[name] || null; }
     hasAttribute(name) { return Object.hasOwn(this.attributes, name); }
     focus() { h.context.document.activeElement = this; }
@@ -816,19 +818,19 @@ test('CDN button shows the method, clears stale passive values and reports failu
   const h = harness(); const button = pingButton(h); h.run('uiLanguage = "tr"');
   h.context.performance.getEntriesByType = () => [{ name: 'https://cdn.invalid/part.m4s', requestStart: 100, responseStart: 140 }];
   await h.run('testCdnPing(true)');
-  assert.match(button.textContent, /40 ms/); assert.match(button.attributes.title, /son medya isteğinden/i);
+  assert.match(button.textContent, /40 ms/); assert.match(button.attributes['data-pvc-tip'], /son medya isteğinden/i);
   assert.notEqual(button.style.color, undefined);
   h.context.performance.getEntriesByType = () => [];
   await h.run('testCdnPing(true)');
-  assert.match(button.textContent, /CDN yanıtı/); assert.equal(button.style.color, ''); assert.match(button.attributes.title, /Her sitede ölçülemez/);
+  assert.match(button.textContent, /CDN yanıtı/); assert.equal(button.style.color, ''); assert.match(button.attributes['data-pvc-tip'], /Her sitede ölçülemez/);
   h.video.currentSrc = 'https://cdn.invalid/video.mp4';
   h.context.fetch = async () => { throw new Error('CORS PRIVATE_URL'); };
   await h.run('testCdnPing(false)');
   assert.match(button.textContent, /Sonuç yok/); assert.match(button.style.color, /muted/);
-  assert.match(button.attributes.title, /izin vermedi/); assert.equal(button.attributes.title.includes('PRIVATE_URL'), false);
+  assert.match(button.attributes['data-pvc-tip'], /izin vermedi/); assert.equal(button.attributes['data-pvc-tip'].includes('PRIVATE_URL'), false);
   h.context.fetch = async () => ({ ok: true });
   await h.run('testCdnPing(false)');
-  assert.match(button.attributes.title, /HEAD/);
+  assert.match(button.attributes['data-pvc-tip'], /HEAD/);
   h.context.performance.getEntriesByType = () => [];
   await h.run('testCdnPing(true)');
   assert.match(button.textContent, /\d+ ms/, 'a manual result is not cleared by the silent refresh');

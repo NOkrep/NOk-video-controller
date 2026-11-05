@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.15 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.16 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.15';
+  const EXTENSION_VERSION = '0.7.16';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -332,6 +332,15 @@
     'Sürüm {0}': 'Version {0}',
     'Video ve altyazı kontrolleri.': 'Video and subtitle controls.',
     'MIT lisansı · Kaynak kodu': 'MIT license · Source code',
+    'Siteye özel bağlantı: hız, ses ve kalite sitenin kendi oynatıcısı üzerinden kontrol edilir.': 'Site-specific connection: speed, volume and quality go through the site’s own player.',
+    'Oynatıcı kütüphanesi bağlantısı: kalite listesi oynatıcının bildirdiği seviyelerden gelir.': 'Player library connection: the quality list comes from the levels the player reports.',
+    'Evrensel mod: yalnız sayfadaki video öğesi kontrol edilir; kalite seçeneği olmayabilir.': 'Universal mode: only the page’s video element is controlled; quality options may be unavailable.',
+    'İstek oynatıcıya iletildi, sonucu bekleniyor.': 'The request reached the player; waiting for the result.',
+    'Oynatıcı bu seçimi doğruladı.': 'The player confirmed this choice.',
+    'Oynatılan görüntünün çözünürlüğü istenenle eşleşiyor.': 'The resolution being played matches the request.',
+    'Oynatıcı bu seviyeyi seçti; görüntünün değiştiği henüz görülmedi.': 'The player selected this level; the picture has not been seen to change yet.',
+    'Görüntü beklenen sürede istenen kaliteye geçmedi. Oynatıcı yine de sonradan geçebilir.': 'The picture did not reach this quality in the expected time. The player may still switch later.',
+    'Oynatıcı bu seçimi uygulamadı.': 'The player did not apply this choice.',
     'Video kare atlıyor. Panel animasyonları kapatılsın ve görüntü filtreleri sıfırlansın mı?': 'The video is dropping frames. Turn off panel animations and reset picture filters?',
     'Video kare atlıyor. Panel animasyonları kapatılsın mı?': 'The video is dropping frames. Turn off panel animations?',
     'Video kare atlıyor. Görüntü filtreleri sıfırlansın mı?': 'The video is dropping frames. Reset picture filters?',
@@ -436,7 +445,7 @@
       return;
     }
     if (root.hasAttribute?.('data-pvc-i18n-skip')) return;
-    for (const name of ['title', 'aria-label', 'placeholder', 'label']) {
+    for (const name of ['title', 'aria-label', 'placeholder', 'label', 'data-pvc-tip']) {
       if (root.hasAttribute?.(name)) {
         const originals = uiOriginalAttributes.get(root);
         setUiAttribute(root, name, originals?.[name] ?? root.getAttribute(name));
@@ -606,6 +615,181 @@
     button.appendChild(loader);
   }
   // END UI COMPONENTS
+
+  // UI TOOLTIP: own code. One element inside the panel, driven by data-pvc-tip; text only.
+  // Timers and window listeners exist only while it is opening or open.
+  const TOOLTIP_DELAY_MS = 400, TOOLTIP_SKIP_WINDOW_MS = 300, TOOLTIP_HIDE_GRACE_MS = 120, TOOLTIP_FOLLOW_MS = 200;
+  const TOOLTIP_LONG_PRESS_MS = 500, TOOLTIP_TOUCH_SLOP_PX = 10, TOOLTIP_MARGIN_PX = 8;
+  const ADAPTER_TIERS = { KickAdapter: 1, TrtAdapter: 1, NowTvAdapter: 1, PuhuTvAdapter: 1, YouTubeAdapter: 2, VideoJsAdapter: 2,
+    HlsJsAdapter: 2, ShakaPlayerAdapter: 2, DashJsAdapter: 2, GenericAdapter: 3 };
+  const ADAPTER_TIER_TIPS = {
+    1: 'Siteye özel bağlantı: hız, ses ve kalite sitenin kendi oynatıcısı üzerinden kontrol edilir.',
+    2: 'Oynatıcı kütüphanesi bağlantısı: kalite listesi oynatıcının bildirdiği seviyelerden gelir.',
+    3: 'Evrensel mod: yalnız sayfadaki video öğesi kontrol edilir; kalite seçeneği olmayabilir.'
+  };
+  const QUALITY_STATUS_TIPS = {
+    pending: 'İstek oynatıcıya iletildi, sonucu bekleniyor.',
+    confirmed: 'Oynatıcı bu seçimi doğruladı.',
+    'decoded-match': 'Oynatılan görüntünün çözünürlüğü istenenle eşleşiyor.',
+    'rendition-confirmed': 'Oynatıcı bu seviyeyi seçti; görüntünün değiştiği henüz görülmedi.',
+    'timed-out': 'Görüntü beklenen sürede istenen kaliteye geçmedi. Oynatıcı yine de sonradan geçebilir.',
+    rejected: 'Oynatıcı bu seçimi uygulamadı.'
+  };
+  const adapterTip = name => ADAPTER_TIER_TIPS[ADAPTER_TIERS[name]] || null;
+  const qualityChipTip = (base, status) => QUALITY_STATUS_TIPS[status] || base || null;
+  function setUiTip(element, source) {
+    if (!element || element.__nokTipSource === (source || null)) return;
+    element.__nokTipSource = source || null;
+    if (source) setUiAttribute(element, 'data-pvc-tip', source);
+    else element.removeAttribute('data-pvc-tip');
+  }
+  // For a status that is not a control: reachable by keyboard only while it has something to explain.
+  function setUiTipStop(element, source) {
+    if (!element) return;
+    setUiTip(element, source);
+    if (source) element.setAttribute('tabindex', '0'); else element.removeAttribute('tabindex');
+  }
+  function tooltipPosition(target, size, viewport, margin = TOOLTIP_MARGIN_PX) {
+    const clamp = (value, min, max) => Math.max(min, Math.min(value, Math.max(min, max)));
+    const fitsAbove = target.top - size.height - margin >= margin;
+    const below = !fitsAbove && viewport.height - target.bottom > target.top;
+    const top = clamp(below ? target.bottom + margin : target.top - size.height - margin, margin, viewport.height - size.height - margin);
+    const center = target.left + target.width / 2;
+    const left = clamp(center - size.width / 2, margin, viewport.width - size.width - margin);
+    return { left, top, below, originX: Math.max(0, Math.min(size.width, center - left)) };
+  }
+  function bindTooltips(popup) {
+    const tip = document.createElement('div');
+    tip.id = 'pvc-tooltip'; tip.className = 'pvc-tooltip'; tip.hidden = true;
+    tip.setAttribute('role', 'tooltip'); tip.setAttribute('data-pvc-i18n-skip', '');
+    popup.appendChild(tip);
+    let opener = null, showTimer = null, hideTimer = null, followTimer = null, closedAt = -Infinity, suppressed = null, press = null, pressFired = false;
+    const tipOwner = node => node?.closest?.('[data-pvc-tip]') || null;
+    const isOpen = () => !tip.hidden;
+    const cancelShow = () => { clearTimeout(showTimer); showTimer = null; };
+    const cancelHide = () => { clearTimeout(hideTimer); hideTimer = null; };
+    function place() {
+      const at = tooltipPosition(opener.getBoundingClientRect(), { width: tip.offsetWidth, height: tip.offsetHeight }, { width: window.innerWidth, height: window.innerHeight });
+      tip.style.setProperty('left', `${at.left}px`, 'important');
+      tip.style.setProperty('top', `${at.top}px`, 'important');
+      tip.style.setProperty('transform-origin', `${at.originX}px ${at.below ? 'top' : 'bottom'}`, 'important');
+    }
+    // While open it follows scrolling, a changing explanation and a target that disappears.
+    function follow() {
+      followTimer = null;
+      if (!isOpen()) return;
+      const text = opener.getAttribute('data-pvc-tip');
+      if (!text || !opener.isConnected || !opener.getClientRects().length || popup.style.display === 'none' || popup.classList.contains('pvc-idle-hidden')) { close(); return; }
+      if (tip.textContent !== text) tip.textContent = text;
+      place();
+      followTimer = setTimeout(follow, TOOLTIP_FOLLOW_MS);
+    }
+    function open(node, instant) {
+      cancelShow(); cancelHide();
+      const text = node.getAttribute('data-pvc-tip');
+      if (!text) return;
+      if (isOpen()) opener.removeAttribute('aria-describedby');
+      else {
+        window.addEventListener('keydown', onKey, true);
+        document.addEventListener('pointerdown', onOutside, true);
+        followTimer = setTimeout(follow, TOOLTIP_FOLLOW_MS);
+      }
+      opener = node; suppressed = null;
+      tip.textContent = text;
+      tip.toggleAttribute('data-instant', instant);
+      tip.removeAttribute('data-open');
+      tip.hidden = false;
+      place();
+      node.setAttribute('aria-describedby', tip.id);
+      void tip.offsetWidth; // The start state must be painted for the entrance to run.
+      tip.setAttribute('data-open', '');
+    }
+    function close() {
+      cancelShow(); cancelHide();
+      if (!isOpen()) return;
+      clearTimeout(followTimer); followTimer = null;
+      window.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('pointerdown', onOutside, true);
+      opener.removeAttribute('aria-describedby');
+      tip.hidden = true; tip.removeAttribute('data-open');
+      closedAt = performance.now();
+    }
+    function onKey(event) {
+      if (event.key !== 'Escape' || !isOpen()) return;
+      event.stopPropagation();
+      suppressed = opener; close();
+    }
+    function onOutside(event) {
+      if (!tip.contains(event.target) && !opener?.contains(event.target)) close();
+    }
+    const scheduleClose = () => {
+      cancelShow();
+      if (!isOpen() || hideTimer !== null || opener.matches(':focus-visible')) return;
+      hideTimer = setTimeout(close, TOOLTIP_HIDE_GRACE_MS);
+    };
+    popup.addEventListener('pointerover', event => {
+      if (event.pointerType === 'touch') return;
+      if (tip.contains(event.target)) { cancelHide(); return; }
+      const node = tipOwner(event.target);
+      if (!node) { scheduleClose(); return; }
+      if (node === suppressed) return;
+      if (node === opener && isOpen()) { cancelHide(); return; }
+      cancelHide(); cancelShow();
+      // Moving between neighbours feels instant once the first one has been waited for.
+      if (isOpen() || performance.now() - closedAt < TOOLTIP_SKIP_WINDOW_MS) open(node, true);
+      else showTimer = setTimeout(() => open(node, false), TOOLTIP_DELAY_MS);
+    });
+    popup.addEventListener('pointerout', event => {
+      if (event.pointerType === 'touch') return;
+      const to = event.relatedTarget;
+      if (suppressed && !suppressed.contains(to)) suppressed = null;
+      if (to && (tip.contains(to) || (isOpen() && opener.contains(to)))) return;
+      scheduleClose();
+    });
+    const endPress = () => {
+      if (!press) return;
+      clearTimeout(press.timer); popup.removeEventListener('pointermove', onPressMove); press = null;
+    };
+    function onPressMove(event) {
+      if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > TOOLTIP_TOUCH_SLOP_PX) endPress();
+    }
+    popup.addEventListener('pointerdown', event => {
+      const node = tipOwner(event.target);
+      if (event.pointerType !== 'touch') {
+        cancelShow();
+        if (node) { close(); suppressed = node; }
+        return;
+      }
+      endPress();
+      pressFired = false;
+      if (!node) return;
+      press = { node, x: event.clientX, y: event.clientY, timer: setTimeout(() => { pressFired = true; open(node, false); }, TOOLTIP_LONG_PRESS_MS) };
+      popup.addEventListener('pointermove', onPressMove);
+    });
+    popup.addEventListener('pointerup', event => {
+      if (event.pointerType !== 'touch' || !press) return;
+      const { node } = press, fired = pressFired;
+      endPress();
+      // A control's tap belongs to the control; a status has no other use for a tap.
+      if (!fired && !node.matches('button, a, input, select, label')) { if (isOpen() && opener === node) close(); else open(node, false); }
+    });
+    popup.addEventListener('pointercancel', endPress);
+    // The release of a long press must not run the button it explained.
+    popup.addEventListener('click', event => {
+      if (!pressFired) return;
+      pressFired = false;
+      event.preventDefault(); event.stopPropagation();
+    }, true);
+    popup.addEventListener('contextmenu', event => { if (pressFired && tipOwner(event.target)) event.preventDefault(); });
+    popup.addEventListener('focusin', event => {
+      if (event.target.hasAttribute?.('data-pvc-tip') && event.target.matches(':focus-visible')) open(event.target, true);
+    });
+    popup.addEventListener('focusout', event => {
+      if (suppressed === event.target) suppressed = null;
+      if (isOpen() && opener === event.target && !opener.matches(':hover')) close();
+    });
+  }
+  // END UI TOOLTIP
 
   // Presentation preferences stay in RAM and reach only the panel's other frame; never added to diagnostics.
   const hudAccessibility = {
@@ -1216,6 +1400,7 @@
     text('pvc-hdr-speed-badge', `${state.requestedRate}x`); text('pvc-mini-speed-val', `⚡ ${state.rate}x`);
     text('pvc-hdr-volume-badge', `${state.requestedVolume}%`); text('pvc-mini-vol-val', `🔊 ${state.volume}% (${state.audioMode === 'mono' ? 'M' : 'S'})`);
     text('pvc-hdr-audio-badge', state.audioMode.toUpperCase()); text('pvc-active-adapter-badge', state.adapter);
+    setUiTipStop(document.getElementById('pvc-active-adapter-badge'), adapterTip(state.adapter));
     updatePipButtonsState(state.pipActive);
     text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
     text('pvc-sub-offset-badge', `${state.subtitleOffset >= 0 ? '+' : ''}${state.subtitleOffset}ms`);
@@ -1237,6 +1422,7 @@
         const button = document.createElement('button'); button.className = 'pvc-quality-chip-btn'; button.type = 'button';
         const label = quality.height > 0 ? `${quality.height}p` : quality.bitrate > 0 ? `${(quality.bitrate / 1000000).toFixed(1)} Mb/sn` : `Seviye ${index + 1}`;
         setUiText(button, label); button.__nokRemoteIndex = index;
+        button.__nokTipBase = quality.bitrate > 0 ? `${(quality.bitrate / 1000000).toFixed(1)} Mb/sn` : null;
         const owner = state.owner, revision = state.revision;
         button.onclick = e => { e.stopPropagation(); if (remotePresentation?.owner === owner && remotePresentation.revision === revision) remoteControl('quality', index); };
         container.appendChild(button);
@@ -1252,11 +1438,13 @@
       const selected = state.requestedIndex >= 0 && button.__nokRemoteIndex === state.requestedIndex;
       const confirmed = selected && ['confirmed', 'decoded-match'].includes(state.verification);
       button.classList.toggle('pvc-active', confirmed); button.classList.toggle('pvc-requested', selected && !confirmed); button.setAttribute('aria-pressed', String(confirmed));
+      setUiTip(button, qualityChipTip(button.__nokTipBase, selected ? state.verification : null));
     }
     setUiText(document.getElementById('pvc-quality-count-badge'), `${state.qualities.length} seviye`);
     const labels = { pending: 'Bekleniyor', confirmed: 'Doğrulandı', 'decoded-match': 'Görüntü eşleşti', 'rendition-confirmed': 'Oynatıcı seçti; görüntü bekleniyor', 'timed-out': 'Doğrulanamadı', rejected: 'Reddedildi' };
     setUiText(document.getElementById('pvc-quality-status'), state.verification === 'not-verified' ? 'Kalite isteği yok.'
       : `İstenen ${state.requestedHeight ? state.requestedHeight + 'p' : '—'} · oynatılan ${state.height ? state.height + 'p' : '—'} · ${labels[state.verification]}`);
+    setUiTipStop(document.getElementById('pvc-quality-status'), qualityChipTip(null, state.verification));
   }
   function renderRemoteTargets() {
     const select = document.getElementById('pvc-video-target'), state = remotePresentation;
@@ -3412,7 +3600,7 @@
     if (badge && adapter) {
       const tierTag = adapter.tier ? `Tier ${adapter.tier}` : 'Tier 3';
       setUiText(badge, `${adapter.name} (${tierTag})`);
-      setUiAttribute(badge, 'title', adapter.displayName || adapter.name);
+      setUiTipStop(badge, adapterTip(adapter.name));
     }
     updateCollapsedSummaryBar();
   }
@@ -4530,6 +4718,7 @@
     const request = qualityControlState.request;
     const labels = { pending: 'Bekleniyor', confirmed: 'Doğrulandı', 'decoded-match': 'Görüntü eşleşti',
       'rendition-confirmed': 'Oynatıcı seçti; görüntü bekleniyor', 'timed-out': 'Doğrulanamadı', rejected: 'Reddedildi' };
+    setUiTipStop(status, request ? qualityChipTip(null, request.status) : null);
     if (!request) { setUiText(status, 'Kalite isteği yok.'); return; }
     const observed = video?.videoHeight > 0 ? `${video.videoHeight}p` : '—';
     setUiText(status, `İstenen ${request.height ? request.height + 'p' : '—'} · oynatılan ${observed} · ${labels[request.status]}`);
@@ -4669,9 +4858,10 @@
       btn.className = `pvc-quality-chip-btn ${confirmed ? 'pvc-active' : requested ? 'pvc-requested' : ''}`;
       btn.setAttribute('aria-pressed', String(confirmed));
       setUiText(btn, String(q.label).replace(/\s*\(.*\)\s*$/, '') || q.label);
-      setUiAttribute(btn, 'title', q.resolutionSource === 'observed-video'
+      btn.__nokTipBase = q.resolutionSource === 'observed-video'
         ? 'Çözünürlük akışta belirtilmemiş; değer oynatılan videodan ölçüldü. Başka bir kalite seçeneği anlamına gelmez.'
-        : `${q.label}${q.height ? ' • ' + q.height + 'p' : ''}`);
+        : q.bitrate > 0 ? `${(q.bitrate / 1000000).toFixed(1)} Mb/sn` : null;
+      setUiTip(btn, qualityChipTip(btn.__nokTipBase, requested ? request.status : null));
 
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -4694,6 +4884,7 @@
       button.classList.toggle('pvc-active', confirmed);
       button.classList.toggle('pvc-requested', requested && !confirmed);
       button.setAttribute('aria-pressed', String(confirmed));
+      setUiTip(button, qualityChipTip(button.__nokTipBase, requested ? request.status : null));
     }
   }
 
@@ -4783,7 +4974,7 @@
     cdnButtonPassive = measured && result.method === 'resource-timing';
     setUiText(button, measured ? `📡 ${result.ms} ms` : '📡 Sonuç yok');
     button.style.color = !measured ? 'var(--pvc-muted, #a2b6c0)' : result.ms <= 50 ? 'var(--pvc-success, #34d399)' : (result.ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-warning, #f59e0b)');
-    setUiAttribute(button, 'title', !measured ? (CDN_STATUS_MESSAGES[lastPingStatus] || CDN_UNAVAILABLE_MESSAGE)
+    setUiAttribute(button, 'data-pvc-tip', !measured ? (CDN_STATUS_MESSAGES[lastPingStatus] || CDN_UNAVAILABLE_MESSAGE)
       : result.method === 'head' ? CDN_BUTTON_HEAD_TITLE : result.method === 'resource-timing' ? CDN_BUTTON_PASSIVE_TITLE : CDN_BUTTON_DEFAULT_TITLE);
   }
   // A silent refresh only withdraws a value it can no longer back up; manual results stay.
@@ -4793,7 +4984,7 @@
     cdnButtonPassive = false;
     setUiText(button, '📡 CDN yanıtı');
     button.style.color = '';
-    setUiAttribute(button, 'title', CDN_BUTTON_DEFAULT_TITLE);
+    setUiAttribute(button, 'data-pvc-tip', CDN_BUTTON_DEFAULT_TITLE);
   }
 
   async function testCdnPing(silent = false) {
@@ -5788,7 +5979,7 @@
 
       <!-- Footer: Ping, Rehber/Kısayollar ve Teşhis -->
       <div class="pvc-menu-footer" id="pvc-menu-footer">
-        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Medya sunucusunun HTTP yanıt süresini gösterir; ağ pingi değildir. Her sitede ölçülemez.">${uiLabel('signal', 'CDN yanıtı')}</button>
+        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" data-pvc-tip="Medya sunucusunun HTTP yanıt süresini gösterir; ağ pingi değildir. Her sitede ölçülemez.">${uiLabel('signal', 'CDN yanıtı')}</button>
         <button id="pvc-perms-btn" class="pvc-footer-btn pvc-btn-sky" title="Klavye Kısayolları & İzin Rehberi">${uiLabel('keyboard', 'Kısayollar')}</button>
         <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">${uiLabel('report', 'Teşhis')}</button>
       </div>
@@ -5864,6 +6055,7 @@
     popup.addEventListener('keydown', () => { popup.__nokKeyboardFocus = true; resetIdleTimer(popup); });
     popup.addEventListener('mouseenter', () => resetIdleTimer(popup));
     popup.addEventListener('mouseleave', () => resetIdleTimer(popup));
+    bindTooltips(popup);
     popup.addEventListener('mousemove', () => resetIdleTimer(popup));
     popup.addEventListener('mousedown', () => resetIdleTimer(popup));
 

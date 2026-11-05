@@ -42,6 +42,12 @@ try{
     const result=await driver.evaluate(page,()=>({confirmed:[...document.querySelectorAll('#pvc-dynamic-quality-container [aria-pressed="true"]')].map(n=>n.textContent)}));
     result.height=await driver.evaluate(media,()=>document.querySelector('video').videoHeight);
     if(kind==='shared'){assert.equal(result.height,720);assert.equal(result.confirmed.includes('480p'),false);}
+    // The status and the chip explain the same real state, on both panel paths; no native tip beside them.
+    await until(driver,page,()=>{const chip=[...document.querySelectorAll('#pvc-dynamic-quality-container button')].find(b=>b.textContent==='480p');return chip.getAttribute('data-pvc-tip')===document.getElementById('pvc-quality-status').getAttribute('data-pvc-tip');},'the chip follows the status on the next panel tick');
+    const tips=await driver.evaluate(page,()=>{const status=document.getElementById('pvc-quality-status'),chip=[...document.querySelectorAll('#pvc-dynamic-quality-container button')].find(b=>b.textContent==='480p');
+      return{status:status.getAttribute('data-pvc-tip'),stop:status.getAttribute('tabindex'),chip:chip.getAttribute('data-pvc-tip'),native:chip.hasAttribute('title')};});
+    assert.ok(tips.status,'the status has an explanation');assert.equal(tips.stop,'0','the keyboard reaches it');assert.equal(tips.chip,tips.status);assert.equal(tips.native,false);
+    if(kind==='shared')assert.match(tips.status,/expected time/);
     assert.equal(await driver.evaluate(page,()=>[...document.querySelectorAll('.pvc-quality-inventory-note')].every(n=>n.scrollWidth<=n.clientWidth+1)),true,'quality notes fit their panels');
     await driver.evaluate(page,()=>document.getElementById('pvc-report-err-btn').click());
     await until(driver,page,()=>!!document.getElementById('pvc-modal-code-block')?.textContent,'diagnostic preview arrives');
