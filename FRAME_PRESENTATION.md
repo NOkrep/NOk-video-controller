@@ -8,6 +8,8 @@
 
 `frame-protocol.js` manifest/background içerik betiklerinden önce yüklenir; içerik betiği aynı yardımcıyı Main World'e, ardından `injected.js` motorunu ekler. Ek izin yoktur. Yardımcı engellenirse eski yerel çerçeve kontrolü fallback'tir; bu durumda üst sunum garanti edilmez.
 
+`early-hooks.js` (v0.7.11) manifestten `world: "MAIN"` ile, sayfa betiklerinden önce her çerçevede çalışır. Yalnız Hls.js veya Shaka'nın bağlandığı videoya `__nokHlsPlayer` / `__nokShakaPlayer` alanını yazar; motor bu alanı sonradan okur ve yüklenince kanca dinlemeyi bırakır. Çerçeve protokolüne, ağa veya depolamaya dokunmaz. Firefox 128 altında `world` tanınmadığı için etkisizdir ve önceki davranış sürer; asgari sürüm 121 kalır. Bu eski sürümlerde çalıştırılarak doğrulanmadı.
+
 İçerik betiği ilk çalışan çocuk dalını WindowProxy ile sabitler. Sadece bu dal durum/yanıt gönderebilir; komutlar aynı daldan aşağı iner. Nested iframe'lerde aracı çerçeve medyaya sahipmiş gibi davranmaz. Her açılışta yeni RAM oturumu, kaynak motorunda ayrı sahiplik tokenı ve envanter değişim sayacı vardır. Bunlar kullanıcı kimliği veya kimlik doğrulama sırrı değildir; önceki oturumun/gecikmiş listenin yanlış videoyu yönetmesini önler. Kapatma, dal kopması veya sahip değişimi bekleyen istekleri iptal eder. Komut bekleme süresi 5s; manuel ölçüm/rapor için 10s.
 
 Kaynak veya üst iframe tam ekrana alınırsa tek görünür HUD kaynak çerçeveye geçer; çıkışta üst sunum geri gelir. Tarayıcının doğrudan `video` elementine ait yerel tam ekranı/PiP'si DOM paneli desteklemeyebilir. Kullanıcı etkinleştirmesi isteyen PiP çağrıları çapraz çerçevede reddedilebilir; başarı uydurulmaz.

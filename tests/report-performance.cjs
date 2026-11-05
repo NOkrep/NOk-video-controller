@@ -13,7 +13,7 @@ const extensionVersion=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'
 fs.mkdirSync(dir,{recursive:true});
 const extensionRoot=plain?root:path.join(dir,'instrumented-extension');
 if(!plain){
-  for(const file of ['manifest.json','background.js','content.js','frame-protocol.js','injected.css',
+  for(const file of ['manifest.json','background.js','content.js','frame-protocol.js','early-hooks.js','injected.css',
     'icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png','icons/filmdeck-logo.png','icons/nok-logo.svg',
     '_locales/en/messages.json','_locales/tr/messages.json']){
     const target=path.join(extensionRoot,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,file),target);

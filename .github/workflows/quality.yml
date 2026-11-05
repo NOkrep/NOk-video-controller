@@ -62,6 +62,8 @@ jobs:
         run: node tests/hud-continuity-browser.cjs --engine=${{ matrix.engine }} --headless=true
       - name: Test dialog keyboard behaviour
         run: node tests/dialog-keyboard-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test panel volume against the real media level
+        run: node tests/volume-mirror-browser.cjs --engine=${{ matrix.engine }}
       - name: Test CDN measurement outcomes and their explanations
         run: node tests/cdn-measure-browser.cjs --engine=${{ matrix.engine }}
       - name: Test native PiP and iframe user activation
@@ -95,6 +97,8 @@ jobs:
         run: node tests/prepare-browser-fixtures.cjs --runtimes-only --download-runtimes
       - name: Test quality labels against real Video.js playback
         run: node tests/quality-mapping-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test a real Hls.js player attached before the engine loads
+        run: node tests/hls-early-attach-browser.cjs --engine=${{ matrix.engine }}
 
   security:
     name: Dependency security
