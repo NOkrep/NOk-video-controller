@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.9.2 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.10 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,11 +17,12 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.9.2';
+  const EXTENSION_VERSION = '0.7.10';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.10', notes: 'Ses kaydırıcısı artık videonun gerçek ses düzeyiyle açılır, bu yüzden ilk dokunuşta ses sıçramaz. Sitenin kendi ses kontrolü veya otomatik sessize alması panele yansır. Panelden verilen ses ve %100 üstü güçlendirme korunur. Gerçek Kick sayfasında kurulu eklentiyle sınandı; sitenin kendi kaydırıcısının görsel kabulü açık.' },
     { version: 'v0.7.9.2', notes: 'İframe oynatıcıda tema ve erişilebilirlik tercihleri panelle birlikte tam ekrana geçer ve tam ekranda yapılan değişiklikler çıkınca korunur. Taşınan yalnız tema kimliği ve dört anahtardır; RAM dışına çıkmaz, rapora girmez. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.9.1', notes: 'CDN yanıtı ölçümü anlaşılır oldu: düğme sonucun son medya isteğinden mi ayrı HEAD isteğinden mi geldiğini söyler, ölçülemeyince nedenini gösterir. Oynatıcı iframe içindeyken başarısız ölçüm artık açıklamasız kalmaz. Eski kayıt yaşıyla bildirilir ve güncel gibi gösterilmez. Her sitede ölçüm sözü verilmez. İframe oynatıcıda panel kapatıldığı anda son filtre ayarının kaybolması düzeltildi. Yeni izin, depolama veya rapor alanı yok. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.9', notes: 'Rapor, kısayol, adaptör ve DRM pencereleri gerçek dialog oldu: odak içeride başlar, Tab dışarı çıkmaz, Escape kapatır, odak açan düğmeye döner; yazılmış rapor açıklaması Escape ile kaybolmaz. Pencere açıkken eklenti kısayolları ve site tuşları tetiklenmez. Adaptör seçenekleri ve DRM rozeti klavyeyle kullanılabilen gerçek düğmelerdir. Firefox tam ekran çıkışında panel yerini kaydıran görünüm yarışı giderildi. Yerel iki motorlu klavye kabulü; ekran okuyucu ve gerçek site kabulü açık.' },
@@ -823,6 +824,7 @@
       updateRealtimeResolutionBadge();
       const { video } = findVideoAndPlayer();
       window.postMessage({ type: video && video.readyState > 0 ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
+      if (video && video.readyState > 0) { monitorVideoResolution(video); adoptMediaVolume(video); }
       showToast(`FilmDeck Aktif (v${EXTENSION_VERSION})`);
     }
   });
@@ -1016,6 +1018,7 @@
     remoteSourceRevision = 0; remoteSourceSignature = ''; hudPlacement = null;
     const popup = document.getElementById('pvc-controller-popup'); if (popup) popup.style.display = 'none';
     monitorVideoResolution(video);
+    adoptMediaVolume(video);
     postHudSignal('PVC_HUD_OPENED');
     publishRemoteSourceState(); startQualityWatch();
     syncRemoteFullscreen();
@@ -3406,6 +3409,7 @@
       renderDynamicQualityButtons();
     };
 
+    video.addEventListener('volumechange', () => { if (findVideoAndPlayer().video === video) adoptMediaVolume(video); });
     video.addEventListener('resize', handleResize);
     video.addEventListener('loadedmetadata', handleResize);
     video.addEventListener('playing', handleResize);
@@ -4182,6 +4186,31 @@
 
   let isInternalVolumeUpdating = false;
 
+  function renderVolumeHud(percent) {
+    const slider = document.getElementById('pvc-volume-slider');
+    const hdrBadge = document.getElementById('pvc-hdr-volume-badge');
+    if (slider) {
+      slider.value = percent.toString();
+      updateVolumeSliderVisualGain(slider, percent);
+    }
+    if (hdrBadge) {
+      setUiText(hdrBadge, `${percent}%`);
+      hdrBadge.style.color = percent > 200 ? 'var(--pvc-danger, #f43f5e)' : (percent > 100 ? 'var(--pvc-warning, #fbbf24)' : 'var(--pvc-accent-ink, #92bfd5)');
+    }
+    updateCollapsedSummaryBar();
+  }
+  // The panel shows the media's real level, so a first touch cannot jump the volume. A change the
+  // panel did not make (the site's own control, its autoplay mute) replaces the panel's value.
+  function adoptMediaVolume(video) {
+    if (!video || isInternalVolumeUpdating || remotePresentation || adLifecycle.isActive(video)) return;
+    const actual = video.muted ? 0 : Math.round(video.volume * 100);
+    if (actual === Math.min(100, currentAudioVolumePercent)) return;
+    currentAudioVolumePercent = actual;
+    if (audioSourceElementMap.has(video)) initAudioGraphForVideo(video);
+    renderVolumeHud(actual);
+    if (remoteSourceSession) publishRemoteSourceState();
+  }
+
   function setAudioVolume(percent) {
     if (remotePresentation) { remoteControl('volume', Math.max(0, Math.min(300, percent))); return; }
     if (isInternalVolumeUpdating) return;
@@ -4213,18 +4242,7 @@
         initAudioGraphForVideo(video);
       }
 
-      const slider = document.getElementById('pvc-volume-slider');
-      const hdrBadge = document.getElementById('pvc-hdr-volume-badge');
-      if (slider) {
-        slider.value = validPercent.toString();
-        updateVolumeSliderVisualGain(slider, validPercent);
-      }
-      if (hdrBadge) {
-        setUiText(hdrBadge, `${validPercent}%`);
-        hdrBadge.style.color = validPercent > 200 ? 'var(--pvc-danger, #f43f5e)' : (validPercent > 100 ? 'var(--pvc-warning, #fbbf24)' : 'var(--pvc-accent-ink, #92bfd5)');
-      }
-
-      updateCollapsedSummaryBar();
+      renderVolumeHud(validPercent);
 
       let boostMsg = '';
       if (isDrm && validPercent > 100) {
@@ -6113,6 +6131,7 @@
       window.postMessage({ type: video && video.readyState > 0 ? 'PVC_HUD_OPENED' : 'PVC_OPEN_IN_CHILD_FRAMES' }, '*');
       if (video && video.readyState > 0) {
         monitorVideoResolution(video);
+        adoptMediaVolume(video);
         const slider = popup.querySelector('#pvc-speed-slider');
         const hdrSpeed = popup.querySelector('#pvc-hdr-speed-badge');
         if (slider) slider.value = (video.playbackRate || 1.0).toString();

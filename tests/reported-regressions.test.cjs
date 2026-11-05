@@ -9,6 +9,7 @@ test('initial open continues iframe discovery when the local video has no metada
   const context=vm.createContext({window,document:{getElementById:()=>({style:{}})},frameProtocol:null,
     resetPopupToDefaultPosition(){},clampPopupToViewport(){},resetIdleTimer(){},startQualityWatch(){},
     renderDynamicQualityButtons(){},updateRealtimeResolutionBadge(){},showToast(){},EXTENSION_VERSION:'test',
+    monitorVideoResolution(){},adoptMediaVolume(){},
     video:{readyState:0},findVideoAndPlayer:()=>({video:context.video})});
   vm.runInContext(section("  window.addEventListener('message', (event) => {",'  console.log(`[NOkrep] FilmDeck'),context);
   listener({source:window,data:{type:'PVC_OPEN_POPUP'}});assert.equal(posts.at(-1).type,'PVC_OPEN_IN_CHILD_FRAMES');

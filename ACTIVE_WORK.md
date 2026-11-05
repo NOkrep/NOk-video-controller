@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.9.2**, `main`'de (#116). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.10**, `claude/workTogether` dalında; `main` `0.7.9.2`. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-10, D-11.
 - **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-08, D-09 (tooltip), I-11, D-06.
 - **Codex'te:** I-13.
@@ -13,6 +13,18 @@
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar.
+
+## I-03 ses kısmı, gerçek Kick sınaması, v0.7.10 — 5 Kasım 2026
+
+Panelde (eklentisiz) ve ayrı geçici profilde kurulu eklentiyle gerçek Kick sınandı. Hesap kullanılmadı, kanal adı kaydedilmedi, bot doğrulaması çıkmadı.
+
+- **Düzeltilen hata:** Site sesi %50'de oynarken panel kaydırıcısı %100 gösteriyordu; ilk dokunuşta ses sıçrayabilirdi. Panel artık gerçek düzeyle açılıyor, sitenin kendi sesi veya sessize alması panele yansıyor. Panelden verilen değer ve %100 üstü güçlendirme korunuyor; reklam döngüsü sırasında panel değeri değişmiyor. Tüm sitelerde geçerlidir.
+- **Çalıştığı doğrulananlar:** İki motorda 5 kalite listelendi, panel sesi oynatıcıya ulaştı, 0 sessize aldı, 160p çözülmüş görüntüyle doğrulandı. Panelde oynatıcıya verilen sesten sonra sitenin ses simgesi değişti.
+- **Reddedilen varsayımlar:** Eklentisiz panel gözlemi yanıltıcı oldu. "FilmDeck oynatıcıyı bulamıyor" varsayımı kurulu eklentiyle yanlış çıktı; eklenti sayfadan sonra yüklense de oynatıcı bulunuyor. Panelde `#channel-player` yoktu ama adaptörün diğer kökü `#injected-channel-player` var. Kanal değişiminde sesin 0 başlaması eklentisiz de oluyor, sitenin davranışıdır. Reklam döngüsü olay kaydında görülmedi.
+
+**Kanıt:** Yeni `volume-mirror-browser` eski kodda "panel opens at the media level" adımında başarısız oldu, düzeltmeyle üst sayfa ve iframe için iki motorda geçiyor (CI matrisinde). `kick-site-acceptance` Firefox'ta 3/4, Chromium'da 6/7 geçti. Başarısız iki turdan birinde neden "live video plays" zaman aşımıydı, diğerinin nedeni yakalanmadı; canlı siteye bağlı aralıklı sonuçtur. 224/224 Node testi; `ui-smoke`, `hud-state`, `dialog-keyboard`, `report`, `cdn-measure` iki motorda geçti.
+
+**Sınırlar:** Sitenin ses kaydırıcısının ve VOD hız menüsünün görsel kabulü açık. `#channel-player` ve `player-settings-button` gibi seçiciler bu sayfada yoktu; `triggerKickUiQuality` ve hız menüsü yollarının etkisi ayrıca sınanmalı. Gerçek reklam görülmedi; `ad-badge` işareti doğrulanmadı (I-04). Bir sayfa tüm kanalları temsil etmez.
 
 ## D-10: CI kapsamı — 4 Kasım 2026
 

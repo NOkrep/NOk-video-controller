@@ -52,10 +52,10 @@ Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromi
 
 | Yer | Testler | Neden |
 |---|---|---|
-| Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `pip`, `startup`, `report` | Üretilmiş dosya istemez, kısa sürer |
+| Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `volume-mirror`, `pip`, `startup`, `report` | Üretilmiş dosya istemez, kısa sürer |
 | Zorunlu olmayan CI (`Browser media`) | `quality-mapping` | Sunucunun H.264 desteğine ve sabitlenmiş Video.js indirmesine bağlı |
 | Yerel: ölçüm | `filter-performance`, `report-performance`, `memory-soak`, `chromium-memory`, `native-media-retention`, `resource-investigation`, `av-sync-browser` | Süre, bellek ve GPU ölçer veya uzun sürer; paylaşımlı CI makinesinde sonuç anlamlı değildir |
-| Yerel: gerçek site | `live-filter-performance`, `live-player-*`, `videojs-site-acceptance`, `puhu-retry-acceptance` | Dış siteye bağlıdır, hesap ve bot koruması değişkendir |
+| Yerel: gerçek site | `kick-site-acceptance`, `live-filter-performance`, `live-player-*`, `videojs-site-acceptance`, `puhu-retry-acceptance` | Dış siteye bağlıdır, hesap ve bot koruması değişkendir |
 | Yerel: geniş fixture | `browser-integration`, `firefox-integration` | Üretilmiş medya ve özel tarayıcı yolları ister; ana davranışları CI'daki testler kapsar |
 | Kenarda, çalıştırılmadı | `av-live-probe`, `prepare-av-live-copy`, `av-live-copy-check` | Reddedilen I-07 planının taslakları (PROJECT_HANDOFF.md §8) |
 
