@@ -16,11 +16,11 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 
 - **Ürün:** FilmDeck by NOk. Önceki ad NOk Video Controller; ara ad CineDeck'ti. Teknik repo adı ve Firefox kimliği korunur.
 - **Çıkış noktası:** sitelerin farklı ve eksik video arayüzlerinden doğan kullanıcı bıkkınlığı. Bilgisayarda video/film/dizi izleyen kullanıcıya ortak kontroller sunmak. Basit kullanımda hız/ses/kalite; daha ayrıntılı işler ayrı sekmeler ve katlanabilir alanlarda.
-- **Kaynak sürümü:** `0.7.9`, `claude/workTogether` dalında (`main` birleşmesi kullanıcıda). `main` son kontrolde `0.7.8` idi (#114, `2a651bc`). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
+- **Kaynak sürümü:** `0.7.9.2`, `claude/workTogether` dalında (`main` birleşmesi kullanıcıda). `main` son kontrolde `0.7.9` idi (#115, `fff5ccf`, 4 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
 - **Dallar (kullanıcı kararı, 4 Kasım 2026; önceki "mevcut dalda devam" notunun yerine geçer):** Her ajanın `main`'den açılmış tek bir uzun ömürlü dalı vardır: Codex `codex/…`, Claude `claude/…`. İş veya düzeltme başına yeni dal açılmaz; güncellik için `main` bu dala merge edilir. Aynı checkout kullanılır; kullanıcı ajan değiştirirken dal ve temiz durum doğrulanır. Bu yüzden devirden önce iş commit'lenmiş olmalıdır. Ajan kendi dalına commit atar ve push eder; **PR'ı ve merge'ü kullanıcı yapar**, ajan özeti ve PR bağlantısını bildirir. Karşı ajanın dalına doğrudan commit atılmaz; ikinci checkout/worktree istenmeden açılmaz.
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Güncel dallar: Codex `codex/filmdeck-cassette-icon`, Claude `claude/workTogether`. Codex dalının adı ilk işinden kalmıştır; içeriği o işle sınırlı değildir.
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
-- **Git durumu ayrımı:** v0.7.7.9 commit'i artık mevcut. Geçmiş çalışma notlarındaki “commit yapılmadı” o turun bitiş durumudur. 4 Kasım Claude kontrolü: `d70940e` için uzak CI'ın 5 işi başarılı; `main` ruleset ile korumalı (PR ve 4 zorunlu kontrol; `Dependency security` zorunlu değil). v0.7.8 `main`'dedir (#114); mağaza başvurusu veya dağıtım yok.
+- **Git durumu ayrımı:** v0.7.7.9 commit'i artık mevcut. Geçmiş çalışma notlarındaki “commit yapılmadı” o turun bitiş durumudur. 4 Kasım Claude kontrolü: `d70940e` için uzak CI'ın 5 işi başarılı; `main` ruleset ile korumalı (PR ve 4 zorunlu kontrol; `Dependency security` zorunlu değil). v0.7.9 `main`'dedir (#115); mağaza başvurusu veya dağıtım yok.
 - **Aktif hedef:** bu devir başlangıcında aktif hedef kaydı yok. I-01 ve I-02'nin aşağıda belirtilen dar hedefleri tamamlandı. I-07 kullanıcı kararıyla askıda. I-08 ve D-02'nin yerel kapsamı, D-01'in dar hedefi tamamlandı; gerçek site ve ekran okuyucu kabulleri açık. Sıradaki öneri I-03; henüz başlanmış/atanmış iş değildir.
 - **Lisans:** MIT; mevcut LICENSE telif satırı `Copyright (c) 2026 İhsan B. Arıtürk (NOkrep)`. LICENSE ve THIRD_PARTY_NOTICES.md dağıtımda korunur. Ekip içi gelir/ortaklık paylaşımı bu metinle belirlenmiş sayılmaz; diğer projelerin lisansları değiştirilmez.
 
@@ -78,7 +78,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 
 ## 5. Kullanıcı kararları
 
-- **Sürüm numarası:** `1.0.0` en stabil ilk çıkış sürümüdür. Öncesinde `0.x.0` milestone geçişi, `0.0.x` küçük geliştirme, `0.0.0.x` çok küçük değişikliktir. Dördüncü bölüm **en fazla 9** olur: `0.7.7.9` sonrası küçük adım `0.7.8`'dir, `0.7.7.10` değil. Üretim kodu değişmeyen belge/devir işinde sürüm artırılmaz.
+- **Sürüm numarası:** `1.0.0` en stabil ilk çıkış sürümüdür. Öncesinde `0.x.0` milestone geçişi, `0.0.x` küçük geliştirme, `0.0.0.x` çok küçük değişikliktir. Üçüncü ve dördüncü bölüm **en fazla 9** olur (üçüncü bölüm kararı: kullanıcı, 4 Kasım). `0.7.7.9` sonrası küçük adım `0.7.8`, `0.7.9` sonrası küçük adım `0.8.0`'dır; `0.7.7.10` veya `0.7.10` olmaz. `0.7.9` üstüne çok küçük değişiklik `0.7.9.1`, `0.7.9.9` sonrası `0.8.0` olur. Üretim kodu değişmeyen belge/devir işinde sürüm artırılmaz.
 - Varsayılan arayüz İngilizce, Türkçe seçilebilir; tercihler RAM'de. UI çevirisi kullanıcı yorumuna/altyazıya/JSON'a uygulanmaz.
 - Üç temel dikey sekme: Player, Subtitles, Settings. Video renkleri Settings'te, adaptör Player'da. Seçili sekme/yüzey birleşimi german_7619 referansından uyarlanır; native klavye/ARIA korunur.
 - **20 tema korunuyor; finalist beşi kullanıcı henüz seçmedi.** Kendiliğinden ayıklama veya yeni renk sistemi yok.
@@ -102,7 +102,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 | I-09 | Raporlanan sitelerde PiP | Kısmi: yerel onay çözümü geçti; gerçek site izinleri ve normal/fullscreen geçişleri açık. |
 | I-10 | Kontrol düzeltmelerinin gerçek site regresyonu | Mono/Stereo, geç keşif, beklenmedik aç/kapat, TRT hız korumasını raporlanan akışta sınamak; yapılanı baştan yazmamak. |
 | I-11 | Altyazı sonrası bekleme/görünmeme | Ağ beklemesi, etkin cue boşluğu, disabled ve gerçek çizim hatası ayrılacak. |
-| I-12 | CDN yanıt ölçümünün anlaşılması | Kaynak/timing/izin sınırını anlaşılır anlatmak; her sitede ölçüm sözü vermemek. |
+| I-12 | CDN yanıt ölçümünün anlaşılması | **Yerel kapsam tamam (v0.7.9.1):** düğme yöntemi ve ölçülememe nedenini gösteriyor, iframe oynatıcıda açıklama kayıp değil, eski kayıt yaşıyla bildiriliyor. Altı sunucu yanıtı ve iki iframe senaryosu iki motorda sınandı. Gerçek CDN'lerde kabul açık. |
 | I-13 | Kalan emoji ve simgeler | Envanter çıkarılıp kullanıcıyla SVG/kaldırma kararı verilecek. |
 
 Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi daha sonra düzeltildi; kesin hata diye tutma. Aynı yapıştırılmış rapor iki ayrı issue değildir. “Eksik kalite” kullanıcının site menüsünde karşılaştırdığı durumdur; “hiç kalite görünmüyor” ayrı durumdur. Ham raporlar ve alan adları bu belgeye taşınmaz.
@@ -114,19 +114,31 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-01 | Uzun süreli bellek kararlılığı | **Dar hedef tamam (4 Kasım):** 15 dakikalık oynatma ve 90 video değişiminde eklentiye özgü büyüyen sızıntı bulunmadı; Edge renderer büyümesi eklentisiz de aynı. Firefox'ta boost'lu videoların askıdaki bağlamları tarayıcı toplayana kadar geçici bellek tutar. Saatlik oynatma, gerçek MSE/HLS, 4K, çok sekme maliyeti ve tahsisin kesin nedeni açık. MEMORY_MEASUREMENTS.md. |
 | D-02 | Dialog ve adaptör klavye erişilebilirliği | **Yerel kapsam tamam (v0.7.9):** başlangıç odağı, Tab çevrimi, Escape, odağı geri verme ve klavyeyle adaptör seçimi iki motorda sınandı. Gerçek ekran okuyucu, açık `select` listesinde ve tarayıcı tam ekranında Escape davranışı açık. |
 | D-03 | Ekran okuyucu ve gerçek %200 zoom | CSS ölçeği/otomatik test bunun yerine geçmez. Uzun metin, hedef boyutu ve duyurular açık. |
-| D-04 | Fullscreen tema/erişilebilirlik tutarlılığı | Tercihler çerçeve belleğinde; kaynak HUD'a aynı tercihlerin aktarımı açık. |
+| D-04 | Fullscreen tema/erişilebilirlik tutarlılığı | **Yerel kapsam tamam (v0.7.9.2):** tema ve dört erişilebilirlik anahtarı iframe tam ekranına geçer, oradaki değişiklik çıkınca korunur; iki motorda sınandı. Gerçek sitede kabul açık. |
 | D-05 | İstenen ve gerçekleşen ses/hız geri bildirimi | Raporlarda ayrım var; ana UI'da ayrışmayı anlaşılır gösterme açık. |
 | D-06 | Mevcut ses ve altyazı parçalarını seçme | Kullanıcının gelecek özellik talebi; orijinal/dublaj ve hazır altyazılar. Harici SRT'den ayrı; henüz uygulanmadı. |
 | D-07 | Finalist beş tema | Kullanıcı seçimi bekliyor, 20 tema korunuyor. |
 | D-08 | Ek Uiverse animasyonları | İsteğe bağlı denemeler; zorunlu hata düzeltmesi değil. |
 | D-09 | Form/tooltip referansları | Uygun kullanım bekleyen adaylar; sırf referans var diye eklenmez. |
-| D-10 | Git/CI takibi | v0.7.7.9 commit'i ve uzak CI başarısı doğrulandı (4 Kasım). Yeni kalite/rapor tarayıcı ve performans testleri yerel; CI'a entegrasyon için fixture bağımlılıkları ayrıca ele alınmalı. |
-| D-11 | Çalışma kayıtlarının sadeleştirilmesi | Güncel durumla tarihsel kayıtları ayırmak; eski kanıtları silmemek. Bu devir bir giriş noktası sağlar, bütün eski belgeler temizlendi sayılmaz. |
+| D-10 | Git/CI takibi | **Tamam (4 Kasım):** `report` zorunlu işe, `quality-mapping` zorunlu olmayan `Browser media` işine eklendi. Hangi testin neden yerelde kaldığı TESTING.md'de. `Browser media` kararlı görülürse zorunlu kontrollere alınması kullanıcı kararıdır. |
+| D-11 | Çalışma kayıtlarının sadeleştirilmesi | **Tamam (4 Kasım):** ACTIVE_WORK.md kısa güncel durumla başlıyor; eski kayıtlar değiştirilmeden WORK_HISTORY.md'ye taşındı; belge haritası §9'da. Eski belgelerin içeriği yeniden yazılmadı, kendi tarihlerinin kanıtıdır. |
 | D-12 | Git, CI/CD ve yayın otomasyonu | Kullanıcı hedefi: adım adım komut kopyalamak yerine, ajanın kullanıcı talebi ve onayıyla yürütüp izlediği genel yapı. FilmDeck'in hedefi yalnız GitHub ve eklenti mağazalarıdır; sunucu dağıtımı yoktur. Commit ve push ajandadır; PR ve merge kullanıcıda; mağaza gönderimi sürüm ve hedef onayı ister. Mağaza ve diğer sırlar GitHub'a girmez; ajan gerekmedikçe erişmez. |
 | D-13 | Alan adlı raporların gizli kanalı | Yayın öncesi karar: alan adı içeren raporun public issue yerine özel kanala gitmesi. Rapor UI'ı değişeceği için ayrı iştir; henüz uygulanmadı. |
 | D-14 | Firefox veri toplama beyanı | AMO'nun `data_collection_permissions` gereksinimi mağaza başvurusundan önce resmî kaynaktan doğrulanacak. Manifest ve yayın hedefinde alan yok. |
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
+
+**Kullanıcının seçtiği öncelikler (4 Kasım):** Codex kendi araç sistemi notlarını kapattı ve yedi beceri kapsamının onayını yeniledi (`D:/NOk-Tools/AGENT_NOTES.md` N-001, N-004, N-006; geçerlilik 11 Kasım akşamına kadar). Claude şu işleri ele alır:
+
+1. **Tamam:** Katalogdaki üç eski durum etiketi (N-002).
+2. **Tamam:** `NOk-FilmDeck-Release` lisans paketlemesini Codex commit'ledi (`b1d933c`, `codex/ww28-private-evidence`). O deponun PR ve merge'ü kullanıcıda.
+3. **Ertelendi (kullanıcı, 4 Kasım):** Canlı test için C yolu seçildi ama kullanıcı şimdilik yapmak istemiyor: önce panelde eklentisiz site gözlemi, sonra hesapsız temiz profilde gerçek FilmDeck (bu bölümün sonundaki sınama). Kullanıcı isteyince başlar; yeniden sormaya gerek yok.
+4. **Yerel kapsam tamam (v0.7.9.1):** I-12.
+5. **Yerel kapsam tamam (v0.7.9.2):** D-04.
+6. **Tamam:** D-10.
+7. **Tamam:** D-11.
+
+Bu seçim, aşağıdaki önceki önerinin önüne geçer. Önceki öneri kayıt için durur.
 
 Önerilen sıra: **I-03 → I-04**, ardından kalan kalite/PiP/gerçek site kabulü ve erişilebilirlik. I-07 askıdadır; aşağıdaki hedef metni yalnız kullanıcı ona dönerse geçerlidir. Kullanıcı önceliği değiştirebilir. Tek geniş “her şeyi düzelt” hedefi yerine her biri kanıtlanabilir kapsamla yürütülür.
 
@@ -144,7 +156,9 @@ Bu seçenekler silinmez. Gerektiğinde gerekçesiyle kullanıcıya yeniden sorul
 | `gh` kurup PR'ları ajanın açması | Reddedildi: `main` kuralı onay istemediği için token checkler geçince merge'ü teknik olarak engellemez; kullanıcı PR ve merge'ü kendinde tuttu. | Tam otomasyon istenirse; ayrı bot hesabı seçeneğiyle birlikte. |
 | Üretim veya mağaza sırlarını GitHub Secrets/Environment'ta tutmak | Reddedildi: sırlar GitHub'a girmez; workflow'u değiştirebilen ajan sırra dolaylı ulaşabilir. | Kullanıcı ayrıca gündeme getirirse. |
 
-**Ajan paneli önerisi (açık):** Kullanıcı canlı testin ajanın tarayıcı panelinde, doğrulamayı kendisi tamamlayarak birlikte yapılmasını öneriyor. Kullanıcının doğrulamayı tamamlaması ajan sınırına aykırı değildir; ajan doğrulamayı çözmez ve otomasyon işaretini gizlemez. Bu yolun açık sorusu, panelde FilmDeck'in kurulup kurulamayacağıdır; henüz sınanmadı.
+**Ajan paneli önerisi:** Kullanıcı canlı testin ajanın tarayıcı panelinde, doğrulamayı kendisi tamamlayarak birlikte yapılmasını önerdi. Kullanıcının doğrulamayı tamamlaması ajan sınırına aykırı değildir; ajan doğrulamayı çözmez ve otomasyon işaretini gizlemez.
+
+**Panel sınaması (4 Kasım):** FilmDeck panele kurulamıyor. Panel gömülü bir Chromium 152'dir; `chrome://` sayfaları açılmıyor, sayfada eklenti API'si yok, araçlarda eklenti yükleme yolu yok. Panel yalnız siteyi eklentisiz gözlemek için kullanılabilir: MSE, H.264, PiP ve tam ekran var, Widevine yok (DRM'li içerik oynamaz), `navigator.webdriver` `false`. Yol seçimi kullanıcıdadır.
 
 ## 9. Kaynaklar, komutlar ve kabul seviyesi
 
@@ -157,7 +171,9 @@ Bu seçenekler silinmez. Gerektiğinde gerekçesiyle kullanıcıya yeniden sorul
 | Son performans | FILTER_PERFORMANCE.md, REPORT_PERFORMANCE.md |
 | Bellek | MEMORY_MEASUREMENTS.md; tarihli kısa/uzun deneyleri ayır |
 | Tasarım / HMI | HMI_REVIEW.md, ANIMATION_DETAILS.md, DESIGN_REFERENCES.md |
-| Güncel/tarihsel iş kaydı | Bu dosya + ACTIVE_WORK.md; RELEASE_ROADMAP.md eski v0.6→0.7 planıdır |
+| Güncel iş kaydı | Bu dosya + ACTIVE_WORK.md (başında kısa güncel durum) |
+| Tarihsel kayıt | WORK_HISTORY.md (eski iş kayıtları, değiştirilmeden), DEVELOPMENT_STATUS.md, RELEASE_NOTES_v0.7.0*.md; RELEASE_ROADMAP.md eski v0.6→0.7 planıdır. PROJECT_MASTER_GUIDE.md §5 sürüm evrimidir |
+| Sürüm değiştirme | `node scripts/set-version.cjs <sürüm>`; manifest, paket, motor, CSS, README, kılavuz ve ACTIVE_WORK birlikte güncellenir |
 | Testlerin kurulumu ve sınırları | TESTING.md, package.json, .github/workflows/quality.yml |
 
 Node 24 önerilir, en az 22. `npm run check` kaynak/sürüm/izin/lisans + Node test kapısıdır. UI değişince ilgili gerçek kurulu Firefox/Chromium testini çalıştır; yeni ters örnek veya kaynak değişikliği yokken bütün benchmark'ları gereksiz tekrar etme.

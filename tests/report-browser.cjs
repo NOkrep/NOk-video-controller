@@ -5,8 +5,8 @@ const engine=process.argv.find(arg=>arg.startsWith('--engine='))?.slice(9)||'fir
 async function main(){
   let fixture,driver;
   try{
-    fixture=await createFixture();
-    driver=await createDriver(engine,engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',path.resolve(__dirname,'../node_modules'),{visible:true,toolbarControls:true});
+    fixture=await createFixture({canvasVideo:true});
+    driver=await createDriver(engine,engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',path.resolve(__dirname,'../node_modules'),{visible:!process.argv.includes('--headless=true'),toolbarControls:true});
     await driver.install();const page=await driver.open(fixture.url);
     await until(driver,page,()=>document.querySelector('video')?.readyState>=2,'video ready');await driver.toolbar(page);
     await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block','HUD opens');

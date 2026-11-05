@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.9 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.9.2 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,11 +17,13 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.9';
+  const EXTENSION_VERSION = '0.7.9.2';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
   const VERSION_HISTORY = [
+    { version: 'v0.7.9.2', notes: 'İframe oynatıcıda tema ve erişilebilirlik tercihleri panelle birlikte tam ekrana geçer ve tam ekranda yapılan değişiklikler çıkınca korunur. Taşınan yalnız tema kimliği ve dört anahtardır; RAM dışına çıkmaz, rapora girmez. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
+    { version: 'v0.7.9.1', notes: 'CDN yanıtı ölçümü anlaşılır oldu: düğme sonucun son medya isteğinden mi ayrı HEAD isteğinden mi geldiğini söyler, ölçülemeyince nedenini gösterir. Oynatıcı iframe içindeyken başarısız ölçüm artık açıklamasız kalmaz. Eski kayıt yaşıyla bildirilir ve güncel gibi gösterilmez. Her sitede ölçüm sözü verilmez. İframe oynatıcıda panel kapatıldığı anda son filtre ayarının kaybolması düzeltildi. Yeni izin, depolama veya rapor alanı yok. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.9', notes: 'Rapor, kısayol, adaptör ve DRM pencereleri gerçek dialog oldu: odak içeride başlar, Tab dışarı çıkmaz, Escape kapatır, odak açan düğmeye döner; yazılmış rapor açıklaması Escape ile kaybolmaz. Pencere açıkken eklenti kısayolları ve site tuşları tetiklenmez. Adaptör seçenekleri ve DRM rozeti klavyeyle kullanılabilen gerçek düğmelerdir. Firefox tam ekran çıkışında panel yerini kaydıran görünüm yarışı giderildi. Yerel iki motorlu klavye kabulü; ekran okuyucu ve gerçek site kabulü açık.' },
     { version: 'v0.7.8', notes: 'Açık panel, üst sayfadaki video kaybolup oynatıcı iframe içinde gelince kapatıp açmaya gerek kalmadan videoyu yeniden bulur. Taşınan panelin yeri video değişiminde korunur ve iframe oynatıcıda tam ekrana giriş/çıkışta oranla aktarılır. Video yok uyarısı paneli ekran dışına taşırmaz. Aktarılan yalnız 0-1 arası panel oranıdır; izin, depolama ve rapor alanı değişmedi. Yerel iki motorlu kabul; gerçek site kabulü açık.' },
     { version: 'v0.7.7.9', notes: 'Teşhis raporunun tam ekran arka plan bulanıklığı kaldırıldı; karartma ve rapor işlevleri korunur. Oynayan videoda ölçülen GPU render yükünü azaltır. JSON ve yorum davranışı, gizlilik ve izinler değişmedi. İki motorlu ölçüm ve kabul sınırları REPORT_PERFORMANCE.md içinde.' },
@@ -178,7 +180,7 @@
     'Senkron kaymasını sıfırla': 'Reset subtitle timing',
     '0ms Sıfırla': 'Reset 0 ms',
     'Altyazıyı 100ms ileri al': 'Show subtitles 100 ms later',
-    'Medya HTTP yanıt süresini ölç (ağ pingi değildir)': 'Measure media HTTP response time (not network ping)',
+    'Medya sunucusunun HTTP yanıt süresini gösterir; ağ pingi değildir. Her sitede ölçülemez.': 'Shows the media server HTTP response time; not a network ping. Not measurable on every site.',
     '📡 CDN yanıtı': '📡 CDN response',
     'Klavye Kısayolları & İzin Rehberi': 'Keyboard shortcuts & permissions',
     '⌨️ Kısayollar': '⌨️ Shortcuts',
@@ -297,11 +299,16 @@
     'Alternatif 1080p kaynağını yeniden dener; gerekirse sayfayı yeniler. Yenileme bellek içi ayarları ve altyazıları sıfırlar.': 'Retry the alternate 1080p source; reloads if needed. Reloading clears in-memory settings and subtitles.',
     'Video bulunamadı': 'No video found',
     '📡 Medya HTTP yanıtı: {0} ms (son istek)': '📡 Media HTTP response: {0} ms (last request)',
-    'CDN ölçümü için erişilebilir medya isteği bulunamadı.': 'No accessible media request found for measurement.',
-    'CDN, HEAD ölçümünü kabul etmedi.': 'The CDN rejected the HEAD measurement.',
+    '📡 Medya HTTP yanıtı: {0} ms ({1} dk önceki istek)': '📡 Media HTTP response: {0} ms (request {1} min ago)',
     '📡 Medya HTTP yanıtı: {0} ms (HEAD)': '📡 Media HTTP response: {0} ms (HEAD)',
-    'CDN yanıt ölçümü zaman aşımına uğradı.': 'CDN response measurement timed out.',
-    'CDN yanıtı tarayıcı veya sunucu kısıtı nedeniyle ölçülemedi.': 'Browser or server restrictions prevented measurement.',
+    'Bu sayfada ölçülebilir medya isteği görünmüyor. Oynatma bundan etkilenmez.': 'No measurable media request is visible on this page. Playback is not affected.',
+    'Medya sunucusu ölçüm isteğini kabul etmedi. Oynatma bundan etkilenmez.': 'The media server rejected the measurement request. Playback is not affected.',
+    'Medya sunucusu 4 saniyede yanıt vermedi. Ölçüm tamamlanamadı.': 'The media server did not answer within 4 seconds. Measurement incomplete.',
+    'Sunucu veya tarayıcı bu ölçüme izin vermedi. Oynatma bundan etkilenmez.': 'The server or browser does not allow this measurement. Playback is not affected.',
+    'CDN yanıtı ölçülemedi.': 'The CDN response could not be measured.',
+    '📡 Sonuç yok': '📡 No result',
+    'Son medya isteğinden okundu, ek istek gönderilmedi. Ağ pingi değildir.': 'Read from the last media request; no extra request was sent. Not a network ping.',
+    'Bu ölçüm için ayrı bir HEAD isteği gönderildi. Ağ pingi değildir.': 'A separate HEAD request was sent for this measurement. Not a network ping.',
     '⌨️ Klavye Kısayolları Aktif': '⌨️ Keyboard shortcuts on',
     '🔇 Klavye Kısayolları Devre Dışı': '🔇 Keyboard shortcuts off',
     '🎨 Filtre %100 değerine sıfırlandı': '🎨 Filter reset to 100%',
@@ -546,7 +553,7 @@
       select.appendChild(group);
     }
     label.appendChild(select); details.appendChild(label);
-    select.addEventListener('change', e => { e.stopPropagation(); setUiTheme(select.value); });
+    select.addEventListener('change', e => { e.stopPropagation(); setUiTheme(select.value); syncHudPreferences(); });
     const controls = document.createElement('div'); controls.className = 'pvc-theme-controls';
     for (const [delta, text] of [[-1, 'Önceki'], [1, 'Sonraki']]) {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'pvc-action-btn';
@@ -554,6 +561,7 @@
       button.addEventListener('click', e => {
         e.stopPropagation(); const index = UI_THEMES.findIndex(theme => theme.id === currentUiThemeId);
         setUiTheme(UI_THEMES[(index + delta + UI_THEMES.length) % UI_THEMES.length].id);
+        syncHudPreferences();
       }); controls.appendChild(button);
     }
     const position = document.createElement('span'); position.id = 'pvc-theme-position'; position.setAttribute('aria-live', 'polite'); controls.appendChild(position);
@@ -593,7 +601,7 @@
   }
   // END UI COMPONENTS
 
-  // Presentation preferences are kept in this frame only; never added to diagnostics.
+  // Presentation preferences stay in RAM and reach only the panel's other frame; never added to diagnostics.
   const hudAccessibility = {
     keepVisible: false, largeText: false, highContrast: false,
     reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
@@ -614,6 +622,29 @@
     updateThemeControls();
     resetIdleTimer(popup);
     clampPopupToViewport(popup);
+  }
+  const HUD_ACCESSIBILITY_KEYS = ['keepVisible', 'largeText', 'highContrast', 'reduceMotion'];
+  function currentHudPreferences() {
+    return { theme: currentUiThemeId, ...Object.fromEntries(HUD_ACCESSIBILITY_KEYS.map(key => [key, hudAccessibility[key]])) };
+  }
+  // Applies the other frame's choice without echoing it back or waking an idle panel.
+  function applyHudPreferences(next) {
+    if (!next) return;
+    if (next.theme === currentUiThemeId && HUD_ACCESSIBILITY_KEYS.every(key => next[key] === hudAccessibility[key])) return;
+    if (UI_THEMES.some(theme => theme.id === next.theme)) currentUiThemeId = next.theme;
+    for (const key of HUD_ACCESSIBILITY_KEYS) {
+      hudAccessibility[key] = next[key];
+      const checkbox = document.getElementById(`pvc-a11y-${key}`);
+      if (checkbox) checkbox.checked = next[key];
+    }
+    for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id));
+    updateThemeControls();
+    const popup = document.getElementById('pvc-controller-popup');
+    if (popup && popup.style.display !== 'none') clampPopupToViewport(popup);
+  }
+  function syncHudPreferences() {
+    if (remotePresentation) remoteControl('hud-preferences', currentHudPreferences());
+    else if (remoteSourceSession) publishRemoteSourceState();
   }
   // END HUD ACCESSIBILITY
 
@@ -702,6 +733,7 @@
       checkbox.addEventListener('change', e => {
         e.stopPropagation(); hudAccessibility[key] = checkbox.checked;
         refreshUiAccessibility(popup);
+        syncHudPreferences();
       });
     }
     const shortcutRow = document.createElement('div'); shortcutRow.className = 'pvc-setting-row';
@@ -890,7 +922,11 @@
     window.postMessage(session ? { type, payload: { session } } : { type }, '*');
   }
   function clearRemoteSession(retire = true, keepOpen = false) {
-    flushVideoFilterDraw();
+    // A source frame that accepted a value but has not drawn it yet must still apply it.
+    if (remoteSourceSession && filterUpdateFrame !== null) {
+      cancelAnimationFrame(filterUpdateFrame); filterUpdateFrame = null;
+      cancelVideoFilterDraw(); applyVideoFiltersToElement();
+    } else flushVideoFilterDraw();
     clearPipActivationPrompt();
     const hadRemote = remotePresentation || remoteSourceSession;
     if (retire) for (const session of [remotePresentationSession, remoteSourceSession, pendingRemoteSourceSession]) if (session) retiredRemoteSessions.add(session);
@@ -942,7 +978,7 @@
     const request = readQualityDiagnostics(video, player);
     const bounded = (value, min, max, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
     return frameProtocol.cleanState({
-      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(), hudCollapsed, hudPlacement,
+      owner: remoteSourceOwner, revision: remoteSourceRevision, hasVideo: !!video && video.readyState > 0, fullscreen: remoteFullscreen(), hudCollapsed, hudPlacement, hudPreferences: currentHudPreferences(),
       paused: video?.paused !== false, muted: video?.muted === true,
       pipActive: !!video && ((video.ownerDocument || document).pictureInPictureElement === video || video.webkitPresentationMode === 'picture-in-picture'),
       width: Math.round(bounded(video?.videoWidth, 0, 16384)), height: Math.round(bounded(video?.videoHeight, 0, 8640)),
@@ -1066,13 +1102,14 @@
     else {
       try {
         const { video, player } = findVideoAndPlayer(), value = command.value;
-        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed', 'hud-placement'].includes(command.name)) throw new Error('no-media');
+        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed', 'hud-placement', 'hud-preferences'].includes(command.name)) throw new Error('no-media');
         switch (command.name) {
           case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
           case 'volume': setAudioVolume(value); break;
           case 'audio': setAudioMode(value); break;
           case 'hud-collapsed': setHudCollapsed(value); break;
           case 'hud-placement': hudPlacement = value; break;
+          case 'hud-preferences': applyHudPreferences(value); break;
           case 'seek': if (!seekBy(value)) throw new Error('seek'); break;
           case 'quality': if (!remoteSourceQualities[value] || !requestQuality(remoteSourceQualities[value], video, player)) throw new Error('quality'); break;
           case 'target': controlledVideo = value < 0 ? null : remoteSourceCandidates[value]; if (value >= 0 && !controlledVideo) throw new Error('target'); break;
@@ -1090,7 +1127,13 @@
           case 'presentation-active': remoteSourceActive = value; break;
           case 'play': if (video.paused) await video.play(); else video.pause(); break;
           case 'pip': reply = { ...reply, ...await toggleLocalPictureInPicture() }; break;
-          case 'ping': { const result = await testCdnPing(false); if (result?.ms !== undefined) reply.ms = result.ms; else reply = { ...reply, ok: false, code: 'failed' }; break; }
+          case 'ping': {
+            const result = await testCdnPing(false);
+            if (lastPingStatus !== 'not-tested') reply.pingStatus = lastPingStatus;
+            if (result?.ms !== undefined) { reply.ms = result.ms; if (result.ageMinutes > 0) reply.ageMinutes = Math.min(result.ageMinutes, 1440); }
+            else reply = { ...reply, ok: false, code: 'failed' };
+            break;
+          }
           case 'report': reply.report = buildDiagnosticPayload(video ? 'USER_MANUAL_DIAGNOSTIC' : 'NO_VIDEO_FOUND'); break;
           case 'drm-info': break;
           case 'refresh': invalidateMediaDiscovery(); break;
@@ -1122,6 +1165,7 @@
     // The visible top HUD owns the initial preference; later snapshots carry source/fullscreen changes.
     if (first && state.hudCollapsed !== hudCollapsed) remoteControl('hud-collapsed', hudCollapsed);
     if (first && hudPlacement) remoteControl('hud-placement', hudPlacement);
+    if (first) remoteControl('hud-preferences', currentHudPreferences());
     renderRemoteHud();
     if (resumePresentation) document.getElementById('pvc-controller-popup')?.__nokActivity?.(true);
     if (leftFullscreen && state.hudPlacement) {
@@ -1148,6 +1192,7 @@
     if (remoteRequests.size === 0) {
       currentAudioVolumePercent = state.requestedVolume; targetEnforcedPlaybackRate = state.requestedRate;
       currentAudioMode = state.audioMode; syncRemoteFilters(state); Object.assign(subtitleAppearance, state.appearance);
+      applyHudPreferences(state.hudPreferences);
       syncAudioModeUi(currentAudioMode); setHudCollapsed(state.hudCollapsed);
       subtitleOverlayEnabled = state.subtitleEnabled; subtitleOffsetMs = state.subtitleOffset;
       value('pvc-speed-slider', state.requestedRate); value('pvc-volume-slider', state.requestedVolume);
@@ -4570,16 +4615,62 @@
 
   let periodicPingTimer = null;
   let lastPingStatus = 'not-tested';
+  let cdnButtonPassive = false;
+  // The browser's timing buffer can stop filling; an old entry must not look current.
+  const CDN_TIMING_FRESH_MINUTES = 2;
+  const CDN_STATUS_MESSAGES = Object.freeze({
+    'no-video': 'Video bulunamadı',
+    'no-source': 'Bu sayfada ölçülebilir medya isteği görünmüyor. Oynatma bundan etkilenmez.',
+    'http-rejected': 'Medya sunucusu ölçüm isteğini kabul etmedi. Oynatma bundan etkilenmez.',
+    timeout: 'Medya sunucusu 4 saniyede yanıt vermedi. Ölçüm tamamlanamadı.',
+    blocked: 'Sunucu veya tarayıcı bu ölçüme izin vermedi. Oynatma bundan etkilenmez.'
+  });
+  const CDN_UNAVAILABLE_MESSAGE = 'CDN yanıtı ölçülemedi.';
+  const CDN_BUTTON_DEFAULT_TITLE = 'Medya sunucusunun HTTP yanıt süresini gösterir; ağ pingi değildir. Her sitede ölçülemez.';
+  const CDN_BUTTON_PASSIVE_TITLE = 'Son medya isteğinden okundu, ek istek gönderilmedi. Ağ pingi değildir.';
+  const CDN_BUTTON_HEAD_TITLE = 'Bu ölçüm için ayrı bir HEAD isteği gönderildi. Ağ pingi değildir.';
+
+  function cdnResultMessage({ ms, method, ageMinutes = 0 }) {
+    if (method === 'head') return `📡 Medya HTTP yanıtı: ${ms} ms (HEAD)`;
+    return ageMinutes > 0 ? `📡 Medya HTTP yanıtı: ${ms} ms (${ageMinutes} dk önceki istek)` : `📡 Medya HTTP yanıtı: ${ms} ms (son istek)`;
+  }
+  function renderCdnButton(result) {
+    const button = document.getElementById('pvc-ping-btn');
+    if (!button || button.getAttribute('aria-busy') === 'true') return;
+    const measured = result?.ms !== undefined;
+    cdnButtonPassive = measured && result.method === 'resource-timing';
+    setUiText(button, measured ? `📡 ${result.ms} ms` : '📡 Sonuç yok');
+    button.style.color = !measured ? 'var(--pvc-muted, #a2b6c0)' : result.ms <= 50 ? 'var(--pvc-success, #34d399)' : (result.ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-warning, #f59e0b)');
+    setUiAttribute(button, 'title', !measured ? (CDN_STATUS_MESSAGES[lastPingStatus] || CDN_UNAVAILABLE_MESSAGE)
+      : result.method === 'head' ? CDN_BUTTON_HEAD_TITLE : result.method === 'resource-timing' ? CDN_BUTTON_PASSIVE_TITLE : CDN_BUTTON_DEFAULT_TITLE);
+  }
+  // A silent refresh only withdraws a value it can no longer back up; manual results stay.
+  function clearPassiveCdnButton() {
+    const button = document.getElementById('pvc-ping-btn');
+    if (!cdnButtonPassive || !button || button.getAttribute('aria-busy') === 'true') return;
+    cdnButtonPassive = false;
+    setUiText(button, '📡 CDN yanıtı');
+    button.style.color = '';
+    setUiAttribute(button, 'title', CDN_BUTTON_DEFAULT_TITLE);
+  }
 
   async function testCdnPing(silent = false) {
     if (remotePresentation) {
       if (silent) return null;
-      const reply = await remoteControl('ping'); return reply.ok && reply.ms !== undefined ? { ms: reply.ms, method: 'remote' } : null;
+      const reply = await remoteControl('ping');
+      const result = reply.ok && reply.ms !== undefined ? { ms: reply.ms, method: reply.pingStatus || 'remote', ageMinutes: reply.ageMinutes || 0 } : null;
+      // The source frame's toast is hidden while this frame presents, so the reason is announced here.
+      if (reply.pingStatus) {
+        lastPingStatus = reply.pingStatus;
+        showToast(result ? cdnResultMessage(result) : (CDN_STATUS_MESSAGES[reply.pingStatus] || CDN_UNAVAILABLE_MESSAGE));
+      }
+      return result;
     }
     const { video, player } = findVideoAndPlayer();
     if (!video) {
       lastPingStatus = 'no-video';
-      if (!silent) showToast('Video bulunamadı');
+      if (silent) clearPassiveCdnButton();
+      else { showToast(CDN_STATUS_MESSAGES['no-video']); renderCdnButton(null); }
       return null;
     }
     const mediaUrl = value => {
@@ -4591,29 +4682,22 @@
     const perf = video.ownerDocument?.defaultView?.performance || performance;
     const entries = perf.getEntriesByType('resource').filter(entry => mediaUrl(entry.name));
     const latest = entries[entries.length - 1];
-    const updatePingBadge = (ms) => {
-      const pingBtn = document.getElementById('pvc-ping-btn');
-      if (pingBtn && pingBtn.getAttribute('aria-busy') !== 'true') {
-        setUiText(pingBtn, `📡 ${ms} ms`);
-        pingBtn.style.color = ms <= 50 ? 'var(--pvc-success, #34d399)' : (ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-warning, #f59e0b)');
-      }
-    };
+    const fail = status => { lastPingStatus = status; showToast(CDN_STATUS_MESSAGES[status]); renderCdnButton(null); return null; };
     // Hazır kaynak zamanlaması varsa ek ağ isteği yapmadan HTTP yanıt süresi gösterilir.
     if (latest && latest.requestStart > 0 && latest.responseStart >= latest.requestStart) {
-      const ms = Math.round(latest.responseStart - latest.requestStart);
-      lastPingStatus = 'resource-timing';
-      updatePingBadge(ms);
-      if (!silent) showToast(`📡 Medya HTTP yanıtı: ${ms} ms (son istek)`);
-      return { ms, method: 'resource-timing' };
+      const ageMinutes = latest.responseEnd > 0 ? Math.max(0, Math.floor((perf.now() - latest.responseEnd) / 60000)) : 0;
+      if (!silent || ageMinutes < CDN_TIMING_FRESH_MINUTES) {
+        const result = { ms: Math.round(latest.responseStart - latest.requestStart), method: 'resource-timing', ageMinutes };
+        lastPingStatus = 'resource-timing';
+        renderCdnButton(result);
+        if (!silent) showToast(cdnResultMessage(result));
+        return result;
+      }
     }
-    if (silent) { lastPingStatus = 'timing-unavailable'; return null; }
+    if (silent) { lastPingStatus = 'timing-unavailable'; clearPassiveCdnButton(); return null; }
     let targetUrl = video.currentSrc || video.src || '';
     if (!mediaUrl(targetUrl)) targetUrl = latest?.name || '';
-    if (!targetUrl) {
-      lastPingStatus = 'no-source';
-      showToast('CDN ölçümü için erişilebilir medya isteği bulunamadı.');
-      return null;
-    }
+    if (!targetUrl) return fail('no-source');
     // Manuel ölçüm: yalnızca HEAD, kimlik bilgisi/referrer yok, GET fallback yok.
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
@@ -4623,20 +4707,14 @@
         method: 'HEAD', cache: 'no-store', mode: 'cors', credentials: 'omit',
         referrerPolicy: 'no-referrer', redirect: 'error', signal: controller.signal
       });
-      if (!response.ok) {
-        lastPingStatus = 'http-rejected';
-        showToast('CDN, HEAD ölçümünü kabul etmedi.');
-        return null;
-      }
-      const ms = Math.round(performance.now() - startTime);
+      if (!response.ok) return fail('http-rejected');
+      const result = { ms: Math.round(performance.now() - startTime), method: 'head' };
       lastPingStatus = 'head';
-      updatePingBadge(ms);
-      showToast(`📡 Medya HTTP yanıtı: ${ms} ms (HEAD)`);
-      return { ms, method: 'head' };
+      renderCdnButton(result);
+      showToast(cdnResultMessage(result));
+      return result;
     } catch (err) {
-      lastPingStatus = controller.signal.aborted ? 'timeout' : 'blocked';
-      showToast(controller.signal.aborted ? 'CDN yanıt ölçümü zaman aşımına uğradı.' : 'CDN yanıtı tarayıcı veya sunucu kısıtı nedeniyle ölçülemedi.');
-      return null;
+      return fail(controller.signal.aborted ? 'timeout' : 'blocked');
     } finally { clearTimeout(timeout); }
   }
 
@@ -5559,7 +5637,7 @@
 
       <!-- Footer: Ping, Rehber/Kısayollar ve Teşhis -->
       <div class="pvc-menu-footer" id="pvc-menu-footer">
-        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Medya HTTP yanıt süresini ölç (ağ pingi değildir)">${uiLabel('signal', 'CDN yanıtı')}</button>
+        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Medya sunucusunun HTTP yanıt süresini gösterir; ağ pingi değildir. Her sitede ölçülemez.">${uiLabel('signal', 'CDN yanıtı')}</button>
         <button id="pvc-perms-btn" class="pvc-footer-btn pvc-btn-sky" title="Klavye Kısayolları & İzin Rehberi">${uiLabel('keyboard', 'Kısayollar')}</button>
         <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">${uiLabel('report', 'Teşhis')}</button>
       </div>
@@ -5959,16 +6037,17 @@
       this.setAttribute('aria-busy', 'true');
       setUiText(this, 'Ölçülüyor...');
       appendUiLoader(this);
+      let result = null;
       try {
-        const res = await testCdnPing(false);
-        setUiText(this, (res && res.ms !== undefined) ? `📡 ${res.ms} ms` : '📡 CDN yanıtı');
+        result = await testCdnPing(false);
       } catch (_) {
-        setUiText(this, '📡 CDN yanıtı');
+        // A failed measurement is shown like any other unmeasured result below.
       } finally {
         this.querySelector('.pvc-loading-grid')?.remove();
         this.disabled = false;
         this.setAttribute('aria-busy', 'false');
       }
+      renderCdnButton(result);
     };
 
     popup.querySelector('#pvc-perms-btn').onclick = (e) => {

@@ -9,6 +9,7 @@ function harness() {
   const context = vm.createContext({window, qualityWatchTimer:null, filterUpdateFrame:null, document:{getElementById:()=>null,addEventListener(){}},
     setTimeout: callback => {timers.set(++next,callback);return next;}, clearTimeout:id=>timers.delete(id),
     cancelAnimationFrame:id=>cancelledFrames.push(id),
+    currentHudPreferences:()=>({theme:'atlas',keepVisible:false,largeText:false,highContrast:false,reduceMotion:false}), applyHudPreferences(){},
     stopAdWatch(){}, flushVideoFilterDraw(){}, cancelVideoFilterDraw(){}, clearPipActivationPrompt(){}, showToast(){}, findVideoAndPlayer:()=>({video:{},player:null}), setSpeed:value=>{calls.push(value);return true;},
     inputState:state(), session, owner, calls });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'..','frame-protocol.js'),'utf8'),context);
@@ -93,8 +94,8 @@ test('collapse commands keep source and presentation state aligned across fullsc
 
 test('a newly delegated source inherits the already collapsed top HUD',()=>{
   const h=harness();h.run('hudCollapsed=true;acceptRemoteState({session,state:inputState})');
-  assert.equal(h.posts.at(-1).payload.command.name,'hud-collapsed');
-  assert.equal(h.posts.at(-1).payload.command.value,true);
+  const collapsed=h.posts.find(post=>post.payload?.command?.name==='hud-collapsed');
+  assert.equal(collapsed.payload.command.value,true);
 });
 test('panel placement follows a new source, and a visible panel is not sent back to the corner',async()=>{
   const h=harness();let reset=0;h.context.resetPopupToDefaultPosition=()=>{reset++;};
@@ -186,6 +187,40 @@ test('old iframe snapshots cannot overwrite a slider intent before dispatch or b
 });
 
 test('closing a remote session cancels an unsent animation-frame filter update',()=>{
-  const h=harness();h.run('remotePresentation=inputState;remotePresentationSession=session;filterUpdateFrame=7;clearRemoteSession()');
+  const h=harness();let applied=0;h.context.applyVideoFiltersToElement=()=>{applied++;};
+  h.run('remotePresentation=inputState;remotePresentationSession=session;filterUpdateFrame=7;clearRemoteSession()');
   assert.deepEqual(h.cancelledFrames,[7]);assert.equal(h.run('filterUpdateFrame'),null);
+  assert.equal(applied,0,'the presenting frame has no video to apply it to');
+});
+
+test('panel preferences go to a new source and return only when no command is pending',async()=>{
+  const h=harness(),applied=[],sent=[];
+  h.context.currentHudPreferences=()=>({theme:'nova',keepVisible:true,largeText:false,highContrast:false,reduceMotion:false});
+  h.context.applyHudPreferences=value=>applied.push(value.theme);
+  const original=h.context.remoteControl;h.context.remoteControl=(name,value)=>{if(name==='hud-preferences')sent.push(value.theme);return original(name,value);};
+  h.run('renderRemoteHud=function(){const state=remotePresentation;if(remoteRequests.size===0)applyHudPreferences(state.hudPreferences);}');
+  h.run('acceptRemoteState({session,state:inputState})');
+  assert.deepEqual(sent,['nova'],'the presenting frame sends its choice to a new source');
+  assert.deepEqual(applied,[],'an older source snapshot does not overwrite a pending choice');
+});
+
+test('source frame applies preference commands and publishes them',async()=>{
+  const h=harness(),applied=[];h.context.applyHudPreferences=value=>applied.push(value.theme);
+  h.context.currentHudPreferences=()=>({theme:'atlas',keepVisible:false,largeText:false,highContrast:false,reduceMotion:false});
+  h.context.syncRemoteMediaOwner=()=>{};
+  const value={theme:'nova',keepVisible:false,largeText:true,highContrast:false,reduceMotion:false};
+  h.run('remoteSourceSession=session;remoteSourceOwner=owner;remoteSourceRevision=1');
+  h.context.commandPayload={session,id:1,command:{name:'hud-preferences',value,owner,revision:1}};
+  await h.run('executeRemoteCommand(commandPayload)');
+  assert.deepEqual(applied,['nova']);
+  assert.equal(h.posts.at(-1).payload.reply.ok,true);
+});
+
+test('a source frame still applies an accepted filter when its session closes before the next frame',()=>{
+  const h=harness();let applied=0;h.context.applyVideoFiltersToElement=()=>{applied++;};
+  h.run('remoteSourceSession=session;filterUpdateFrame=7;clearRemoteSession()');
+  assert.deepEqual(h.cancelledFrames,[7]);assert.equal(h.run('filterUpdateFrame'),null);
+  assert.equal(applied,1,'accepted value reaches the video');
+  h.run('remoteSourceSession=session;clearRemoteSession()');
+  assert.equal(applied,1,'no pending frame, nothing extra to apply');
 });

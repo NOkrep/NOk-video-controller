@@ -45,6 +45,7 @@ class Element {
   addEventListener(type, callback) { (this.listeners[type] ||= []).push(callback); }
   emit(type, data = {}) { for (const callback of this.listeners[type] || []) callback({ stopPropagation() {}, preventDefault() {}, ...data }); }
   focus() { this.focused = true; }
+  remove() { this.parent?.childNodes.splice(this.parent.childNodes.indexOf(this), 1); this.parent = null; }
   matches() { return false; }
   contains(node) { return node === this || this.childNodes.some(child => child.nodeType === 1 && child.contains(node)); }
 }
@@ -67,6 +68,7 @@ function harness(reducedMotion = false) {
   const hotkeys = add('pvc-hotkeys-toggle-btn'); hotkeys.addEventListener('click', () => { hotkeys.retainedListener = true; });
   const timers = new Map(); let timerId = 0;
   const context = vm.createContext({
+    remotePresentation: null, remoteSourceSession: null,
     document: { activeElement: null, createElement: tag => new Element(tag),
       getElementById: id => id === popup.id ? popup : popup.querySelector('#' + id) },
     window: { matchMedia: () => ({ matches: reducedMotion }), postMessage() {} },
@@ -262,7 +264,8 @@ test('CDN loader tracks the real async operation and restores the button afterwa
   h.context.testCdnPing = () => new Promise(resolve => { complete = resolve; });
   const start = source.indexOf("    popup.querySelector('#pvc-ping-btn').onclick =");
   const end = source.indexOf('\n    };', start) + '\n    };'.length;
-  h.run(source.slice(start, end));
+  h.run(section('  let periodicPingTimer', '  async function testCdnPing') + source.slice(start, end));
+  h.context.testCdnPing = () => new Promise(resolve => { complete = resolve; });
   const button = h.find('pvc-ping-btn');
   const promise = button.onclick({ stopPropagation() {} });
   assert.equal(button.disabled, true); assert.equal(button.getAttribute('aria-busy'), 'true');

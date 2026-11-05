@@ -56,14 +56,17 @@ function instrumentResources(){
   };
   document.addEventListener('DOMContentLoaded',()=>{trackVideo(document.querySelector('video'));});
 }
-async function createFixture({height=720,displayWidth=800}={}){
+async function createFixture({height=720,displayWidth=800,canvasVideo=false}={}){
   if(![720,1080].includes(height)||![800,1600].includes(displayWidth))throw Error('Unsupported fixture dimensions');
   const media=path.join(__dirname,'artifacts','media',`synthetic-av-${height}p.webm`);
-  if(!fs.existsSync(media))throw Error('Generate the local audio fixture with prepare-browser-fixtures.cjs --audio-fixture.');
+  if(!canvasVideo&&!fs.existsSync(media))throw Error('Generate the local audio fixture with prepare-browser-fixtures.cjs --audio-fixture.');
+  // canvasVideo needs no generated file, so tests that only need a playing video also run in CI.
+  const video=canvasVideo?`<video autoplay muted playsinline></video><script>const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;const ctx=canvas.getContext('2d');setInterval(()=>{ctx.fillStyle='#213847';ctx.fillRect(0,0,640,360);},100);const element=document.querySelector('video');element.srcObject=canvas.captureStream(10);element.play().catch(()=>{});</script>`
+    :'<video src="/synthetic.webm" autoplay muted loop playsinline></video>';
   const body=`<!doctype html><html><head><meta charset="utf-8"><script>(${instrumentResources})();</script><style>
   body{margin:24px;background:#152330;color:white}video{display:block;width:${displayWidth}px;height:${displayWidth*9/16}px}</style></head><body>
   <button id="open" onclick="window.postMessage({type:'PVC_TOOLBAR_TOGGLE'},'*')">Controller</button>
-  <video src="/synthetic.webm" autoplay muted loop playsinline></video></body></html>`;
+  ${video}</body></html>`;
   const server=http.createServer((request,response)=>{
     if(request.url==='/synthetic.webm'){serveMedia(request,response,media);return;}
     response.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});response.end(body);
