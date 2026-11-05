@@ -78,7 +78,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 
 ## 5. Kullanıcı kararları
 
-- **Sürüm numarası:** `1.0.0` en stabil ilk çıkış sürümüdür. Öncesinde `0.x.0` milestone geçişi, `0.0.x` küçük geliştirme, `0.0.0.x` çok küçük değişikliktir. Üçüncü ve dördüncü bölüm **en fazla 9** olur (üçüncü bölüm kararı: kullanıcı, 4 Kasım). `0.7.7.9` sonrası küçük adım `0.7.8`, `0.7.9` sonrası küçük adım `0.8.0`'dır; `0.7.7.10` veya `0.7.10` olmaz. `0.7.9` üstüne çok küçük değişiklik `0.7.9.1`, `0.7.9.9` sonrası `0.8.0` olur. Üretim kodu değişmeyen belge/devir işinde sürüm artırılmaz.
+- **Sürüm numarası:** `1.0.0` en stabil ilk çıkış sürümüdür. Öncesinde `0.x.0` milestone geçişi, `0.0.x` küçük geliştirme, `0.0.0.x` çok küçük değişikliktir. **Geçici düzen (kullanıcı, 5 Kasım; 4 Kasım'daki üçüncü bölüm sınırının yerine geçer, kesin karar B5'te bekliyor):** `0.milestone.düzeltme.küçük`. Üçüncü bölüm milestone gelene kadar sınırsız artar, dördüncü bölüm **en fazla 9**. `0.7.9.9` sonrası `0.7.10`, `0.7.10` sonrası küçük adım `0.7.11`, çok küçük adım `0.7.10.1`'dir; `0.7.9.10` olmaz. Milestone yalnız kullanıcı kararıyla artar. Üretim kodu değişmeyen belge/devir işinde sürüm artırılmaz.
 - Varsayılan arayüz İngilizce, Türkçe seçilebilir; tercihler RAM'de. UI çevirisi kullanıcı yorumuna/altyazıya/JSON'a uygulanmaz.
 - Üç temel dikey sekme: Player, Subtitles, Settings. Video renkleri Settings'te, adaptör Player'da. Seçili sekme/yüzey birleşimi german_7619 referansından uyarlanır; native klavye/ARIA korunur.
 - **20 tema kalıcı olarak korunuyor (kullanıcı, 5 Kasım):** finalist beş tema seçilmeyecek; insanların çeşit arasından seçebilmesi tercih edildi. Kendiliğinden ayıklama veya yeni renk sistemi yok.
@@ -128,7 +128,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
 
-**Kullanıcının seçtiği sonraki işler (5 Kasım):** D-06, I-11, I-03, I-04, I-05, I-09, B6-C (canlı test yolu) ve CI-2 (`Browser media` işini zorunlu kontrole almak); sırayı Claude önerir, başlangıç kullanıcının molasından sonradır. I-13 Codex'te. D-08, D-09, I-10 ve sürüm kuralı (B5) kullanıcı kararı bekliyor.
+**Kullanıcının seçtiği sonraki işler (5 Kasım):** D-06, I-11, I-03, I-04, I-05, I-09, B6-C (canlı test yolu) ve CI-2 (`Browser media` işini zorunlu kontrole almak); sırayı Claude önerir, başlangıç kullanıcının molasından sonradır. I-13 Codex'te. I-10 canlı oturumlara dahil edildi. D-08: rapor penceresi animasyonları ve geniş eklemeler için önce performans ölçümü. D-09: tooltip yapılacak, form bekliyor. Sürüm kuralının kesin hali (B5) bekliyor. Kullanıcı ek istekler ve tersine mühendislik araçları yazacak; araçlar güvenlik akışından geçmeden kullanılmaz.
 
 **Kullanıcının seçtiği öncelikler (4 Kasım):** Codex kendi araç sistemi notlarını kapattı ve yedi beceri kapsamının onayını yeniledi (`D:/NOk-Tools/AGENT_NOTES.md` N-001, N-004, N-006; geçerlilik 11 Kasım akşamına kadar). Claude şu işleri ele alır:
 
