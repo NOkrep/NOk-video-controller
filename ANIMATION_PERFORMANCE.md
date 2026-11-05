@@ -62,7 +62,7 @@ Gerçek sayfada ana iş parçacığının yaklaşık binde 3-5'i. CPU penceresin
 **Gerçek sayaçlarla ağır yük denemesi** (taklit yok; 1080p üzerinde bulanıklık katmanları, meşgul sayfa ve 24 ek hızlı video):
 
 - **Firefox:** Pencerelerde %21-99 kayıp, bildirim yaklaşık 12 sn'de çıktı. Panel boşta gizliydi ve uyanmadı.
-- **Edge:** Bildirim 36 sn içinde **çıkmadı**. Video 3 sn'de 90 kare yerine 1-42 kare üretti, yani ağır takıldı, ama tarayıcı bunların çoğunu düşen kare saymadı (pencerelerde %0-46, toplamda eşiğin altında). Sayaç hiç üretilmeyen kareyi görmez.
+- **Edge:** Bildirim 36 sn içinde **çıkmadı**. Video 3 sn'de 90 kare yerine 1-42 kare üretti, yani ağır takıldı, ama tarayıcı bunların çoğunu düşen kare saymadı (dışarıdan okunan 3 sn'lik pencerelerde %0-46). Sayaç hiç üretilmeyen kareyi görmez. Kuralın neden tetiklenmediği ayrıca ayrıştırılmadı: motorun pencere sınırları dış okumadan farklıdır ve tampon durumundaki anlar sayılmaz.
 - **Sadece blur ve meşgul sayfa:** İki motorda kayıp en çok %10, bildirim çıkmadı. Sayaçlar buna duyarlı değil.
 
 **Sonuç:** Bildirim tarayıcının bildirdiği kaybı yakalar, kullanıcının hissettiği her takılmayı değil. Edge'de eşiği aşan gerçek kayıp bu makinede üretilemedi; Edge'de sorma yolu sayaçlar test içinde değiştirilerek doğrulandı. Düşük kare üretimini de saymak ayrı bir iş olur, kare hızını bilmek gerekir; yapılmadı.
