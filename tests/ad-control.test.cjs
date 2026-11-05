@@ -13,7 +13,7 @@ function harness(extra = {}) {
   vm.runInContext(section('  function ivsQualityKey', '  function hookIvsInstance'), context);
   vm.runInContext(section('  function applyVideoJsEnabledSelection','  const VideoJsAdapter'),context);
   vm.runInContext(section('  function createAdLifecycle', '  const adLifecycle ='), context);
-  vm.runInContext(`const controller = createAdLifecycle({capture: captureAdControls, log: e => logs.push(e), resetRequestedRate: () => calls.push('reset')});`, context);
+  vm.runInContext(`const controller = createAdLifecycle({capture: captureAdControls, log: e => logs.push(e), panelAfterAd: () => calls.push('reset')});`, context);
   return { video, context, logs, calls, run: code => vm.runInContext(code, context) };
 }
 test('ad lifecycle requests 16x and mute, then restores 1x and the original volume/mute once', () => {
@@ -26,6 +26,13 @@ test('ad lifecycle requests 16x and mute, then restores 1x and the original volu
   assert.equal(h.video.volume, .35); assert.equal(h.video.muted, false);
   h.run('controller.stop()'); assert.deepEqual(h.logs, ['AD_CONTROL_STARTED', 'AD_CONTROL_ENDED']);
 });
+test('a level the player itself chose during the ad is kept; only a mute-by-zero is undone', () => {
+  const h = harness();
+  h.run('controller.tick({video, player:null}, true)');
+  h.video.volume = .47; // YouTube sets a per-content level when the content starts.
+  h.run('controller.tick({video, player:null}, false)');
+  assert.equal(h.video.volume, .47); assert.equal(h.video.muted, false);
+});
 test('prior mute survives completion and a rejected 16x setter does not prevent muting', () => {
   const h = harness(); h.video.muted = true;
   h.run('controller.tick({video, player:null}, true); controller.stop()'); assert.equal(h.video.muted, true);
@@ -36,7 +43,7 @@ test('prior mute survives completion and a rejected 16x setter does not prevent 
 });
 test('replacement/detachment never applies captured SDK state to another video', () => {
   const h = harness();
-  h.run(`const c = createAdLifecycle({ capture: () => ({setRate: n => calls.push(n), restoreQuality: () => calls.push('quality')}), resetRequestedRate(){}, log(){} });
+  h.run(`const c = createAdLifecycle({ capture: () => ({setRate: n => calls.push(n), restoreQuality: () => calls.push('quality')}), panelAfterAd(){}, log(){} });
     c.tick({video,player:null},true); c.tick({video:{isConnected:true,ended:false,playbackRate:2,muted:false},player:null},false)`);
   assert.deepEqual(h.calls, [16]); assert.equal(h.video.playbackRate, 1); assert.equal(h.video.muted, false);
 });
@@ -109,7 +116,7 @@ test('Video.js enabled flags restore exactly; VHS wrapper objects may be recreat
 test('SDK setter failure cannot prevent native muting or rate changes; ad controls create no audio graph', () => {
   const h=harness();
   h.run(`const fail = () => { throw new Error('SDK failed'); };
-    const c = createAdLifecycle({capture:()=>({setRate:fail,setMuted:fail}),resetRequestedRate(){},log(){}});
+    const c = createAdLifecycle({capture:()=>({setRate:fail,setMuted:fail}),panelAfterAd(){},log(){}});
     c.tick({video,player:null},true)`);
   assert.equal(h.video.playbackRate,16); assert.equal(h.video.muted,true);
   assert.equal(section('  // AD LIFECYCLE','  // END AD LIFECYCLE').includes('initAudioGraph'),false);

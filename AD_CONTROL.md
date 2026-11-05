@@ -23,6 +23,18 @@ Geri dönüşü bilinmiyorsa kaliteye dokunulmaz. Bitişte kullanıcı isteği d
 
 Sabit `AD_CONTROL_STARTED` / `AD_CONTROL_ENDED` olayları sadece döngü giriş/çıkışını gösterir; 16x'in veya kalitenin gerçekten uygulandığını kanıtlamaz. İzlenen içerik/URL/metin raporlanmaz. Olaylar diğerleri gibi sınırlı RAM tamponundadır.
 
+## Gerçek YouTube kabulü — 5 Kasım 2026, v0.7.12
+
+Geçici profil, hesap yok. Kick'te reklam artık nadir olabildiği için (kullanıcı bilgisi) kabul YouTube'da yapıldı: `tests/youtube-ad-acceptance.cjs`.
+
+- **Çalışan:** `ad-showing` işaretiyle 16x ve sessize alma uygulanıyor, bitişte 1x ve ses geri geliyor. `AD_CONTROL_STARTED` ve `ENDED` kaydediliyor. Art arda iki reklamda YouTube hızı ve sesi sıfırlıyor, 750 ms'lik denetim yeniden uyguluyor; bu aralıkta reklam kısa süre normal hızda ve sesli oynayabilir.
+- **Kalite:** YouTube için kalite düşürme yolu yok, reklamda kalite değişmedi. Bu bilinçli sınır tablodaki gibi geri dönüşü bilinen yollarla ilgilidir.
+- **Düzeltilen üç hata:** Panel reklam bitince eski hızı gösteriyordu (`16x` veya reklam öncesi değer). Reklam başındaki ses seviyesi, YouTube'un içerik için seçtiği seviyenin üstüne yazılabiliyordu; artık yalnız seviye 0'a çekildiyse geri yazılır. Panel gerçek sesi kaçırabiliyordu.
+- **Ölçüm:** Reklam sonrası içeriğin başlaması eklentisiz Chromium'da 7,6 ve 7,8 sn; FilmDeck'le Chromium'da 1,8, Firefox'ta 0,3 sn. Az örnektir; hızlandırmanın boşluk yarattığını göstermez.
+- **Açık tutarsızlık:** Denetim yalnız panel açıkken veya sayfa açılışından 1 saniye sonra video varken başlar, panel kapanınca durur. Paneli hiç açılmayan bir turda YouTube reklamı 176 saniye boyunca 1x ve sesli oynadı. Karar kullanıcıda.
+
+Canlı Kick reklamı hâlâ görülmedi; `ad-badge` doğrulanmadı.
+
 ## Doğrulama sınırı
 
 Node testleri giriş/çıkış, önceki mute/ses, 1x dönüş, SDK hata izolasyonu, gerçek HLS/IVS/Video.js seçimleri, envanter/source değişimi, replacement/ended ve marker sahipliğini sınar. Sentetik Edge testinde gerçek native menü 720p→480p→720p, mute ve %40 ses dönüşü geçer. Test `MediaStream`'i 16x isteğini kaydeder ama hızı 1x tutar; bu test gerçek reklam hızlanmasını doğrulamaz. Yerel dosya medyasıyla Firefox üzerinde yaklaşık 15.97x medya saati ve 1x/%40 ses dönüşü ayrıca doğrulandı. Canlı Kick reklamı ve site arayüzüyle eşleşme ayrıca sınanmalıdır.

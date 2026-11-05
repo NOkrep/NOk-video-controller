@@ -99,6 +99,8 @@ jobs:
         run: node tests/quality-mapping-browser.cjs --engine=${{ matrix.engine }}
       - name: Test a real Hls.js player attached before the engine loads
         run: node tests/hls-early-attach-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test the ad marker cycle against real Video.js playback
+        run: node tests/ad-lifecycle-browser.cjs --engine=${{ matrix.engine }}
 
   security:
     name: Dependency security

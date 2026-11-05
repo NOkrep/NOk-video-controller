@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.11 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.12 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.11';
+  const EXTENSION_VERSION = '0.7.12';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -3042,11 +3042,12 @@
       const saved = active; active = null;
       // Native state belongs to the captured element, never a replacement video.
       safely(() => { saved.video.playbackRate = 1; saved.video.defaultPlaybackRate = 1; });
-      safely(() => { saved.video.volume = saved.volume; saved.video.muted = saved.muted; });
+      // The ad only mutes. A non-zero level set meanwhile is the player's own (YouTube sets one per content).
+      safely(() => { if (saved.video.volume === 0) saved.video.volume = saved.volume; saved.video.muted = saved.muted; });
       if (restorePlayer) {
         safely(() => saved.setRate?.(1)); safely(() => saved.setMuted?.(saved.muted));
         safely(() => saved.restoreQuality?.());
-        ports.resetRequestedRate();
+        ports.panelAfterAd(saved.video);
       }
       ports.log('AD_CONTROL_ENDED');
     }
@@ -3157,7 +3158,15 @@
     return result;
   }
   const adLifecycle = createAdLifecycle({ capture: captureAdControls,
-    resetRequestedRate: () => { targetEnforcedPlaybackRate = 1; },
+    panelAfterAd: video => {
+      targetEnforcedPlaybackRate = 1;
+      const slider = document.getElementById('pvc-speed-slider');
+      if (slider) slider.value = '1';
+      setUiText(document.getElementById('pvc-hdr-speed-badge'), '1x');
+      // Firefox sends no volumechange for mute changes at 16x, so the listener alone is not enough.
+      adoptMediaVolume(video);
+      updateCollapsedSummaryBar();
+    },
     log: event => addDiagnosticLog('INFO', event) });
   let adWatchTimer = null;
   function stopAdWatch() { clearTimeout(adWatchTimer); adWatchTimer = null; adLifecycle.stop(); }
@@ -3399,6 +3408,8 @@
 
   function monitorVideoResolution(video) {
     startAdWatch();
+    // volumechange alone misses a level set before this listener exists, and Firefox's mute changes at 16x.
+    if (video?.readyState > 0) adoptMediaVolume(video);
     if (!video || video.__nokMonitored) return;
     video.__nokMonitored = true;
 
@@ -6134,8 +6145,10 @@
         adoptMediaVolume(video);
         const slider = popup.querySelector('#pvc-speed-slider');
         const hdrSpeed = popup.querySelector('#pvc-hdr-speed-badge');
-        if (slider) slider.value = (video.playbackRate || 1.0).toString();
-        if (hdrSpeed) setUiText(hdrSpeed, `${video.playbackRate || 1.0}x`);
+        // During an ad the media runs at a temporary 16x; the panel shows the user's own speed.
+        const shownRate = adLifecycle.isActive(video) ? targetEnforcedPlaybackRate : (video.playbackRate || 1.0);
+        if (slider) slider.value = shownRate.toString();
+        if (hdrSpeed) setUiText(hdrSpeed, `${shownRate}x`);
         initAudioGraphForVideo(video);
       }
       showToast(`FilmDeck Aktif (v${EXTENSION_VERSION})`);
