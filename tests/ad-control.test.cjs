@@ -130,3 +130,29 @@ test('Video.js ad restoration enables saved choices before disabling the tempora
   h.run('controller.tick({video,player:null},true)');assert.deepEqual(enabled,[false,true]);
   h.run('controller.stop()');assert.deepEqual(enabled,[true,false]);
 });
+test('the ad watch runs only after the page is armed, once, and keeps running without a video', () => {
+  const timers = [], ticks = [], counts = { stop: 0, ping: 0, pingEngine: 0, monitor: 0 };
+  let pagehide = null;
+  const context = vm.createContext({ remotePresentation: null, selection: { video: null, player: null },
+    setTimeout: fn => timers.push(fn), adLifecycle: { tick: (selection, marked) => ticks.push(marked), stop: () => counts.stop++ },
+    findVideoAndPlayer: () => context.selection, hasSelectedAdMarker: video => !!video,
+    startPeriodicPingEngine: () => counts.pingEngine++, monitorVideoResolution: () => counts.monitor++, testCdnPing: () => counts.ping++,
+    window: { addEventListener: (type, fn) => { if (type === 'pagehide') pagehide = fn; } } });
+  vm.runInContext(section('  let adWatchTimer', '  // END AD LIFECYCLE'), context);
+  assert.deepEqual([timers.length, counts.pingEngine, counts.ping, counts.monitor], [0, 0, 0, 0], 'loading the engine starts nothing');
+
+  vm.runInContext('armPage(); armPage();', context);
+  assert.deepEqual([timers.length, counts.pingEngine, counts.ping, counts.monitor], [1, 1, 1, 0], 'arming twice starts one watch; no video yet');
+  timers.shift()();
+  assert.deepEqual(ticks, [false]); assert.equal(timers.length, 1, 'a missing video does not end the watch');
+  context.selection = { video: {}, player: null };
+  timers.shift()();
+  assert.deepEqual(ticks, [false, true]); assert.equal(timers.length, 1, 'a video that arrives later is seen');
+
+  context.remotePresentation = {};
+  timers.shift()();
+  assert.deepEqual(ticks, [false, true]); assert.equal(timers.length, 1, 'a presenting frame leaves the media to its owner and keeps its timer');
+
+  pagehide();
+  assert.equal(counts.stop, 1); assert.equal(timers.length, 1, 'leaving undoes the ad state; a restored page keeps its watch');
+});

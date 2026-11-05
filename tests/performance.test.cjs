@@ -247,7 +247,7 @@ test('closed HUD with a completed quality request skips timeupdate scans; pendin
   const context=vm.createContext({video,document:{getElementById:()=>({style:{display:'none'}})},
     qualityControlState:{request:{status:'confirmed'}},customSubtitleCues:[],remoteSourceSession:null,
     currentAudioVolumePercent:100,currentAudioMode:'stereo',pendingQualityLabel:'',lastObservedResolution:'',
-    startAdWatch(){},findVideoAndPlayer(){scans++;return {video};},updateQualityVerification(){},
+    findVideoAndPlayer(){scans++;return {video};},updateQualityVerification(){},
     updateRealtimeResolutionBadge(){},renderDynamicQualityButtons(){},applyVideoFiltersToElement(){},
     renderCustomSubtitleCue(){captions++;}});
   vm.runInContext(section('  function monitorVideoResolution','  function updatePipButtonsState'),context);

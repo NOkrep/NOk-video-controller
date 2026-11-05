@@ -54,7 +54,7 @@ Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromi
 
 `hls-early-attach-browser.cjs`, gerçek Hls.js'i kapalı kapsamda ve betik yüklenir yüklenmez bağlar; üst sayfada ve ayrı kökenli iframe'de oynatıcının bağlanma anında bulunduğunu, panelin `HlsJsAdapter` ve 3 seviye gösterdiğini sınar. `libraryHtml` motoru beklediği için diğer testler bu yarışı göstermez. Motorun bağlanmadan önce hazır olup olmadığı çıktıda yazar; bu sonuç sabit değildir.
 
-`ad-lifecycle-browser.cjs`, gerçek Video.js/VHS oynatmada oynatıcının kendi `vjs-ad-playing` işaretiyle reklam döngüsünü üst sayfada ve ayrı kökenli iframe'de sınar: panel açılmadan başlayan reklam, reklam sırasında açılan panel, 16x ve sessize alma, en düşük seviye, bitişte 1x, önceki ses ve kalite, panelin gerçek değerleri göstermesi. Sentetik işaret kullanır; gerçek reklam kabulü `youtube-ad-acceptance.cjs` ile yapılır. O test bir turda reklam görmezse `no-ad-seen` yazar, bu geçti sayılmaz.
+`ad-lifecycle-browser.cjs`, gerçek Video.js/VHS oynatmada oynatıcının kendi `vjs-ad-playing` işaretiyle reklam döngüsünü üst sayfada ve ayrı kökenli iframe'de sınar: ilk basıştan önce denetim olmaması ve ağ kancasının yerinde olması, basışla reklam sırasında açılan panel, 16x ve sessize alma, en düşük seviye, bitişte 1x, önceki ses ve kalite, panelin gerçek değerleri göstermesi, küçültülmüş ve kapalı panelde denetimin sürmesi, iframe yenilense de sürmesi. Sentetik işaret kullanır; gerçek reklam kabulü `youtube-ad-acceptance.cjs` ile yapılır. O test basmadan bekler, bir kez basıp paneli kapatır ve aynı belgede sonraki videolara geçer; bir turda reklam görmezse `no-ad-seen` yazar, bu geçti sayılmaz.
 
 ## CI'da olan ve yerelde kalan testler (D-10)
 

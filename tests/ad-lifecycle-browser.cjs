@@ -1,9 +1,10 @@
 // Real Video.js/VHS playback with the player's own ad marker: entry and full restoration, top page and cross-origin iframe.
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path');
-const {createDriver,until}=require('./resource-driver.cjs');
+const {createDriver,until,delay}=require('./resource-driver.cjs');
 const {serveLibraryAsset,libraryHtml}=require('./library-fixtures.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox';
+const mediaState=()=>({rate:document.querySelector('video').playbackRate,muted:document.querySelector('video').muted});
 (async()=>{let driver;const media=http.createServer((req,res)=>{
   if(serveLibraryAsset(req,res,{committedHls:true}))return;
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(libraryHtml('videojs'));
@@ -31,11 +32,15 @@ try{
     await until(driver,owner,()=>document.querySelector('video')?.readyState>=2,'Video.js decodes');
     // The fixture lasts 12 seconds; at 16x it would end during the ad without a loop.
     await driver.evaluate(owner,()=>{videojs.getAllPlayers()[0].loop(true);const video=document.querySelector('video');video.muted=false;video.volume=.4;video.play().catch(()=>{});return true;});
-    // A page can already be in an ad when the panel opens (a pre-roll): the startup watch is running.
+    // Nothing acts on the page before the first toolbar press, even during an ad.
     await driver.evaluate(owner,()=>document.querySelector('.video-js').classList.add('vjs-ad-playing'));
-    await until(driver,owner,()=>document.querySelector('video').playbackRate===16,'the startup watch handles a pre-roll before the panel opens');
+    await delay(2000);
+    assert.deepEqual(await driver.evaluate(owner,mediaState),{rate:1,muted:false},'no ad control before the first toolbar press');
+    // The capture that source and quality work depends on must stay at page load, not at the press.
+    assert.equal(await driver.evaluate(owner,()=>/\[native code\]/.test(XMLHttpRequest.prototype.open.toString())||/\[native code\]/.test(window.fetch.toString())),false,'network capture is in place before the press');
     await driver.toolbar(top);
     await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','toolbar opens');
+    await until(driver,owner,()=>document.querySelector('video').playbackRate===16,'the press handles an ad already running');
     await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-tab-player').click();});
     await until(driver,top,()=>/^1(\.0+)?x/.test(document.getElementById('pvc-hdr-speed-badge').textContent)&&Number(document.getElementById('pvc-speed-slider').value)===1,'a panel opened during an ad shows the user speed');
     await driver.evaluate(owner,()=>document.querySelector('.video-js').classList.remove('vjs-ad-playing'));
@@ -58,6 +63,38 @@ try{
     assert.ok(Math.abs(await driver.evaluate(owner,()=>document.querySelector('video').volume)-.4)<.01,'the prior volume returns');
     await until(driver,top,()=>Number(document.getElementById('pvc-speed-slider').value)===1&&/^1(\.0+)?x/.test(document.getElementById('pvc-hdr-speed-badge').textContent),'the panel shows the restored speed');
     assert.equal(await driver.evaluate(top,()=>document.getElementById('pvc-volume-slider').value),'40','the panel keeps the restored volume');
+
+    // After the press, minimising or closing the panel leaves ad control running on this page.
+    const adCycle=async(frame,label)=>{
+      await driver.evaluate(frame,()=>document.querySelector('.video-js').classList.add('vjs-ad-playing'));
+      await until(driver,frame,()=>document.querySelector('video').playbackRate===16&&document.querySelector('video').muted,`${label}: 16x and mute`);
+      await driver.evaluate(frame,()=>document.querySelector('.video-js').classList.remove('vjs-ad-playing'));
+      await until(driver,frame,()=>document.querySelector('video').playbackRate===1&&!document.querySelector('video').muted,`${label}: 1x and sound`);
+    };
+    await driver.evaluate(top,()=>document.getElementById('pvc-collapse-btn').click());
+    await adCycle(owner,'minimised panel');
+    await driver.evaluate(top,()=>document.getElementById('pvc-collapse-btn').click());
+    await driver.evaluate(top,()=>document.getElementById('pvc-close-popup-btn').click());
+    assert.equal(await driver.evaluate(top,()=>document.getElementById('pvc-controller-popup').style.display),'none','the panel is closed');
+    await adCycle(owner,'closed panel');
+
+    if(embedded){
+      // A new document in the frame belongs to the same pressed page.
+      await driver.evaluate(top,()=>{const frame=document.querySelector('iframe');frame.src=frame.src+'?next';});
+      let next=null;
+      for(let attempt=0;attempt<80&&!next;attempt++){
+        for(const frame of await driver.frames(top))if(await driver.evaluate(frame.target,()=>location.search==='?next'&&document.querySelector('video')?.readyState>=2).catch(()=>false))next=frame.target;
+        if(!next)await delay(100);
+      }
+      assert.ok(next,'the frame reloads its player');
+      await driver.evaluate(next,()=>{videojs.getAllPlayers()[0].loop(true);document.querySelector('video').muted=false;document.querySelector('video').play().catch(()=>{});return true;});
+      await adCycle(next,'reloaded frame');
+    }
+
+    // A reopened panel shows the real values.
+    await driver.toolbar(top);
+    await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','toolbar reopens');
+    await until(driver,top,()=>Number(document.getElementById('pvc-speed-slider').value)===1,'the reopened panel shows 1x');
     results.push({embedded});
   }
   console.log(JSON.stringify({engine,browserVersion:driver.version,results,result:'passed'}));

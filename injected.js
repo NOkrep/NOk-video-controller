@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.12 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.13 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.12';
+  const EXTENSION_VERSION = '0.7.13';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -773,6 +773,7 @@
 
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
+    if (event.data.type === 'PVC_PAGE_ARMED') { armPage(); return; }
     if (event.data.type === 'PVC_REMOTE_SOURCE_START') { startRemoteSource(event.data.payload?.session); return; }
     if (event.data.type === 'PVC_REMOTE_CLEAR') { clearRemoteSession(true, event.data.payload?.keepOpen === true); return; }
     if (event.data.type === 'PVC_RESCAN_OPEN_HUD') {
@@ -943,7 +944,6 @@
     remoteAncestorFullscreen = false; remoteSourceQualities = []; remoteSourceCandidates = [];
     remoteSourceActive = true;
     if (hadRemote) {
-      stopAdWatch();
       clearTimeout(qualityWatchTimer);
       const popup = document.getElementById('pvc-controller-popup'); if (popup && !keepOpen) popup.style.display = 'none';
       for (const id of ['pvc-error-modal', 'pvc-adapter-modal', 'pvc-drm-modal']) document.getElementById(id)?.remove();
@@ -3168,19 +3168,31 @@
       updateCollapsedSummaryBar();
     },
     log: event => addDiagnosticLog('INFO', event) });
-  let adWatchTimer = null;
-  function stopAdWatch() { clearTimeout(adWatchTimer); adWatchTimer = null; adLifecycle.stop(); }
+  let adWatchTimer = null, pageArmed = false;
   function startAdWatch() {
-    if (adWatchTimer !== null || remotePresentation) return;
+    if (adWatchTimer !== null) return;
     const tick = () => {
-      const selection = findVideoAndPlayer();
-      if (!selection.video || selection.video.isConnected === false) { stopAdWatch(); return; }
-      adLifecycle.tick(selection, hasSelectedAdMarker(selection.video));
+      // A presenting frame shows another frame's media; that frame runs its own watch.
+      if (!remotePresentation) {
+        const selection = findVideoAndPlayer();
+        adLifecycle.tick(selection, hasSelectedAdMarker(selection.video));
+      }
       adWatchTimer = setTimeout(tick, 750);
     };
     adWatchTimer = setTimeout(tick, 750);
   }
-  window.addEventListener('pagehide', stopAdWatch);
+  // Nothing watches the page until the toolbar is pressed. After that, minimising or closing the panel changes nothing.
+  function armPage() {
+    if (pageArmed) return;
+    pageArmed = true;
+    startAdWatch();
+    startPeriodicPingEngine();
+    const { video } = findVideoAndPlayer();
+    if (video) monitorVideoResolution(video);
+    testCdnPing(true);
+  }
+  // A restored page keeps its timer, so only the temporary ad state is undone here.
+  window.addEventListener('pagehide', () => adLifecycle.stop());
   // END AD LIFECYCLE
 
   function startQualityWatch() {
@@ -3407,7 +3419,6 @@
   }
 
   function monitorVideoResolution(video) {
-    startAdWatch();
     // volumechange alone misses a level set before this listener exists, and Firefox's mute changes at 16x.
     if (video?.readyState > 0) adoptMediaVolume(video);
     if (!video || video.__nokMonitored) return;
@@ -6093,7 +6104,6 @@
     popup.querySelector('#pvc-close-popup-btn').onclick = (e) => {
       e.stopPropagation();
       popup.style.display = 'none';
-      stopAdWatch();
       postHudSignal('PVC_HUD_CLOSED');
       if (remotePresentation || remoteSourceSession) clearRemoteSession();
     };
@@ -6128,7 +6138,7 @@
     }
     syncFullscreenElements();
     popup.style.display = wasClosed ? 'block' : 'none';
-    if (!wasClosed) { stopAdWatch(); postHudSignal('PVC_HUD_CLOSED'); localVideoSeen = false; localSearchAfterLoss = false; }
+    if (!wasClosed) { postHudSignal('PVC_HUD_CLOSED'); localVideoSeen = false; localSearchAfterLoss = false; }
     if (popup.style.display === 'block') {
       if (wasClosed) resetPopupToDefaultPosition(popup);
       clampPopupToViewport(popup);
@@ -6161,13 +6171,5 @@
   }
   window.__NOK_VIDEO_CONTROLLER_ENGINE_READY__ = true;
   window.postMessage({ type: 'PVC_ENGINE_READY' }, '*');
-  startPeriodicPingEngine();
-  setTimeout(() => {
-    const { video } = findVideoAndPlayer();
-    if (video) {
-      monitorVideoResolution(video);
-    }
-    testCdnPing(true);
-  }, 1000);
 
 })();

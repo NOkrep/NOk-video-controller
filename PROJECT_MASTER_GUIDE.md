@@ -2,7 +2,7 @@
 
 > Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.12 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
+> **Sürüm:** v0.7.13 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
 > **Bu belgenin yeri:** Mimari başvuru kaynağıdır. Güncel durum ve açık işler PROJECT_HANDOFF.md ile ACTIVE_WORK.md içindedir; §5 ve altındaki tarihli kayıtlar kendi sürümlerine aittir.
@@ -103,6 +103,7 @@ Manifest V3 kısıtlamaları altında hem Firefox (Gecko) hem Chromium tarayıc�
    - Kullanıcı tarayıcı araç çubuğundaki eklenti ikonuna bastığında `activeTab` yetkisiyle hedef sekmeye `injected.css` ve `content.js` dosyalarını enjekte eder.
 2. **`content.js` (Isolated World Content Script):**
    - Sayfa yüklendiğinde (`document_start` veya manuel tıklamada) `injected.js` dosyasını `web_accessible_resources` üzerinden bir `<script>` etiketi olarak sayfanın `document.head` veya `documentElement` alanına basar.
+   - Erken yükleme korunur: ağ ve oynatıcı kancaları sayfa yüklenirken kurulmalıdır, kaynak ve kalite işleri (örnek Puhu 1080p) buna bağlıdır. Reklam denetimi ve ölçüm döngüleri ise yalnız araç çubuğu basışıyla başlar (`PVC_PAGE_ARMED`, AD_CONTROL.md).
    - Script yüklendiğinde `<script>` etiketini DOM'dan anında temizler (`this.remove()`), böylece DOM kirletilmez fakat JS çalışma zamanı bellekte çalışmayı sürdürür.
    - Logo adresini `script.dataset.logoUrl` ile Main World'e aktarır.
    - İkona tekrar tıklandığında `postMessage` ile HUD penceresini açar/kapatır (`PVC_TOGGLE_POPUP`).
