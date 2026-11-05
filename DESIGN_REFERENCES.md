@@ -36,4 +36,4 @@ Arşiv yolları:
 
 [SevenGrid](https://sevengrid.app/?ref=grave) sayfasının herkese açık tema bandı ve CSS renk değişkenleri tarayıcıda incelendi. **20 temanın tümü** Settings → Themes içine eklenmiştir. Sayfanın JS'i, yazıları, görselleri veya uygulama özellikleri kopyalanmadı; renk değerleri/adları HUD tokenlarına eşlendi. Açık/koyu/OLED aileleri ve değerlendirme [THEME_EVALUATION.md](./THEME_EVALUATION.md) içindedir.
 
-Atlas başlangıçtır. Temalar yerel tanımlıdır ve çevrimdışı uygulanır. Seçim çerçeve belleğinde kalır; kapat/aç korur, sayfa yenileme Atlas'a döndürür. Tema kimliği ve erişilebilirlik tercihleri teşhis JSON'una eklenmez. Kullanıcının finalist beş tema seçimi henüz yapılmadı.
+Atlas başlangıçtır. Temalar yerel tanımlıdır ve çevrimdışı uygulanır. Seçim çerçeve belleğinde kalır; kapat/aç korur, sayfa yenileme Atlas'a döndürür. Tema kimliği ve erişilebilirlik tercihleri teşhis JSON'una eklenmez. Kullanıcının finalist beş tema seçimi henüz yapılmadı. **5 Kasım 2026 kullanıcı kararı:** finalist seçilmeyecek, 20 tema kalıyor.

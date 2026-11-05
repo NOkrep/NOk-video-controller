@@ -16,7 +16,7 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 
 - **Ürün:** FilmDeck by NOk. Önceki ad NOk Video Controller; ara ad CineDeck'ti. Teknik repo adı ve Firefox kimliği korunur.
 - **Çıkış noktası:** sitelerin farklı ve eksik video arayüzlerinden doğan kullanıcı bıkkınlığı. Bilgisayarda video/film/dizi izleyen kullanıcıya ortak kontroller sunmak. Basit kullanımda hız/ses/kalite; daha ayrıntılı işler ayrı sekmeler ve katlanabilir alanlarda.
-- **Kaynak sürümü:** `0.7.9.2`, `claude/workTogether` dalında (`main` birleşmesi kullanıcıda). `main` son kontrolde `0.7.9` idi (#115, `fff5ccf`, 4 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
+- **Kaynak sürümü:** `0.7.9.2`, `main`'de (#116, `4811e3c`, 5 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
 - **Dallar (kullanıcı kararı, 4 Kasım 2026; önceki "mevcut dalda devam" notunun yerine geçer):** Her ajanın `main`'den açılmış tek bir uzun ömürlü dalı vardır: Codex `codex/…`, Claude `claude/…`. İş veya düzeltme başına yeni dal açılmaz; güncellik için `main` bu dala merge edilir. Aynı checkout kullanılır; kullanıcı ajan değiştirirken dal ve temiz durum doğrulanır. Bu yüzden devirden önce iş commit'lenmiş olmalıdır. Ajan kendi dalına commit atar ve push eder; **PR'ı ve merge'ü kullanıcı yapar**, ajan özeti ve PR bağlantısını bildirir. Karşı ajanın dalına doğrudan commit atılmaz; ikinci checkout/worktree istenmeden açılmaz.
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Güncel dallar: Codex `codex/filmdeck-cassette-icon`, Claude `claude/workTogether`. Codex dalının adı ilk işinden kalmıştır; içeriği o işle sınırlı değildir.
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
@@ -81,7 +81,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 - **Sürüm numarası:** `1.0.0` en stabil ilk çıkış sürümüdür. Öncesinde `0.x.0` milestone geçişi, `0.0.x` küçük geliştirme, `0.0.0.x` çok küçük değişikliktir. Üçüncü ve dördüncü bölüm **en fazla 9** olur (üçüncü bölüm kararı: kullanıcı, 4 Kasım). `0.7.7.9` sonrası küçük adım `0.7.8`, `0.7.9` sonrası küçük adım `0.8.0`'dır; `0.7.7.10` veya `0.7.10` olmaz. `0.7.9` üstüne çok küçük değişiklik `0.7.9.1`, `0.7.9.9` sonrası `0.8.0` olur. Üretim kodu değişmeyen belge/devir işinde sürüm artırılmaz.
 - Varsayılan arayüz İngilizce, Türkçe seçilebilir; tercihler RAM'de. UI çevirisi kullanıcı yorumuna/altyazıya/JSON'a uygulanmaz.
 - Üç temel dikey sekme: Player, Subtitles, Settings. Video renkleri Settings'te, adaptör Player'da. Seçili sekme/yüzey birleşimi german_7619 referansından uyarlanır; native klavye/ARIA korunur.
-- **20 tema korunuyor; finalist beşi kullanıcı henüz seçmedi.** Kendiliğinden ayıklama veya yeni renk sistemi yok.
+- **20 tema kalıcı olarak korunuyor (kullanıcı, 5 Kasım):** finalist beş tema seçilmeyecek; insanların çeşit arasından seçebilmesi tercih edildi. Kendiliğinden ayıklama veya yeni renk sistemi yok.
 - FilmDeck ürün logosu üstte; NOk amblemi ve sürüm Settings → About FilmDeck içinde. Kullanıcının kaset deck çizimi tüm arka katmanlarıyla ikonlaştırılır; yalnız ön kasete kırpılmaz. Özgün çizimler korunur.
 - Ortak SVG çizgi üslubu var; kalan emoji/simgeler kullanıcıyla birlikte kararlaştırılacak. Sessiz toplu değişiklik yapılmaz.
 - Uiverse uyarlamaları birebir tüm animasyonları taşımaz. Kullanılan ve bekleyen farklar ANIMATION_DETAILS.md / DESIGN_REFERENCES.md içindedir. Yeni halo/glow/gecikme/dekor eklemek hata düzeltmesi sayılmaz.
@@ -103,7 +103,7 @@ Son ölçümler kişisel profil/yorum kullanmadı. Sentetik test, gerçek site k
 | I-10 | Kontrol düzeltmelerinin gerçek site regresyonu | Mono/Stereo, geç keşif, beklenmedik aç/kapat, TRT hız korumasını raporlanan akışta sınamak; yapılanı baştan yazmamak. |
 | I-11 | Altyazı sonrası bekleme/görünmeme | Ağ beklemesi, etkin cue boşluğu, disabled ve gerçek çizim hatası ayrılacak. |
 | I-12 | CDN yanıt ölçümünün anlaşılması | **Yerel kapsam tamam (v0.7.9.1):** düğme yöntemi ve ölçülememe nedenini gösteriyor, iframe oynatıcıda açıklama kayıp değil, eski kayıt yaşıyla bildiriliyor. Altı sunucu yanıtı ve iki iframe senaryosu iki motorda sınandı. Gerçek CDN'lerde kabul açık. |
-| I-13 | Kalan emoji ve simgeler | Envanter çıkarılıp kullanıcıyla SVG/kaldırma kararı verilecek. |
+| I-13 | Kalan emoji ve simgeler | **Codex'te (kullanıcı, 5 Kasım):** envanter çıkarılıp kullanıcıyla SVG/kaldırma kararı verilecek. |
 
 Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi daha sonra düzeltildi; kesin hata diye tutma. Aynı yapıştırılmış rapor iki ayrı issue değildir. “Eksik kalite” kullanıcının site menüsünde karşılaştırdığı durumdur; “hiç kalite görünmüyor” ayrı durumdur. Ham raporlar ve alan adları bu belgeye taşınmaz.
 
@@ -117,7 +117,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-04 | Fullscreen tema/erişilebilirlik tutarlılığı | **Yerel kapsam tamam (v0.7.9.2):** tema ve dört erişilebilirlik anahtarı iframe tam ekranına geçer, oradaki değişiklik çıkınca korunur; iki motorda sınandı. Gerçek sitede kabul açık. |
 | D-05 | İstenen ve gerçekleşen ses/hız geri bildirimi | Raporlarda ayrım var; ana UI'da ayrışmayı anlaşılır gösterme açık. |
 | D-06 | Mevcut ses ve altyazı parçalarını seçme | Kullanıcının gelecek özellik talebi; orijinal/dublaj ve hazır altyazılar. Harici SRT'den ayrı; henüz uygulanmadı. |
-| D-07 | Finalist beş tema | Kullanıcı seçimi bekliyor, 20 tema korunuyor. |
+| D-07 | Finalist beş tema | **Kapandı (kullanıcı, 5 Kasım):** finalist seçilmeyecek; kullanıcıların seçebilmesi için 20 tema kalıyor. |
 | D-08 | Ek Uiverse animasyonları | İsteğe bağlı denemeler; zorunlu hata düzeltmesi değil. |
 | D-09 | Form/tooltip referansları | Uygun kullanım bekleyen adaylar; sırf referans var diye eklenmez. |
 | D-10 | Git/CI takibi | **Tamam (4 Kasım):** `report` zorunlu işe, `quality-mapping` zorunlu olmayan `Browser media` işine eklendi. Hangi testin neden yerelde kaldığı TESTING.md'de. `Browser media` kararlı görülürse zorunlu kontrollere alınması kullanıcı kararıdır. |
@@ -127,6 +127,8 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-14 | Firefox veri toplama beyanı | AMO'nun `data_collection_permissions` gereksinimi mağaza başvurusundan önce resmî kaynaktan doğrulanacak. Manifest ve yayın hedefinde alan yok. |
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
+
+**Kullanıcının seçtiği sonraki işler (5 Kasım):** D-06, I-11, I-03, I-04, I-05, I-09, B6-C (canlı test yolu) ve CI-2 (`Browser media` işini zorunlu kontrole almak); sırayı Claude önerir, başlangıç kullanıcının molasından sonradır. I-13 Codex'te. D-08, D-09, I-10 ve sürüm kuralı (B5) kullanıcı kararı bekliyor.
 
 **Kullanıcının seçtiği öncelikler (4 Kasım):** Codex kendi araç sistemi notlarını kapattı ve yedi beceri kapsamının onayını yeniledi (`D:/NOk-Tools/AGENT_NOTES.md` N-001, N-004, N-006; geçerlilik 11 Kasım akşamına kadar). Claude şu işleri ele alır:
 

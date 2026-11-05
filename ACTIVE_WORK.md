@@ -2,13 +2,16 @@
 
 ## Güncel durum
 
-4 Kasım 2026 sonu. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
+5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.9.2**, `claude/workTogether` dalında. `main` `0.7.9`. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller.
+- **Sürüm:** Kaynak sürümü **v0.7.9.2**, `main`'de (#116). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Sürüm kuralının son hali (B5) kullanıcı kararı bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-10, D-11.
-- **Gerçek site bekleyen:** I-03, I-04, I-05, I-06, I-09, I-10, I-11 ve biten işlerin gerçek site kabulü.
-- **Ertelendi:** I-07 (kullanıcı askıya aldı) ve canlı test için C yolu (kullanıcı isteyince başlar).
-- **Kullanıcı seçimi bekleyen:** I-13, D-03, D-05, D-06, D-07, D-08, D-09, D-12, D-13, D-14.
+- **Seçildi, Claude'da:** B6-C, I-03, I-04, I-05, I-09, I-11, D-06, CI-2 (kullanıcının molasından sonra).
+- **Codex'te:** I-13.
+- **Kapandı:** D-07; finalist seçilmeyecek, 20 tema kalıyor.
+- **Karar bekliyor:** D-08, D-09, I-10, B5.
+- **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
+- **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar.
 
 ## D-10: CI kapsamı — 4 Kasım 2026
