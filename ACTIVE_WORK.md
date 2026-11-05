@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.13**, `claude/workTogether` dalında; `main` `0.7.11` (#117). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.14**, `claude/workTogether` dalında; `main` `0.7.11` (#117). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-10, D-11.
 - **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-08, D-09 (tooltip), I-11, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,16 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 
+## Puhu eski oynatıcıda boş kalite listesi, v0.7.14 — 5 Kasım 2026
+
+Geçici profil, hesap yok, iki motor. İçerik adı kaydedilmedi.
+
+- **Kök neden:** Taranan 12 içerikten biri eski site oynatıcısını kullanıyor: kalite API'si olmayan Video.js 5.20.4 kabuğu, altında Hls.js. `PuhuTvAdapter` Video.js'i görünce Hls.js listesine hiç bakmıyordu. Kalite uygulama yolu da Video.js'e gidiyordu. Hls.js'te seviye vardı, rapor `playerLevelCount: 1` diyordu.
+- **Düzeltme:** Video.js listesi boşsa Hls.js listesi kullanılır, Hls.js seviyesi Hls.js üzerinden uygulanır. Video.js'in listesi varsa öncelik değişmez.
+- **Kanıt:** O içerikte iki motorda `0 levels` yerine `1 level` (1080p). Sitenin kendi listesinde de tek seviye tanımlı, yani 1 doğru sayı. Seçim oynatmayı bozmadı. Yeni oynatıcıda 5 seviye aynı kaldı.
+- **Ölçülen, hata olmayan:** Yeni oynatıcıda 1080p seçince görüntü ilk 5-10 sn 240p görünebiliyor (tampon dolarken, `readyState` 2), sonra 1080p'ye çıkıp ölçüm boyunca (35-45 sn) kalıyor. Chromium'da programla ve gerçek fareyle aynı. Firefox'ta 1080p'nin kaldığı görüldü, fareyle tıklama yalnız Chromium'da denendi.
+- **Değiştirilmeyen:** Genel `VideoJsAdapter` aynı karışımı Puhu dışında da kaçırabilir. Başka sitede görülmediği için dokunulmadı.
+
 ## Basış kuralı, v0.7.13 — 5 Kasım 2026
 
 **Kullanıcı kararı:** Sayfada ilk basışa kadar eklenti denetimi olmaz; bir kez basılınca panel küçültülse veya kapatılsa da reklam hızlandırma o sayfada çalışır. Amaç arka planda sürekli izleme hissini kaldırmak.
@@ -21,7 +31,7 @@
 - **Değişen:** `content.js` basışı `PVC_PAGE_ARMED` ve `NOK_PAGE_ARMED` ile çerçeve ağacına yayar, sonradan yüklenen çerçeveye de bildirir. `injected.js` reklam denetimini, başlangıç işini ve 15 sn CDN okumasını buna bağlar; panel kapatma artık denetimi durdurmaz; video yokken döngü bitmez.
 - **Korunan (kullanıcı uyarısı):** Motorun ve kancaların sayfa yüklenirken girmesi değişmedi. Puhu 1080p yolu bu erken yakalamaya bağlıdır; geç basışta çalıştığı gerçek sitede ölçüldü (AD_CONTROL.md). `ad-lifecycle` testi ağ kancasının basıştan önce yerinde olduğunu da sınar.
 - **Bilinen sonuç:** Sayfanın ilk reklamı basılana kadar normal oynar.
-- **Ayrı bulgu:** Puhu'da bir içerikte `0 levels`; v0.7.12'de de aynı.
+- **Ayrı bulgu:** Puhu'da bir içerikte `0 levels`; v0.7.12'de de aynı. v0.7.14'te düzeltildi.
 
 ## I-04 gerçek reklam, I-09 ve I-10 sınaması, v0.7.12 — 5 Kasım 2026
 

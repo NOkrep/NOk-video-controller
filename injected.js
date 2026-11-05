@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.13 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.14 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.13';
+  const EXTENSION_VERSION = '0.7.14';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -2099,7 +2099,9 @@
       const menu = getNativeQualityMenuOptions(video, true);
       const vjs = findVideoJsPlayer(video, player);
       const hls = findLibraryPlayer(video, 'hls', player);
-      const declared = vjs ? VideoJsAdapter.getQualities(video, vjs) : hls ? HlsJsAdapter.getQualities(video, hls) : [];
+      // The older site player is Video.js 5 with no quality API over its own Hls.js, so an empty list falls through.
+      let declared = vjs ? VideoJsAdapter.getQualities(video, vjs) : [];
+      if (!declared.length && hls) declared = HlsJsAdapter.getQualities(video, hls);
       if (!menu.length) return declared;
       // Use the site's real control for named choices so its own selection state
       // updates too. Keep additional renditions declared by the bound SDK.
@@ -2110,9 +2112,10 @@
     },
     applyQuality(item, video, player) {
       if (item.qualityApi === 'native-menu') return applyNativeQualityMenu(item, video);
+      const hls = findLibraryPlayer(video, 'hls', player);
+      if (hls && String(item.id).startsWith('hls_')) return HlsJsAdapter.applyQuality(item, video, hls);
       const vjs = findVideoJsPlayer(video, player);
       if (vjs) return VideoJsAdapter.applyQuality(item, video, vjs);
-      const hls = findLibraryPlayer(video, 'hls', player);
       return hls ? HlsJsAdapter.applyQuality(item, video, hls) : false;
     }
   };
