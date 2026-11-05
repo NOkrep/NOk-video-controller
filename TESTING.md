@@ -60,6 +60,8 @@ Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromi
 
 `tooltip-browser.cjs`, panel tooltip'ini gerçek fare ve klavyeyle sınar: gecikme, ekranda kalma ve paneli kaydırma alanından taşma, yan öğeye hemen geçiş, imlecin metne gidebilmesi, Esc'in yalnız tooltip'i kapatması, Tab ile ulaşma, açık metnin dil ayarını izlemesi, azaltılmış hareket, gömülü oynatıcının durumunu üst panelde açıklama. Dokunmatik kısmı sentetik `PointerEvent` kullanır; gerçek telefon kabulü değildir. Ekran okuyucu kabulü de değildir, yalnız `aria-describedby` bağlantısı sınanır. Kalite düğmesi ve durum satırı açıklamaları gerçek Video.js ile `quality-mapping-browser.cjs` içinde sınanır.
 
+Panel "hareket azaltma" ayarını başlangıçta işletim sisteminden alır ve CI'daki Windows Server'da Firefox bunu açık görebilir. Bu yüzden animasyon sınayan testler önce ayarı kapatır. `--os-reduced-motion=true` Firefox test profilinde aynı durumu yerelde kurar.
+
 ## Animasyon ve reklam denetimi ölçümü (D-08)
 
 `node tests/animation-performance.cjs --engine=both --label=<etiket>` görünür iki tarayıcıda 1080p sentetik videoyla sırayla çalışır: basmadan, basıp panel kapalı, panel açık, üç filtre, rapor boşta, rapor animasyonları sürekli çalışırken, anahtarlar mevcut hâliyle, kaynaktaki yavaş geçiş ve parıltıyla, sürekli parıltıyla, azaltılmış hareketle. Geniş adaylar yalnız testte eklenen stille uygulanır. Reklam denetimi süresi yalnız Git dışı test kopyasında ölçülür. `--url-file=<dosya>` gerçek sayfada yalnız o süreyi ve düğüm sayısını yazar; adres, başlık ve sayfa metni yazılmaz. Sayılar Git dışı `tests/artifacts/animation-<etiket>/` altındadır. CPU/GPU okuması PowerShell betiği çalıştırabilen bir kabuk ister. Kanıt ve sınırlar ANIMATION_PERFORMANCE.md içindedir.

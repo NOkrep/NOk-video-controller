@@ -81,7 +81,7 @@ try{
   await until(driver,page,english=>document.getElementById('pvc-tooltip').textContent!==english,'the open text follows the language',english);
   await driver.evaluate(page,()=>{const language=document.querySelector('#pvc-language-select');language.value='en';language.dispatchEvent(new Event('change',{bubbles:true}));});
   // Keyboard opens without the entrance; the entrance itself must still obey the setting.
-  const motion=await driver.evaluate(page,()=>{document.getElementById('pvc-tooltip').removeAttribute('data-instant');const before=getComputedStyle(document.getElementById('pvc-tooltip')).transitionDuration;document.getElementById('pvc-a11y-reduceMotion').click();
+  const motion=await driver.evaluate(page,()=>{const setting=document.getElementById('pvc-a11y-reduceMotion');if(setting.checked)setting.click();document.getElementById('pvc-tooltip').removeAttribute('data-instant');const before=getComputedStyle(document.getElementById('pvc-tooltip')).transitionDuration;document.getElementById('pvc-a11y-reduceMotion').click();
     const during=getComputedStyle(document.getElementById('pvc-tooltip')).transitionDuration;document.getElementById('pvc-a11y-reduceMotion').click();return{before,during};});
   assert.match(motion.before,/0\.125s/);assert.match(motion.during,/^0s/);
   await driver.evaluate(page,()=>document.getElementById('pvc-active-adapter-badge').blur());await closed(driver,page,'blur closes it');

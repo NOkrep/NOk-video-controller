@@ -37,6 +37,8 @@ try{
     await until(driver,owner,()=>document.querySelector('video')?.readyState>=2,'video plays');
     await driver.toolbar(top);
     await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens');
+    // The panel starts from the operating system's setting, which a CI machine may have on.
+    await driver.evaluate(top,()=>{const box=document.getElementById('pvc-a11y-reduceMotion');if(box.checked)box.click();});
     return{top,owner};
   };
   const results=[];

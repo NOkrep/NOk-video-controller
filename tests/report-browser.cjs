@@ -13,6 +13,8 @@ async function main(){
     await driver.pointerClick(page,'#pvc-tab-settings');await driver.pointerClick(page,'#pvc-report-err-btn');
     await until(driver,page,()=>!!document.querySelector('#pvc-modal-code-block')?.textContent,'report preview');
     assert.equal(await driver.evaluate(page,()=>getComputedStyle(document.querySelector('#pvc-error-modal')).backdropFilter),'none','report must not continuously blur playing content');
+    // The panel starts from the operating system's setting, which a CI machine may have on.
+    await driver.evaluate(page,()=>{const box=document.querySelector('#pvc-a11y-reduceMotion');if(box.checked)box.click();});
     // Motion: hover halo on the row, delayed check, focus lines, none of it changing layout or the control's own hit area.
     const motion=selector=>driver.evaluate(page,selector=>{
       const modal=document.querySelector('#pvc-error-modal'),visual=modal.querySelector(selector+' + .pvc-check-visual'),halo=getComputedStyle(visual,'::before');
@@ -40,8 +42,8 @@ async function main(){
     await driver.evaluate(page,()=>{const field=document.querySelector('#pvc-user-feedback-input');field.style.height='180px';});
     assert.ok(await driver.evaluate(page,()=>{const frame=document.querySelector('.pvc-feedback-frame').getBoundingClientRect(),field=document.querySelector('#pvc-user-feedback-input').getBoundingClientRect();return Math.abs(frame.bottom-field.bottom)<1;}),'the bottom line follows a resized field');
     await driver.evaluate(page,()=>{document.querySelector('#pvc-user-feedback-input').style.height='';document.querySelector('#pvc-user-feedback-input').blur();document.querySelector('#pvc-a11y-reduceMotion').click();});
-    const reduced=await driver.evaluate(page,()=>{const modal=document.querySelector('#pvc-error-modal');return[getComputedStyle(modal.querySelector('.pvc-check-visual'),'::before').transitionDuration,getComputedStyle(modal.querySelector('.pvc-feedback-frame'),'::after').transitionDuration,getComputedStyle(modal.querySelector('.pvc-check-visual polyline')).transitionDuration];});
-    assert.deepEqual(reduced,['0s','0s','0s'],'reduced motion covers the new pseudo-elements');
+    const reduced=await driver.evaluate(page,()=>{const modal=document.querySelector('#pvc-error-modal'),checked=document.querySelector('#pvc-include-comment + .pvc-check-visual');return[getComputedStyle(modal.querySelector('.pvc-check-visual'),'::before').transitionDuration,getComputedStyle(modal.querySelector('.pvc-feedback-frame'),'::after').transitionDuration,getComputedStyle(modal.querySelector('.pvc-check-visual polyline')).transitionDuration,getComputedStyle(checked.querySelector('polyline')).transitionDuration,getComputedStyle(checked.querySelector('path')).transitionDuration];});
+    assert.deepEqual(reduced,['0s','0s','0s','0s','0s'],'reduced motion covers the pseudo-elements and the checked drawing');
     await driver.evaluate(page,()=>{document.querySelector('#pvc-a11y-reduceMotion').click();const box=document.querySelector('#pvc-include-comment');if(box.checked)box.click();});
     const checks=await driver.evaluate(page,async()=>{
       const modal=document.querySelector('#pvc-error-modal'),input=modal.querySelector('textarea'),code=modal.querySelector('pre');
