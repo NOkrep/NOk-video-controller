@@ -8,7 +8,7 @@ function state(extra = {}) {
     subtitleLoaded: false, subtitleEnabled: true, subtitleStatus: 'not-loaded', subtitleOffset: 0,
     appearance: { fontSize: 20, bottom: 8, background: 82, color: 'white' },
     filters: { brightness: 100, contrast: 100, saturate: 100, nightShield: false, invert: false },
-    candidates: [{ height: 1080 }], target: -1, ...extra };
+    candidates: [{ height: 1080 }], target: -1, frameLoss: false, ...extra };
 }
 function report(extra = {}) {
   return { reportSchemaVersion: 2, extensionVersion: '0.6.1', errorCode: 'USER_MANUAL_DIAGNOSTIC', platform: 'other', platformScope: 'unlisted',

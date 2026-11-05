@@ -16,7 +16,7 @@ Belgelerdeki eski “bekliyor”, “commit yapılmadı” ve test sayıları ke
 
 - **Ürün:** FilmDeck by NOk. Önceki ad NOk Video Controller; ara ad CineDeck'ti. Teknik repo adı ve Firefox kimliği korunur.
 - **Çıkış noktası:** sitelerin farklı ve eksik video arayüzlerinden doğan kullanıcı bıkkınlığı. Bilgisayarda video/film/dizi izleyen kullanıcıya ortak kontroller sunmak. Basit kullanımda hız/ses/kalite; daha ayrıntılı işler ayrı sekmeler ve katlanabilir alanlarda.
-- **Kaynak sürümü:** `0.7.14`, `claude/workTogether` dalında. `main` son kontrolde `0.7.11` idi (#117, `70d30f1`, 5 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
+- **Kaynak sürümü:** `0.7.15`, `claude/workTogether` dalında. `main` son kontrolde `0.7.14` idi (#118, `45b2bf9`, 5 Kasım). Devir başlangıcındaki kaynak `0.7.7.9`, HEAD `d70940e` idi.
 - **Dallar (kullanıcı kararı, 4 Kasım 2026; önceki "mevcut dalda devam" notunun yerine geçer):** Her ajanın `main`'den açılmış tek bir uzun ömürlü dalı vardır: Codex `codex/…`, Claude `claude/…`. İş veya düzeltme başına yeni dal açılmaz; güncellik için `main` bu dala merge edilir. Aynı checkout kullanılır; kullanıcı ajan değiştirirken dal ve temiz durum doğrulanır. Bu yüzden devirden önce iş commit'lenmiş olmalıdır. Ajan kendi dalına commit atar ve push eder; **PR'ı ve merge'ü kullanıcı yapar**, ajan özeti ve PR bağlantısını bildirir. Karşı ajanın dalına doğrudan commit atılmaz; ikinci checkout/worktree istenmeden açılmaz.
 - **Taban:** v0.7.7.9 dahil önceki iş `main`'e birleşti (#111, `9c28a3e`). Güncel dallar: Codex `codex/filmdeck-cassette-icon`, Claude `claude/workTogether`. Codex dalının adı ilk işinden kalmıştır; içeriği o işle sınırlı değildir.
 - **Son doğrulama kaydı:** 214/214 Node testi; Firefox 159 ve Chromium tabanlı Edge 152 yerel kontrolleri. Son rapor kabulünün JS/CSS hash'leri `tests/artifacts/reports-v0779-plain/ACCEPTANCE.json` içindedir (Git dışı; başka makinede yeniden üretilir).
@@ -118,7 +118,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-05 | İstenen ve gerçekleşen ses/hız geri bildirimi | Raporlarda ayrım var; ana UI'da ayrışmayı anlaşılır gösterme açık. |
 | D-06 | Mevcut ses ve altyazı parçalarını seçme | Kullanıcının gelecek özellik talebi; orijinal/dublaj ve hazır altyazılar. Harici SRT'den ayrı; henüz uygulanmadı. |
 | D-07 | Finalist beş tema | **Kapandı (kullanıcı, 5 Kasım):** finalist seçilmeyecek; kullanıcıların seçebilmesi için 20 tema kalıyor. |
-| D-08 | Ek Uiverse animasyonları | İsteğe bağlı denemeler; zorunlu hata düzeltmesi değil. |
+| D-08 | Ek Uiverse animasyonları | **Rapor kapsamı tamam (v0.7.15):** checkbox gecikmesi/halo, textarea çizgileri; ölçüm ve kare kaybı bildirimi eklendi (ANIMATION_PERFORMANCE.md). Anahtar parıltısı ve düğme iç kapağı uygulanmadı. |
 | D-09 | Form/tooltip referansları | Uygun kullanım bekleyen adaylar; sırf referans var diye eklenmez. |
 | D-10 | Git/CI takibi | **Tamam (4 Kasım):** `report` zorunlu işe, `quality-mapping` zorunlu olmayan `Browser media` işine eklendi. Hangi testin neden yerelde kaldığı TESTING.md'de. `Browser media` kararlı görülürse zorunlu kontrollere alınması kullanıcı kararıdır. |
 | D-11 | Çalışma kayıtlarının sadeleştirilmesi | **Tamam (4 Kasım):** ACTIVE_WORK.md kısa güncel durumla başlıyor; eski kayıtlar değiştirilmeden WORK_HISTORY.md'ye taşındı; belge haritası §9'da. Eski belgelerin içeriği yeniden yazılmadı, kendi tarihlerinin kanıtıdır. |
@@ -170,7 +170,7 @@ Bu seçenekler silinmez. Gerektiğinde gerekçesiyle kullanıcıya yeniden sorul
 | Başlangıç / toolbar | content.js, background.js, manifest.json |
 | İframe mesaj şeması | frame-protocol.js, FRAME_PRESENTATION.md |
 | Kalite / reklam | QUALITY_CONTROL.md, AD_CONTROL.md, LIVE_SITE_VALIDATION.md |
-| Son performans | FILTER_PERFORMANCE.md, REPORT_PERFORMANCE.md |
+| Son performans | FILTER_PERFORMANCE.md, REPORT_PERFORMANCE.md, ANIMATION_PERFORMANCE.md |
 | Bellek | MEMORY_MEASUREMENTS.md; tarihli kısa/uzun deneyleri ayır |
 | Tasarım / HMI | HMI_REVIEW.md, ANIMATION_DETAILS.md, DESIGN_REFERENCES.md |
 | Güncel iş kaydı | Bu dosya + ACTIVE_WORK.md (başında kısa güncel durum) |

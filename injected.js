@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.14 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.15 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.14';
+  const EXTENSION_VERSION = '0.7.15';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -331,7 +331,12 @@
     'FilmDeck Hakkında': 'About FilmDeck',
     'Sürüm {0}': 'Version {0}',
     'Video ve altyazı kontrolleri.': 'Video and subtitle controls.',
-    'MIT lisansı · Kaynak kodu': 'MIT license · Source code'
+    'MIT lisansı · Kaynak kodu': 'MIT license · Source code',
+    'Video kare atlıyor. Panel animasyonları kapatılsın ve görüntü filtreleri sıfırlansın mı?': 'The video is dropping frames. Turn off panel animations and reset picture filters?',
+    'Video kare atlıyor. Panel animasyonları kapatılsın mı?': 'The video is dropping frames. Turn off panel animations?',
+    'Video kare atlıyor. Görüntü filtreleri sıfırlansın mı?': 'The video is dropping frames. Reset picture filters?',
+    'Evet': 'Yes',
+    'Hayır': 'No'
   };
   const plainUiLabel = value => String(value).replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, '');
   // Keep legacy message keys for existing feedback; control labels no longer need emoji prefixes.
@@ -943,6 +948,7 @@
     pendingRemoteSourceSession = null;
     remoteAncestorFullscreen = false; remoteSourceQualities = []; remoteSourceCandidates = [];
     remoteSourceActive = true;
+    clearFrameLossOffer();
     if (hadRemote) {
       clearTimeout(qualityWatchTimer);
       const popup = document.getElementById('pvc-controller-popup'); if (popup && !keepOpen) popup.style.display = 'none';
@@ -994,7 +1000,8 @@
       subtitleLoaded: customSubtitleCues.length > 0, subtitleEnabled: subtitleOverlayEnabled,
       subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs,
       appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
-      candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo)
+      candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo),
+      frameLoss: frameLossState()
     });
   }
   function publishRemoteSourceState() {
@@ -1105,7 +1112,7 @@
     else {
       try {
         const { video, player } = findVideoAndPlayer(), value = command.value;
-        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed', 'hud-placement', 'hud-preferences'].includes(command.name)) throw new Error('no-media');
+        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'frame-loss-answered', 'hotkeys', 'hud-collapsed', 'hud-placement', 'hud-preferences'].includes(command.name)) throw new Error('no-media');
         switch (command.name) {
           case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
           case 'volume': setAudioVolume(value); break;
@@ -1128,6 +1135,7 @@
           case 'subtitle-offset': if (value === 0) { subtitleOffsetMs = 0; injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); } else shiftSubtitleSync(value); break;
           case 'hotkeys': hotkeysEnabled = value; break;
           case 'presentation-active': remoteSourceActive = value; break;
+          case 'frame-loss-answered': frameLossAnswered = value; clearFrameLossOffer(); break;
           case 'play': if (video.paused) await video.play(); else video.pause(); break;
           case 'pip': reply = { ...reply, ...await toggleLocalPictureInPicture() }; break;
           case 'ping': {
@@ -1216,6 +1224,7 @@
     text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
     const drmBadge = document.getElementById('pvc-drm-status-badge'); if (drmBadge) drmBadge.style.display = state.drm ? 'block' : 'none';
     setNoVideoAlertVisible(!state.hasVideo);
+    renderFrameLossNotice();
     renderRemoteQualities(); renderRemoteTargets();
   }
   function renderRemoteQualities() {
@@ -3179,6 +3188,7 @@
       if (!remotePresentation) {
         const selection = findVideoAndPlayer();
         adLifecycle.tick(selection, hasSelectedAdMarker(selection.video));
+        checkFrameLoss(frameLossPanelOpen() ? selection.video : null);
       }
       adWatchTimer = setTimeout(tick, 750);
     };
@@ -3197,6 +3207,95 @@
   // A restored page keeps its timer, so only the temporary ad state is undone here.
   window.addEventListener('pagehide', () => adLifecycle.stop());
   // END AD LIFECYCLE
+
+  // FRAME LOSS WATCH: reads only the selected video's frame counters, on the ad watch's existing tick.
+  // It asks once and changes nothing by itself. Stays in RAM and never enters diagnostics.
+  // Real overload is bursty, so one clean window must not hide it; one burst alone must not trigger it either.
+  const FRAME_LOSS_WINDOW_TICKS = 4, FRAME_LOSS_WINDOWS = 4, FRAME_LOSS_MIN_BAD_WINDOWS = 2, FRAME_LOSS_MIN_FRAMES = 10, FRAME_LOSS_RATIO = 0.15;
+  function createFrameLossWatch() {
+    let last = null, ticks = 0, frames = 0, dropped = 0;
+    const recent = [];
+    const reset = () => { last = null; ticks = 0; frames = 0; dropped = 0; recent.length = 0; };
+    const sample = (video, comparable) => {
+      const quality = comparable ? video.getVideoPlaybackQuality?.() : null;
+      if (!quality) { reset(); return false; }
+      const id = remoteIdentityToken(video), total = quality.totalVideoFrames, lost = quality.droppedVideoFrames;
+      const restarted = !last || last.id !== id || total < last.total || lost < last.lost;
+      if (restarted) reset();
+      else if (video.readyState >= 3) { frames += total - last.total; dropped += lost - last.lost; ticks++; } // Buffering is neither good nor bad evidence.
+      last = { id, total, lost };
+      if (ticks < FRAME_LOSS_WINDOW_TICKS) return false;
+      recent.push({ frames, dropped }); if (recent.length > FRAME_LOSS_WINDOWS) recent.shift();
+      ticks = 0; frames = 0; dropped = 0;
+      if (recent.length < FRAME_LOSS_WINDOWS) return false;
+      const bad = recent.filter(item => item.frames >= FRAME_LOSS_MIN_FRAMES && item.dropped / item.frames >= FRAME_LOSS_RATIO).length;
+      const allFrames = recent.reduce((sum, item) => sum + item.frames, 0), allDropped = recent.reduce((sum, item) => sum + item.dropped, 0);
+      return bad >= FRAME_LOSS_MIN_BAD_WINDOWS && allDropped / allFrames >= FRAME_LOSS_RATIO;
+    };
+    return { sample, reset };
+  }
+  const frameLossWatch = createFrameLossWatch();
+  let frameLossPending = false, frameLossAnswered = false;
+  const videoFiltersActive = () => videoFilterState.brightness !== 100 || videoFilterState.contrast !== 100
+    || videoFilterState.saturate !== 100 || videoFilterState.nightShield || videoFilterState.invert;
+  // Fast speeds, seeking and the ad's temporary 16x drop frames by design.
+  function frameLossComparable(video) {
+    return !!video && !document.hidden && !video.paused && !video.ended && !video.seeking
+      && video.playbackRate > 0 && video.playbackRate <= 2 && !adLifecycle.isActive(video);
+  }
+  // An idle-hidden panel is still open; it just shows the question at its next appearance.
+  const frameLossPanelOpen = () => !!remoteSourceSession || document.getElementById('pvc-controller-popup')?.style.display === 'block';
+  const frameLossState = () => frameLossPending && !frameLossAnswered;
+  function frameLossOffer() {
+    const wanted = remotePresentation ? remotePresentation.frameLoss : frameLossPending;
+    if (!wanted || frameLossAnswered) return null;
+    const motion = !hudAccessibility.reduceMotion, filters = videoFiltersActive();
+    if (motion && filters) return 'Video kare atlıyor. Panel animasyonları kapatılsın ve görüntü filtreleri sıfırlansın mı?';
+    if (motion) return 'Video kare atlıyor. Panel animasyonları kapatılsın mı?';
+    return filters ? 'Video kare atlıyor. Görüntü filtreleri sıfırlansın mı?' : null;
+  }
+  function renderFrameLossNotice() {
+    const notice = document.getElementById('pvc-frame-loss-notice');
+    if (!notice) return;
+    const offer = frameLossOffer(), next = offer ? 'block' : 'none';
+    if (offer) setUiText(document.getElementById('pvc-frame-loss-text'), offer);
+    if (notice.style.display === next) return;
+    notice.style.display = next;
+    clampPopupToViewport(document.getElementById('pvc-controller-popup'));
+  }
+  // Closing the panel is not an answer: a later open measures afresh.
+  function clearFrameLossOffer() {
+    frameLossPending = false; frameLossWatch.reset();
+    renderFrameLossNotice();
+  }
+  function checkFrameLoss(video) {
+    if (frameLossAnswered) return;
+    const canHelp = !hudAccessibility.reduceMotion || videoFiltersActive();
+    if (frameLossPending) {
+      if (canHelp) renderFrameLossNotice(); else clearFrameLossOffer();
+      return;
+    }
+    if (!frameLossWatch.sample(video, frameLossComparable(video)) || !canHelp) return;
+    frameLossPending = true;
+    renderFrameLossNotice();
+    if (remoteSourceSession) publishRemoteSourceState(); // An idle panel's frame stops publishing on its own.
+  }
+  function answerFrameLoss(accept) {
+    frameLossAnswered = true; frameLossPending = false; frameLossWatch.reset();
+    if (accept) {
+      if (!hudAccessibility.reduceMotion) {
+        hudAccessibility.reduceMotion = true;
+        const checkbox = document.getElementById('pvc-a11y-reduceMotion'); if (checkbox) checkbox.checked = true;
+        refreshUiAccessibility(document.getElementById('pvc-controller-popup'));
+        syncHudPreferences();
+      }
+      if (videoFiltersActive()) resetVideoFilters();
+    }
+    if (remotePresentation) remoteControl('frame-loss-answered', true);
+    else if (remoteSourceSession) publishRemoteSourceState();
+    renderFrameLossNotice();
+  }
+  // END FRAME LOSS WATCH
 
   function startQualityWatch() {
     clearTimeout(qualityWatchTimer);
@@ -5007,7 +5106,7 @@
             <p id="pvc-site-scope-note" class="pvc-modal-desc"></p>
             <output id="pvc-site-domain-preview"></output>
             <label class="pvc-report-field"><input id="pvc-include-comment" type="checkbox"> Kendi açıklamamı rapora ekle (isteğe bağlı)</label>
-            <textarea id="pvc-user-feedback-input" disabled maxlength="4000" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; min-height: 96px; box-sizing: border-box; background: var(--pvc-surface, #142127); border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: vertical;"></textarea>
+            <span class="pvc-feedback-frame"><textarea id="pvc-user-feedback-input" disabled maxlength="4000" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; min-height: 96px; box-sizing: border-box; background: var(--pvc-surface, #142127); border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: vertical;"></textarea></span>
             <output id="pvc-comment-count" aria-label="Açıklama karakter sayısı">0 / 4000</output>
             <p class="pvc-modal-desc">Açıklamanız otomatik anonimleştirilmez. Paylaşmadan önce aşağıdaki raporu kontrol edin.
               Bu panel sayfanın içinde çalışır; yazdığınız açıklama sayfanın betiklerinden gizlenmez.
@@ -5520,6 +5619,15 @@
       <button type="button" id="pvc-drm-status-badge" style="display: none; width: 100%; box-sizing: border-box; text-align: left; font-family: inherit; padding: 5px 10px; background: color-mix(in srgb, var(--pvc-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-warning) 40%, transparent); border-radius: 6px; margin-bottom: 6px; color: var(--pvc-warning, #fbbf24); font-size: 10.5px; font-weight: 600; cursor: pointer;">
         <span>${uiLabel('shield', 'DRM Korumalı Akış (Güvenli Mod)')}</span>
       </button>
+
+      <!-- Sürekli kare kaybı önerisi: yalnız kullanıcı yanıtlarsa bir şey değişir -->
+      <div id="pvc-frame-loss-notice" class="pvc-hide-on-collapse" role="status" style="display: none;">
+        <p id="pvc-frame-loss-text"></p>
+        <div class="pvc-frame-loss-actions">
+          <button type="button" id="pvc-frame-loss-yes" class="pvc-chip-btn">Evet</button>
+          <button type="button" id="pvc-frame-loss-no" class="pvc-chip-btn">Hayır</button>
+        </div>
+      </div>
 
       <!-- Video Bulunamadı Uyarısı -->
       <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: color-mix(in srgb, var(--pvc-danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-danger) 35%, transparent); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: var(--pvc-danger, #fca5a5);">
@@ -6098,6 +6206,8 @@
       showPermissionsGuideModal();
     };
 
+    popup.querySelector('#pvc-frame-loss-yes').onclick = (e) => { e.stopPropagation(); answerFrameLoss(true); };
+    popup.querySelector('#pvc-frame-loss-no').onclick = (e) => { e.stopPropagation(); answerFrameLoss(false); };
     popup.querySelector('#pvc-report-err-btn').onclick = (e) => {
       e.stopPropagation();
       reportAnonymousError('USER_MANUAL_DIAGNOSTIC');
@@ -6143,7 +6253,7 @@
     popup.style.display = wasClosed ? 'block' : 'none';
     if (!wasClosed) { postHudSignal('PVC_HUD_CLOSED'); localVideoSeen = false; localSearchAfterLoss = false; }
     if (popup.style.display === 'block') {
-      if (wasClosed) resetPopupToDefaultPosition(popup);
+      if (wasClosed) { resetPopupToDefaultPosition(popup); clearFrameLossOffer(); }
       clampPopupToViewport(popup);
       resetIdleTimer(popup);
       startQualityWatch();

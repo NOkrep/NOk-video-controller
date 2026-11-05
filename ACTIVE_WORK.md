@@ -4,15 +4,27 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.14**, `claude/workTogether` dalında; `main` `0.7.11` (#117). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
-- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-10, D-11.
-- **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-08, D-09 (tooltip), I-11, D-06.
+- **Sürüm:** Kaynak sürümü **v0.7.15**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-10, D-11.
+- **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-09 (tooltip), I-11, D-06.
 - **Codex'te:** I-13.
 - **Kapandı:** D-07; finalist seçilmeyecek, 20 tema kalıyor.
 - **Karar bekliyor:** B5 kesin sürüm kuralı.
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+
+## D-08 rapor animasyonları, ölçüm ve kare kaybı bildirimi, v0.7.15 — 5 Kasım 2026
+
+Geçici profil, hesap yok, iki motor. Ayrıntı ve tablolar: ANIMATION_PERFORMANCE.md, ANIMATION_DETAILS.md.
+
+- **Rapor penceresi:** Checkbox'ta 0,15 sn gecikmeli çizim, 48 px hover halkası ve hover rengi; metin alanında odakta üst ve alt çizgi. Azaltılmış hareket hepsini kapatır. Metin alanında tam güçteki odak halkası çizgileri örttüğü için soluklaştırıldı; yüksek kontrast kendi halkasını korur.
+- **Kare kaybı bildirimi:** Son 4 pencerede toplam en az %15 ve en az 2 kötü pencere olursa panelde sorar. Kendisi bir şey değiştirmez. "Evet" mevcut azaltılmış hareket ayarını açar ve varsa filtreleri sıfırlar; "Hayır" sayfa yenilenene kadar geçerlidir. Gömülü oynatıcıda ölçüm medyanın çerçevesinde, soru görünen panelde. Yeni zamanlayıcı yok; panel kapalıyken sayaç okunmaz.
+- **Ölçüm sonucu:** Filtreler asıl maliyet (Firefox 3D yaklaşık 1 → 43). Rapor animasyonları ve denenen geniş adaylar bu makinede ölçülebilir kare kaybı vermedi; tek donanım, geniş eklemeler uygulanmadı. Azaltılmış hareket boşta panelde ölçülebilir kazanç vermiyor. Basış sonrası reklam denetimi gerçek sayfada tick başına medyan 0,2-2 ms.
+- **Yan düzeltme:** Rapor kaydırılınca görünmez checkbox'lar yerinde kalıp başka alanların üstüne binebiliyordu.
+- **Kural değişikliği:** İlk kural (art arda 4 kötü pencere) gerçek yükte Edge'de hiç sormadı; dalgalı kayıp için son 4 pencere kuralına geçildi.
+- **Kanıt:** 258/258 Node, 12 tarayıcı testi ve yeni `frame-loss` iki motorda (26/26). Firefox'ta gerçek sayaçlarla bildirim çıktı.
+- **Açık sınır:** Edge'de eşiği aşan gerçek kayıp üretilemedi, sorma yolu orada taklit sayaçla doğrulandı. Ağır yükte Edge video kareleri üretmedi ama çoğunu düşen saymadı, bildirim çıkmadı. Sayaçlar her takılmayı görmez. Uzak CI görülmedi.
 
 ## Puhu eski oynatıcıda boş kalite listesi, v0.7.14 — 5 Kasım 2026
 

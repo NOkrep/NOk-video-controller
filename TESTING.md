@@ -56,13 +56,19 @@ Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromi
 
 `ad-lifecycle-browser.cjs`, gerçek Video.js/VHS oynatmada oynatıcının kendi `vjs-ad-playing` işaretiyle reklam döngüsünü üst sayfada ve ayrı kökenli iframe'de sınar: ilk basıştan önce denetim olmaması ve ağ kancasının yerinde olması, basışla reklam sırasında açılan panel, 16x ve sessize alma, en düşük seviye, bitişte 1x, önceki ses ve kalite, panelin gerçek değerleri göstermesi, küçültülmüş ve kapalı panelde denetimin sürmesi, iframe yenilense de sürmesi. Sentetik işaret kullanır; gerçek reklam kabulü `youtube-ad-acceptance.cjs` ile yapılır. O test basmadan bekler, bir kez basıp paneli kapatır ve aynı belgede sonraki videolara geçer; bir turda reklam görmezse `no-ad-seen` yazar, bu geçti sayılmaz.
 
+`frame-loss-browser.cjs`, kare kaybı bildirimini üst sayfada ve ayrı kökenli iframe'de sınar: kapalı panelde sayaç okunmaması, %5 kayıpta sorulmaması, sürekli kayıpta sorulması, sormanın tek başına bir şey değiştirmemesi, "Hayır" sonrası tekrar sorulmaması, "Evet" ile ayarın açılması ve filtrenin medyanın çerçevesinde sıfırlanması, açık sorunun panel diliyle değişmesi. Kayıp tam olsun diye sayaçlar sayfada değiştirilir. Gerçek sayaçlarla ağır yük denemesi ANIMATION_PERFORMANCE.md içindedir.
+
+## Animasyon ve reklam denetimi ölçümü (D-08)
+
+`node tests/animation-performance.cjs --engine=both --label=<etiket>` görünür iki tarayıcıda 1080p sentetik videoyla sırayla çalışır: basmadan, basıp panel kapalı, panel açık, üç filtre, rapor boşta, rapor animasyonları sürekli çalışırken, anahtarlar mevcut hâliyle, kaynaktaki yavaş geçiş ve parıltıyla, sürekli parıltıyla, azaltılmış hareketle. Geniş adaylar yalnız testte eklenen stille uygulanır. Reklam denetimi süresi yalnız Git dışı test kopyasında ölçülür. `--url-file=<dosya>` gerçek sayfada yalnız o süreyi ve düğüm sayısını yazar; adres, başlık ve sayfa metni yazılmaz. Sayılar Git dışı `tests/artifacts/animation-<etiket>/` altındadır. CPU/GPU okuması PowerShell betiği çalıştırabilen bir kabuk ister. Kanıt ve sınırlar ANIMATION_PERFORMANCE.md içindedir.
+
 ## CI'da olan ve yerelde kalan testler (D-10)
 
 | Yer | Testler | Neden |
 |---|---|---|
-| Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `volume-mirror`, `pip`, `startup`, `report` | Üretilmiş dosya istemez, kısa sürer |
+| Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `volume-mirror`, `pip`, `startup`, `report`, `frame-loss` | Üretilmiş dosya istemez, kısa sürer |
 | Zorunlu olmayan CI (`Browser media`) | `quality-mapping`, `hls-early-attach`, `ad-lifecycle` | Sunucunun H.264 desteğine ve sabitlenmiş Video.js/Hls.js indirmesine bağlı |
-| Yerel: ölçüm | `filter-performance`, `report-performance`, `memory-soak`, `chromium-memory`, `native-media-retention`, `resource-investigation`, `av-sync-browser` | Süre, bellek ve GPU ölçer veya uzun sürer; paylaşımlı CI makinesinde sonuç anlamlı değildir |
+| Yerel: ölçüm | `filter-performance`, `report-performance`, `animation-performance`, `memory-soak`, `chromium-memory`, `native-media-retention`, `resource-investigation`, `av-sync-browser` | Süre, bellek ve GPU ölçer veya uzun sürer; paylaşımlı CI makinesinde sonuç anlamlı değildir |
 | Yerel: gerçek site | `kick-site-acceptance`, `youtube-ad-acceptance`, `live-filter-performance`, `live-player-*`, `videojs-site-acceptance`, `puhu-retry-acceptance` | Dış siteye bağlıdır, hesap ve bot koruması değişkendir |
 | Yerel: geniş fixture | `browser-integration`, `firefox-integration` | Üretilmiş medya ve özel tarayıcı yolları ister; ana davranışları CI'daki testler kapsar |
 | Kenarda, çalıştırılmadı | `av-live-probe`, `prepare-av-live-copy`, `av-live-copy-check` | Reddedilen I-07 planının taslakları (PROJECT_HANDOFF.md §8) |

@@ -22,6 +22,19 @@ Mevcut sınıflar: `pvc-raised-button`, `pvc-check-input`/`pvc-check-visual`, `p
 - [zanina-yassine form](https://uiverse.io/zanina-yassine/angry-shrimp-34): checkout yerleşimi incelendi; mevcut HUD'a uygun bir form görevi oluşmadığı için uygulanmadı.
 - [vinodjangid07 tooltip](https://uiverse.io/vinodjangid07/funny-panther-79): kullanılmadı; kesin kaynak kodu doğrulanmadı. Mevcut native title, bu örneğin tooltip animasyonu değildir.
 
+## v0.7.15 rapor penceresi güncellemesi (D-08)
+
+Kullanıcı kararıyla rapor penceresindeki iki bileşen kaynağa yaklaştırıldı. Yukarıdaki tablo 20 Ekim durumunun kaydıdır ve değiştirilmedi. Ölçümler [ANIMATION_PERFORMANCE.md](./ANIMATION_PERFORMANCE.md) içindedir.
+
+| Bileşen | Eklenen | Kaynaktan farkı |
+| --- | --- | --- |
+| Checkbox | Check çizgisi 0.15s gecikmeli; 48px dairesel halo ve hover'da çizgi rengi, satırın üzerine gelince. | Halo rengi temadan ve %14; kaynaktaki %3 koyu temada görünmüyor. Hover yalnız `hover: hover` cihazlarda: dokunmatikte halo takılı kalmaz. Hit alanı 20×20 kaldı, satır etiketi de tıklanır. |
+| Textarea | Odakta üst çizgi %35, alt çizgi %100; ikisi de sağdan büyür. | 0.5s yerine 0.3s, güçlü ease-out: yazmaya başlarken beklenmesin diye. `width` yerine `scaleX` ile. Yuvarlak köşeden taşmasın diye 6px içeride. Etiket sürekli görünür kalır, floating label yok. |
+
+Odak halkası metin alanında soluklaştırıldı, tam güçteki halka çizgileri örtüyordu. Odak göstergesi artık çizgiler ve soluk halkadır; yüksek kontrast kendi sarı halkasını korur. Alt sınırın odakta renk değiştirmesi kaldırıldı, çizgiyle aynı işi yapıyordu.
+
+Sıradaki denemeler (anahtar eğrileri ve parıltı, düğmenin iç kapağı) uygulanmadı. Ölçümde sorun çıkmadı ama tek donanım örneğidir ve kullanıcı yalnız rapor penceresini seçti.
+
 ## Hareket azaltma ve sonraki tasarım denemesi
 
 Settings → Accessibility → Reduce motion başlangıçta işletim sistemi tercihini izler ve RAM'de değiştirilebilir. Açıkken düğmenin yer değiştirmesi, switch/check geçişleri ve loader animasyonu devre dışıdır. Kontroller çalışmayı sürdürür. Bu nedenle animasyon görülmediğinde önce bu tercih kontrol edilmelidir.

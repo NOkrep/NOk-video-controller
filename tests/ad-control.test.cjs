@@ -135,6 +135,7 @@ test('the ad watch runs only after the page is armed, once, and keeps running wi
   let pagehide = null;
   const context = vm.createContext({ remotePresentation: null, selection: { video: null, player: null },
     setTimeout: fn => timers.push(fn), adLifecycle: { tick: (selection, marked) => ticks.push(marked), stop: () => counts.stop++ },
+    checkFrameLoss() {}, frameLossPanelOpen: () => false,
     findVideoAndPlayer: () => context.selection, hasSelectedAdMarker: video => !!video,
     startPeriodicPingEngine: () => counts.pingEngine++, monitorVideoResolution: () => counts.monitor++, testCdnPing: () => counts.ping++,
     window: { addEventListener: (type, fn) => { if (type === 'pagehide') pagehide = fn; } } });
