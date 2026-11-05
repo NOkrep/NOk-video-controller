@@ -79,7 +79,7 @@ if (require.main === module) {
     }
     const ref = process.env.GITHUB_REF || '';
     const result = checkExtension(root, {trackedFiles, baseVersion, tag:ref.startsWith('refs/tags/v') ? ref.slice('refs/tags/'.length) : undefined});
-    for (const file of ['injected.js','content.js','background.js','frame-protocol.js']) execFileSync(process.execPath, ['--check', path.join(root,file)], {stdio:'inherit'});
+    for (const file of ['injected.js','content.js','background.js','frame-protocol.js','early-hooks.js']) execFileSync(process.execPath, ['--check', path.join(root,file)], {stdio:'inherit'});
     console.log(`FilmDeck ${result.version}: version, permissions, locales, icons, MIT notices and ${result.runtimeFiles.length} runtime files verified.`);
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

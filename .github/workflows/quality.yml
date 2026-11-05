@@ -97,6 +97,8 @@ jobs:
         run: node tests/prepare-browser-fixtures.cjs --runtimes-only --download-runtimes
       - name: Test quality labels against real Video.js playback
         run: node tests/quality-mapping-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test a real Hls.js player attached before the engine loads
+        run: node tests/hls-early-attach-browser.cjs --engine=${{ matrix.engine }}
 
   security:
     name: Dependency security

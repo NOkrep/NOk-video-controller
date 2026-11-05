@@ -2,7 +2,7 @@
 
 > Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
 
-> **Sürüm:** v0.7.10 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
+> **Sürüm:** v0.7.11 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
 > **Platform Uyumluluğu:** Firefox (Gecko, 121+) & Chrome, Brave, Edge, Opera (Chromium, 121+) — Manifest V3 WebExtensions  
 > **Bu belgenin yeri:** Mimari başvuru kaynağıdır. Güncel durum ve açık işler PROJECT_HANDOFF.md ile ACTIVE_WORK.md içindedir; §5 ve altındaki tarihli kayıtlar kendi sürümlerine aittir.
@@ -430,6 +430,7 @@ Kaynaklar: [Video.js VHS representations API](https://github.com/videojs/http-st
 
 ### 4.23 v0.7.0 — İframe Sunumu ve Reklam Yaşam Döngüsü (Test Adayı)
 
+- `early-hooks.js`: Main World, `document_start`. Motor gelmeden bağlanan Hls.js/Shaka oynatıcısını videoya not eder. Ayrıntı: FRAME_PRESENTATION.md.
 - `frame-protocol.js`: Main/Isolated World ve seçili çocuk dalı arasında allowlist şeması. Yeni RAM oturumu/sahip/sayaç, stale komut reddi ve kapatmada pending istek temizliği. Medya kaynak çerçevededir; normal HUD üstte, ancestor iframe fullscreen'de kaynakta. Ayrıntı: FRAME_PRESENTATION.md.
 - Otomatik teknik durumda URL, içerik adı, izleme konumu, dosya adı veya altyazı metni yoktur. Altyazı yalnızca elle yüklenince cue komutu olarak kaynak dala iner. Teşhis yalnızca manuel istekle önizlemeye çıkar. Kalıcı depolama/izin eklenmedi.
 - İnaktif/idle-hidden üst sunumda kaynak kalite taraması/aktarımı durur. Kaynak medya filtreleri rAF/diff ve aday cache sınırlarını korur. Gerçek GPU maliyeti azaltılmış gibi sunulmaz.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FilmDeck by NOk",
-  "version": "0.7.10",
+  "version": "0.7.11",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "author": "NOkrep",
@@ -26,6 +26,17 @@
   ],
   "host_permissions": [],
   "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "early-hooks.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
     {
       "matches": [
         "<all_urls>"

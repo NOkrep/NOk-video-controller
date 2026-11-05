@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.10**, `claude/workTogether` dalında; `main` `0.7.9.2`. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.11**, `claude/workTogether` dalında; `main` `0.7.9.2`. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-10, D-11.
 - **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-08, D-09 (tooltip), I-11, D-06.
 - **Codex'te:** I-13.
@@ -12,7 +12,28 @@
 - **Karar bekliyor:** B5 kesin sürüm kuralı.
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
-- **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar.
+- **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+
+## I-05 erken bağlanan Hls.js, v0.7.11 — 5 Kasım 2026
+
+**Kök neden:** Motor sayfaya `<script src>` ile sonradan yükleniyor. Sayfa Hls.js'i ondan önce bağlarsa `attachMedia` kancası kaçıyor ve Hls.js örneği sonradan bulunamıyor. Aynı sayfa geç bağlanınca sorun yok. Yalnız Firefox'a özgü değil: Chromium'da da iframe içinde 2/2 tekrar etti, gerçek sitede Chromium yarışı kazandığı için görülmüyordu. Mevcut testler motoru bekleyip bağladığından bu yarışı göstermiyordu.
+
+**Düzeltme:** Yeni `early-hooks.js` manifestten `world: "MAIN"` ile sayfa betiklerinden önce çalışır, Hls.js ve Shaka'nın bağlandığı videoyu not eder; motorun zaten okuduğu alanı doldurur. Yeni izin yok, asgari Firefox 121 kalıyor. Paketleme listesi manifestten türediği için yayın deposunda değişiklik gerekmiyor.
+
+**Kanıt:** `hls-early-attach-browser` eski kodda bağlanma adımında başarısız oldu, düzeltmeyle üst sayfa ve ayrı kökenli iframe'de iki motorda geçiyor; Firefox'ta motor bağlanmadan önce hazır değildi, yani yarış gerçekten yaşandı. Raporlu gerçek sitede Firefox `GenericAdapter`/0 seviye yerine `HlsJsAdapter`/1 seviye gösteriyor, Chromium'la aynı. 230/230 Node testi. `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `volume-mirror`, `cdn-measure`, `pip`, `startup`, `report`, `quality-mapping` iki motorda geçti. Yeni test `Browser media` CI işine eklendi; uzak sonuç commit'ten sonra görülecek.
+
+**Sınırlar:**
+- Global `Hls` açmayan, pakete gömülü oynatıcılar bulunmaz; aynı betikte kütüphane ve bağlamayı birlikte yapan satır içi kod da kaçar.
+- Erken yakalanan oynatıcıda rapordaki `declaredLevelCount` boş kalabilir, çünkü manifest olayı kaçmıştır. Yalnız teşhis alanıdır, kalite listesini etkilemez.
+- Shaka yolu yalnız birim testiyle sınandı, gerçek Shaka çalıştırılmadı.
+- Firefox 121–127'de `world` alanının yok sayıldığı çalıştırılarak doğrulanmadı. AMO doğrulayıcısı yayın sırasında uyarı verebilir; yayın hazırlığında bakılmalı.
+- Düzeltme kalite eksikliği şikâyetlerinin tamamını çözmez; I-05'in diğer siteleri açık.
+
+## Dört aşamalı araç incelemesi — 5 Kasım 2026
+
+Ürün kodu değil, `D:/NOk-Tools` değişti. Kullanıcı kararıyla yeni adaylar sırayla geçer: indirmeden `preview`, statik tarama, `triage` ile gerekçeli karar, deneme. Bağlantının gittiği alan adı görünür, kapsam eksikleri tek tek çözülebilir, CRITICAL bulgu, veri aktarımı ve okunamayan kod kullanıcı kararı ister. Genel programlar için ayrı `assess-tool` yolu var. Otomatik onay eşiği ve politika değişmedi. Kod çalıştıran deneme için izole ortam kurulmadı.
+
+**Kanıt:** 48/48 guard testi, sekiz onay yerinde, `Test-NOkTools` PASS, hook deny/normal denemeleri geçti. Dokuz adayda ön inceleme çalıştı, hiçbiri onaylanmadı veya kurulmadı. Sonuçlar `reports/security/candidates-2026-11-05/REVIEW.md`.
 
 ## I-03 ses kısmı, gerçek Kick sınaması, v0.7.10 — 5 Kasım 2026
 
