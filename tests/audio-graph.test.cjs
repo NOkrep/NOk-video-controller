@@ -38,7 +38,7 @@ test('explicit audio-less capability and DRM skip the graph even for boost/mono 
 test('metadata replay initializes boost only for the currently selected media owner',()=>{
   const calls=[],makeVideo=()=>({listeners:{},addEventListener(type,fn){this.listeners[type]=fn;}});
   const first=makeVideo(),second=makeVideo();let selected=first;
-  const context=vm.createContext({first,second,currentAudioVolumePercent:200,currentAudioMode:'stereo',startAdWatch(){},
+  const context=vm.createContext({first,second,currentAudioVolumePercent:200,currentAudioMode:'stereo',
     findVideoAndPlayer:()=>({video:selected}),initAudioGraphForVideo:video=>calls.push(video),
     updateRealtimeResolutionBadge(){},renderDynamicQualityButtons(){},applyVideoFiltersToElement(){}});
   vm.runInContext(source.slice(source.indexOf('  function monitorVideoResolution'),source.indexOf('  function updatePipButtonsState')),context);

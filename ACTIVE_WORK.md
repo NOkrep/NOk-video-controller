@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.11**, `claude/workTogether` dalında; `main` `0.7.9.2`. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.14**, `claude/workTogether` dalında; `main` `0.7.11` (#117). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-10, D-11.
 - **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-08, D-09 (tooltip), I-11, D-06.
 - **Codex'te:** I-13.
@@ -13,6 +13,47 @@
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+
+## Puhu eski oynatıcıda boş kalite listesi, v0.7.14 — 5 Kasım 2026
+
+Geçici profil, hesap yok, iki motor. İçerik adı kaydedilmedi.
+
+- **Kök neden:** Taranan 12 içerikten biri eski site oynatıcısını kullanıyor: kalite API'si olmayan Video.js 5.20.4 kabuğu, altında Hls.js. `PuhuTvAdapter` Video.js'i görünce Hls.js listesine hiç bakmıyordu. Kalite uygulama yolu da Video.js'e gidiyordu. Hls.js'te seviye vardı, rapor `playerLevelCount: 1` diyordu.
+- **Düzeltme:** Video.js listesi boşsa Hls.js listesi kullanılır, Hls.js seviyesi Hls.js üzerinden uygulanır. Video.js'in listesi varsa öncelik değişmez.
+- **Kanıt:** O içerikte iki motorda `0 levels` yerine `1 level` (1080p). Sitenin kendi listesinde de tek seviye tanımlı, yani 1 doğru sayı. Seçim oynatmayı bozmadı. Yeni oynatıcıda 5 seviye aynı kaldı.
+- **Ölçülen, hata olmayan:** Yeni oynatıcıda 1080p seçince görüntü ilk 5-10 sn 240p görünebiliyor (tampon dolarken, `readyState` 2), sonra 1080p'ye çıkıp ölçüm boyunca (35-45 sn) kalıyor. Chromium'da programla ve gerçek fareyle aynı. Firefox'ta 1080p'nin kaldığı görüldü, fareyle tıklama yalnız Chromium'da denendi.
+- **Değiştirilmeyen:** Genel `VideoJsAdapter` aynı karışımı Puhu dışında da kaçırabilir. Başka sitede görülmediği için dokunulmadı.
+
+## Basış kuralı, v0.7.13 — 5 Kasım 2026
+
+**Kullanıcı kararı:** Sayfada ilk basışa kadar eklenti denetimi olmaz; bir kez basılınca panel küçültülse veya kapatılsa da reklam hızlandırma o sayfada çalışır. Amaç arka planda sürekli izleme hissini kaldırmak.
+
+- **Değişen:** `content.js` basışı `PVC_PAGE_ARMED` ve `NOK_PAGE_ARMED` ile çerçeve ağacına yayar, sonradan yüklenen çerçeveye de bildirir. `injected.js` reklam denetimini, başlangıç işini ve 15 sn CDN okumasını buna bağlar; panel kapatma artık denetimi durdurmaz; video yokken döngü bitmez.
+- **Korunan (kullanıcı uyarısı):** Motorun ve kancaların sayfa yüklenirken girmesi değişmedi. Puhu 1080p yolu bu erken yakalamaya bağlıdır; geç basışta çalıştığı gerçek sitede ölçüldü (AD_CONTROL.md). `ad-lifecycle` testi ağ kancasının basıştan önce yerinde olduğunu da sınar.
+- **Bilinen sonuç:** Sayfanın ilk reklamı basılana kadar normal oynar.
+- **Ayrı bulgu:** Puhu'da bir içerikte `0 levels`; v0.7.12'de de aynı. v0.7.14'te düzeltildi.
+
+## I-04 gerçek reklam, I-09 ve I-10 sınaması, v0.7.12 — 5 Kasım 2026
+
+Kullanıcı Kick'te reklamın nadir olduğunu söyledi; kabul YouTube'da yapıldı. Geçici profil, hesap yok, bot doğrulaması çıkmadı, içerik adı kaydedilmedi.
+
+- **Düzeltilen hatalar:**
+  - Reklam bitip hız 1x olunca panel hâlâ `16x` veya reklam öncesi hızı gösteriyordu.
+  - Bitişte reklam başındaki ses seviyesi yazılıyor, YouTube'un içerik için seçtiği seviyeyi eziyordu (Firefox'ta 0,47 → 0,56). Artık yalnız seviye 0'a çekildiyse geri yazılır.
+  - Panel gerçek sesi kaçırabiliyordu: video hazır olmadan açılınca hiç okunmuyor, Firefox 16x'te sessize alma olayını vermiyordu. Panel açıkken denetim döngüsü artık okuyor.
+- **Reddedilen varsayım:** Reklam sonrası 16 saniyelik boş videonun hızlandırmadan kaynaklandığı düşünüldü. Eklentisiz Chromium'da boşluk 7,6 ve 7,8 sn, FilmDeck'le 1,8 sn, Firefox'ta 0,3 sn çıktı. Az örnektir.
+- **Karar sorulan durum (v0.7.13'te çözüldü):** Reklam denetimi yalnız panel açıkken veya açılışın ilk saniyesinde video varken başlıyor, panel kapanınca duruyor. Panel hiç açılmayınca gerçek reklam 176 saniye 1x ve sesli oynadı.
+
+**I-09:** Raporlu iframe oynatıcıda tam ekrandan PiP iki motorda açıldı ve çıkışta panel tek kaldı.
+**I-10:** YouTube sayfa içi iki geçişte panel açık kaldı, tek panel, oynatıcı geç de olsa bulundu, 1,5x yeni videoya taşındı. Reklam sonrası içerik yüklenirken rozet `GenericAdapter` / 0 seviye gösteriyor; o anda medya yok, içerik başlayınca düzeliyor.
+
+**Kanıt:** Yeni `ad-lifecycle-browser` önce "panelin geri yüklenen hızı göstermesi" adımında kırıldı, düzeltmeyle 5 turda iki motorda geçti (üst sayfa ve iframe). `volume-mirror-browser` geç medya senaryosunda önce kırıldı, sonra geçti. Yeni birim testi seviye yazma hatasında önce kırıldı. 231/231 Node testi. Yeni `youtube-ad-acceptance` iki motorda ikişer gerçek reklamla geçti: en yüksek hız 16x, bitişte 1x ve ses, panel gerçek hız ve sesi gösteriyor. İlk turlarında panel sesi hatasını bu test yakaladı.
+
+**Sınırlar:**
+- TRT hız koruması doğrulanamadı: `trtizle.com` tabii'ye yönleniyor, TRT 1'in denenen dizisinin bölüm sayfası YouTube gömmesi kullanıyor ve gömülü oynatıcı test profilinde açılmadı.
+- Canlı Kick reklamı görülmedi, `ad-badge` doğrulanmadı.
+- YouTube'da reklam kalitesi düşürülmüyor; yol tanımlı değil.
+- Art arda reklamlarda YouTube değerleri sıfırlıyor, 750 ms içinde yeniden uygulanıyor; bu aralıkta reklam duyulabilir.
 
 ## I-05 erken bağlanan Hls.js, v0.7.11 — 5 Kasım 2026
 

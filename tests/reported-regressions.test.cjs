@@ -52,6 +52,24 @@ test('Puhu never fabricates a resolution from an SMIL URL or switches to a guess
   assert.equal(vm.runInContext('PuhuTvAdapter.applyQuality({height:720},video,null)',context),true);assert.equal(applied,1);
 });
 
+test('an old Video.js shell with no quality API does not hide the Hls.js levels underneath it',()=>{
+  const calls=[],hlsLevels=[{id:'hls_0',index:0,height:1080}];let vjsLevels=[];
+  const context=vm.createContext({HOSTNAME:'puhutv.com',document:{querySelector:()=>null},
+    findVideoJsPlayer:()=>({}),findLibraryPlayer:(_video,kind)=>kind==='hls'?{}:null,getNativeQualityMenuOptions:()=>[],
+    VideoJsAdapter:{getQualities:()=>vjsLevels,applyQuality:()=>{calls.push('vjs');return true;}},
+    HlsJsAdapter:{getQualities:()=>hlsLevels,applyQuality:()=>{calls.push('hls');return true;}},
+    pick:hlsLevels[0],vjsPick:{id:'vjs_0',index:0,height:720},video:{}});
+  vm.runInContext(section('  const PuhuTvAdapter','  function simulateFullPointerClick'),context);
+  assert.deepEqual(vm.runInContext('PuhuTvAdapter.getQualities(video,null).map(item=>item.id)',context),['hls_0']);
+  assert.equal(vm.runInContext('PuhuTvAdapter.applyQuality(pick,video,null)',context),true);
+  assert.deepEqual(calls,['hls'],'an Hls.js level is applied through Hls.js');
+  // A Video.js list stays first when the shell has one.
+  vjsLevels=[context.vjsPick];calls.length=0;
+  assert.deepEqual(vm.runInContext('PuhuTvAdapter.getQualities(video,null).map(item=>item.id)',context),['vjs_0']);
+  assert.equal(vm.runInContext('PuhuTvAdapter.applyQuality(vjsPick,video,null)',context),true);
+  assert.deepEqual(calls,['vjs']);
+});
+
 test('removed media releases cached targets, filters, quality context and detached React handlers while HUD is closed',()=>{
   const removed={isConnected:false},live={isConnected:true},restored=[];
   const select={__nokVideos:[removed]};

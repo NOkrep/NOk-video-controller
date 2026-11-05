@@ -13,7 +13,8 @@ async function main(){
   const child=http.createServer((_req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');res.end(`<!doctype html><meta charset="utf-8"><body><script>${video}</script></body>`);});
   await listen(child);
   const parent=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');const framed=req.url.includes('framed');
-    res.end(`<!doctype html><meta charset="utf-8"><button id="open" onclick="window.postMessage({type:'PVC_TOOLBAR_TOGGLE'},'*')">Open</button><body><script>${framed?`document.write('<iframe style="width:640px;height:400px" allow="autoplay" src="http://127.0.0.1:${child.address().port}/"></iframe>');`:video}</script></body>`);});
+    const script=req.url.includes('late')?video.replace('video.srcObject=canvas.captureStream(10);','window.__stream=canvas.captureStream(10);').replace('video.muted=true;video.play().catch(()=>{});video.muted=false;',''):video;
+    res.end(`<!doctype html><meta charset="utf-8"><button id="open" onclick="window.postMessage({type:'PVC_TOOLBAR_TOGGLE'},'*')">Open</button><body><script>${framed?`document.write('<iframe style="width:640px;height:400px" allow="autoplay" src="http://127.0.0.1:${child.address().port}/"></iframe>');`:script}</script></body>`);});
   await listen(parent);let driver;
   const panel=()=>({slider:document.getElementById('pvc-volume-slider').value,badge:document.getElementById('pvc-hdr-volume-badge').textContent.replace(/\D/g,'')});
   try{
@@ -40,6 +41,14 @@ async function main(){
       await driver.evaluate(media,()=>{document.querySelector('video').volume=0.6;});await expectPanel(60,'a site change ends the boost');
       await page.close?.();
     }
+    // A panel opened before the media is ready has nothing to read yet; no event says the level later.
+    const page=await driver.open(`http://127.0.0.1:${parent.address().port}/late`);await driver.activate(page);
+    await until(driver,page,()=>window.__NOK_VIDEO_CONTROLLER_INJECTED__===true,'engine');await delay(1300);
+    await driver.pointerClick(page,'#open');await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel');
+    await delay(400);assert.equal((await driver.evaluate(page,panel)).slider,'100','no media level to read yet');
+    await driver.evaluate(page,()=>{const video=document.querySelector('video');video.srcObject=window.__stream;video.play().catch(()=>{});return true;});
+    await until(driver,page,()=>document.querySelector('video').readyState>=2,'media ready');
+    await until(driver,page,()=>document.getElementById('pvc-volume-slider').value==='50','late media: the panel shows the real level');
     console.log(JSON.stringify({engine,browserVersion:driver.version,result:'passed'}));
   }finally{try{await driver?.close();}finally{for(const server of [parent,child]){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}}}
 }

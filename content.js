@@ -11,6 +11,8 @@
   delete window.__NOK_VIDEO_CONTROLLER_MAIN_READY__;
   let selectedLanguageSignal = null;
   let selectedPlatformSignal = null;
+  // Set by a toolbar press, never by loading a page. Lasts for this document only.
+  let pageArmed = false;
   const platformSignals = new Set(['kick', 'trt', 'now', 'puhu', 'youtube', 'twitch', 'reddit', 'x',
     'netflix', 'disney', 'prime', 'tabii', 'gain', 'exxen'].map(platform => `NOK_PLATFORM_${platform}`));
 
@@ -36,6 +38,7 @@
           window.postMessage({ type: selectedLanguageSignal === 'NOK_LANGUAGE_TR' ? 'PVC_APPLY_LANGUAGE_TR' : 'PVC_APPLY_LANGUAGE_EN' }, '*');
         }
         if (selectedPlatformSignal) window.postMessage({ type: selectedPlatformSignal.replace('NOK_PLATFORM_', 'PVC_APPLY_PLATFORM_') }, '*');
+        if (pageArmed) window.postMessage({ type: 'PVC_PAGE_ARMED' }, '*');
         if (boot.pendingOpen) {
           boot.pendingOpen = false;
           window.postMessage({ type: 'PVC_OPEN_POPUP' }, '*');
@@ -85,6 +88,12 @@
   }
   function send(target, type, payload) {
     try { target.postMessage(payload === undefined ? { type } : { type, payload }, '*'); } catch (_) {}
+  }
+  function armPage() {
+    if (pageArmed) return;
+    pageArmed = true;
+    window.postMessage({ type: 'PVC_PAGE_ARMED' }, '*');
+    children().forEach(child => send(child, 'NOK_PAGE_ARMED'));
   }
   function hideChildren(except = null) {
     children().forEach(child => { if (child !== except) lifecycle(child, 'NOK_FRAME_HIDE'); });
@@ -156,7 +165,12 @@
       if (selectedLanguageSignal) send(event.source, selectedLanguageSignal);
       return;
     }
+    if (window.parent !== window && event.source === window.parent && type === 'NOK_PAGE_ARMED') {
+      armPage();
+      return;
+    }
     if (frameProtocol && type === 'NOK_FRAME_READY' && children().includes(event.source)) {
+      if (pageArmed) send(event.source, 'NOK_PAGE_ARMED');
       if (session && (searching || activeChild === event.source)) lifecycle(event.source, 'NOK_FRAME_OPEN');
       return;
     }
@@ -238,6 +252,7 @@
       return;
     }
     if (event.source !== window) return;
+    if (type === 'PVC_OPEN_POPUP' || type === 'PVC_TOOLBAR_TOGGLE') armPage();
     if (frameProtocol && type === 'PVC_REMOTE_COMMAND' && delegatedVisible && activeChild && children().includes(activeChild)) {
       if (event.data.payload?.session !== session) return;
       const command = frameProtocol.cleanCommand(event.data.payload?.command), id = event.data.payload?.id;

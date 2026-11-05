@@ -34,6 +34,8 @@ node tests/quality-mapping-browser.cjs --engine=firefox
 node tests/quality-mapping-browser.cjs --engine=chromium
 node tests/hls-early-attach-browser.cjs --engine=firefox
 node tests/hls-early-attach-browser.cjs --engine=chromium
+node tests/ad-lifecycle-browser.cjs --engine=firefox
+node tests/ad-lifecycle-browser.cjs --engine=chromium
 ```
 
 İkinci tarayıcı senaryosu ayrı yerel kökenlerde iframe medyası kullanır: Mono/Stereo seçili düğmeleri ve `aria-pressed`, küçültülmüş panelle tam ekrana giriş, orada genişletip normal görünüme dönüş ve aynı anda tek görünür HUD. İki motorlu CI matrisinde çalışır. Gerçek site PiP, ses içeriği doğruluğu veya kalite geçişi kabulü değildir.
@@ -52,14 +54,16 @@ Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromi
 
 `hls-early-attach-browser.cjs`, gerçek Hls.js'i kapalı kapsamda ve betik yüklenir yüklenmez bağlar; üst sayfada ve ayrı kökenli iframe'de oynatıcının bağlanma anında bulunduğunu, panelin `HlsJsAdapter` ve 3 seviye gösterdiğini sınar. `libraryHtml` motoru beklediği için diğer testler bu yarışı göstermez. Motorun bağlanmadan önce hazır olup olmadığı çıktıda yazar; bu sonuç sabit değildir.
 
+`ad-lifecycle-browser.cjs`, gerçek Video.js/VHS oynatmada oynatıcının kendi `vjs-ad-playing` işaretiyle reklam döngüsünü üst sayfada ve ayrı kökenli iframe'de sınar: ilk basıştan önce denetim olmaması ve ağ kancasının yerinde olması, basışla reklam sırasında açılan panel, 16x ve sessize alma, en düşük seviye, bitişte 1x, önceki ses ve kalite, panelin gerçek değerleri göstermesi, küçültülmüş ve kapalı panelde denetimin sürmesi, iframe yenilense de sürmesi. Sentetik işaret kullanır; gerçek reklam kabulü `youtube-ad-acceptance.cjs` ile yapılır. O test basmadan bekler, bir kez basıp paneli kapatır ve aynı belgede sonraki videolara geçer; bir turda reklam görmezse `no-ad-seen` yazar, bu geçti sayılmaz.
+
 ## CI'da olan ve yerelde kalan testler (D-10)
 
 | Yer | Testler | Neden |
 |---|---|---|
 | Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `volume-mirror`, `pip`, `startup`, `report` | Üretilmiş dosya istemez, kısa sürer |
-| Zorunlu olmayan CI (`Browser media`) | `quality-mapping`, `hls-early-attach` | Sunucunun H.264 desteğine ve sabitlenmiş Video.js/Hls.js indirmesine bağlı |
+| Zorunlu olmayan CI (`Browser media`) | `quality-mapping`, `hls-early-attach`, `ad-lifecycle` | Sunucunun H.264 desteğine ve sabitlenmiş Video.js/Hls.js indirmesine bağlı |
 | Yerel: ölçüm | `filter-performance`, `report-performance`, `memory-soak`, `chromium-memory`, `native-media-retention`, `resource-investigation`, `av-sync-browser` | Süre, bellek ve GPU ölçer veya uzun sürer; paylaşımlı CI makinesinde sonuç anlamlı değildir |
-| Yerel: gerçek site | `kick-site-acceptance`, `live-filter-performance`, `live-player-*`, `videojs-site-acceptance`, `puhu-retry-acceptance` | Dış siteye bağlıdır, hesap ve bot koruması değişkendir |
+| Yerel: gerçek site | `kick-site-acceptance`, `youtube-ad-acceptance`, `live-filter-performance`, `live-player-*`, `videojs-site-acceptance`, `puhu-retry-acceptance` | Dış siteye bağlıdır, hesap ve bot koruması değişkendir |
 | Yerel: geniş fixture | `browser-integration`, `firefox-integration` | Üretilmiş medya ve özel tarayıcı yolları ister; ana davranışları CI'daki testler kapsar |
 | Kenarda, çalıştırılmadı | `av-live-probe`, `prepare-av-live-copy`, `av-live-copy-check` | Reddedilen I-07 planının taslakları (PROJECT_HANDOFF.md §8) |
 
