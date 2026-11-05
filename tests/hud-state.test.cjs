@@ -14,7 +14,7 @@ test('remote audio snapshots update selected buttons and accessibility state in 
     remoteRequests:new Map(),getActiveContainer:()=>target,setUiText(el,text){if(el)el.textContent=text;},
     syncRemoteFilters(){},subtitleAppearance:{},updateVolumeSliderVisualGain(){},updateFilterUiBadges(){},
     updateSubtitleAppearanceControls(){},renderRemoteQualities(){},renderRemoteTargets(){},
-    setHudCollapsed(){},setNoVideoAlertVisible(){},renderFrameLossNotice(){},setUiTipStop(){},adapterTip(){return null;},updatePipButtonsState(){}});
+    setHudCollapsed(){},setNoVideoAlertVisible(){},renderFrameLossNotice(){},updateSubtitleExplanation(){},setUiTipStop(){},adapterTip(){return null;},updatePipButtonsState(){}});
   // Use the real renderer; a new shared helper is loaded when present.
   if(source.includes('  function syncAudioModeUi('))vm.runInContext(section('  function syncAudioModeUi(','  function syncLocalMediaHud'),context);
   vm.runInContext(section('  function renderRemoteHud()','  function renderRemoteQualities'),context);

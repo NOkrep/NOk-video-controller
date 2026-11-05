@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.17
+ * injected.css - FilmDeck by NOk v0.7.18
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1426,6 +1426,8 @@
 #pvc-controller-popup .pvc-tooltip[data-open] { opacity: 1 !important; transform: none !important; }
 #pvc-controller-popup .pvc-tooltip[data-instant] { transition-duration: 0s !important; }
 #pvc-controller-popup .pvc-tooltip[hidden] { display: none !important; }
+#pvc-controller-popup #pvc-sub-why { margin: 0 0 6px !important; }
+#pvc-controller-popup #pvc-sub-why[hidden] { display: none !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion .pvc-tooltip { transition: none !important; transform: none !important; }
 #pvc-controller-popup.pvc-a11y-large-text .pvc-tooltip { font-size: 14px !important; max-width: min(320px, calc(100vw - 16px)) !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion .pvc-loading-grid { display: none !important; }

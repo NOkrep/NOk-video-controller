@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.17**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.18**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, I-11, D-06.
 - **Codex'te:** I-13.
@@ -14,13 +14,29 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 
+## I-11 altyazının neden görünmediğini söyleme, v0.7.18 — 6 Kasım 2026
+
+**Durum: kısmi.** Kaynak rapor #96: altyazı yüklendikten sonra video bir süre yüklenmedi; raporda `readyState: 1` ve `no-active-cue` var, kullanıcı kendi internetinden olabileceğini de yazmış.
+
+- **Eklenen:** Altyazı sekmesinde, dosya yüklüyken ekranda satır yoksa nedeni yazar: gizli, video yok, video görünür alanda değil, tarayıcının kendi yüzeyinde, video yükleniyor, şu an satır yok ve sıradaki satırın süresi, dosya bitti. Duran video "yükleniyor" sayılmaz. Gömülü oynatıcıdan panele yalnız sayı ve evet/hayır gider, satır metni gitmez, rapora girmez.
+- **Düzeltilen:** Panel kapalıyken video öğesi değişirse altyazı duruyordu, çünkü yeni öğede dinleyici yoktu; video kaybolursa son satır ekranda kalabiliyordu. Basış sonrası mevcut 750 ms döngüsü dosya yüklüyken bunu da yapar. Yeni zamanlayıcı yok.
+- **Kanıt:** 281/281 Node; yeni testler önce kırmızı. Yerel tarayıcıda çalıştırılmadı, kullanıcı bu sırada bilgisayarı kullanıyordu; CI sonucu görülmedi.
+- **Açık, ölçülmedi:** Altyazı yüklemenin videoyu durdurup durdurmadığı. Yerel video, TRT ve Puhu üzerinde önce/sonra ölçümü kullanıcı isteğiyle durduruldu, sonuç yok. Olası maliyetler (yüklemede ve senkron kaydırmada tüm satırların yeniden yazılması, oynatıcının yeni metin izine tepkisi) kanıtsız değiştirilmedi. Yeni satırın görsel kontrolü de bekliyor.
+
+## TRT hız koruması gerçek sayfada doğrulandı — 6 Kasım 2026
+
+Kullanıcının verdiği, TRT'nin kendi oynatıcısını kullanan sayfa; geçici profil, hesap yok, iki motor, içerik adı kaydedilmedi. Kod değişmedi.
+
+- **Sonuç:** `TrtAdapter`, Shaka, 5 kalite. 2x 60 sn tuttu; 60 sn ileri atlamadan ve 480p seçiminden sonra da tuttu (çözülen görüntü 480p). `TRT_RATE_INTERCEPTED` kaydı korumanın gerçekten çalıştığını gösteriyor. 1x'e dönünce koruma bırakıldı (`playbackRate` öğeden kalktı).
+- **Sınır:** Tek sayfa; yayın boyunca uzun süre veya reklam kuşağı denenmedi.
+
 ## CI'da Firefox rapor testi ve hareket azaltma, v0.7.17 — 6 Kasım 2026
 
 - **Belirti:** v0.7.15 ve v0.7.16'da `Browser smoke (firefox)` `report` adımında düştü; o adımdan sonraki `frame-loss` ve `tooltip` CI Firefox'ta çalışmadı. Chromium işi geçti. Günlük oturum istediği için okunamadı, adım adı API'den alındı.
 - **Neden (yerelde üretildi):** Panel hareket azaltma ayarını işletim sisteminden alır. D-08 ve D-09 testleri başta kapalı varsayıp tersine çeviriyordu. Firefox profiline işletim sistemi tercihi verilince aynı test düştü. CI makinesinin tercihi doğrudan görülmedi; kanıt bu üretim ve yalnız Firefox'un düşmesidir.
 - **Düzeltme:** Testler başta ayarı kapatır. `--os-reduced-motion=true` ile yerelde sınanabilir.
 - **Bulunan ürün hatası:** Hareket azaltma açıkken işaretli onay kutusunun çizim geçişi kapanmıyordu, işaretli durum kuralı daha ağır basıyordu. Düzeltildi; test önce kırmızı (`0.2s`, `0.3s`), sonra yeşil.
-- **Kanıt:** `report`, `frame-loss`, `tooltip` Firefox'ta işletim sistemi tercihi açıkken ve Chromium'da geçti; `report` ve `tooltip` Firefox'ta tercih kapalıyken de geçti. Uzak CI sonucu commit sonrasına kaldı.
+- **Kanıt:** `report`, `frame-loss`, `tooltip` Firefox'ta işletim sistemi tercihi açıkken ve Chromium'da geçti; `report` ve `tooltip` Firefox'ta tercih kapalıyken de geçti. `04eba36` için uzak CI'da yedi işin hepsi geçti; `frame-loss` ve `tooltip` CI Firefox'ta ilk kez çalıştı.
 - **CI-2:** Kullanıcı `Browser media` kontrollerini `main` kuralına ekledi (6 Kasım).
 
 ## D-09 panel tooltip'i, v0.7.16 — 6 Kasım 2026

@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.17 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.18 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.17';
+  const EXTENSION_VERSION = '0.7.18';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -332,6 +332,13 @@
     'Sürüm {0}': 'Version {0}',
     'Video ve altyazı kontrolleri.': 'Video and subtitle controls.',
     'MIT lisansı · Kaynak kodu': 'MIT license · Source code',
+    'Altyazı gizli.': 'Subtitles are hidden.',
+    'Video bulunamadı; altyazı video gelince görünür.': 'No video found; subtitles appear when one arrives.',
+    'Video görünür alanda değil; altyazı video görününce çıkar.': 'The video is off screen; subtitles appear when it is visible.',
+    'Altyazı tarayıcının kendi oynatıcı yüzeyinde gösteriliyor.': 'Subtitles are showing on the browser’s own player surface.',
+    'Video yükleniyor; altyazı video ilerleyince görünür.': 'The video is loading; subtitles appear when it moves on.',
+    'Bu dosyanın satırları bitti; video dosyadan uzun olabilir.': 'This file has no more lines; the video may be longer than the file.',
+    'Şu an satır yok. Sıradaki satır {0} sonra.': 'No line right now. Next line in {0}.',
     'Siteye özel bağlantı: hız, ses ve kalite sitenin kendi oynatıcısı üzerinden kontrol edilir.': 'Site-specific connection: speed, volume and quality go through the site’s own player.',
     'Oynatıcı kütüphanesi bağlantısı: kalite listesi oynatıcının bildirdiği seviyelerden gelir.': 'Player library connection: the quality list comes from the levels the player reports.',
     'Evrensel mod: yalnız sayfadaki video öğesi kontrol edilir; kalite seçeneği olmayabilir.': 'Universal mode: only the page’s video element is controlled; quality options may be unavailable.',
@@ -1182,7 +1189,7 @@
       requestedIndex: qualities.findIndex(item => item.id === qualityControlState.request?.id),
       decodedMatch: request.decodedMatch, renditionMatch: request.renditionMatch, playlistMapping: request.playlistMapping,
       subtitleLoaded: customSubtitleCues.length > 0, subtitleEnabled: subtitleOverlayEnabled,
-      subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs,
+      subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs, ...subtitleFrameState(video),
       appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
       candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo),
       frameLoss: frameLossState()
@@ -1407,6 +1414,7 @@
     text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
     document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
     text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
+    updateSubtitleExplanation(null);
     const drmBadge = document.getElementById('pvc-drm-status-badge'); if (drmBadge) drmBadge.style.display = state.drm ? 'block' : 'none';
     setNoVideoAlertVisible(!state.hasVideo);
     renderFrameLossNotice();
@@ -3377,6 +3385,11 @@
         const selection = findVideoAndPlayer();
         adLifecycle.tick(selection, hasSelectedAdMarker(selection.video));
         checkFrameLoss(frameLossPanelOpen() ? selection.video : null);
+        // A replaced element has no listeners yet, and with no video the last line must not stay on screen.
+        if (customSubtitleCues.length) {
+          if (selection.video) monitorVideoResolution(selection.video);
+          renderCustomSubtitleCue(selection.video);
+        }
       }
       adWatchTimer = setTimeout(tick, 750);
     };
@@ -4065,6 +4078,43 @@
   }
   // END SUBTITLE APPEARANCE
 
+  // SUBTITLE EXPLANATION: says why nothing is on screen. Times and states only, never a line of the file.
+  function formatCueDelay(seconds) {
+    const total = Math.max(1, Math.ceil(seconds)), hours = Math.floor(total / 3600), minutes = Math.floor(total / 60) % 60;
+    const rest = String(total % 60).padStart(2, '0');
+    return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
+  }
+  // Seconds until the next line starts, or -1 when none is left.
+  function nextCueDelay(cues, time) {
+    const next = cues.find(cue => cue.start > time);
+    return next ? next.start - time : -1;
+  }
+  function subtitleExplanation(status, buffering, nextIn) {
+    if (status === 'disabled') return 'Altyazı gizli.';
+    if (status === 'no-video') return 'Video bulunamadı; altyazı video gelince görünür.';
+    if (status === 'video-offscreen') return 'Video görünür alanda değil; altyazı video görününce çıkar.';
+    if (status === 'native-requested') return 'Altyazı tarayıcının kendi oynatıcı yüzeyinde gösteriliyor.';
+    if (status !== 'no-active-cue') return null;
+    if (buffering) return 'Video yükleniyor; altyazı video ilerleyince görünür.';
+    return nextIn < 0 ? 'Bu dosyanın satırları bitti; video dosyadan uzun olabilir.' : `Şu an satır yok. Sıradaki satır ${formatCueDelay(nextIn)} sonra.`;
+  }
+  function subtitleFrameState(video) {
+    return {
+      subtitleBuffering: !!video && !video.paused && video.readyState < 3,
+      subtitleNextIn: video ? nextCueDelay(customSubtitleCues, video.currentTime - subtitleOffsetMs / 1000) : -1
+    };
+  }
+  function updateSubtitleExplanation(video) {
+    const line = document.getElementById('pvc-sub-why');
+    if (!line) return;
+    const state = remotePresentation, loaded = state ? state.subtitleLoaded : customSubtitleCues.length > 0;
+    const media = state || subtitleFrameState(video);
+    const text = loaded ? subtitleExplanation(state ? state.subtitleStatus : subtitleRenderStatus, media.subtitleBuffering, media.subtitleNextIn) : null;
+    if (text) setUiText(line, text);
+    line.hidden = !text;
+  }
+  // END SUBTITLE EXPLANATION
+
   function ensureSubtitleOverlayElement() {
     let overlay = document.getElementById('pvc-subtitle-overlay');
     if (!overlay) {
@@ -4076,6 +4126,10 @@
   }
 
   function renderCustomSubtitleCue(video) {
+    drawSubtitleCue(video);
+    updateSubtitleExplanation(video);
+  }
+  function drawSubtitleCue(video) {
     const overlay = document.getElementById('pvc-subtitle-overlay');
     if (!video || !subtitleOverlayEnabled || customSubtitleCues.length === 0) {
       subtitleRenderStatus = !subtitleOverlayEnabled ? 'disabled' : customSubtitleCues.length === 0 ? 'not-loaded' : 'no-video';
@@ -5960,6 +6014,7 @@
           <div id="pvc-sub-status-text" style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             Yüklü altyazı yok (Sıfır Depolama RAM Modu)
           </div>
+          <p id="pvc-sub-why" class="pvc-settings-note" hidden></p>
           <div class="pvc-btn-grid-3">
             <button id="pvc-sub-sync-m100" class="pvc-action-btn" title="Altyazıyı 100ms geri çek">${uiLabel('rewind', '-100ms')}</button>
             <button id="pvc-sub-sync-reset" class="pvc-action-btn" title="Senkron kaymasını sıfırla">0ms Sıfırla</button>
