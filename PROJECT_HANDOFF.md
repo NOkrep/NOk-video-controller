@@ -128,7 +128,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 
 ## 8. Sıradaki öneri ve eklenecek hedef metni
 
-**Kullanıcının seçtiği sonraki işler (5 Kasım):** D-06, I-11, I-03, I-04, I-05, I-09, B6-C (canlı test yolu) ve CI-2 (`Browser media` işini zorunlu kontrole almak); sırayı Claude önerir, başlangıç kullanıcının molasından sonradır. I-13 Codex'te. I-10 canlı oturumlara dahil edildi. D-08: rapor penceresi animasyonları ve geniş eklemeler için önce performans ölçümü. D-09: tooltip yapılacak, form bekliyor. Sürüm kuralının kesin hali (B5) bekliyor. Kullanıcı ek istekler ve tersine mühendislik araçları yazacak; araçlar güvenlik akışından geçmeden kullanılmaz.
+**Kullanıcının seçtiği sonraki işler (5 Kasım):** D-06, I-11, I-03, I-04, I-05, I-09, B6-C (canlı test yolu) ve CI-2 (`Browser media` işini zorunlu kontrole almak); sırayı Claude önerir, başlangıç kullanıcının molasından sonradır. I-13 Codex'te. I-10 canlı oturumlara dahil edildi. D-08: rapor penceresi animasyonları, geniş eklemeler için önce performans ölçümü ve sürekli kare kaybında animasyon/filtre azaltmayı öneren bildirim (kendiliğinden kapatmaz, yalnız panel açıkken ölçer, reddedilince tekrar sormaz; CPU/RAM okunmaz). D-09: tooltip yapılacak, form bekliyor. Sürüm kuralının kesin hali (B5) bekliyor. Kullanıcının verdiği dokuz araç incelendi (`D:/NOk-Tools/reports/security/candidates-2026-11-05/REVIEW.md`): `karpathy-guidelines` dışında hiçbiri onaylı değil, hiçbiri kurulmadı.
 
 **Kullanıcının seçtiği öncelikler (4 Kasım):** Codex kendi araç sistemi notlarını kapattı ve yedi beceri kapsamının onayını yeniledi (`D:/NOk-Tools/AGENT_NOTES.md` N-001, N-004, N-006; geçerlilik 11 Kasım akşamına kadar). Claude şu işleri ele alır:
 
