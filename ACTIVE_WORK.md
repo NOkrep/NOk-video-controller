@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.18**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.18**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -13,6 +13,14 @@
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+
+## v0.7.18 pre-release hazırlığı — 6 Kasım 2026
+
+Kullanıcı istedi; `main` `faa9f8d` üzerinden. Mağazaya gönderilmedi (`storeStatus: not-submitted`). Notlar: RELEASE_NOTES_v0.7.18.md.
+
+- **Paketler:** `NOk-Release-Core` `package filmdeck` ile Chrome ve Firefox ayrı ZIP; `npm run check` komut içinde geçti. Git dışı `NOk-FilmDeck-Release/artifacts/` altında (`0.7.18-3f8f631d97fd`, `0.7.18-db738b2012e3`); eski arşivlere dokunulmadı, o depoya commit atılmadı.
+- **Denetim:** Ürün dosyaları ve lisans bildirimleri kaynakla bayt bayt aynı. Fazla dosya yok. Taramada çıkan tek kişisel veri raporun e-posta seçeneğindeki geliştirici adresi; v0.7.0'dan beri kaynakta açık. İki ZIP açılıp kurularak denendi: panel, sürüm, rapor, gerçek videoda hız ve filtre.
+- **Yayın:** GitHub pre-release'i kullanıcı kendi hesabıyla oluşturur (`gh` yok, ajan hesaba girmez). Tag `v0.7.18-pre_release`, hedef `main`.
 
 ## I-11 altyazının neden görünmediğini söyleme, v0.7.18 — 6 Kasım 2026
 
