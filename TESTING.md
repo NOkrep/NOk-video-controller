@@ -60,6 +60,8 @@ Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromi
 
 `tooltip-browser.cjs`, panel tooltip'ini gerçek fare ve klavyeyle sınar: gecikme, ekranda kalma ve paneli kaydırma alanından taşma, yan öğeye hemen geçiş, imlecin metne gidebilmesi, Esc'in yalnız tooltip'i kapatması, Tab ile ulaşma, açık metnin dil ayarını izlemesi, azaltılmış hareket, gömülü oynatıcının durumunu üst panelde açıklama. Dokunmatik kısmı sentetik `PointerEvent` kullanır; gerçek telefon kabulü değildir. Ekran okuyucu kabulü de değildir, yalnız `aria-describedby` bağlantısı sınanır. Kalite düğmesi ve durum satırı açıklamaları gerçek Video.js ile `quality-mapping-browser.cjs` içinde sınanır.
 
+`subtitle-browser.cjs`, Altyazı sekmesindeki açıklamayı üst sayfada ve ayrı kökenli iframe'de sınar: boş aralık ve sıradaki satır, dil, duran ve duraklatılmış video ayrımı, gizli, dosya sonu, satır görünürken sessizlik, satır metninin açıklamaya girmemesi. Panel kapalıyken video öğesi değişince altyazının yeni videoyu izlemesini ve video kalkınca satırın kalmamasını da sınar. Sentetik akış ve dosya kullanır; gerçek site görsel kontrolü değildir.
+
 Panel "hareket azaltma" ayarını başlangıçta işletim sisteminden alır ve CI'daki Windows Server'da Firefox bunu açık görebilir. Bu yüzden animasyon sınayan testler önce ayarı kapatır. `--os-reduced-motion=true` Firefox test profilinde aynı durumu yerelde kurar.
 
 ## Animasyon ve reklam denetimi ölçümü (D-08)
@@ -70,7 +72,7 @@ Panel "hareket azaltma" ayarını başlangıçta işletim sisteminden alır ve C
 
 | Yer | Testler | Neden |
 |---|---|---|
-| Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `volume-mirror`, `pip`, `startup`, `report`, `frame-loss`, `tooltip` | Üretilmiş dosya istemez, kısa sürer |
+| Zorunlu CI (`Browser smoke`) | `ui-smoke`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `cdn-measure`, `volume-mirror`, `pip`, `startup`, `report`, `frame-loss`, `tooltip`, `subtitle` | Üretilmiş dosya istemez, kısa sürer |
 | Zorunlu olmayan CI (`Browser media`) | `quality-mapping`, `hls-early-attach`, `ad-lifecycle` | Sunucunun H.264 desteğine ve sabitlenmiş Video.js/Hls.js indirmesine bağlı |
 | Yerel: ölçüm | `filter-performance`, `report-performance`, `animation-performance`, `memory-soak`, `chromium-memory`, `native-media-retention`, `resource-investigation`, `av-sync-browser` | Süre, bellek ve GPU ölçer veya uzun sürer; paylaşımlı CI makinesinde sonuç anlamlı değildir |
 | Yerel: gerçek site | `kick-site-acceptance`, `youtube-ad-acceptance`, `live-filter-performance`, `live-player-*`, `videojs-site-acceptance`, `puhu-retry-acceptance` | Dış siteye bağlıdır, hesap ve bot koruması değişkendir |

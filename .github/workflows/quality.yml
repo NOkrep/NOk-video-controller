@@ -76,6 +76,8 @@ jobs:
         run: node tests/frame-loss-browser.cjs --engine=${{ matrix.engine }}
       - name: Test the panel tooltip with pointer, keyboard and touch
         run: node tests/tooltip-browser.cjs --engine=${{ matrix.engine }}
+      - name: Test the subtitle explanation and a replaced video
+        run: node tests/subtitle-browser.cjs --engine=${{ matrix.engine }}
 
   # Separate from the required smoke job: it depends on the runner's H.264 support and a pinned download.
   media:

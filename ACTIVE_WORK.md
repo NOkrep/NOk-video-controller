@@ -5,8 +5,8 @@
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
 - **Sürüm:** Kaynak sürümü **v0.7.18**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
-- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11.
-- **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, I-11, D-06.
+- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
+- **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
 - **Kapandı:** D-07; finalist seçilmeyecek, 20 tema kalıyor.
 - **Karar bekliyor:** B5 kesin sürüm kuralı.
@@ -16,12 +16,15 @@
 
 ## I-11 altyazının neden görünmediğini söyleme, v0.7.18 — 6 Kasım 2026
 
-**Durum: kısmi.** Kaynak rapor #96: altyazı yüklendikten sonra video bir süre yüklenmedi; raporda `readyState: 1` ve `no-active-cue` var, kullanıcı kendi internetinden olabileceğini de yazmış.
+**Durum: yerel kapsam tamam (tarayıcı kabulü aynı gün, kod değişmeden; #96'nın o anı yeniden üretilemedi).** Kaynak rapor #96: altyazı yüklendikten sonra video bir süre yüklenmedi; raporda `readyState: 1` ve `no-active-cue` var, kullanıcı kendi internetinden olabileceğini de yazmış.
 
 - **Eklenen:** Altyazı sekmesinde, dosya yüklüyken ekranda satır yoksa nedeni yazar: gizli, video yok, video görünür alanda değil, tarayıcının kendi yüzeyinde, video yükleniyor, şu an satır yok ve sıradaki satırın süresi, dosya bitti. Duran video "yükleniyor" sayılmaz. Gömülü oynatıcıdan panele yalnız sayı ve evet/hayır gider, satır metni gitmez, rapora girmez.
 - **Düzeltilen:** Panel kapalıyken video öğesi değişirse altyazı duruyordu, çünkü yeni öğede dinleyici yoktu; video kaybolursa son satır ekranda kalabiliyordu. Basış sonrası mevcut 750 ms döngüsü dosya yüklüyken bunu da yapar. Yeni zamanlayıcı yok.
-- **Kanıt:** 281/281 Node; yeni testler önce kırmızı. Yerel tarayıcıda çalıştırılmadı, kullanıcı bu sırada bilgisayarı kullanıyordu; CI sonucu görülmedi.
-- **Açık, ölçülmedi:** Altyazı yüklemenin videoyu durdurup durdurmadığı. Yerel video, TRT ve Puhu üzerinde önce/sonra ölçümü kullanıcı isteğiyle durduruldu, sonuç yok. Olası maliyetler (yüklemede ve senkron kaydırmada tüm satırların yeniden yazılması, oynatıcının yeni metin izine tepkisi) kanıtsız değiştirilmedi. Yeni satırın görsel kontrolü de bekliyor.
+- **Kanıt:** 281/281 Node; yeni testler önce kırmızı. Yeni `subtitle-browser` iki motorda geçti; değişen video düzeltmesi geçici olarak çıkarılınca tam o adımda düştü. `0972024` için uzak CI'da yedi iş geçti (o sırada `subtitle-browser` CI'da değildi, sonra eklendi). Görsel kontrol Edge'de TRT sayfasında: açıklama satırı ve oynatıcının üstünde çizilen satır.
+- **Ölçüm, altyazı yüklemek videoyu durduruyor mu:** Bu ölçümde hayır. Aynı oynatmada yüklemeden önce ve sonra 15'er sn; TRT, Puhu ve yerel video, iki motor, 2000 satır. Sonrasında bekleme olayı 0, `readyState` hep 4, medya 15 sn'de 15 sn ilerledi, kalite listesi aynı kaldı. Yükleme 8-11 ms. TRT'de sitenin kendi metin izi de varken değişiklik yok.
+- **Ağır dosya:** 20.000 satırda (gömülü oynatıcı sınırı) yükleme Firefox 331 ms, Edge 11 ms; +100 ms senkron kaydırma Firefox 369 ms, Edge 132 ms sayfayı tutar, video durmadı. 2000 satırda 13 ms'nin altında. Gerçekçi dosya boyutu olmadığı için değiştirilmedi.
+- **Sınır:** #96'daki bekleme (eski sürüm 0.7.0.1, `readyState: 1`) yeniden üretilemedi. Kullanıcının tahmin ettiği gibi ağ kaynaklı olabilir, bu kanıtlanmış değildir. Tek tur, kısa pencere; zayıf bağlantı ve her içerik denenmedi.
+- **Görülen, değiştirilmeyen:** İngilizce bildirimde tek satırlı dosyada "1 cues" yazıyor. Varsayılan altyazı konumu sitenin alt kontrolleriyle üst üste gelebiliyor; konum ayarı zaten var.
 
 ## TRT hız koruması gerçek sayfada doğrulandı — 6 Kasım 2026
 
