@@ -28,7 +28,8 @@ function checkExtension(root, {tag, baseVersion, trackedFiles = []} = {}) {
   if (!read('THIRD_PARTY_NOTICES.md').trim()) throw Error('Third-party license notices must be retained.');
   if (read('injected.js').match(/const EXTENSION_VERSION = '([^']+)'/)?.[1] !== version) throw Error('Engine version differs from manifest.');
   if (!read('README.md').split('\n')[0].includes(`(v${version} `)) throw Error('README version differs from manifest.');
-  if (tag && tag !== `v${version}`) throw Error('Version tag differs from manifest.');
+  // A label such as -pre_release is allowed; the version it names must still be exact.
+  if (tag && !(tag === `v${version}` || (tag.startsWith(`v${version}-`) && /^[A-Za-z0-9._-]+$/.test(tag.slice(version.length + 2))))) throw Error('Version tag differs from manifest.');
   if (baseVersion) {
     const base = versionParts(baseVersion);
     const first = parts.findIndex((part, i) => part !== base[i]);
@@ -75,7 +76,11 @@ if (require.main === module) {
     let baseVersion;
     if (base && !/^0+$/.test(base)) {
       if (!/^[a-f0-9]{40}$/i.test(base)) throw Error('Invalid Git base SHA.');
-      baseVersion = JSON.parse(execFileSync('git', ['show', `${base}:manifest.json`], {cwd:root, encoding:'utf8'})).version;
+      // A force push leaves the previous commit out of the clone. The pull request run still compares against its real base.
+      let available = true;
+      try { execFileSync('git', ['cat-file', '-e', `${base}^{commit}`], {cwd:root, stdio:'ignore'}); }
+      catch (_) { available = false; console.warn(`Git base ${base.slice(0, 7)} is not available; skipping the version comparison.`); }
+      if (available) baseVersion = JSON.parse(execFileSync('git', ['show', `${base}:manifest.json`], {cwd:root, encoding:'utf8'})).version;
     }
     const ref = process.env.GITHUB_REF || '';
     const result = checkExtension(root, {trackedFiles, baseVersion, tag:ref.startsWith('refs/tags/v') ? ref.slice('refs/tags/'.length) : undefined});

@@ -20,7 +20,16 @@ Kullanıcı istedi; `main` `faa9f8d` üzerinden. Mağazaya gönderilmedi (`store
 
 - **Paketler:** `NOk-Release-Core` `package filmdeck` ile Chrome ve Firefox ayrı ZIP; `npm run check` komut içinde geçti. Git dışı `NOk-FilmDeck-Release/artifacts/` altında (`0.7.18-3f8f631d97fd`, `0.7.18-db738b2012e3`); eski arşivlere dokunulmadı, o depoya commit atılmadı.
 - **Denetim:** Ürün dosyaları ve lisans bildirimleri kaynakla bayt bayt aynı. Fazla dosya yok. Taramada çıkan tek kişisel veri raporun e-posta seçeneğindeki geliştirici adresi; v0.7.0'dan beri kaynakta açık. İki ZIP açılıp kurularak denendi: panel, sürüm, rapor, gerçek videoda hız ve filtre.
-- **Yayın:** GitHub pre-release'i kullanıcı kendi hesabıyla oluşturur (`gh` yok, ajan hesaba girmez). Tag `v0.7.18-pre_release`, hedef `main`.
+- **Yayın:** Kullanıcı kendi hesabıyla yayınladı (6 Kasım): `v0.7.18-pre_release`, pre-release işaretli, `0bddeaa` üzerinde. Paketler `faa9f8d` durumundan üretildi; arada yalnız belgeler ve test sürücüsü değişti. GitHub'dan indirilen iki ZIP'in SHA-256 değeri notlardakiyle aynı. Mağazaya gönderilmedi.
+
+## Sürüm kontrolü: etiketli tag ve zorla güncellenen dal — 6 Kasım 2026
+
+Ürün kodu değişmedi, sürüm artmadı. `scripts/check-extension.cjs` iki durumda yanlış alarm veriyordu.
+
+- **Etiketli tag:** Kural v0.7.7'de eklenmiş, `v0.7.18-pre_release` adını reddediyordu (#96). Bu adı ajan önermişti. Artık `v<sürüm>` veya `v<sürüm>-<etiket>` kabul edilir; sürüm yine tam eşleşmelidir. Yerelde aynı mesaj üretildi.
+- **Zorla güncellenen dal:** Dependabot dalı (#108) her güncellemede zorla yazılıyor; önceki commit klonda olmadığı için push koşusu düşüyordu (#76, #90). PR koşuları geçiyordu. Artık o commit yoksa uyarı yazar ve yalnız sürüm karşılaştırmasını atlar; PR koşusu gerçek tabana karşı karşılaştırmaya devam eder. Yerelde aynı hata üretildi; CI günlüğü okunmadı.
+- **Kanıt:** 284/284 Node; üç yeni test önce kırmızı. Uzak CI görülmedi.
+- **Sınır:** `v0.7.18-pre_release` tag'i eski betiği içeren `0bddeaa`'yı gösterir, #96 yeniden çalıştırılsa da düşer. Yayın ve ZIP'ler bundan etkilenmez, tag taşınmadı. #108 ancak `main` bu düzeltmeyi aldıktan ve Dependabot dalı yenilendikten sonra push kontrolünü geçer.
 
 ## CI'da Firefox sürücü başlangıç zaman aşımı — 6 Kasım 2026
 
