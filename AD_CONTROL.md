@@ -50,6 +50,7 @@ Geçici profil, hesap yok, iki motor. Akış: basmadan bekle, bir kez bas, panel
 - **Puhu, geç basış:** Sayfa yüklenip 25 saniye sonra basıldı. v0.7.12 ile v0.7.13 aynı içeriklerde aynı listeyi verdi (Chromium üç içerik, Firefox bir içerik). Yeniden deneme iki motorda sayfa yüklenirken yakalanan adresi kullandı. Bir içerikte iki sürümde de `0 levels` görüldü; bu değişiklikten gelmiyor, v0.7.14'te düzeltildi (ACTIVE_WORK.md).
 - **Kick, erken yakalama:** Basılmadan önce IVS oynatıcısı iki motorda videoya bağlı bulundu; basışta `KickAdapter` ve 5 seviye geldi. TRT ve Now gerçek sitede ayrıca sınanmadı; kancaları aynı yerde, motor yüklenirken kurulur.
 - **Sınır:** Sayfanın ilk reklamı basılana kadar normal hızda ve sesli oynar. Bu, kararın bilinen sonucudur.
+- **Sürekli maliyet (v0.7.15'te ölçüldü):** Gerçek sayfada tick başına medyan Firefox 2 ms, Edge 0,2 ms; 30 sn'de toplam 139 ve 85 ms. Ayrıntı ANIMATION_PERFORMANCE.md.
 
 ## Doğrulama sınırı
 

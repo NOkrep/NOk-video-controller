@@ -4,15 +4,64 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.14**, `claude/workTogether` dalında; `main` `0.7.11` (#117). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
-- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-10, D-11.
-- **Seçildi, Claude'da (sıra):** CI-2, B6-C, I-03, I-04, I-05, I-09 ve I-10, D-08, D-09 (tooltip), I-11, D-06.
+- **Sürüm:** Kaynak sürümü **v0.7.18**, `claude/workTogether` dalında; `main` `0.7.14` (#118). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
+- **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
 - **Kapandı:** D-07; finalist seçilmeyecek, 20 tema kalıyor.
 - **Karar bekliyor:** B5 kesin sürüm kuralı.
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+
+## I-11 altyazının neden görünmediğini söyleme, v0.7.18 — 6 Kasım 2026
+
+**Durum: yerel kapsam tamam (tarayıcı kabulü aynı gün, kod değişmeden; #96'nın o anı yeniden üretilemedi).** Kaynak rapor #96: altyazı yüklendikten sonra video bir süre yüklenmedi; raporda `readyState: 1` ve `no-active-cue` var, kullanıcı kendi internetinden olabileceğini de yazmış.
+
+- **Eklenen:** Altyazı sekmesinde, dosya yüklüyken ekranda satır yoksa nedeni yazar: gizli, video yok, video görünür alanda değil, tarayıcının kendi yüzeyinde, video yükleniyor, şu an satır yok ve sıradaki satırın süresi, dosya bitti. Duran video "yükleniyor" sayılmaz. Gömülü oynatıcıdan panele yalnız sayı ve evet/hayır gider, satır metni gitmez, rapora girmez.
+- **Düzeltilen:** Panel kapalıyken video öğesi değişirse altyazı duruyordu, çünkü yeni öğede dinleyici yoktu; video kaybolursa son satır ekranda kalabiliyordu. Basış sonrası mevcut 750 ms döngüsü dosya yüklüyken bunu da yapar. Yeni zamanlayıcı yok.
+- **Kanıt:** 281/281 Node; yeni testler önce kırmızı. Yeni `subtitle-browser` iki motorda geçti; değişen video düzeltmesi geçici olarak çıkarılınca tam o adımda düştü. `0972024` için uzak CI'da yedi iş geçti (o sırada `subtitle-browser` CI'da değildi, sonra eklendi). Görsel kontrol Edge'de TRT sayfasında: açıklama satırı ve oynatıcının üstünde çizilen satır.
+- **Ölçüm, altyazı yüklemek videoyu durduruyor mu:** Bu ölçümde hayır. Aynı oynatmada yüklemeden önce ve sonra 15'er sn; TRT, Puhu ve yerel video, iki motor, 2000 satır. Sonrasında bekleme olayı 0, `readyState` hep 4, medya 15 sn'de 15 sn ilerledi, kalite listesi aynı kaldı. Yükleme 8-11 ms. TRT'de sitenin kendi metin izi de varken değişiklik yok.
+- **Ağır dosya:** 20.000 satırda (gömülü oynatıcı sınırı) yükleme Firefox 331 ms, Edge 11 ms; +100 ms senkron kaydırma Firefox 369 ms, Edge 132 ms sayfayı tutar, video durmadı. 2000 satırda 13 ms'nin altında. Gerçekçi dosya boyutu olmadığı için değiştirilmedi.
+- **Sınır:** #96'daki bekleme (eski sürüm 0.7.0.1, `readyState: 1`) yeniden üretilemedi. Kullanıcının tahmin ettiği gibi ağ kaynaklı olabilir, bu kanıtlanmış değildir. Tek tur, kısa pencere; zayıf bağlantı ve her içerik denenmedi.
+- **Görülen, değiştirilmeyen:** İngilizce bildirimde tek satırlı dosyada "1 cues" yazıyor. Varsayılan altyazı konumu sitenin alt kontrolleriyle üst üste gelebiliyor; konum ayarı zaten var.
+
+## TRT hız koruması gerçek sayfada doğrulandı — 6 Kasım 2026
+
+Kullanıcının verdiği, TRT'nin kendi oynatıcısını kullanan sayfa; geçici profil, hesap yok, iki motor, içerik adı kaydedilmedi. Kod değişmedi.
+
+- **Sonuç:** `TrtAdapter`, Shaka, 5 kalite. 2x 60 sn tuttu; 60 sn ileri atlamadan ve 480p seçiminden sonra da tuttu (çözülen görüntü 480p). `TRT_RATE_INTERCEPTED` kaydı korumanın gerçekten çalıştığını gösteriyor. 1x'e dönünce koruma bırakıldı (`playbackRate` öğeden kalktı).
+- **Sınır:** Tek sayfa; yayın boyunca uzun süre veya reklam kuşağı denenmedi.
+
+## CI'da Firefox rapor testi ve hareket azaltma, v0.7.17 — 6 Kasım 2026
+
+- **Belirti:** v0.7.15 ve v0.7.16'da `Browser smoke (firefox)` `report` adımında düştü; o adımdan sonraki `frame-loss` ve `tooltip` CI Firefox'ta çalışmadı. Chromium işi geçti. Günlük oturum istediği için okunamadı, adım adı API'den alındı.
+- **Neden (yerelde üretildi):** Panel hareket azaltma ayarını işletim sisteminden alır. D-08 ve D-09 testleri başta kapalı varsayıp tersine çeviriyordu. Firefox profiline işletim sistemi tercihi verilince aynı test düştü. CI makinesinin tercihi doğrudan görülmedi; kanıt bu üretim ve yalnız Firefox'un düşmesidir.
+- **Düzeltme:** Testler başta ayarı kapatır. `--os-reduced-motion=true` ile yerelde sınanabilir.
+- **Bulunan ürün hatası:** Hareket azaltma açıkken işaretli onay kutusunun çizim geçişi kapanmıyordu, işaretli durum kuralı daha ağır basıyordu. Düzeltildi; test önce kırmızı (`0.2s`, `0.3s`), sonra yeşil.
+- **Kanıt:** `report`, `frame-loss`, `tooltip` Firefox'ta işletim sistemi tercihi açıkken ve Chromium'da geçti; `report` ve `tooltip` Firefox'ta tercih kapalıyken de geçti. `04eba36` için uzak CI'da yedi işin hepsi geçti; `frame-loss` ve `tooltip` CI Firefox'ta ilk kez çalıştı.
+- **CI-2:** Kullanıcı `Browser media` kontrollerini `main` kuralına ekledi (6 Kasım).
+
+## D-09 panel tooltip'i, v0.7.16 — 6 Kasım 2026
+
+- **Değişen:** Adaptör rozeti, CDN düğmesi, kalite düğmeleri ve kalite durum satırındaki açıklamalar tarayıcı ipucundan kendi tooltip'imize geçti. Adaptör açıklaması artık seviyesini anlatır; kalite düğmesi ve durum satırı isteğin gerçek durumunu anlatır. Kalite düğmelerindeki "1080p • 1080p" gibi görünen etiketi tekrar eden eski ipucu kaldırıldı, varsa bit hızı yazar. Gömülü oynatıcıda düğmeler için ipucu yoktu, artık var.
+- **Davranış:** Fare 400 ms sonra açar, yana geçişte bekletmez, imleç metne gidebilir, basınca kapanır. Klavye odakta hemen açar, Esc yalnız tooltip'i kapatır. Dokunmatikte düğmede 500 ms basılı tutma işlemi çalıştırmadan açar, rozet ve durumda kısa dokunuş yeter. Rozet ve durum satırı yalnız açıklaması varken Tab ile ulaşılır. Zamanlayıcı ve pencere dinleyicisi yalnız açılırken ve açıkken vardır.
+- **Testle bulunan hata:** Genel azaltılmış hareket kuralı tooltip'e işlemiyordu (aynı ağırlık, önce geliyor); ayrı kural eklendi.
+- **Kanıt:** 268/268 Node; 14 tarayıcı testi iki motorda (28/28), yeni `tooltip` dahil. Kalite açıklamaları gerçek Video.js ile `quality-mapping` içinde. Görsel kontrol Edge'de, büyük yazı ve yüksek kontrast dahil. Uzak CI görülmedi.
+- **Sınır:** Dokunmatik sentetik olaylarla sınandı, gerçek telefonda değil. Ekran okuyucuda dinlenmedi, yalnız `aria-describedby` bağlantısı doğrulandı.
+- **Yan bulgu (değiştirilmedi):** Büyük yazıda "CDN yanıtı" düğmesinde sözcük harf ortasından bölünüyor. Bu değişiklikten gelmiyor.
+
+## D-08 rapor animasyonları, ölçüm ve kare kaybı bildirimi, v0.7.15 — 5 Kasım 2026
+
+Geçici profil, hesap yok, iki motor. Ayrıntı ve tablolar: ANIMATION_PERFORMANCE.md, ANIMATION_DETAILS.md.
+
+- **Rapor penceresi:** Checkbox'ta 0,15 sn gecikmeli çizim, 48 px hover halkası ve hover rengi; metin alanında odakta üst ve alt çizgi. Azaltılmış hareket hepsini kapatır. Metin alanında tam güçteki odak halkası çizgileri örttüğü için soluklaştırıldı; yüksek kontrast kendi halkasını korur.
+- **Kare kaybı bildirimi:** Son 4 pencerede toplam en az %15 ve en az 2 kötü pencere olursa panelde sorar. Kendisi bir şey değiştirmez. "Evet" mevcut azaltılmış hareket ayarını açar ve varsa filtreleri sıfırlar; "Hayır" sayfa yenilenene kadar geçerlidir. Gömülü oynatıcıda ölçüm medyanın çerçevesinde, soru görünen panelde. Yeni zamanlayıcı yok; panel kapalıyken sayaç okunmaz.
+- **Ölçüm sonucu:** Filtreler asıl maliyet (Firefox 3D yaklaşık 1 → 43). Rapor animasyonları ve denenen geniş adaylar bu makinede ölçülebilir kare kaybı vermedi; tek donanım, geniş eklemeler uygulanmadı. Azaltılmış hareket boşta panelde ölçülebilir kazanç vermiyor. Basış sonrası reklam denetimi gerçek sayfada tick başına medyan 0,2-2 ms.
+- **Yan düzeltme:** Rapor kaydırılınca görünmez checkbox'lar yerinde kalıp başka alanların üstüne binebiliyordu.
+- **Kural değişikliği:** İlk kural (art arda 4 kötü pencere) gerçek yükte Edge'de hiç sormadı; dalgalı kayıp için son 4 pencere kuralına geçildi.
+- **Kanıt:** 258/258 Node, 12 tarayıcı testi ve yeni `frame-loss` iki motorda (26/26). Firefox'ta gerçek sayaçlarla bildirim çıktı.
+- **Açık sınır:** Edge'de eşiği aşan gerçek kayıp üretilemedi, sorma yolu orada taklit sayaçla doğrulandı. Ağır yükte Edge video kareleri üretmedi ama çoğunu düşen saymadı, bildirim çıkmadı. Sayaçlar her takılmayı görmez. Uzak CI görülmedi.
 
 ## Puhu eski oynatıcıda boş kalite listesi, v0.7.14 — 5 Kasım 2026
 

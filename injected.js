@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.14 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.18 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.14';
+  const EXTENSION_VERSION = '0.7.18';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -331,7 +331,28 @@
     'FilmDeck Hakkında': 'About FilmDeck',
     'Sürüm {0}': 'Version {0}',
     'Video ve altyazı kontrolleri.': 'Video and subtitle controls.',
-    'MIT lisansı · Kaynak kodu': 'MIT license · Source code'
+    'MIT lisansı · Kaynak kodu': 'MIT license · Source code',
+    'Altyazı gizli.': 'Subtitles are hidden.',
+    'Video bulunamadı; altyazı video gelince görünür.': 'No video found; subtitles appear when one arrives.',
+    'Video görünür alanda değil; altyazı video görününce çıkar.': 'The video is off screen; subtitles appear when it is visible.',
+    'Altyazı tarayıcının kendi oynatıcı yüzeyinde gösteriliyor.': 'Subtitles are showing on the browser’s own player surface.',
+    'Video yükleniyor; altyazı video ilerleyince görünür.': 'The video is loading; subtitles appear when it moves on.',
+    'Bu dosyanın satırları bitti; video dosyadan uzun olabilir.': 'This file has no more lines; the video may be longer than the file.',
+    'Şu an satır yok. Sıradaki satır {0} sonra.': 'No line right now. Next line in {0}.',
+    'Siteye özel bağlantı: hız, ses ve kalite sitenin kendi oynatıcısı üzerinden kontrol edilir.': 'Site-specific connection: speed, volume and quality go through the site’s own player.',
+    'Oynatıcı kütüphanesi bağlantısı: kalite listesi oynatıcının bildirdiği seviyelerden gelir.': 'Player library connection: the quality list comes from the levels the player reports.',
+    'Evrensel mod: yalnız sayfadaki video öğesi kontrol edilir; kalite seçeneği olmayabilir.': 'Universal mode: only the page’s video element is controlled; quality options may be unavailable.',
+    'İstek oynatıcıya iletildi, sonucu bekleniyor.': 'The request reached the player; waiting for the result.',
+    'Oynatıcı bu seçimi doğruladı.': 'The player confirmed this choice.',
+    'Oynatılan görüntünün çözünürlüğü istenenle eşleşiyor.': 'The resolution being played matches the request.',
+    'Oynatıcı bu seviyeyi seçti; görüntünün değiştiği henüz görülmedi.': 'The player selected this level; the picture has not been seen to change yet.',
+    'Görüntü beklenen sürede istenen kaliteye geçmedi. Oynatıcı yine de sonradan geçebilir.': 'The picture did not reach this quality in the expected time. The player may still switch later.',
+    'Oynatıcı bu seçimi uygulamadı.': 'The player did not apply this choice.',
+    'Video kare atlıyor. Panel animasyonları kapatılsın ve görüntü filtreleri sıfırlansın mı?': 'The video is dropping frames. Turn off panel animations and reset picture filters?',
+    'Video kare atlıyor. Panel animasyonları kapatılsın mı?': 'The video is dropping frames. Turn off panel animations?',
+    'Video kare atlıyor. Görüntü filtreleri sıfırlansın mı?': 'The video is dropping frames. Reset picture filters?',
+    'Evet': 'Yes',
+    'Hayır': 'No'
   };
   const plainUiLabel = value => String(value).replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, '');
   // Keep legacy message keys for existing feedback; control labels no longer need emoji prefixes.
@@ -431,7 +452,7 @@
       return;
     }
     if (root.hasAttribute?.('data-pvc-i18n-skip')) return;
-    for (const name of ['title', 'aria-label', 'placeholder', 'label']) {
+    for (const name of ['title', 'aria-label', 'placeholder', 'label', 'data-pvc-tip']) {
       if (root.hasAttribute?.(name)) {
         const originals = uiOriginalAttributes.get(root);
         setUiAttribute(root, name, originals?.[name] ?? root.getAttribute(name));
@@ -601,6 +622,181 @@
     button.appendChild(loader);
   }
   // END UI COMPONENTS
+
+  // UI TOOLTIP: own code. One element inside the panel, driven by data-pvc-tip; text only.
+  // Timers and window listeners exist only while it is opening or open.
+  const TOOLTIP_DELAY_MS = 400, TOOLTIP_SKIP_WINDOW_MS = 300, TOOLTIP_HIDE_GRACE_MS = 120, TOOLTIP_FOLLOW_MS = 200;
+  const TOOLTIP_LONG_PRESS_MS = 500, TOOLTIP_TOUCH_SLOP_PX = 10, TOOLTIP_MARGIN_PX = 8;
+  const ADAPTER_TIERS = { KickAdapter: 1, TrtAdapter: 1, NowTvAdapter: 1, PuhuTvAdapter: 1, YouTubeAdapter: 2, VideoJsAdapter: 2,
+    HlsJsAdapter: 2, ShakaPlayerAdapter: 2, DashJsAdapter: 2, GenericAdapter: 3 };
+  const ADAPTER_TIER_TIPS = {
+    1: 'Siteye özel bağlantı: hız, ses ve kalite sitenin kendi oynatıcısı üzerinden kontrol edilir.',
+    2: 'Oynatıcı kütüphanesi bağlantısı: kalite listesi oynatıcının bildirdiği seviyelerden gelir.',
+    3: 'Evrensel mod: yalnız sayfadaki video öğesi kontrol edilir; kalite seçeneği olmayabilir.'
+  };
+  const QUALITY_STATUS_TIPS = {
+    pending: 'İstek oynatıcıya iletildi, sonucu bekleniyor.',
+    confirmed: 'Oynatıcı bu seçimi doğruladı.',
+    'decoded-match': 'Oynatılan görüntünün çözünürlüğü istenenle eşleşiyor.',
+    'rendition-confirmed': 'Oynatıcı bu seviyeyi seçti; görüntünün değiştiği henüz görülmedi.',
+    'timed-out': 'Görüntü beklenen sürede istenen kaliteye geçmedi. Oynatıcı yine de sonradan geçebilir.',
+    rejected: 'Oynatıcı bu seçimi uygulamadı.'
+  };
+  const adapterTip = name => ADAPTER_TIER_TIPS[ADAPTER_TIERS[name]] || null;
+  const qualityChipTip = (base, status) => QUALITY_STATUS_TIPS[status] || base || null;
+  function setUiTip(element, source) {
+    if (!element || element.__nokTipSource === (source || null)) return;
+    element.__nokTipSource = source || null;
+    if (source) setUiAttribute(element, 'data-pvc-tip', source);
+    else element.removeAttribute('data-pvc-tip');
+  }
+  // For a status that is not a control: reachable by keyboard only while it has something to explain.
+  function setUiTipStop(element, source) {
+    if (!element) return;
+    setUiTip(element, source);
+    if (source) element.setAttribute('tabindex', '0'); else element.removeAttribute('tabindex');
+  }
+  function tooltipPosition(target, size, viewport, margin = TOOLTIP_MARGIN_PX) {
+    const clamp = (value, min, max) => Math.max(min, Math.min(value, Math.max(min, max)));
+    const fitsAbove = target.top - size.height - margin >= margin;
+    const below = !fitsAbove && viewport.height - target.bottom > target.top;
+    const top = clamp(below ? target.bottom + margin : target.top - size.height - margin, margin, viewport.height - size.height - margin);
+    const center = target.left + target.width / 2;
+    const left = clamp(center - size.width / 2, margin, viewport.width - size.width - margin);
+    return { left, top, below, originX: Math.max(0, Math.min(size.width, center - left)) };
+  }
+  function bindTooltips(popup) {
+    const tip = document.createElement('div');
+    tip.id = 'pvc-tooltip'; tip.className = 'pvc-tooltip'; tip.hidden = true;
+    tip.setAttribute('role', 'tooltip'); tip.setAttribute('data-pvc-i18n-skip', '');
+    popup.appendChild(tip);
+    let opener = null, showTimer = null, hideTimer = null, followTimer = null, closedAt = -Infinity, suppressed = null, press = null, pressFired = false;
+    const tipOwner = node => node?.closest?.('[data-pvc-tip]') || null;
+    const isOpen = () => !tip.hidden;
+    const cancelShow = () => { clearTimeout(showTimer); showTimer = null; };
+    const cancelHide = () => { clearTimeout(hideTimer); hideTimer = null; };
+    function place() {
+      const at = tooltipPosition(opener.getBoundingClientRect(), { width: tip.offsetWidth, height: tip.offsetHeight }, { width: window.innerWidth, height: window.innerHeight });
+      tip.style.setProperty('left', `${at.left}px`, 'important');
+      tip.style.setProperty('top', `${at.top}px`, 'important');
+      tip.style.setProperty('transform-origin', `${at.originX}px ${at.below ? 'top' : 'bottom'}`, 'important');
+    }
+    // While open it follows scrolling, a changing explanation and a target that disappears.
+    function follow() {
+      followTimer = null;
+      if (!isOpen()) return;
+      const text = opener.getAttribute('data-pvc-tip');
+      if (!text || !opener.isConnected || !opener.getClientRects().length || popup.style.display === 'none' || popup.classList.contains('pvc-idle-hidden')) { close(); return; }
+      if (tip.textContent !== text) tip.textContent = text;
+      place();
+      followTimer = setTimeout(follow, TOOLTIP_FOLLOW_MS);
+    }
+    function open(node, instant) {
+      cancelShow(); cancelHide();
+      const text = node.getAttribute('data-pvc-tip');
+      if (!text) return;
+      if (isOpen()) opener.removeAttribute('aria-describedby');
+      else {
+        window.addEventListener('keydown', onKey, true);
+        document.addEventListener('pointerdown', onOutside, true);
+        followTimer = setTimeout(follow, TOOLTIP_FOLLOW_MS);
+      }
+      opener = node; suppressed = null;
+      tip.textContent = text;
+      tip.toggleAttribute('data-instant', instant);
+      tip.removeAttribute('data-open');
+      tip.hidden = false;
+      place();
+      node.setAttribute('aria-describedby', tip.id);
+      void tip.offsetWidth; // The start state must be painted for the entrance to run.
+      tip.setAttribute('data-open', '');
+    }
+    function close() {
+      cancelShow(); cancelHide();
+      if (!isOpen()) return;
+      clearTimeout(followTimer); followTimer = null;
+      window.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('pointerdown', onOutside, true);
+      opener.removeAttribute('aria-describedby');
+      tip.hidden = true; tip.removeAttribute('data-open');
+      closedAt = performance.now();
+    }
+    function onKey(event) {
+      if (event.key !== 'Escape' || !isOpen()) return;
+      event.stopPropagation();
+      suppressed = opener; close();
+    }
+    function onOutside(event) {
+      if (!tip.contains(event.target) && !opener?.contains(event.target)) close();
+    }
+    const scheduleClose = () => {
+      cancelShow();
+      if (!isOpen() || hideTimer !== null || opener.matches(':focus-visible')) return;
+      hideTimer = setTimeout(close, TOOLTIP_HIDE_GRACE_MS);
+    };
+    popup.addEventListener('pointerover', event => {
+      if (event.pointerType === 'touch') return;
+      if (tip.contains(event.target)) { cancelHide(); return; }
+      const node = tipOwner(event.target);
+      if (!node) { scheduleClose(); return; }
+      if (node === suppressed) return;
+      if (node === opener && isOpen()) { cancelHide(); return; }
+      cancelHide(); cancelShow();
+      // Moving between neighbours feels instant once the first one has been waited for.
+      if (isOpen() || performance.now() - closedAt < TOOLTIP_SKIP_WINDOW_MS) open(node, true);
+      else showTimer = setTimeout(() => open(node, false), TOOLTIP_DELAY_MS);
+    });
+    popup.addEventListener('pointerout', event => {
+      if (event.pointerType === 'touch') return;
+      const to = event.relatedTarget;
+      if (suppressed && !suppressed.contains(to)) suppressed = null;
+      if (to && (tip.contains(to) || (isOpen() && opener.contains(to)))) return;
+      scheduleClose();
+    });
+    const endPress = () => {
+      if (!press) return;
+      clearTimeout(press.timer); popup.removeEventListener('pointermove', onPressMove); press = null;
+    };
+    function onPressMove(event) {
+      if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > TOOLTIP_TOUCH_SLOP_PX) endPress();
+    }
+    popup.addEventListener('pointerdown', event => {
+      const node = tipOwner(event.target);
+      if (event.pointerType !== 'touch') {
+        cancelShow();
+        if (node) { close(); suppressed = node; }
+        return;
+      }
+      endPress();
+      pressFired = false;
+      if (!node) return;
+      press = { node, x: event.clientX, y: event.clientY, timer: setTimeout(() => { pressFired = true; open(node, false); }, TOOLTIP_LONG_PRESS_MS) };
+      popup.addEventListener('pointermove', onPressMove);
+    });
+    popup.addEventListener('pointerup', event => {
+      if (event.pointerType !== 'touch' || !press) return;
+      const { node } = press, fired = pressFired;
+      endPress();
+      // A control's tap belongs to the control; a status has no other use for a tap.
+      if (!fired && !node.matches('button, a, input, select, label')) { if (isOpen() && opener === node) close(); else open(node, false); }
+    });
+    popup.addEventListener('pointercancel', endPress);
+    // The release of a long press must not run the button it explained.
+    popup.addEventListener('click', event => {
+      if (!pressFired) return;
+      pressFired = false;
+      event.preventDefault(); event.stopPropagation();
+    }, true);
+    popup.addEventListener('contextmenu', event => { if (pressFired && tipOwner(event.target)) event.preventDefault(); });
+    popup.addEventListener('focusin', event => {
+      if (event.target.hasAttribute?.('data-pvc-tip') && event.target.matches(':focus-visible')) open(event.target, true);
+    });
+    popup.addEventListener('focusout', event => {
+      if (suppressed === event.target) suppressed = null;
+      if (isOpen() && opener === event.target && !opener.matches(':hover')) close();
+    });
+  }
+  // END UI TOOLTIP
 
   // Presentation preferences stay in RAM and reach only the panel's other frame; never added to diagnostics.
   const hudAccessibility = {
@@ -943,6 +1139,7 @@
     pendingRemoteSourceSession = null;
     remoteAncestorFullscreen = false; remoteSourceQualities = []; remoteSourceCandidates = [];
     remoteSourceActive = true;
+    clearFrameLossOffer();
     if (hadRemote) {
       clearTimeout(qualityWatchTimer);
       const popup = document.getElementById('pvc-controller-popup'); if (popup && !keepOpen) popup.style.display = 'none';
@@ -992,9 +1189,10 @@
       requestedIndex: qualities.findIndex(item => item.id === qualityControlState.request?.id),
       decodedMatch: request.decodedMatch, renditionMatch: request.renditionMatch, playlistMapping: request.playlistMapping,
       subtitleLoaded: customSubtitleCues.length > 0, subtitleEnabled: subtitleOverlayEnabled,
-      subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs,
+      subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs, ...subtitleFrameState(video),
       appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
-      candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo)
+      candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo),
+      frameLoss: frameLossState()
     });
   }
   function publishRemoteSourceState() {
@@ -1105,7 +1303,7 @@
     else {
       try {
         const { video, player } = findVideoAndPlayer(), value = command.value;
-        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'hotkeys', 'hud-collapsed', 'hud-placement', 'hud-preferences'].includes(command.name)) throw new Error('no-media');
+        if ((!video || video.readyState === 0) && !['refresh', 'report', 'presentation-active', 'frame-loss-answered', 'hotkeys', 'hud-collapsed', 'hud-placement', 'hud-preferences'].includes(command.name)) throw new Error('no-media');
         switch (command.name) {
           case 'speed': if (!setSpeed(value)) throw new Error('speed'); break;
           case 'volume': setAudioVolume(value); break;
@@ -1128,6 +1326,7 @@
           case 'subtitle-offset': if (value === 0) { subtitleOffsetMs = 0; injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); } else shiftSubtitleSync(value); break;
           case 'hotkeys': hotkeysEnabled = value; break;
           case 'presentation-active': remoteSourceActive = value; break;
+          case 'frame-loss-answered': frameLossAnswered = value; clearFrameLossOffer(); break;
           case 'play': if (video.paused) await video.play(); else video.pause(); break;
           case 'pip': reply = { ...reply, ...await toggleLocalPictureInPicture() }; break;
           case 'ping': {
@@ -1208,14 +1407,17 @@
     text('pvc-hdr-speed-badge', `${state.requestedRate}x`); text('pvc-mini-speed-val', `⚡ ${state.rate}x`);
     text('pvc-hdr-volume-badge', `${state.requestedVolume}%`); text('pvc-mini-vol-val', `🔊 ${state.volume}% (${state.audioMode === 'mono' ? 'M' : 'S'})`);
     text('pvc-hdr-audio-badge', state.audioMode.toUpperCase()); text('pvc-active-adapter-badge', state.adapter);
+    setUiTipStop(document.getElementById('pvc-active-adapter-badge'), adapterTip(state.adapter));
     updatePipButtonsState(state.pipActive);
     text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
     text('pvc-sub-offset-badge', `${state.subtitleOffset >= 0 ? '+' : ''}${state.subtitleOffset}ms`);
     text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
     document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
     text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
+    updateSubtitleExplanation(null);
     const drmBadge = document.getElementById('pvc-drm-status-badge'); if (drmBadge) drmBadge.style.display = state.drm ? 'block' : 'none';
     setNoVideoAlertVisible(!state.hasVideo);
+    renderFrameLossNotice();
     renderRemoteQualities(); renderRemoteTargets();
   }
   function renderRemoteQualities() {
@@ -1228,6 +1430,7 @@
         const button = document.createElement('button'); button.className = 'pvc-quality-chip-btn'; button.type = 'button';
         const label = quality.height > 0 ? `${quality.height}p` : quality.bitrate > 0 ? `${(quality.bitrate / 1000000).toFixed(1)} Mb/sn` : `Seviye ${index + 1}`;
         setUiText(button, label); button.__nokRemoteIndex = index;
+        button.__nokTipBase = quality.bitrate > 0 ? `${(quality.bitrate / 1000000).toFixed(1)} Mb/sn` : null;
         const owner = state.owner, revision = state.revision;
         button.onclick = e => { e.stopPropagation(); if (remotePresentation?.owner === owner && remotePresentation.revision === revision) remoteControl('quality', index); };
         container.appendChild(button);
@@ -1243,11 +1446,13 @@
       const selected = state.requestedIndex >= 0 && button.__nokRemoteIndex === state.requestedIndex;
       const confirmed = selected && ['confirmed', 'decoded-match'].includes(state.verification);
       button.classList.toggle('pvc-active', confirmed); button.classList.toggle('pvc-requested', selected && !confirmed); button.setAttribute('aria-pressed', String(confirmed));
+      setUiTip(button, qualityChipTip(button.__nokTipBase, selected ? state.verification : null));
     }
     setUiText(document.getElementById('pvc-quality-count-badge'), `${state.qualities.length} seviye`);
     const labels = { pending: 'Bekleniyor', confirmed: 'Doğrulandı', 'decoded-match': 'Görüntü eşleşti', 'rendition-confirmed': 'Oynatıcı seçti; görüntü bekleniyor', 'timed-out': 'Doğrulanamadı', rejected: 'Reddedildi' };
     setUiText(document.getElementById('pvc-quality-status'), state.verification === 'not-verified' ? 'Kalite isteği yok.'
       : `İstenen ${state.requestedHeight ? state.requestedHeight + 'p' : '—'} · oynatılan ${state.height ? state.height + 'p' : '—'} · ${labels[state.verification]}`);
+    setUiTipStop(document.getElementById('pvc-quality-status'), qualityChipTip(null, state.verification));
   }
   function renderRemoteTargets() {
     const select = document.getElementById('pvc-video-target'), state = remotePresentation;
@@ -3179,6 +3384,12 @@
       if (!remotePresentation) {
         const selection = findVideoAndPlayer();
         adLifecycle.tick(selection, hasSelectedAdMarker(selection.video));
+        checkFrameLoss(frameLossPanelOpen() ? selection.video : null);
+        // A replaced element has no listeners yet, and with no video the last line must not stay on screen.
+        if (customSubtitleCues.length) {
+          if (selection.video) monitorVideoResolution(selection.video);
+          renderCustomSubtitleCue(selection.video);
+        }
       }
       adWatchTimer = setTimeout(tick, 750);
     };
@@ -3197,6 +3408,95 @@
   // A restored page keeps its timer, so only the temporary ad state is undone here.
   window.addEventListener('pagehide', () => adLifecycle.stop());
   // END AD LIFECYCLE
+
+  // FRAME LOSS WATCH: reads only the selected video's frame counters, on the ad watch's existing tick.
+  // It asks once and changes nothing by itself. Stays in RAM and never enters diagnostics.
+  // Real overload is bursty, so one clean window must not hide it; one burst alone must not trigger it either.
+  const FRAME_LOSS_WINDOW_TICKS = 4, FRAME_LOSS_WINDOWS = 4, FRAME_LOSS_MIN_BAD_WINDOWS = 2, FRAME_LOSS_MIN_FRAMES = 10, FRAME_LOSS_RATIO = 0.15;
+  function createFrameLossWatch() {
+    let last = null, ticks = 0, frames = 0, dropped = 0;
+    const recent = [];
+    const reset = () => { last = null; ticks = 0; frames = 0; dropped = 0; recent.length = 0; };
+    const sample = (video, comparable) => {
+      const quality = comparable ? video.getVideoPlaybackQuality?.() : null;
+      if (!quality) { reset(); return false; }
+      const id = remoteIdentityToken(video), total = quality.totalVideoFrames, lost = quality.droppedVideoFrames;
+      const restarted = !last || last.id !== id || total < last.total || lost < last.lost;
+      if (restarted) reset();
+      else if (video.readyState >= 3) { frames += total - last.total; dropped += lost - last.lost; ticks++; } // Buffering is neither good nor bad evidence.
+      last = { id, total, lost };
+      if (ticks < FRAME_LOSS_WINDOW_TICKS) return false;
+      recent.push({ frames, dropped }); if (recent.length > FRAME_LOSS_WINDOWS) recent.shift();
+      ticks = 0; frames = 0; dropped = 0;
+      if (recent.length < FRAME_LOSS_WINDOWS) return false;
+      const bad = recent.filter(item => item.frames >= FRAME_LOSS_MIN_FRAMES && item.dropped / item.frames >= FRAME_LOSS_RATIO).length;
+      const allFrames = recent.reduce((sum, item) => sum + item.frames, 0), allDropped = recent.reduce((sum, item) => sum + item.dropped, 0);
+      return bad >= FRAME_LOSS_MIN_BAD_WINDOWS && allDropped / allFrames >= FRAME_LOSS_RATIO;
+    };
+    return { sample, reset };
+  }
+  const frameLossWatch = createFrameLossWatch();
+  let frameLossPending = false, frameLossAnswered = false;
+  const videoFiltersActive = () => videoFilterState.brightness !== 100 || videoFilterState.contrast !== 100
+    || videoFilterState.saturate !== 100 || videoFilterState.nightShield || videoFilterState.invert;
+  // Fast speeds, seeking and the ad's temporary 16x drop frames by design.
+  function frameLossComparable(video) {
+    return !!video && !document.hidden && !video.paused && !video.ended && !video.seeking
+      && video.playbackRate > 0 && video.playbackRate <= 2 && !adLifecycle.isActive(video);
+  }
+  // An idle-hidden panel is still open; it just shows the question at its next appearance.
+  const frameLossPanelOpen = () => !!remoteSourceSession || document.getElementById('pvc-controller-popup')?.style.display === 'block';
+  const frameLossState = () => frameLossPending && !frameLossAnswered;
+  function frameLossOffer() {
+    const wanted = remotePresentation ? remotePresentation.frameLoss : frameLossPending;
+    if (!wanted || frameLossAnswered) return null;
+    const motion = !hudAccessibility.reduceMotion, filters = videoFiltersActive();
+    if (motion && filters) return 'Video kare atlıyor. Panel animasyonları kapatılsın ve görüntü filtreleri sıfırlansın mı?';
+    if (motion) return 'Video kare atlıyor. Panel animasyonları kapatılsın mı?';
+    return filters ? 'Video kare atlıyor. Görüntü filtreleri sıfırlansın mı?' : null;
+  }
+  function renderFrameLossNotice() {
+    const notice = document.getElementById('pvc-frame-loss-notice');
+    if (!notice) return;
+    const offer = frameLossOffer(), next = offer ? 'block' : 'none';
+    if (offer) setUiText(document.getElementById('pvc-frame-loss-text'), offer);
+    if (notice.style.display === next) return;
+    notice.style.display = next;
+    clampPopupToViewport(document.getElementById('pvc-controller-popup'));
+  }
+  // Closing the panel is not an answer: a later open measures afresh.
+  function clearFrameLossOffer() {
+    frameLossPending = false; frameLossWatch.reset();
+    renderFrameLossNotice();
+  }
+  function checkFrameLoss(video) {
+    if (frameLossAnswered) return;
+    const canHelp = !hudAccessibility.reduceMotion || videoFiltersActive();
+    if (frameLossPending) {
+      if (canHelp) renderFrameLossNotice(); else clearFrameLossOffer();
+      return;
+    }
+    if (!frameLossWatch.sample(video, frameLossComparable(video)) || !canHelp) return;
+    frameLossPending = true;
+    renderFrameLossNotice();
+    if (remoteSourceSession) publishRemoteSourceState(); // An idle panel's frame stops publishing on its own.
+  }
+  function answerFrameLoss(accept) {
+    frameLossAnswered = true; frameLossPending = false; frameLossWatch.reset();
+    if (accept) {
+      if (!hudAccessibility.reduceMotion) {
+        hudAccessibility.reduceMotion = true;
+        const checkbox = document.getElementById('pvc-a11y-reduceMotion'); if (checkbox) checkbox.checked = true;
+        refreshUiAccessibility(document.getElementById('pvc-controller-popup'));
+        syncHudPreferences();
+      }
+      if (videoFiltersActive()) resetVideoFilters();
+    }
+    if (remotePresentation) remoteControl('frame-loss-answered', true);
+    else if (remoteSourceSession) publishRemoteSourceState();
+    renderFrameLossNotice();
+  }
+  // END FRAME LOSS WATCH
 
   function startQualityWatch() {
     clearTimeout(qualityWatchTimer);
@@ -3313,7 +3613,7 @@
     if (badge && adapter) {
       const tierTag = adapter.tier ? `Tier ${adapter.tier}` : 'Tier 3';
       setUiText(badge, `${adapter.name} (${tierTag})`);
-      setUiAttribute(badge, 'title', adapter.displayName || adapter.name);
+      setUiTipStop(badge, adapterTip(adapter.name));
     }
     updateCollapsedSummaryBar();
   }
@@ -3778,6 +4078,43 @@
   }
   // END SUBTITLE APPEARANCE
 
+  // SUBTITLE EXPLANATION: says why nothing is on screen. Times and states only, never a line of the file.
+  function formatCueDelay(seconds) {
+    const total = Math.max(1, Math.ceil(seconds)), hours = Math.floor(total / 3600), minutes = Math.floor(total / 60) % 60;
+    const rest = String(total % 60).padStart(2, '0');
+    return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
+  }
+  // Seconds until the next line starts, or -1 when none is left.
+  function nextCueDelay(cues, time) {
+    const next = cues.find(cue => cue.start > time);
+    return next ? next.start - time : -1;
+  }
+  function subtitleExplanation(status, buffering, nextIn) {
+    if (status === 'disabled') return 'Altyazı gizli.';
+    if (status === 'no-video') return 'Video bulunamadı; altyazı video gelince görünür.';
+    if (status === 'video-offscreen') return 'Video görünür alanda değil; altyazı video görününce çıkar.';
+    if (status === 'native-requested') return 'Altyazı tarayıcının kendi oynatıcı yüzeyinde gösteriliyor.';
+    if (status !== 'no-active-cue') return null;
+    if (buffering) return 'Video yükleniyor; altyazı video ilerleyince görünür.';
+    return nextIn < 0 ? 'Bu dosyanın satırları bitti; video dosyadan uzun olabilir.' : `Şu an satır yok. Sıradaki satır ${formatCueDelay(nextIn)} sonra.`;
+  }
+  function subtitleFrameState(video) {
+    return {
+      subtitleBuffering: !!video && !video.paused && video.readyState < 3,
+      subtitleNextIn: video ? nextCueDelay(customSubtitleCues, video.currentTime - subtitleOffsetMs / 1000) : -1
+    };
+  }
+  function updateSubtitleExplanation(video) {
+    const line = document.getElementById('pvc-sub-why');
+    if (!line) return;
+    const state = remotePresentation, loaded = state ? state.subtitleLoaded : customSubtitleCues.length > 0;
+    const media = state || subtitleFrameState(video);
+    const text = loaded ? subtitleExplanation(state ? state.subtitleStatus : subtitleRenderStatus, media.subtitleBuffering, media.subtitleNextIn) : null;
+    if (text) setUiText(line, text);
+    line.hidden = !text;
+  }
+  // END SUBTITLE EXPLANATION
+
   function ensureSubtitleOverlayElement() {
     let overlay = document.getElementById('pvc-subtitle-overlay');
     if (!overlay) {
@@ -3789,6 +4126,10 @@
   }
 
   function renderCustomSubtitleCue(video) {
+    drawSubtitleCue(video);
+    updateSubtitleExplanation(video);
+  }
+  function drawSubtitleCue(video) {
     const overlay = document.getElementById('pvc-subtitle-overlay');
     if (!video || !subtitleOverlayEnabled || customSubtitleCues.length === 0) {
       subtitleRenderStatus = !subtitleOverlayEnabled ? 'disabled' : customSubtitleCues.length === 0 ? 'not-loaded' : 'no-video';
@@ -4431,6 +4772,7 @@
     const request = qualityControlState.request;
     const labels = { pending: 'Bekleniyor', confirmed: 'Doğrulandı', 'decoded-match': 'Görüntü eşleşti',
       'rendition-confirmed': 'Oynatıcı seçti; görüntü bekleniyor', 'timed-out': 'Doğrulanamadı', rejected: 'Reddedildi' };
+    setUiTipStop(status, request ? qualityChipTip(null, request.status) : null);
     if (!request) { setUiText(status, 'Kalite isteği yok.'); return; }
     const observed = video?.videoHeight > 0 ? `${video.videoHeight}p` : '—';
     setUiText(status, `İstenen ${request.height ? request.height + 'p' : '—'} · oynatılan ${observed} · ${labels[request.status]}`);
@@ -4570,9 +4912,10 @@
       btn.className = `pvc-quality-chip-btn ${confirmed ? 'pvc-active' : requested ? 'pvc-requested' : ''}`;
       btn.setAttribute('aria-pressed', String(confirmed));
       setUiText(btn, String(q.label).replace(/\s*\(.*\)\s*$/, '') || q.label);
-      setUiAttribute(btn, 'title', q.resolutionSource === 'observed-video'
+      btn.__nokTipBase = q.resolutionSource === 'observed-video'
         ? 'Çözünürlük akışta belirtilmemiş; değer oynatılan videodan ölçüldü. Başka bir kalite seçeneği anlamına gelmez.'
-        : `${q.label}${q.height ? ' • ' + q.height + 'p' : ''}`);
+        : q.bitrate > 0 ? `${(q.bitrate / 1000000).toFixed(1)} Mb/sn` : null;
+      setUiTip(btn, qualityChipTip(btn.__nokTipBase, requested ? request.status : null));
 
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -4595,6 +4938,7 @@
       button.classList.toggle('pvc-active', confirmed);
       button.classList.toggle('pvc-requested', requested && !confirmed);
       button.setAttribute('aria-pressed', String(confirmed));
+      setUiTip(button, qualityChipTip(button.__nokTipBase, requested ? request.status : null));
     }
   }
 
@@ -4684,7 +5028,7 @@
     cdnButtonPassive = measured && result.method === 'resource-timing';
     setUiText(button, measured ? `📡 ${result.ms} ms` : '📡 Sonuç yok');
     button.style.color = !measured ? 'var(--pvc-muted, #a2b6c0)' : result.ms <= 50 ? 'var(--pvc-success, #34d399)' : (result.ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-warning, #f59e0b)');
-    setUiAttribute(button, 'title', !measured ? (CDN_STATUS_MESSAGES[lastPingStatus] || CDN_UNAVAILABLE_MESSAGE)
+    setUiAttribute(button, 'data-pvc-tip', !measured ? (CDN_STATUS_MESSAGES[lastPingStatus] || CDN_UNAVAILABLE_MESSAGE)
       : result.method === 'head' ? CDN_BUTTON_HEAD_TITLE : result.method === 'resource-timing' ? CDN_BUTTON_PASSIVE_TITLE : CDN_BUTTON_DEFAULT_TITLE);
   }
   // A silent refresh only withdraws a value it can no longer back up; manual results stay.
@@ -4694,7 +5038,7 @@
     cdnButtonPassive = false;
     setUiText(button, '📡 CDN yanıtı');
     button.style.color = '';
-    setUiAttribute(button, 'title', CDN_BUTTON_DEFAULT_TITLE);
+    setUiAttribute(button, 'data-pvc-tip', CDN_BUTTON_DEFAULT_TITLE);
   }
 
   async function testCdnPing(silent = false) {
@@ -5007,7 +5351,7 @@
             <p id="pvc-site-scope-note" class="pvc-modal-desc"></p>
             <output id="pvc-site-domain-preview"></output>
             <label class="pvc-report-field"><input id="pvc-include-comment" type="checkbox"> Kendi açıklamamı rapora ekle (isteğe bağlı)</label>
-            <textarea id="pvc-user-feedback-input" disabled maxlength="4000" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; min-height: 96px; box-sizing: border-box; background: var(--pvc-surface, #142127); border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: vertical;"></textarea>
+            <span class="pvc-feedback-frame"><textarea id="pvc-user-feedback-input" disabled maxlength="4000" aria-label="İsteğe bağlı açıklama" placeholder="Ad, e-posta, adres, bağlantı veya hesap bilgisi yazmayın." style="width: 100%; min-height: 96px; box-sizing: border-box; background: var(--pvc-surface, #142127); border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent); border-radius: 8px; color: var(--pvc-text, #edf2f3); font-size: 11px; padding: 8px; resize: vertical;"></textarea></span>
             <output id="pvc-comment-count" aria-label="Açıklama karakter sayısı">0 / 4000</output>
             <p class="pvc-modal-desc">Açıklamanız otomatik anonimleştirilmez. Paylaşmadan önce aşağıdaki raporu kontrol edin.
               Bu panel sayfanın içinde çalışır; yazdığınız açıklama sayfanın betiklerinden gizlenmez.
@@ -5521,6 +5865,15 @@
         <span>${uiLabel('shield', 'DRM Korumalı Akış (Güvenli Mod)')}</span>
       </button>
 
+      <!-- Sürekli kare kaybı önerisi: yalnız kullanıcı yanıtlarsa bir şey değişir -->
+      <div id="pvc-frame-loss-notice" class="pvc-hide-on-collapse" role="status" style="display: none;">
+        <p id="pvc-frame-loss-text"></p>
+        <div class="pvc-frame-loss-actions">
+          <button type="button" id="pvc-frame-loss-yes" class="pvc-chip-btn">Evet</button>
+          <button type="button" id="pvc-frame-loss-no" class="pvc-chip-btn">Hayır</button>
+        </div>
+      </div>
+
       <!-- Video Bulunamadı Uyarısı -->
       <div id="pvc-no-video-alert" style="display: none; padding: 8px 10px; background: color-mix(in srgb, var(--pvc-danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--pvc-danger) 35%, transparent); border-radius: 6px; margin-bottom: 8px; font-size: 11px; color: var(--pvc-danger, #fca5a5);">
         <div style="font-weight: 700; margin-bottom: 2px;">${uiLabel('warning', 'Aktif Oynatıcı Bekleniyor')}</div>
@@ -5661,6 +6014,7 @@
           <div id="pvc-sub-status-text" style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             Yüklü altyazı yok (Sıfır Depolama RAM Modu)
           </div>
+          <p id="pvc-sub-why" class="pvc-settings-note" hidden></p>
           <div class="pvc-btn-grid-3">
             <button id="pvc-sub-sync-m100" class="pvc-action-btn" title="Altyazıyı 100ms geri çek">${uiLabel('rewind', '-100ms')}</button>
             <button id="pvc-sub-sync-reset" class="pvc-action-btn" title="Senkron kaymasını sıfırla">0ms Sıfırla</button>
@@ -5680,7 +6034,7 @@
 
       <!-- Footer: Ping, Rehber/Kısayollar ve Teşhis -->
       <div class="pvc-menu-footer" id="pvc-menu-footer">
-        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" title="Medya sunucusunun HTTP yanıt süresini gösterir; ağ pingi değildir. Her sitede ölçülemez.">${uiLabel('signal', 'CDN yanıtı')}</button>
+        <button id="pvc-ping-btn" class="pvc-footer-btn pvc-btn-emerald" data-pvc-tip="Medya sunucusunun HTTP yanıt süresini gösterir; ağ pingi değildir. Her sitede ölçülemez.">${uiLabel('signal', 'CDN yanıtı')}</button>
         <button id="pvc-perms-btn" class="pvc-footer-btn pvc-btn-sky" title="Klavye Kısayolları & İzin Rehberi">${uiLabel('keyboard', 'Kısayollar')}</button>
         <button id="pvc-report-err-btn" class="pvc-footer-btn pvc-btn-amber" title="Zenginleştirilmiş teşhis paketini aç">${uiLabel('report', 'Teşhis')}</button>
       </div>
@@ -5756,6 +6110,7 @@
     popup.addEventListener('keydown', () => { popup.__nokKeyboardFocus = true; resetIdleTimer(popup); });
     popup.addEventListener('mouseenter', () => resetIdleTimer(popup));
     popup.addEventListener('mouseleave', () => resetIdleTimer(popup));
+    bindTooltips(popup);
     popup.addEventListener('mousemove', () => resetIdleTimer(popup));
     popup.addEventListener('mousedown', () => resetIdleTimer(popup));
 
@@ -6098,6 +6453,8 @@
       showPermissionsGuideModal();
     };
 
+    popup.querySelector('#pvc-frame-loss-yes').onclick = (e) => { e.stopPropagation(); answerFrameLoss(true); };
+    popup.querySelector('#pvc-frame-loss-no').onclick = (e) => { e.stopPropagation(); answerFrameLoss(false); };
     popup.querySelector('#pvc-report-err-btn').onclick = (e) => {
       e.stopPropagation();
       reportAnonymousError('USER_MANUAL_DIAGNOSTIC');
@@ -6143,7 +6500,7 @@
     popup.style.display = wasClosed ? 'block' : 'none';
     if (!wasClosed) { postHudSignal('PVC_HUD_CLOSED'); localVideoSeen = false; localSearchAfterLoss = false; }
     if (popup.style.display === 'block') {
-      if (wasClosed) resetPopupToDefaultPosition(popup);
+      if (wasClosed) { resetPopupToDefaultPosition(popup); clearFrameLossOffer(); }
       clampPopupToViewport(popup);
       resetIdleTimer(popup);
       startQualityWatch();

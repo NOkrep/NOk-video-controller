@@ -45,7 +45,8 @@
     verification: choice(verification), requestedHeight: num(0, 4320), requestedIndex: num(-1, 127, true),
     decodedMatch: nullable(bool), renditionMatch: nullable(bool), playlistMapping: choice(['unknown', 'shared-playlist', 'distinct-playlists']),
     subtitleLoaded: bool, subtitleEnabled: bool, subtitleStatus: choice(subtitleStatus), subtitleOffset: num(-3600000, 3600000),
-    appearance, filters, candidates: array(shape({ height: num(0, 8640, true) }), 32), target: num(-1, 31, true)
+    subtitleBuffering: bool, subtitleNextIn: num(-1, 864000),
+    appearance, filters, candidates: array(shape({ height: num(0, 8640, true) }), 32), target: num(-1, 31, true), frameLoss: bool
   };
   function cleanState(value) { return record(value, stateSpec) || null; }
   const commandValues = {
@@ -53,7 +54,7 @@
     audio: choice(['stereo', 'mono']), quality: num(0, 127, true), target: num(-1, 31, true),
     adapter: choice(adapters.filter(item => item !== 'unknown')), filters, appearance,
     'subtitle-visible': bool, 'subtitle-offset': choice([-100, 0, 100]),
-    'hotkeys': bool, 'presentation-active': bool, 'hud-collapsed': bool, 'hud-placement': placement, 'hud-preferences': preferences
+    'hotkeys': bool, 'presentation-active': bool, 'frame-loss-answered': bool, 'hud-collapsed': bool, 'hud-placement': placement, 'hud-preferences': preferences
   };
   function cleanCues(value) {
     if (!Array.isArray(value) || value.length === 0 || value.length > 20000) return undefined;

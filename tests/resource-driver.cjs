@@ -83,7 +83,7 @@ async function createDriver(engine,executablePath,packages,options={}){
   fs.writeFileSync(path.join(profile,'user.js'),[
     'user_pref("browser.shell.checkDefaultBrowser",false);','user_pref("browser.startup.homepage_override.mstone","ignore");',
     'user_pref("browser.startup.page",0);','user_pref("browser.newtabpage.enabled",false);',
-    'user_pref("datareporting.policy.dataSubmissionEnabled",false);','user_pref("toolkit.telemetry.enabled",false);',
+    'user_pref("datareporting.policy.dataSubmissionEnabled",false);',...(process.argv.includes('--os-reduced-motion=true')?['user_pref("ui.prefersReducedMotion",1);']:[]),'user_pref("toolkit.telemetry.enabled",false);',
     'user_pref("extensions.update.enabled",false);'].join('\n'));
   // Mozilla's documented switch is process-local; only this isolated test gets it.
   const size=options.viewport?['--width',String(options.viewport.width),'--height',String(options.viewport.height)]:[];
