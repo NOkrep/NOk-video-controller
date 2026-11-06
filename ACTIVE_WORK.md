@@ -22,6 +22,14 @@ Kullanıcı istedi; `main` `faa9f8d` üzerinden. Mağazaya gönderilmedi (`store
 - **Denetim:** Ürün dosyaları ve lisans bildirimleri kaynakla bayt bayt aynı. Fazla dosya yok. Taramada çıkan tek kişisel veri raporun e-posta seçeneğindeki geliştirici adresi; v0.7.0'dan beri kaynakta açık. İki ZIP açılıp kurularak denendi: panel, sürüm, rapor, gerçek videoda hız ve filtre.
 - **Yayın:** GitHub pre-release'i kullanıcı kendi hesabıyla oluşturur (`gh` yok, ajan hesaba girmez). Tag `v0.7.18-pre_release`, hedef `main`.
 
+## CI'da Firefox sürücü başlangıç zaman aşımı — 6 Kasım 2026
+
+- **Belirti:** Yalnız belge değiştiren `35f48e6` koşusunda (#92) `frame-loss` adımı Firefox'ta 39 sn'de düştü. Hata satırını kullanıcı günlükten verdi: `BiDi timeout: webExtension.install`. Test kendi adımlarına gelmedi; ürün veya bildirim hatası değil.
+- **Neden:** Sürücü her BiDi komutunu 20 sn bekliyordu; yoğun makinede Firefox başlangıcı ve eklenti kurulumu bunu aşabiliyor. Yerelde işlemci yükü altında aynı hata 4 turda 2 kez üretildi (`session.subscribe`, `webExtension.install`).
+- **Düzeltme:** `tests/resource-driver.cjs` başlangıç komutları ve Firefox başlangıç bekleyişi 60 sn; sayfa içi komutlar 20 sn kalır. Ürün kodu değişmedi, sürüm artmadı.
+- **Kanıt:** Aynı koşulda 4 turda 4 geçti. Küçük örnek; CI'da ara ara düşüşün bittiğini ancak sonraki koşular gösterir.
+- **Ayrı, incelenmedi:** Playwright 1.64.1 Dependabot dalının push koşusu (#90) kaynak kontrolünde 1 sn'de düştü, aynı commit'in PR koşusu (#91) geçti.
+
 ## I-11 altyazının neden görünmediğini söyleme, v0.7.18 — 6 Kasım 2026
 
 **Durum: yerel kapsam tamam (tarayıcı kabulü aynı gün, kod değişmeden; #96'nın o anı yeniden üretilemedi).** Kaynak rapor #96: altyazı yüklendikten sonra video bir süre yüklenmedi; raporda `readyState: 1` ve `no-active-cue` var, kullanıcı kendi internetinden olabileceğini de yazmış.
