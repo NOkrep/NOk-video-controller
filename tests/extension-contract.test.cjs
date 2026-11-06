@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const {spawnSync}=require('node:child_process');
 const {checkExtension,versionParts} = require('../scripts/check-extension.cjs');
 const {setVersion} = require('../scripts/set-version.cjs');
 const root = path.resolve(__dirname,'..');
@@ -34,6 +35,27 @@ test('extension contract accepts current source and matching version tags',()=>{
   const version=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).version;
   assert.equal(checkExtension(root,{tag:'v'+version}).version,version);
   assert.throws(()=>checkExtension(root,{tag:'v0.0.1'}),/tag differs/);
+});
+test('a labelled release tag must still name the exact version',()=>{
+  const version=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).version;
+  assert.equal(checkExtension(root,{tag:`v${version}-pre_release`}).version,version);
+  for(const tag of [`v${version}.1-pre_release`,`v${version}pre_release`,`v${version}-`,`v${version}-pre release`,'v0.0.1-pre_release'])assert.throws(()=>checkExtension(root,{tag}),/tag differs/,tag);
+});
+const runCheck=env=>spawnSync(process.execPath,[path.join(root,'scripts','check-extension.cjs')],{cwd:root,encoding:'utf8',env:{...process.env,GITHUB_REF:'',CI_CHECK_BASE:'',...env}});
+test('the check script accepts a labelled tag from GitHub and rejects a wrong one',()=>{
+  const version=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).version;
+  assert.equal(runCheck({GITHUB_REF:`refs/tags/v${version}-pre_release`}).status,0);
+  const wrong=runCheck({GITHUB_REF:'refs/tags/v0.0.1-pre_release'});
+  assert.equal(wrong.status,1);assert.match(wrong.stderr,/tag differs/);
+});
+test('a base commit a force push left behind skips only the downgrade comparison',()=>{
+  const missing=runCheck({CI_CHECK_BASE:'0123456789abcdef0123456789abcdef01234567'});
+  assert.equal(missing.status,0,missing.stderr);
+  assert.match(missing.stderr,/not available/);
+  const invalid=runCheck({CI_CHECK_BASE:'not-a-sha'});
+  assert.equal(invalid.status,1);assert.match(invalid.stderr,/Invalid Git base/);
+  const none=runCheck({CI_CHECK_BASE:'0'.repeat(40)});
+  assert.equal(none.status,0);assert.doesNotMatch(none.stderr,/not available/);
 });
 test('browser version format supports four parts but rejects leading zeroes, all-zero and oversized parts',()=>{
   assert.deepEqual(versionParts('0.7.7.1'),[0,7,7,1]);
