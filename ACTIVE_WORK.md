@@ -15,6 +15,16 @@
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
 
+## C araç çubuğu tasarımı — 13–14 Kasım 2026
+
+Kod değişmedi; tasarım Figma'da (`FilmDeck MEC523 Wireframes`, sayfalar "C + tabs (models)", "Mode switch (models)", "Model 5 · current vs planned"). Reddedilen modeller silinmedi, sayfada işaretli duruyor.
+
+- **Seçilen yön:** Model 5. Araç çubuğunun en sağındaki düğme grupları sırayla değiştirir (Player → Subtitles → Settings) ve grubun adını yazar; solundaki düğmeler gruba göre değişir. Kullanıcı gerekçesi: HMI ilkemiz gereği her şey simgeyle birlikte adıyla da yazılmalı.
+- **Elenen:** Model 6 (dikey kayar anahtar) kesin elendi. Model 4, 7, 8, 9 karşılaştırma için sayfada duruyor.
+- **Player grubu, rev 2 (14 Kasım, kullanıcı istekleri):** hız kutusunda yalnız hız; ileri/geri sarma araç çubuğunda `« 10s »` biçiminde, ortadaki 10s'e basınca adım (5/10/30/60 sn) ve doğrudan atlama (−30/−10/+10/+30) açılır; Stereo/Mono ses kutusunun başlığının sağında; o an oynatılan çözünürlük araç çubuğunun altında "Playing 1280×720 · Refresh" şeridinde; PiP ve kısayol aç/kapa araç çubuğunda.
+- **Kullanıcıda açık:** Stereo/Mono denetiminin görünümü. Kullanıcı başka sitelerdeki düğme modellerini inceleyip bildirecek; o zamana kadar yer tutucu.
+- **Açık karar:** Adaptör ve video hedefi kalite kutusunun altında ("Player detection") mı, Settings grubunda mı. Kısayol aç/kapa hem araç çubuğunda hem Accessibility içinde mi kalacak. Kalan grupların düzeni için kullanıcı görüş verecek; Accessibility'nin ayrı grup olması öneri aşamasında.
+
 ## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
 
 Kullanıcının kendi denemesi, v0.7.18, Firefox, canlı yayın. Kod değişmedi, yeniden üretilmedi.
