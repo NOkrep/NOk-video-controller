@@ -17,11 +17,11 @@
 
 ## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
 
-Kullanıcının kendi denemesi, v0.7.18. Motor, canlı yayın/VOD ve sayfa belirtilmedi; kod değişmedi, yeniden üretilmedi.
+Kullanıcının kendi denemesi, v0.7.18, Firefox, canlı yayın. Kod değişmedi, yeniden üretilmedi.
 
-- **Hız:** Panelde değiştirilen hız Kick'in kendi arayüzünde görünmüyor.
-- **Ses:** Panelde %0 seçildikten sonra seçilen ilk değer sitenin arayüzüne yansıyor; ondan sonraki değişiklikler yansımıyor. v0.7.10'daki "oynatıcıya verilen ses sitenin simgesine yansır" kabulü bu sırada geçmiyor.
-- **Durum:** Açık. Kullanıcı önce C araç çubuğunu seçti; I-03'e dönüldüğünde önce yeniden üretim (motor, canlı/VOD, %0'dan önceki ve sonraki adımlar) gerekir.
+- **Hız:** Canlı uçta hız değişikliği etkisizdi; kullanıcı bu yüzden yayının geçmişine geri dönüp izlerken denedi. Orada da panelde değiştirilen hız Kick'in kendi arayüzünde görünmüyor.
+- **Ses:** Panelde %0 seçildikten sonra seçilen ilk değer sitenin arayüzüne yansıyor; ondan sonraki değişiklikler yansımıyor. Sonraki değerler rastgele ve hep %100'ün altındaydı. v0.7.10'daki "oynatıcıya verilen ses sitenin simgesine yansır" kabulü bu sırada geçmiyor.
+- **Durum:** Açık. Kullanıcı önce C araç çubuğunu seçti. I-03'e dönüldüğünde Firefox'ta, canlı yayının geçmişinde (DVR) ve canlı uçta ayrı ayrı yeniden üretilecek; canlı uçta hızın etkisiz kalması beklenen bir sınır olabilir, ayrıca kontrol edilecek.
 
 ## v0.7.18 pre-release hazırlığı — 6 Kasım 2026
 
