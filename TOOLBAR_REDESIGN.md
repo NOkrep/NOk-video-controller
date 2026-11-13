@@ -20,6 +20,8 @@ Durum: tasarım aşaması, kod değişmedi. Tasarım Figma'da (`FilmDeck MEC523 
 | Açılır kutu içi | Bölümler eski paneldeki gibi biraz daha açık renkli kutulara ayrılır. |
 | Konum hafızası | Mevcut oran tabanlı konum (`hudPlacement`), mıknatıslı kenar (16 px) ve tam ekran/gömülü oynatıcı arasında konum aktarımı aynen korunur. |
 | Boşta solma | Mevcut iki aşamalı solma (önce yarı saydam, 2 sn sonra gizli; fare üzerindeyken ve klavye odağında solmaz) araç çubuğuna uygulanır. Accessibility › Keep visible bunu kapatır. |
+| Sürükleme ve kapatma (14 Kasım) | `FilmDeck` yazısı hem kapatma baloncuğunu hem sürüklemeyi taşır. Üzerine gelince (veya klavye odağında) solunda yalnız X olan baloncuk açılır. Yazıya basılı tutulup imleç kaydırılınca baloncuk kapanır ve araç çubuğu taşınır. Tıklama ile sürükleme küçük bir hareket eşiğiyle ayrılır; X düğmesinin kendisi sürüklemez. |
+| Tek açılır kutu (14 Kasım) | Gerekmedikçe aynı anda iki açılır kutu açık olmaz; yenisi açılınca öncekisi kapanır, kutular birbirini itmez. İstisnalar tek tek belirlenir. Bilinen istisna: Settings grubunda Help hep açıktır; o grupta açılan diğer kutu Help'in yanında açılır ve onu itmez. |
 
 ## 3. Bugünkü özelliklerin yeni yeri
 
@@ -27,23 +29,25 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 
 | Bugünkü özellik | Yeni yeri | Durum |
 |---|---|---|
-| Panel başlığından sürükleme | Tutamak belirlenmeli (FilmDeck yazısı üzerine gelince kapatma baloncuğu açıldığı için çubuğun boş alanı veya ayrı bir tutamak) | karar |
+| Panel başlığından sürükleme | `FilmDeck` yazısına basılı tutup sürükleme (bkz. bölüm 2) | yerinde |
 | PiP (Alt+P) | Her grupta solda simge | yerinde |
 | Klavye kısayolları aç/kapa | Her grupta solda simge | yerinde |
-| Küçült (mini çubuk: çözünürlük, hız, ses, adaptör; −10 sn, oynat/duraklat, +10 sn, PiP) | Kaldırıldı (kullanıcı kararı). **Oynat/duraklat başka yerde yok.** | karar |
+| Teşhis raporu | Her grupta solda uyarı simgesi; Settings › Help içinde de | yerinde |
+| Küçült (mini çubuk: çözünürlük, hız, ses, adaptör; −10 sn, oynat/duraklat, +10 sn, PiP) | Kaldırıldı (kullanıcı kararı) | yerinde |
+| Oynat/duraklat (bugün yalnız küçültülmüş çubukta) | Ne olacağına henüz karar verilmedi (kullanıcı, 14 Kasım) | karar verilmedi |
 | Kapat (Ctrl+Shift+S, kısayollar kapalıyken de çalışır) | FilmDeck üzerine gelince soldaki X baloncuğu | yerinde |
 | Dil (TR/EN) | Settings › English | yerinde |
 | Oynatılan çözünürlük ve yenile | Player grubunda araç çubuğu altındaki şerit | yerinde |
 | Adaptör rozeti, değiştir penceresi, video hedefi | Player › kalite kutusu › Player detection | yerinde (alternatif: Settings) |
-| DRM korumalı akış rozeti ve bilgi penceresi | — | karar (önerim: durum şeridinde uyarı) |
-| Kare kaybı bildirimi (Evet/Hayır, D-08) | — | karar (önerim: araç çubuğu altında şerit) |
-| "Etkin oynatıcı bekleniyor" uyarısı, Yeniden tara, Teşhis raporu | — | karar (önerim: araç çubuğu altında şerit) |
+| DRM korumalı akış rozeti ve bilgi penceresi | — | sonra bakılacak (kullanıcı, 14 Kasım) |
+| Kare kaybı bildirimi (Evet/Hayır, D-08) | — | ertelendi (Claude önerisi: araç çubuğu altında şerit) |
+| "Etkin oynatıcı bekleniyor" uyarısı, Yeniden tara, Teşhis raporu | — | ertelendi (Claude önerisi: araç çubuğu altında şerit) |
 | Hız kaydırıcısı ve hazır değerler; `[` `]` ±0.25x, `R` 1x | Player › hız kutusu | yerinde |
 | Sarma −30/−10/+10/+30 sn | Player › `« 10s »` ve açılan kutu | yerinde |
 | Ses %0–300, hazır değerler; Shift+↑/↓ ±%10 | Player › ses kutusu | yerinde |
 | Stereo/Mono; `M` | Ses kutusu başlığının sağı | yerinde (görünümü kullanıcı araştırmasıyla belirlenecek) |
 | Kalite düğmeleri, istek/oynatılan durumu; Alt+Q | Player › kalite kutusu | yerinde |
-| Siteye özel "kaynağı yeniden dene" düğmesi | — | karar (önerim: kalite kutusu) |
+| Siteye özel "kaynağı yeniden dene" düğmesi | — | ertelendi (Claude önerisi: kalite kutusu veya şerit) |
 | Altyazı yükle (.srt/.vtt), aç/kapa, durum, "neden satır yok" | Subtitles; durum şeridi; zamanlama kutusu | yerinde |
 | Altyazı zamanlaması −100/0/+100 ms | Subtitles › `− 100ms +` ve kutu | yerinde |
 | Altyazı görünümü (boyut, alttan uzaklık, arka plan, renk, sıfırla) | Subtitles › Appearance | yerinde |
@@ -57,6 +61,14 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 
 ## 4. Açık noktalar
 
-- Sürükleme tutamağı, oynat/duraklat, DRM, kare kaybı, oynatıcı bekleniyor uyarısı ve kaynak yeniden deneme düğmesinin yeri.
-- Stereo/Mono denetiminin görünümü (kullanıcı başka sitelerdeki örnekleri inceleyecek).
-- Kısayol aç/kapanın hem soldaki simgede hem başka yerde olup olmayacağı (şu an yalnız simgede).
+- **Ertelenen anlık durumlar:** kare kaybı bildirimi, "etkin oynatıcı bekleniyor" uyarısı ve kaynağı yeniden dene düğmesi. Bunlar o ana özgü olduğu için görselleriyle karşılaştırılarak karar verilecek (kullanıcı, 14 Kasım). Claude önerisi: Player grubundaki "Playing" şeridi gibi, yalnız gerektiğinde araç çubuğunun altında (alt yarıda üstünde) beliren bir durum şeridi.
+- **Karar verilmedi:** oynat/duraklat.
+- **Sonra bakılacak:** DRM rozeti ve bilgi penceresi.
+- **Kullanıcıda:** Stereo/Mono denetiminin görünümü (başka sitelerdeki örnekler incelenecek).
+- Kısayol aç/kapa şu an yalnız soldaki simgede.
+
+## 5. Denemeden önce kapanması gerekenler
+
+- **Genişlik ve taşma kuralı.** Çizimlerdeki araç çubukları, numara rozetleri çıkarıldığında yaklaşık şu genişlikte: Player 760 px, Subtitles 810 px, Settings 740 px, Accessibility 1020 px. Bugünkü panel 388 px. Pencere daraldığında, gömülü küçük bir oynatıcıda veya "Larger text" açıkken çubuk ekrana sığmayabilir. Taşma olduğunda ne olacağı (yazıların kısalması, düğmelerin yalnız simgeye inmesi, ikinci satır ya da "daha fazla" düğmesi) belirlenmeli.
+- **Açık temalar.** Bütün çizimler koyu temada. 20 temanın 7'si açık renkli; araç çubuğu, açılır kutular ve şeritlerin en az bir açık temada ve yüksek kontrastta görünümü kontrol edilmeli.
+- **Eski panelle ilişki.** Yeni araç çubuğu eski panelin yerine mi geçecek, yanında seçimli mi duracak (geçiş dönemi için öneri: ayarla seçilebilen ikinci arayüz, eski panel varsayılan kalır).
