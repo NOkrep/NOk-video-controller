@@ -24,6 +24,9 @@ Durum: tasarım aşaması, kod değişmedi. Tasarım Figma'da (`FilmDeck MEC523 
 | Panel sistemi (14 Kasım) | Araç çubuğu bugünkü panelle aynı sistemi kullanır: video küçük haldeyken de tam ekrandayken de sayfanın üzerinde durur ve ekranın her yerine taşınabilir. Genişliği videonun değil pencerenin boyutuna bağlıdır. |
 | Tema ve palet (14 Kasım) | Araç çubuğu, açılır kutular, şeritler, ipuçları, baloncuklar, bildirimler ve pencereler o an seçili temanın paletini kullanır; açık/koyu ayrımı değil palet esastır. Sabit renk yazılmaz, yalnız mevcut tema değişkenleri kullanılır (bkz. bölüm 2.1). |
 | Kolay okunur düzen (14 Kasım) | Accessibility'deki "Larger text" yerine "Easy-read layout" (Kolay okunur düzen) gelir: açılınca araç çubuğu yerine bugünkü panel (klasik düzen) gösterilir. Klasik panelin Accessibility bölümünde araç çubuğuna dönüş seçeneği bulunur. Bu, geçiş dönemi sorunlarını iki düzeni yan yana kullanarak gözlemlemeyi de sağlar. |
+| Varsayılan düzen (14 Kasım, kullanıcı kararı) | **Araç çubuğu varsayılan düzendir.** Bugünkü panel Easy-read layout olur. |
+| Easy-read'de büyütme (14 Kasım, kullanıcı kararı) | Klasik panelde yazı ve denetimler büyütülebilir. Bugünkü açık/kapalı "Büyük yazı ve kontroller" seçeneğinin yerini kademeli büyütme alır. Claude önerisi: %100 / %125 / %150 kademeleri ve panelin ekrana sığmadığı kademede kaydırma; kademe sayısı ve sınırı uygulamada ölçülerek belirlenecek. |
+| Dar pencere (14 Kasım, kullanıcı kararı) | Pencere araç çubuğundan darsa kendiliğinden klasik panele geçilir. Claude önerisi: pencere yeniden genişleyince araç çubuğuna dönülür, ama kullanıcı Easy-read'i kendisi seçtiyse onun seçimi korunur; sınırda gidip gelmeyi önlemek için dönüş eşiği geçiş eşiğinden biraz geniş tutulur. |
 | Tek açılır kutu (14 Kasım) | Gerekmedikçe aynı anda iki açılır kutu açık olmaz; yenisi açılınca öncekisi kapanır, kutular birbirini itmez. İstisnalar tek tek belirlenir. Bilinen istisna: Settings grubunda Help hep açıktır; o grupta açılan diğer kutu Help'in yanında açılır ve onu itmez. |
 
 ### 2.1 Tema değişkenleri
@@ -76,7 +79,7 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 | Görüntü filtreleri ve gece modu, ters renk, sıfırla | Settings › Picture & night | yerinde |
 | CDN yanıtı, kısayol ve izin rehberi, teşhis raporu, Hakkında | Settings › Help (açık); rapor ayrıca her grupta simge | yerinde |
 | Paneli açık tut, yüksek kontrast, hareketi azalt | Accessibility grubunda tek tıkla açılıp kapanan düğmeler | yerinde |
-| Büyük yazı ve kontroller | Accessibility › Easy-read layout: klasik panele geçer; büyük yazı seçeneği klasik panelde kalır | yerinde |
+| Büyük yazı ve kontroller | Accessibility › Easy-read layout: klasik panele geçer; klasik panelde kademeli büyütme olur | yerinde |
 | Gömülü oynatıcıda üst sayfada tek panel ve durum köprüsü | Araç çubuğu aynı köprüyü kullanır | yerinde (uygulamada denetlenecek) |
 | Reklam işaretinde otomatik denetim (I-04) | Panel denetimi yok; bildirimleri aynı kalır | yerinde |
 | Bildirim (toast) ve iletişim pencereleri (odak tuzağı, Esc) | Aynı sistem, panel teması | yerinde |
@@ -91,6 +94,6 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 
 ## 5. Denemeden önce kapanması gerekenler
 
-- **Genişlik (14 Kasım'da büyük ölçüde çözüldü).** Araç çubuğu videoya değil pencereye bağlı ve taşınabilir; büyük yazı artık klasik panele geçtiği için çubuğu büyütmüyor. Çizimlerdeki genişlikler, numara rozetleri çıkarıldığında yaklaşık: Player 760 px, Subtitles 810 px, Settings 740 px, Accessibility 1020 px. Kalan tek durum, pencerenin araç çubuğundan dar olması (ör. bölünmüş ekran). Claude önerisi: o durumda kendiliğinden klasik panele geçmek. Karar bekliyor.
+- **Genişlik (14 Kasım'da çözüldü).** Araç çubuğu videoya değil pencereye bağlı ve taşınabilir; büyük yazı klasik panelde. Çizimlerdeki genişlikler, numara rozetleri çıkarıldığında yaklaşık: Player 760 px, Subtitles 810 px, Settings 740 px, Accessibility 1020 px. Pencere bundan darsa klasik panele geçilir (bölüm 2).
 - **Palet (14 Kasım'da kural kondu).** Bölüm 2.1'deki değişken eşlemesi uygulanacak; uygulamadan sonra en az bir açık, bir OLED temada ve yüksek kontrastta göz kontrolü yapılacak.
-- **Eski panelle ilişki (kısmen karar).** Eski panel "Easy-read layout" olarak kalıyor. Hangisinin varsayılan olacağı henüz belirlenmedi.
+- **Eski panelle ilişki (14 Kasım'da karar).** Araç çubuğu varsayılan; eski panel "Easy-read layout" olarak kalıyor ve kademeli büyütme alacak.
