@@ -23,7 +23,13 @@ Kod değişmedi; tasarım Figma'da (`FilmDeck MEC523 Wireframes`, sayfalar "C + 
 - **Elenen:** Model 6 (dikey kayar anahtar) kesin elendi. Model 4, 7, 8, 9 karşılaştırma için sayfada duruyor.
 - **Player grubu, rev 2 (14 Kasım, kullanıcı istekleri):** hız kutusunda yalnız hız; ileri/geri sarma araç çubuğunda `« 10s »` biçiminde, ortadaki 10s'e basınca adım (5/10/30/60 sn) ve doğrudan atlama (−30/−10/+10/+30) açılır; Stereo/Mono ses kutusunun başlığının sağında; o an oynatılan çözünürlük araç çubuğunun altında "Playing 1280×720 · Refresh" şeridinde; PiP ve kısayol aç/kapa araç çubuğunda.
 - **Kullanıcıda açık:** Stereo/Mono denetiminin görünümü. Kullanıcı başka sitelerdeki düğme modellerini inceleyip bildirecek; o zamana kadar yer tutucu.
-- **Açık karar:** Adaptör ve video hedefi kalite kutusunun altında ("Player detection") mı, Settings grubunda mı. Kısayol aç/kapa hem araç çubuğunda hem Accessibility içinde mi kalacak. Kalan grupların düzeni için kullanıcı görüş verecek; Accessibility'nin ayrı grup olması öneri aşamasında.
+- **Açık karar:** Adaptör ve video hedefi kalite kutusunun altında ("Player detection") mı, Settings grubunda mı. Kısayol aç/kapa hem araç çubuğunda hem Accessibility içinde mi kalacak.
+- **14 Kasım, kullanıcı kararları:**
+  - Küçültme düğmesi yok. Kapatma, FilmDeck adının üzerine gelince yanında açılan küçük baloncukta (ada tıklayınca kapatma önerilmedi: kazayla kapanma riski).
+  - Dört grup: Player, Subtitles, Settings, Accessibility. Grup düğmesinde fare tekerleği grup değiştirir; çift tıklama dört grubun listesini açar.
+  - **Fare tekerleği değer değişikliklerinde de kullanılacak** (hız, ses, sarma adımı, altyazı zamanlaması gibi). Uygulamada yalnız imleç o denetimin üzerindeyken sayfa kaydırması engellenir; klavye karşılığı da olmalı.
+  - PiP ve Shortcuts yalnız simge; adları üzerine gelince ve klavye odağında görünür.
+  - Subtitles: "Load file" üzerine gelince kabul edilen türleri (.srt, .vtt) yazar; zamanlama `− 100ms +` biçiminde, ortaya basınca adım ve sıfırlama açılır; Beyaz/Sarı seçimi "Subtitle appearance" başlığının sağında. Açık/Kapalı'nın yeri ve kayma (offset) değerinin yeri için Claude önerisi Figma'da (Subtitles rev 2).
 
 ## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
 
