@@ -37,6 +37,7 @@ Kod değişmedi; tasarım Figma'da (`FilmDeck MEC523 Wireframes`, sayfalar "C + 
   - Subtitles aç/kapa göz simgesiyle kalır; yeri Load file'ın hemen sağı.
   - Açılır kutuların içi eski paneldeki gibi biraz daha açık renkli kutulara bölünür, alanların sınırı belli olur.
   - Settings: Picture ve Night mode birlikte (ikisi de video filtresi). Tema düğmesinde o anki tema adı yazar (ör. "Aurora"). Klavye kısayolu aç/kapa Settings'te yok; Help'te yalnız bilgi rehberi. Settings grubuna geçince Help kutusu kendiliğinden açık durur.
+  - **rev 4 (14 Kasım):** grup düğmesi o anki adın genişliğinde (sabit genişlik kaldırıldı), liste en uzun ada göre; rapor simgesi her grupta solda; dil kutusu kendi içeriği kadar; Reset all "Picture & night mode" başlığının sağında; tema adı "Theme" başlığının sağında; Help maddelerinde simgeler. Teknik kurallar ve bugünkü özelliklerin yeni yerleri [TOOLBAR_REDESIGN.md](TOOLBAR_REDESIGN.md) içinde; açılır kutular araç çubuğu ekranın üst yarısındaysa altta, alt yarısındaysa üstte açılır.
   - Settings/Accessibility ayrımı Claude'a bırakıldı: Settings = dil, görüntü ve gece filtresi, tema, Help; Accessibility = paneli açık tut, büyük yazı, yüksek kontrast, hareketi azalt (her biri araç çubuğunda tek tıkla açılıp kapanan düğme). Kısayol aç/kapa her grupta solda duran simgede kalır, Accessibility'de ikinci kez yer almaz.
 
 ## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
