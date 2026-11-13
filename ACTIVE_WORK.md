@@ -30,6 +30,14 @@ Kod değişmedi; tasarım Figma'da (`FilmDeck MEC523 Wireframes`, sayfalar "C + 
   - **Fare tekerleği değer değişikliklerinde de kullanılacak** (hız, ses, sarma adımı, altyazı zamanlaması gibi). Uygulamada yalnız imleç o denetimin üzerindeyken sayfa kaydırması engellenir; klavye karşılığı da olmalı.
   - PiP ve Shortcuts yalnız simge; adları üzerine gelince ve klavye odağında görünür.
   - Subtitles: "Load file" üzerine gelince kabul edilen türleri (.srt, .vtt) yazar; zamanlama `− 100ms +` biçiminde, ortaya basınca adım ve sıfırlama açılır; Beyaz/Sarı seçimi "Subtitle appearance" başlığının sağında. Açık/Kapalı'nın yeri ve kayma (offset) değerinin yeri için Claude önerisi Figma'da (Subtitles rev 2).
+- **14 Kasım, ikinci tur (rev 3):**
+  - Araç çubuğunun başında yalnız "FilmDeck" yazısı, simge yok. Üzerine gelince yalnız X simgeli kapatma baloncuğu çıkar, sola doğru açılır.
+  - **Bütün ipuçları ve baloncuklar panel temasını kullanır** (beyaz değil). Bu kural bütün sistemlere uygulanır.
+  - Çift tıkla açılan grup listesi, seçili grup düğmesinin mavi kutusuyla aynı genişlikte sabit; "1 / 4" sıra yazısı yok. Bunun için grup düğmesinin genişliği en uzun ada ("Accessibility") göre sabitlenir.
+  - Subtitles aç/kapa göz simgesiyle kalır; yeri Load file'ın hemen sağı.
+  - Açılır kutuların içi eski paneldeki gibi biraz daha açık renkli kutulara bölünür, alanların sınırı belli olur.
+  - Settings: Picture ve Night mode birlikte (ikisi de video filtresi). Tema düğmesinde o anki tema adı yazar (ör. "Aurora"). Klavye kısayolu aç/kapa Settings'te yok; Help'te yalnız bilgi rehberi. Settings grubuna geçince Help kutusu kendiliğinden açık durur.
+  - Settings/Accessibility ayrımı Claude'a bırakıldı: Settings = dil, görüntü ve gece filtresi, tema, Help; Accessibility = paneli açık tut, büyük yazı, yüksek kontrast, hareketi azalt (her biri araç çubuğunda tek tıkla açılıp kapanan düğme). Kısayol aç/kapa her grupta solda duran simgede kalır, Accessibility'de ikinci kez yer almaz.
 
 ## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
 
