@@ -21,7 +21,28 @@ Durum: tasarım aşaması, kod değişmedi. Tasarım Figma'da (`FilmDeck MEC523 
 | Konum hafızası | Mevcut oran tabanlı konum (`hudPlacement`), mıknatıslı kenar (16 px) ve tam ekran/gömülü oynatıcı arasında konum aktarımı aynen korunur. |
 | Boşta solma | Mevcut iki aşamalı solma (önce yarı saydam, 2 sn sonra gizli; fare üzerindeyken ve klavye odağında solmaz) araç çubuğuna uygulanır. Accessibility › Keep visible bunu kapatır. |
 | Sürükleme ve kapatma (14 Kasım) | `FilmDeck` yazısı hem kapatma baloncuğunu hem sürüklemeyi taşır. Üzerine gelince (veya klavye odağında) solunda yalnız X olan baloncuk açılır. Yazıya basılı tutulup imleç kaydırılınca baloncuk kapanır ve araç çubuğu taşınır. Tıklama ile sürükleme küçük bir hareket eşiğiyle ayrılır; X düğmesinin kendisi sürüklemez. |
+| Panel sistemi (14 Kasım) | Araç çubuğu bugünkü panelle aynı sistemi kullanır: video küçük haldeyken de tam ekrandayken de sayfanın üzerinde durur ve ekranın her yerine taşınabilir. Genişliği videonun değil pencerenin boyutuna bağlıdır. |
+| Tema ve palet (14 Kasım) | Araç çubuğu, açılır kutular, şeritler, ipuçları, baloncuklar, bildirimler ve pencereler o an seçili temanın paletini kullanır; açık/koyu ayrımı değil palet esastır. Sabit renk yazılmaz, yalnız mevcut tema değişkenleri kullanılır (bkz. bölüm 2.1). |
+| Kolay okunur düzen (14 Kasım) | Accessibility'deki "Larger text" yerine "Easy-read layout" (Kolay okunur düzen) gelir: açılınca araç çubuğu yerine bugünkü panel (klasik düzen) gösterilir. Klasik panelin Accessibility bölümünde araç çubuğuna dönüş seçeneği bulunur. Bu, geçiş dönemi sorunlarını iki düzeni yan yana kullanarak gözlemlemeyi de sağlar. |
 | Tek açılır kutu (14 Kasım) | Gerekmedikçe aynı anda iki açılır kutu açık olmaz; yenisi açılınca öncekisi kapanır, kutular birbirini itmez. İstisnalar tek tek belirlenir. Bilinen istisna: Settings grubunda Help hep açıktır; o grupta açılan diğer kutu Help'in yanında açılır ve onu itmez. |
+
+### 2.1 Tema değişkenleri
+
+Temalar `UI_THEMES` içinde tanımlı ve her arayüz köküne `--pvc-*` değişkenleri olarak yazılıyor (`applyUiTheme`). Varsayılan tema Atlas. Figma çizimlerindeki renkler Atlas'a yakın bir örnektir; turuncu numara rozetleri yalnız açıklama içindir, üründe yoktur.
+
+| Parça | Değişken |
+|---|---|
+| Araç çubuğu zemini | `--pvc-bg` (gerekirse saydamlıkla) |
+| Açılır kutu, şerit, ipucu, baloncuk zemini | `--pvc-surface` |
+| Açılır kutu içindeki kutular | `--pvc-elevated` |
+| Kenarlıklar ve ayraçlar | `--pvc-border` |
+| Yazı / ikincil yazı | `--pvc-text` / `--pvc-muted` |
+| Seçili grup, seçili değer, açık anahtar | `--pvc-accent`; üzerindeki yazı `--pvc-accent-on`; vurgulu yazı `--pvc-accent-ink` |
+| Kayma (offset) uyarısı ve dikkat durumları | `--pvc-warning` |
+| Onaylandı durumu | `--pvc-success` |
+| Kapatma düğmesi | `--pvc-danger` |
+
+Yüksek kontrast açıkken tema renkleri bugünkü gibi geçici olarak geçersiz kılınır.
 
 ## 3. Bugünkü özelliklerin yeni yeri
 
@@ -54,7 +75,8 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 | Temalar (20 tema, önceki/sonraki, örnek renkler, kontrast notu) | Settings › tema adı düğmesi | yerinde |
 | Görüntü filtreleri ve gece modu, ters renk, sıfırla | Settings › Picture & night | yerinde |
 | CDN yanıtı, kısayol ve izin rehberi, teşhis raporu, Hakkında | Settings › Help (açık); rapor ayrıca her grupta simge | yerinde |
-| Paneli açık tut, büyük yazı, yüksek kontrast, hareketi azalt | Accessibility grubunda tek tıkla açılıp kapanan düğmeler | yerinde |
+| Paneli açık tut, yüksek kontrast, hareketi azalt | Accessibility grubunda tek tıkla açılıp kapanan düğmeler | yerinde |
+| Büyük yazı ve kontroller | Accessibility › Easy-read layout: klasik panele geçer; büyük yazı seçeneği klasik panelde kalır | yerinde |
 | Gömülü oynatıcıda üst sayfada tek panel ve durum köprüsü | Araç çubuğu aynı köprüyü kullanır | yerinde (uygulamada denetlenecek) |
 | Reklam işaretinde otomatik denetim (I-04) | Panel denetimi yok; bildirimleri aynı kalır | yerinde |
 | Bildirim (toast) ve iletişim pencereleri (odak tuzağı, Esc) | Aynı sistem, panel teması | yerinde |
@@ -69,6 +91,6 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 
 ## 5. Denemeden önce kapanması gerekenler
 
-- **Genişlik ve taşma kuralı.** Çizimlerdeki araç çubukları, numara rozetleri çıkarıldığında yaklaşık şu genişlikte: Player 760 px, Subtitles 810 px, Settings 740 px, Accessibility 1020 px. Bugünkü panel 388 px. Pencere daraldığında, gömülü küçük bir oynatıcıda veya "Larger text" açıkken çubuk ekrana sığmayabilir. Taşma olduğunda ne olacağı (yazıların kısalması, düğmelerin yalnız simgeye inmesi, ikinci satır ya da "daha fazla" düğmesi) belirlenmeli.
-- **Açık temalar.** Bütün çizimler koyu temada. 20 temanın 7'si açık renkli; araç çubuğu, açılır kutular ve şeritlerin en az bir açık temada ve yüksek kontrastta görünümü kontrol edilmeli.
-- **Eski panelle ilişki.** Yeni araç çubuğu eski panelin yerine mi geçecek, yanında seçimli mi duracak (geçiş dönemi için öneri: ayarla seçilebilen ikinci arayüz, eski panel varsayılan kalır).
+- **Genişlik (14 Kasım'da büyük ölçüde çözüldü).** Araç çubuğu videoya değil pencereye bağlı ve taşınabilir; büyük yazı artık klasik panele geçtiği için çubuğu büyütmüyor. Çizimlerdeki genişlikler, numara rozetleri çıkarıldığında yaklaşık: Player 760 px, Subtitles 810 px, Settings 740 px, Accessibility 1020 px. Kalan tek durum, pencerenin araç çubuğundan dar olması (ör. bölünmüş ekran). Claude önerisi: o durumda kendiliğinden klasik panele geçmek. Karar bekliyor.
+- **Palet (14 Kasım'da kural kondu).** Bölüm 2.1'deki değişken eşlemesi uygulanacak; uygulamadan sonra en az bir açık, bir OLED temada ve yüksek kontrastta göz kontrolü yapılacak.
+- **Eski panelle ilişki (kısmen karar).** Eski panel "Easy-read layout" olarak kalıyor. Hangisinin varsayılan olacağı henüz belirlenmedi.
