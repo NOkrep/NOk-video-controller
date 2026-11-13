@@ -13,6 +13,15 @@
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+- **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
+
+Kullanıcının kendi denemesi, v0.7.18. Motor, canlı yayın/VOD ve sayfa belirtilmedi; kod değişmedi, yeniden üretilmedi.
+
+- **Hız:** Panelde değiştirilen hız Kick'in kendi arayüzünde görünmüyor.
+- **Ses:** Panelde %0 seçildikten sonra seçilen ilk değer sitenin arayüzüne yansıyor; ondan sonraki değişiklikler yansımıyor. v0.7.10'daki "oynatıcıya verilen ses sitenin simgesine yansır" kabulü bu sırada geçmiyor.
+- **Durum:** Açık. Kullanıcı önce C araç çubuğunu seçti; I-03'e dönüldüğünde önce yeniden üretim (motor, canlı/VOD, %0'dan önceki ve sonraki adımlar) gerekir.
 
 ## v0.7.18 pre-release hazırlığı — 6 Kasım 2026
 
