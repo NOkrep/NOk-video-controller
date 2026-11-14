@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.19**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.19.1**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,14 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Araç çubuğunda logo ve tema uyumlu kapatma, v0.7.19.1 — 15 Kasım 2026
+
+Kullanıcı istedi: kapatma düğmesinin kırmızısı temadan bağımsız duruyordu; adın yazısı yerine ürünün kendi logosu kullanılmalıydı.
+
+- **Kapatma:** X düğmesi artık temanın yazı, kenarlık ve yüzey renklerini kullanıyor (`--pvc-text`, `--pvc-border`); kırmızı (`--pvc-danger`) kaldırıldı.
+- **Logo:** Araç çubuğunun başında klasik başlıktaki ürün logosu (`FILMDECK_LOGO_URL`, `.pvc-product-logo`) aynı tema filtresiyle (koyu temada beyaz, açık temada siyah); görsel yüklenemezse "FilmDeck" yazısı yedek olarak görünür. Logoya basılı tutup sürükleme ve üzerine gelince kapatma baloncuğu aynen çalışır.
+- **Kanıt:** `npm run check` (289/289), `toolbar-browser.cjs` Edge ve Firefox'ta geçti. Atlas ve Daylight temalarında ekran görüntüsüyle görsel kontrol.
 
 ## Kompakt araç çubuğu önizlemesi: iskelet ve Player grubu, v0.7.19 — 14 Kasım 2026
 

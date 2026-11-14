@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.19 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.19.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.19';
+  const EXTENSION_VERSION = '0.7.19.1';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -5879,7 +5879,7 @@
     const placeholder = id => `<div class="pvc-tb-group" data-pvc-group="${id}" hidden><span class="pvc-tb-note">Bu grup araç çubuğunda henüz hazır değil.</span><button type="button" class="pvc-tb-chip pvc-tb-classic" data-pvc-classic="${id}">Klasik panelde aç</button></div>`;
     return `
       <div class="pvc-tb-bar">
-        <div id="pvc-tb-brand" class="pvc-tb-brand" aria-label="FilmDeck: taşımak için sürükleyin">FilmDeck</div>
+        <div id="pvc-tb-brand" class="pvc-tb-brand" aria-label="FilmDeck: taşımak için sürükleyin"><span id="pvc-tb-brand-text">FilmDeck</span></div>
         <div id="pvc-tb-bubble" class="pvc-tb-bubble" hidden><button type="button" id="pvc-tb-close" class="pvc-tb-close" aria-label="FilmDeck'i kapat">${uiIcon('close')}</button></div>
         <span class="pvc-tb-sep"></span>
         <button type="button" id="pvc-tb-pip" class="pvc-tb-icon" aria-label="Resim içinde resim">${uiIcon('pip')}</button>
@@ -6182,6 +6182,15 @@
     const on = (id, handler) => byId(id)?.addEventListener('click', event => { event.stopPropagation(); resetIdleTimer(popup); handler(event); });
     const brand = byId('pvc-tb-brand');
     brand.tabIndex = 0; brand.setAttribute('role', 'button');
+    // Same product logo as the classic header, with the same text fallback when the image cannot load.
+    if (/^(chrome|moz)-extension:\/\//.test(FILMDECK_LOGO_URL)) {
+      const logo = document.createElement('img');
+      logo.className = 'pvc-product-logo'; logo.alt = ''; logo.draggable = false;
+      logo.addEventListener('load', () => { brand.classList.add('pvc-tb-logo-ready'); });
+      logo.addEventListener('error', () => { logo.remove(); brand.classList.remove('pvc-tb-logo-ready'); });
+      logo.src = FILMDECK_LOGO_URL;
+      brand.insertBefore(logo, byId('pvc-tb-brand-text'));
+    }
     for (const [id, tip] of [['pvc-tb-pip', 'Resim içinde resim (Alt+P)'], ['pvc-tb-report', 'Sorun bildir'], ['pvc-tb-speed', 'Hız ([ / ], fare tekerleği)'],
       ['pvc-tb-seek-step', 'Sarma adımı (fare tekerleği)'], ['pvc-tb-volume', 'Ses (Shift+↑/↓, fare tekerleği)'], ['pvc-tb-quality', 'Video kalitesi (Alt+Q)'],
       ['pvc-tb-close', 'FilmDeck\'i kapat (Ctrl+Shift+S)']]) setUiTip(byId(id), tip);
