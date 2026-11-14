@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.18 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.19 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.18';
+  const EXTENSION_VERSION = '0.7.19';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -352,7 +352,42 @@
     'Video kare atlıyor. Panel animasyonları kapatılsın mı?': 'The video is dropping frames. Turn off panel animations?',
     'Video kare atlıyor. Görüntü filtreleri sıfırlansın mı?': 'The video is dropping frames. Reset picture filters?',
     'Evet': 'Yes',
-    'Hayır': 'No'
+    'Hayır': 'No',
+    'FilmDeck araç çubuğu': 'FilmDeck toolbar',
+    'FilmDeck: taşımak için sürükleyin': 'FilmDeck: drag to move',
+    'FilmDeck\'i kapat': 'Close FilmDeck',
+    'FilmDeck\'i kapat (Ctrl+Shift+S)': 'Close FilmDeck (Ctrl+Shift+S)',
+    'Resim içinde resim': 'Picture in picture',
+    'Resim içinde resim (Alt+P)': 'Picture in picture (Alt+P)',
+    'Klavye kısayolları': 'Keyboard shortcuts',
+    'Klavye kısayolları açık': 'Keyboard shortcuts on',
+    'Klavye kısayolları kapalı': 'Keyboard shortcuts off',
+    'Sorun bildir': 'Report a problem',
+    'Hız ([ / ], fare tekerleği)': 'Speed ([ / ], mouse wheel)',
+    'Sarma': 'Seek',
+    'Geri sar': 'Seek back',
+    'İleri sar': 'Seek forward',
+    'Geri sar: {0} sn': 'Back {0} s',
+    'İleri sar: {0} sn': 'Forward {0} s',
+    'Sarma adımı (fare tekerleği)': 'Seek step (mouse wheel)',
+    'Ok adımı': 'Arrow step',
+    'Hemen atla': 'Jump now',
+    'Ses (Shift+↑/↓, fare tekerleği)': 'Volume (Shift+↑/↓, mouse wheel)',
+    'Ses ve kanallar': 'Volume & channels',
+    'Video kalitesi': 'Video quality',
+    'Video kalitesi (Alt+Q)': 'Video quality (Alt+Q)',
+    'Oynatıcının bildirdiği seçenekler': 'Options reported by the player',
+    'Oynatıcı tespiti': 'Player detection',
+    'Adaptör': 'Adapter',
+    'Değiştir': 'Change',
+    'Oynatılıyor {0}': 'Playing {0}',
+    'Çözünürlük bekleniyor': 'Waiting for the resolution',
+    'Yenile': 'Refresh',
+    'Grup: {0} · tıkla: sonraki · çift tıkla: liste · tekerlek: değiştir': 'Group: {0} · click: next · double-click: list · wheel: switch',
+    'Gruplar': 'Groups',
+    'Bu grup araç çubuğunda henüz hazır değil.': 'This group is not on the toolbar yet.',
+    'Klasik panelde aç': 'Open in the classic panel',
+    'Kompakt araç çubuğu (önizleme)': 'Compact toolbar (preview)'
   };
   const plainUiLabel = value => String(value).replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, '');
   // Keep legacy message keys for existing feedback; control labels no longer need emoji prefixes.
@@ -385,7 +420,9 @@
     palette: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1-4 2 2 0 0 1 1-4h3c4 0 4-10-6-10Z"/><path d="M7 9h.01M10 6h.01M15 6h.01M18 9h.01"/>',
     moon: '<path d="M20 14A8 8 0 0 1 10 4a9 9 0 1 0 10 10Z"/>',
     shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/>',
-    warning: '<path d="m12 3 10 18H2Z"/><path d="M12 9v5m0 3h.01"/>'
+    warning: '<path d="m12 3 10 18H2Z"/><path d="M12 9v5m0 3h.01"/>',
+    chevron: '<path d="m7 10 5 5 5-5"/>',
+    access: '<circle cx="12" cy="4.5" r="1.8"/><path d="M5 8.5l7 1.5 7-1.5M12 10v5l-3 6m3-6 3 6"/>'
   };
   function uiIcon(name) {
     if (!Object.hasOwn(UI_ICON_PATHS, name)) return '';
@@ -821,13 +858,21 @@
     clampPopupToViewport(popup);
   }
   const HUD_ACCESSIBILITY_KEYS = ['keepVisible', 'largeText', 'highContrast', 'reduceMotion'];
+  // The user's layout choice. 'classic' stays the default until every toolbar group exists.
+  let hudLayout = 'classic';
+  // Compact toolbar state (see COMPACT TOOLBAR); declared early because toasts read it.
+  let toolbarGroup = 'player', toolbarSeekStep = 10, toolbarShown = false, toolbarWidthCache = 0;
+  let toolbarOpenPopover = null, toolbarSyncFrame = 0, toolbarBubbleTimer = null;
+  const toolbarState = { speed: 1, volume: 100 };
   function currentHudPreferences() {
-    return { theme: currentUiThemeId, ...Object.fromEntries(HUD_ACCESSIBILITY_KEYS.map(key => [key, hudAccessibility[key]])) };
+    return { theme: currentUiThemeId, layout: hudLayout, ...Object.fromEntries(HUD_ACCESSIBILITY_KEYS.map(key => [key, hudAccessibility[key]])) };
   }
   // Applies the other frame's choice without echoing it back or waking an idle panel.
   function applyHudPreferences(next) {
     if (!next) return;
-    if (next.theme === currentUiThemeId && HUD_ACCESSIBILITY_KEYS.every(key => next[key] === hudAccessibility[key])) return;
+    const layout = next.layout === 'toolbar' ? 'toolbar' : 'classic';
+    if (next.theme === currentUiThemeId && layout === hudLayout && HUD_ACCESSIBILITY_KEYS.every(key => next[key] === hudAccessibility[key])) return;
+    if (layout !== hudLayout) { hudLayout = layout; applyToolbarLayout(); }
     if (UI_THEMES.some(theme => theme.id === next.theme)) currentUiThemeId = next.theme;
     for (const key of HUD_ACCESSIBILITY_KEYS) {
       hudAccessibility[key] = next[key];
@@ -1937,6 +1982,9 @@
         letter-spacing: 0.3px !important;
         transition: opacity 0.2s ease, transform 0.2s ease !important;
       `;
+
+      const toolbarTop = toolbarToastTop();
+      if (toolbarTop !== null) toast.style.setProperty('top', `${toolbarTop}px`, 'important');
 
       const container = getActiveContainer();
       container.appendChild(toast);
@@ -5793,6 +5841,448 @@
     });
   }
 
+  // =========================================================================
+  // COMPACT TOOLBAR (preview, TOOLBAR_REDESIGN.md). It lives inside the panel root, so placement,
+  // dragging, idle fading, themes and the embedded-player bridge stay shared with the classic panel.
+  // Controls call the same functions as the classic panel; shown values are read back from the
+  // classic panel, which stays the one place where state is rendered.
+  // =========================================================================
+  // BEGIN TOOLBAR GEOMETRY
+  const TOOLBAR_SEEK_STEPS = [5, 10, 30, 60];
+  const TOOLBAR_FIT_HYSTERESIS = 48;
+  // Upper half of the screen: popovers open below the bar; lower half: above it.
+  function toolbarOpensBelow(rect, viewportHeight) { return rect.top + rect.height / 2 < viewportHeight / 2; }
+  // A wider return threshold keeps a window at the limit from flipping between layouts.
+  function toolbarFitsViewport(toolbarWidth, viewportWidth, showingToolbar, margin) {
+    if (!(toolbarWidth > 0)) return true;
+    const room = viewportWidth - 2 * margin;
+    return showingToolbar ? toolbarWidth <= room : toolbarWidth + TOOLBAR_FIT_HYSTERESIS <= room;
+  }
+  function toolbarPopoverLeft(anchorLeft, popoverWidth, rootLeft, viewportWidth, margin) {
+    const left = Math.max(margin, Math.min(anchorLeft, viewportWidth - popoverWidth - margin));
+    return Math.round(left - rootLeft);
+  }
+  function toolbarStepAfter(steps, current, direction) {
+    const index = steps.indexOf(current);
+    return steps[Math.max(0, Math.min(steps.length - 1, (index < 0 ? steps.indexOf(10) : index) + direction))];
+  }
+  function toolbarGroupAfter(groups, current, direction) {
+    const index = Math.max(0, groups.indexOf(current));
+    return groups[(index + direction + groups.length) % groups.length];
+  }
+  // END TOOLBAR GEOMETRY
+
+  const TOOLBAR_GROUP_IDS = ['player', 'subtitles', 'settings', 'accessibility'];
+  const TOOLBAR_GROUP_INFO = { player: ['Oynatıcı', 'video'], subtitles: ['Altyazı', 'subtitles'], settings: ['Ayarlar', 'sliders'], accessibility: ['Erişilebilirlik', 'access'] };
+  function toolbarMarkup() {
+    const opts = (attribute, values, label) => values.map(value => `<button type="button" class="pvc-tb-opt" data-pvc-${attribute}="${value}">${label(value)}</button>`).join('');
+    const placeholder = id => `<div class="pvc-tb-group" data-pvc-group="${id}" hidden><span class="pvc-tb-note">Bu grup araç çubuğunda henüz hazır değil.</span><button type="button" class="pvc-tb-chip pvc-tb-classic" data-pvc-classic="${id}">Klasik panelde aç</button></div>`;
+    return `
+      <div class="pvc-tb-bar">
+        <div id="pvc-tb-brand" class="pvc-tb-brand" aria-label="FilmDeck: taşımak için sürükleyin">FilmDeck</div>
+        <div id="pvc-tb-bubble" class="pvc-tb-bubble" hidden><button type="button" id="pvc-tb-close" class="pvc-tb-close" aria-label="FilmDeck'i kapat">${uiIcon('close')}</button></div>
+        <span class="pvc-tb-sep"></span>
+        <button type="button" id="pvc-tb-pip" class="pvc-tb-icon" aria-label="Resim içinde resim">${uiIcon('pip')}</button>
+        <button type="button" id="pvc-tb-keys" class="pvc-tb-icon" aria-label="Klavye kısayolları">${uiIcon('keyboard')}</button>
+        <button type="button" id="pvc-tb-report" class="pvc-tb-icon" aria-label="Sorun bildir">${uiIcon('report')}</button>
+        <span class="pvc-tb-sep"></span>
+        <div class="pvc-tb-group" data-pvc-group="player">
+          <button type="button" id="pvc-tb-speed" class="pvc-tb-chip" data-pvc-popover="speed">${uiIcon('speed')}<span id="pvc-tb-speed-val" data-pvc-i18n-skip>1.0×</span>${uiIcon('chevron')}</button>
+          <div id="pvc-tb-seek" class="pvc-tb-seek" aria-label="Sarma">
+            <button type="button" id="pvc-tb-seek-back" class="pvc-tb-icon" aria-label="Geri sar">${uiIcon('rewind')}</button>
+            <button type="button" id="pvc-tb-seek-step" class="pvc-tb-step" data-pvc-popover="seek"><span id="pvc-tb-seek-val" data-pvc-i18n-skip>10s</span>${uiIcon('chevron')}</button>
+            <button type="button" id="pvc-tb-seek-fwd" class="pvc-tb-icon" aria-label="İleri sar">${uiIcon('forward')}</button>
+          </div>
+          <button type="button" id="pvc-tb-volume" class="pvc-tb-chip" data-pvc-popover="volume">${uiIcon('volume')}<span id="pvc-tb-volume-val" data-pvc-i18n-skip>100%</span>${uiIcon('chevron')}</button>
+          <button type="button" id="pvc-tb-quality" class="pvc-tb-chip" data-pvc-popover="quality">${uiIcon('video')}<span id="pvc-tb-quality-val">Kalite</span>${uiIcon('chevron')}</button>
+        </div>
+        ${placeholder('subtitles')}${placeholder('settings')}${placeholder('accessibility')}
+        <span class="pvc-tb-sep"></span>
+        <button type="button" id="pvc-tb-mode" class="pvc-tb-mode"><span id="pvc-tb-mode-icon" class="pvc-tb-mode-icon"></span><span id="pvc-tb-mode-label">Oynatıcı</span><span class="pvc-tb-dots"><span></span><span></span><span></span><span></span></span></button>
+      </div>
+      <div id="pvc-tb-strip" class="pvc-tb-strip">${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button></div>
+      <div id="pvc-tb-pop-speed" class="pvc-tb-popover" aria-label="Hız" hidden>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Hız</span><span id="pvc-tb-speed-badge" class="pvc-tb-badge" data-pvc-i18n-skip>1.0x</span></div>
+          <div class="pvc-tb-range"><span>0.25x</span><input type="range" id="pvc-tb-speed-slider" class="pvc-range-slider" min="0.25" max="3.0" step="0.25" value="1.0" aria-label="Oynatma hızı" /><span>3.0x</span></div>
+          <div class="pvc-tb-opts">${opts('speed', ['1.0', '1.25', '1.5', '2.0'], value => `${value}x`)}</div></div>
+      </div>
+      <div id="pvc-tb-pop-seek" class="pvc-tb-popover" aria-label="Sarma" hidden>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Ok adımı</span></div><div class="pvc-tb-opts">${opts('step', TOOLBAR_SEEK_STEPS, value => `${value}s`)}</div></div>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Hemen atla</span></div><div class="pvc-tb-opts">${opts('seek', [-30, -10, 10, 30], value => `${value > 0 ? '+' : ''}${value}s`)}</div></div>
+      </div>
+      <div id="pvc-tb-pop-volume" class="pvc-tb-popover" aria-label="Ses ve kanallar" hidden>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Ses ve kanallar</span>
+            <span class="pvc-tb-segment"><button type="button" id="pvc-tb-stereo" class="pvc-tb-seg">Stereo</button><button type="button" id="pvc-tb-mono" class="pvc-tb-seg">Mono</button></span></div>
+          <div class="pvc-tb-range"><span>0%</span><input type="range" id="pvc-tb-volume-slider" class="pvc-range-slider" min="0" max="300" step="5" value="100" aria-label="Ses" /><span>300%</span></div>
+          <div class="pvc-tb-opts">${opts('vol', [0, 100, 200, 300], value => `${value}%`)}</div></div>
+      </div>
+      <div id="pvc-tb-pop-quality" class="pvc-tb-popover" aria-label="Video kalitesi" hidden>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcının bildirdiği seçenekler</span></div>
+          <div id="pvc-tb-quality-list" class="pvc-tb-opts"></div>
+          <span id="pvc-tb-quality-status" class="pvc-tb-note" data-pvc-i18n-skip></span></div>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcı tespiti</span></div>
+          <div class="pvc-tb-row"><span class="pvc-tb-muted">Adaptör</span><span class="pvc-tb-row-end"><span id="pvc-tb-adapter" class="pvc-tb-badge" data-pvc-i18n-skip></span><button type="button" id="pvc-tb-adapter-change" class="pvc-tb-mini">Değiştir</button></span></div>
+          <label class="pvc-tb-row"><span class="pvc-tb-muted">Video hedefi</span><select id="pvc-tb-target" aria-label="Video hedefi"></select></label></div>
+      </div>
+      <div id="pvc-tb-pop-groups" class="pvc-tb-popover pvc-tb-grouplist" aria-label="Gruplar" hidden>
+        ${TOOLBAR_GROUP_IDS.map(id => `<button type="button" class="pvc-tb-group-item" data-pvc-goto="${id}">${uiIcon(TOOLBAR_GROUP_INFO[id][1])}<span>${TOOLBAR_GROUP_INFO[id][0]}</span></button>`).join('')}
+      </div>`;
+  }
+
+  function toolbarPopoverAnchor(name) {
+    return document.getElementById({ speed: 'pvc-tb-speed', seek: 'pvc-tb-seek-step', volume: 'pvc-tb-volume', quality: 'pvc-tb-quality', groups: 'pvc-tb-mode' }[name]);
+  }
+  function scheduleToolbarSync() {
+    if (toolbarSyncFrame) return;
+    toolbarSyncFrame = requestAnimationFrame(() => { toolbarSyncFrame = 0; syncToolbar(); });
+  }
+  function updateToolbarSide() {
+    const popup = document.getElementById('pvc-controller-popup'), toolbar = document.getElementById('pvc-toolbar');
+    if (!popup || !toolbar || !toolbarShown) return;
+    const below = toolbarOpensBelow(popup.getBoundingClientRect(), window.innerHeight || document.documentElement.clientHeight);
+    toolbar.classList.toggle('pvc-tb-above', !below);
+    const bar = toolbar.querySelector('.pvc-tb-bar'), strip = document.getElementById('pvc-tb-strip');
+    const gap = 8, barHeight = bar.offsetHeight, stripShown = !strip.hidden;
+    const set = (node, offset) => {
+      node.style.setProperty(below ? 'top' : 'bottom', `${offset}px`, 'important');
+      node.style.setProperty(below ? 'bottom' : 'top', 'auto', 'important');
+    };
+    set(strip, barHeight + gap);
+    const popoverOffset = barHeight + gap + (stripShown ? strip.offsetHeight + gap : 0);
+    for (const panel of toolbar.querySelectorAll('.pvc-tb-popover')) set(panel, panel.id === 'pvc-tb-pop-groups' ? barHeight + gap : popoverOffset);
+  }
+  function placeToolbarPopover() {
+    if (!toolbarOpenPopover) return;
+    updateToolbarSide();
+    const { panel, anchor } = toolbarOpenPopover;
+    const root = document.getElementById('pvc-toolbar').getBoundingClientRect(), at = anchor.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const start = panel.id === 'pvc-tb-pop-groups' ? at.right - panel.offsetWidth : at.left;
+    panel.style.setProperty('left', `${toolbarPopoverLeft(start, panel.offsetWidth, root.left, viewportWidth, EDGE_MARGIN)}px`, 'important');
+  }
+  function closeToolbarPopover(returnFocus = false) {
+    if (!toolbarOpenPopover) return;
+    const { panel, anchor } = toolbarOpenPopover;
+    toolbarOpenPopover = null;
+    panel.hidden = true; anchor.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', onToolbarOutsidePointer, true);
+    if (returnFocus) anchor.focus();
+  }
+  function onToolbarOutsidePointer(event) {
+    const popup = document.getElementById('pvc-controller-popup');
+    if (!popup?.contains(event.target)) closeToolbarPopover();
+  }
+  // Only one popover at a time, so they never push each other around (TOOLBAR_REDESIGN.md).
+  function openToolbarPopover(name) {
+    const panel = document.getElementById(`pvc-tb-pop-${name}`), anchor = toolbarPopoverAnchor(name);
+    if (!panel || !anchor) return;
+    if (toolbarOpenPopover?.panel === panel) { closeToolbarPopover(); return; }
+    closeToolbarPopover();
+    toolbarOpenPopover = { panel, anchor };
+    panel.hidden = false; anchor.setAttribute('aria-expanded', 'true');
+    syncToolbar(); placeToolbarPopover();
+    document.addEventListener('pointerdown', onToolbarOutsidePointer, true);
+  }
+  function showToolbarBubble(show) {
+    const bubble = document.getElementById('pvc-tb-bubble');
+    if (!bubble) return;
+    clearTimeout(toolbarBubbleTimer);
+    if (!show) { toolbarBubbleTimer = setTimeout(() => { bubble.hidden = true; }, 220); return; }
+    bubble.hidden = false;
+    // Opens to the left of the bar; without room there it sits above or below the name instead.
+    const popup = document.getElementById('pvc-controller-popup');
+    const noRoom = popup.getBoundingClientRect().left < bubble.offsetWidth + 8 + EDGE_MARGIN;
+    bubble.classList.toggle('pvc-tb-bubble-stack', noRoom);
+  }
+  function hideToolbarBubbleNow() {
+    clearTimeout(toolbarBubbleTimer);
+    const bubble = document.getElementById('pvc-tb-bubble'); if (bubble) bubble.hidden = true;
+  }
+  function setToolbarGroup(id) {
+    if (!TOOLBAR_GROUP_IDS.includes(id)) return;
+    toolbarGroup = id;
+    const toolbar = document.getElementById('pvc-toolbar');
+    if (!toolbar) return;
+    if (toolbarOpenPopover?.panel.id !== 'pvc-tb-pop-groups') closeToolbarPopover();
+    for (const group of toolbar.querySelectorAll('[data-pvc-group]')) group.hidden = group.getAttribute('data-pvc-group') !== id;
+    document.getElementById('pvc-tb-strip').hidden = id !== 'player';
+    const [label, icon] = TOOLBAR_GROUP_INFO[id];
+    setUiMarkup(document.getElementById('pvc-tb-mode-icon'), uiIcon(icon));
+    setUiText(document.getElementById('pvc-tb-mode-label'), label);
+    toolbar.querySelectorAll('.pvc-tb-dots > span').forEach((dot, index) => dot.classList.toggle('pvc-tb-on', TOOLBAR_GROUP_IDS[index] === id));
+    toolbar.querySelectorAll('[data-pvc-goto]').forEach(item => {
+      const on = item.getAttribute('data-pvc-goto') === id;
+      item.classList.toggle('pvc-tb-on', on); item.setAttribute('aria-current', String(on));
+    });
+    updateToolbarModeTip();
+    applyToolbarLayout();
+  }
+  // The group name inside the hint is translated on its own, so it is rebuilt on every sync.
+  function updateToolbarModeTip() {
+    const mode = document.getElementById('pvc-tb-mode');
+    if (mode) setUiTip(mode, uiText('Grup: {0} · tıkla: sonraki · çift tıkla: liste · tekerlek: değiştir').replace('{0}', uiText(TOOLBAR_GROUP_INFO[toolbarGroup][0])));
+  }
+  function measureToolbarWidth(popup, toolbar) {
+    popup.classList.add('pvc-toolbar-measure');
+    const width = toolbar.querySelector('.pvc-tb-bar').offsetWidth;
+    popup.classList.remove('pvc-toolbar-measure');
+    return width;
+  }
+  // Shows the toolbar when the user chose it and the window has room; otherwise the classic panel.
+  function applyToolbarLayout() {
+    const popup = document.getElementById('pvc-controller-popup'), toolbar = document.getElementById('pvc-toolbar');
+    const toggle = document.getElementById('pvc-layout-toolbar-toggle');
+    if (toggle) toggle.checked = hudLayout === 'toolbar';
+    if (!popup || !toolbar) return;
+    if (hudLayout === 'toolbar') toolbarWidthCache = measureToolbarWidth(popup, toolbar) || toolbarWidthCache;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const show = hudLayout === 'toolbar' && toolbarFitsViewport(toolbarWidthCache, viewportWidth, toolbarShown, EDGE_MARGIN);
+    if (show !== toolbarShown || popup.classList.contains('pvc-layout-toolbar') !== show) {
+      toolbarShown = show;
+      popup.classList.toggle('pvc-layout-toolbar', show);
+      if (!show) { closeToolbarPopover(); hideToolbarBubbleNow(); }
+      if (popup.style.display !== 'none') clampPopupToViewport(popup);
+    }
+    if (show) { syncToolbar(); updateToolbarSide(); placeToolbarPopover(); }
+  }
+  function setHudLayout(layout) {
+    hudLayout = layout === 'toolbar' ? 'toolbar' : 'classic';
+    applyToolbarLayout();
+    syncHudPreferences();
+  }
+  function formatToolbarRate(rate) { return `${Number.isInteger(rate) ? rate.toFixed(1) : String(rate)}×`; }
+  // Popover cards use the elevated colour, so the empty part of a track gets its own visible shade.
+  function paintToolbarRange(slider, ratio, color) {
+    if (!slider) return;
+    const percent = Math.round(Math.max(0, Math.min(1, ratio)) * 1000) / 10;
+    slider.style.setProperty('background', `linear-gradient(90deg, ${color} 0%, ${color} ${percent}%, color-mix(in srgb, var(--pvc-text) 18%, transparent) ${percent}%, color-mix(in srgb, var(--pvc-text) 18%, transparent) 100%)`, 'important');
+  }
+  // A toast sits at the top centre; when the toolbar is up there, the toast moves under it.
+  function toolbarToastTop() {
+    const popup = document.getElementById('pvc-controller-popup');
+    if (!toolbarShown || !popup || popup.style.display === 'none') return null;
+    const bar = popup.querySelector('.pvc-tb-bar')?.getBoundingClientRect(), strip = document.getElementById('pvc-tb-strip');
+    if (!bar || bar.top > 80) return null;
+    const stripBottom = strip && !strip.hidden ? strip.getBoundingClientRect().bottom : 0;
+    return Math.round(Math.max(bar.bottom, stripBottom) + 10);
+  }
+  function syncToolbar() {
+    const popup = document.getElementById('pvc-controller-popup'), toolbar = document.getElementById('pvc-toolbar');
+    if (!popup || !toolbar || !toolbarShown) return;
+    const byId = id => document.getElementById(id);
+    const shown = (id, value) => { const node = byId(id); if (node && node.textContent !== value) node.textContent = value; };
+    const slider = (id, value) => { const node = byId(id); if (node && document.activeElement !== node && node.value !== String(value)) node.value = String(value); };
+    const pressed = (node, on) => { if (!node) return; node.classList.toggle('pvc-tb-on', on); node.setAttribute('aria-pressed', String(on)); };
+
+    const speed = parseFloat(byId('pvc-hdr-speed-badge')?.textContent) || 1;
+    const volume = parseInt(byId('pvc-hdr-volume-badge')?.textContent, 10);
+    toolbarState.speed = speed; if (Number.isFinite(volume)) toolbarState.volume = volume;
+    shown('pvc-tb-speed-val', formatToolbarRate(speed)); shown('pvc-tb-speed-badge', formatToolbarRate(speed)); slider('pvc-tb-speed-slider', speed);
+    shown('pvc-tb-volume-val', `${toolbarState.volume}%`); slider('pvc-tb-volume-slider', toolbarState.volume);
+    const volumeSlider = byId('pvc-tb-volume-slider');
+    updateVolumeSliderVisualGain(volumeSlider, toolbarState.volume); // Thumb colour classes for boosted volume.
+    paintToolbarRange(volumeSlider, toolbarState.volume / 300, toolbarState.volume > 200 ? 'var(--pvc-danger)' : toolbarState.volume > 100 ? 'var(--pvc-warning)' : 'var(--pvc-accent-ink)');
+    paintToolbarRange(byId('pvc-tb-speed-slider'), (speed - 0.25) / 2.75, 'var(--pvc-accent-ink)');
+    shown('pvc-tb-seek-val', `${toolbarSeekStep}s`);
+    setUiTip(byId('pvc-tb-seek-back'), `Geri sar: ${toolbarSeekStep} sn`);
+    setUiTip(byId('pvc-tb-seek-fwd'), `İleri sar: ${toolbarSeekStep} sn`);
+    updateToolbarModeTip();
+    toolbar.querySelectorAll('[data-pvc-speed]').forEach(button => pressed(button, Math.abs(parseFloat(button.getAttribute('data-pvc-speed')) - speed) < 0.001));
+    toolbar.querySelectorAll('[data-pvc-vol]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-vol')) === toolbarState.volume));
+    toolbar.querySelectorAll('[data-pvc-step]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-step')) === toolbarSeekStep));
+    const mono = byId('pvc-audio-mono-btn')?.classList.contains('pvc-audio-active') === true;
+    pressed(byId('pvc-tb-mono'), mono); pressed(byId('pvc-tb-stereo'), !mono);
+    const keysOn = byId('pvc-hotkeys-toggle-btn')?.classList.contains('pvc-btn-active') === true;
+    pressed(byId('pvc-tb-keys'), keysOn);
+    setUiTip(byId('pvc-tb-keys'), keysOn ? 'Klavye kısayolları açık' : 'Klavye kısayolları kapalı');
+    pressed(byId('pvc-tb-pip'), byId('pvc-pip-btn')?.classList.contains('pvc-btn-active') === true);
+
+    // Quality: the classic list stays the source; the toolbar mirrors its labels and states.
+    const classic = [...(byId('pvc-dynamic-quality-container')?.querySelectorAll('button') || [])];
+    const list = byId('pvc-tb-quality-list');
+    const signature = JSON.stringify([uiLanguage, classic.map(button => button.textContent.trim())]);
+    if (list && list.__nokSignature !== signature) {
+      list.__nokSignature = signature;
+      setUiMarkup(list, '');
+      if (!classic.length) {
+        const empty = document.createElement('span'); empty.className = 'pvc-tb-note';
+        setUiText(empty, 'Bu oynatıcıda kullanılabilir kalite kontrolü bulunamadı.'); list.appendChild(empty);
+      }
+      classic.forEach((source, index) => {
+        const option = document.createElement('button');
+        option.type = 'button'; option.className = 'pvc-tb-opt'; option.setAttribute('data-pvc-i18n-skip', '');
+        option.textContent = source.textContent.trim(); option.__nokQualityIndex = index;
+        option.addEventListener('click', event => {
+          event.stopPropagation();
+          byId('pvc-dynamic-quality-container')?.querySelectorAll('button')[index]?.click();
+          scheduleToolbarSync();
+        });
+        list.appendChild(option);
+      });
+    }
+    let chipLabel = null, pending = false;
+    list?.querySelectorAll('button').forEach(option => {
+      const source = classic[option.__nokQualityIndex];
+      const active = source?.classList.contains('pvc-active') === true, requested = source?.classList.contains('pvc-requested') === true;
+      pressed(option, active); option.classList.toggle('pvc-tb-pending', requested);
+      if (active || requested) { chipLabel = option.textContent; pending = requested; }
+    });
+    const playing = /^(\d+)x(\d+)/.exec(lastObservedResolution || '');
+    const chip = byId('pvc-tb-quality-val');
+    if (chipLabel) { chip.setAttribute('data-pvc-i18n-skip', ''); shown('pvc-tb-quality-val', chipLabel); }
+    else if (playing) { chip.setAttribute('data-pvc-i18n-skip', ''); shown('pvc-tb-quality-val', `${playing[2]}p`); }
+    else { chip.removeAttribute('data-pvc-i18n-skip'); setUiText(chip, 'Kalite'); }
+    byId('pvc-tb-quality')?.classList.toggle('pvc-tb-pending', pending);
+    shown('pvc-tb-quality-status', byId('pvc-quality-status')?.textContent.trim() || '');
+    shown('pvc-tb-adapter', byId('pvc-active-adapter-badge')?.textContent.trim() || '');
+    const target = byId('pvc-tb-target'), classicTarget = byId('pvc-video-target');
+    if (target && classicTarget) {
+      const targetSignature = JSON.stringify([...classicTarget.options].map(option => [option.value, option.textContent]));
+      if (target.__nokSignature !== targetSignature) {
+        target.__nokSignature = targetSignature;
+        setUiMarkup(target, '');
+        for (const source of classicTarget.options) {
+          const option = document.createElement('option'); option.value = source.value; option.textContent = source.textContent;
+          option.setAttribute('data-pvc-i18n-skip', ''); target.appendChild(option);
+        }
+      }
+      if (document.activeElement !== target) target.value = classicTarget.value;
+    }
+    setUiText(byId('pvc-tb-playing'), playing ? `Oynatılıyor ${playing[1]}×${playing[2]}` : 'Çözünürlük bekleniyor');
+
+    // The bar's width depends on the group and the language; recheck that it still fits.
+    const width = toolbar.querySelector('.pvc-tb-bar').offsetWidth;
+    if (width && width !== toolbarWidthCache) {
+      toolbarWidthCache = width;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      if (!toolbarFitsViewport(width, viewportWidth, true, EDGE_MARGIN)) applyToolbarLayout();
+    }
+  }
+  // Mouse wheel over a control steps its value; a trackpad's small deltas are summed first.
+  function bindToolbarWheel(node, step) {
+    let sum = 0;
+    node.addEventListener('wheel', event => {
+      event.preventDefault(); event.stopPropagation();
+      sum += event.deltaMode === 0 ? event.deltaY : event.deltaY * 40;
+      if (Math.abs(sum) < 40) return;
+      const direction = sum < 0 ? 1 : -1; sum = 0;
+      step(direction);
+      resetIdleTimer(document.getElementById('pvc-controller-popup'));
+    }, { passive: false });
+  }
+  function setupCompactToolbar(popup) {
+    if (document.getElementById('pvc-toolbar')) return;
+    const toolbar = document.createElement('div');
+    toolbar.id = 'pvc-toolbar'; toolbar.className = 'pvc-toolbar';
+    setUiMarkup(toolbar, toolbarMarkup());
+    toolbar.setAttribute('role', 'toolbar');
+    setUiAttribute(toolbar, 'aria-label', 'FilmDeck araç çubuğu');
+    popup.appendChild(toolbar);
+    const byId = id => document.getElementById(id);
+    const on = (id, handler) => byId(id)?.addEventListener('click', event => { event.stopPropagation(); resetIdleTimer(popup); handler(event); });
+    const brand = byId('pvc-tb-brand');
+    brand.tabIndex = 0; brand.setAttribute('role', 'button');
+    for (const [id, tip] of [['pvc-tb-pip', 'Resim içinde resim (Alt+P)'], ['pvc-tb-report', 'Sorun bildir'], ['pvc-tb-speed', 'Hız ([ / ], fare tekerleği)'],
+      ['pvc-tb-seek-step', 'Sarma adımı (fare tekerleği)'], ['pvc-tb-volume', 'Ses (Shift+↑/↓, fare tekerleği)'], ['pvc-tb-quality', 'Video kalitesi (Alt+Q)'],
+      ['pvc-tb-close', 'FilmDeck\'i kapat (Ctrl+Shift+S)']]) setUiTip(byId(id), tip);
+    for (const node of toolbar.querySelectorAll('[data-pvc-popover]')) {
+      node.setAttribute('aria-haspopup', 'true'); node.setAttribute('aria-expanded', 'false');
+      node.addEventListener('click', event => { event.stopPropagation(); resetIdleTimer(popup); openToolbarPopover(node.getAttribute('data-pvc-popover')); });
+    }
+    for (const panel of toolbar.querySelectorAll('.pvc-tb-popover')) panel.setAttribute('role', 'group');
+    byId('pvc-tb-seek')?.setAttribute('role', 'group');
+
+    // FilmDeck name: hover or focus shows the close bubble; pressing to drag hides it.
+    brand.addEventListener('mouseenter', () => showToolbarBubble(true));
+    brand.addEventListener('mouseleave', () => showToolbarBubble(false));
+    brand.addEventListener('focus', () => showToolbarBubble(true));
+    brand.addEventListener('blur', event => { if (event.relatedTarget?.id !== 'pvc-tb-close') showToolbarBubble(false); });
+    brand.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault(); event.stopPropagation(); showToolbarBubble(true); byId('pvc-tb-close').focus();
+    });
+    brand.addEventListener('mousedown', () => {
+      hideToolbarBubbleNow(); closeToolbarPopover();
+      window.addEventListener('mouseup', () => setTimeout(() => { updateToolbarSide(); placeToolbarPopover(); }, 0), { capture: true, once: true });
+    });
+    const bubble = byId('pvc-tb-bubble');
+    bubble.addEventListener('mouseenter', () => clearTimeout(toolbarBubbleTimer));
+    bubble.addEventListener('mouseleave', () => showToolbarBubble(false));
+    byId('pvc-tb-close').addEventListener('blur', event => { if (event.relatedTarget !== brand) showToolbarBubble(false); });
+    on('pvc-tb-close', () => { hideToolbarBubbleNow(); byId('pvc-close-popup-btn')?.click(); });
+    makeDraggable(popup, brand);
+
+    on('pvc-tb-pip', () => togglePictureInPicture());
+    on('pvc-tb-keys', () => { byId('pvc-hotkeys-toggle-btn')?.click(); scheduleToolbarSync(); });
+    on('pvc-tb-report', () => byId('pvc-report-err-btn')?.click());
+    on('pvc-tb-refresh', () => byId('pvc-refresh-res-btn')?.click());
+    on('pvc-tb-seek-back', () => seekBy(-toolbarSeekStep));
+    on('pvc-tb-seek-fwd', () => seekBy(toolbarSeekStep));
+    on('pvc-tb-stereo', () => setAudioMode('stereo'));
+    on('pvc-tb-mono', () => setAudioMode('mono'));
+    on('pvc-tb-adapter-change', () => { closeToolbarPopover(); byId('pvc-change-adapter-btn')?.click(); });
+    toolbar.querySelectorAll('[data-pvc-speed]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); setSpeed(parseFloat(button.getAttribute('data-pvc-speed'))); }));
+    toolbar.querySelectorAll('[data-pvc-vol]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); setAudioVolume(Number(button.getAttribute('data-pvc-vol'))); }));
+    toolbar.querySelectorAll('[data-pvc-seek]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); seekBy(Number(button.getAttribute('data-pvc-seek'))); }));
+    toolbar.querySelectorAll('[data-pvc-step]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); toolbarSeekStep = Number(button.getAttribute('data-pvc-step')); syncToolbar(); }));
+    byId('pvc-tb-speed-slider').addEventListener('input', event => { event.stopPropagation(); resetIdleTimer(popup); setSpeed(parseFloat(event.target.value)); });
+    byId('pvc-tb-volume-slider').addEventListener('input', event => { event.stopPropagation(); resetIdleTimer(popup); setAudioVolume(parseInt(event.target.value, 10)); });
+    byId('pvc-tb-target').addEventListener('change', event => {
+      event.stopPropagation();
+      const classicTarget = byId('pvc-video-target'); if (!classicTarget) return;
+      classicTarget.value = event.target.value; classicTarget.dispatchEvent(new Event('change'));
+    });
+    bindToolbarWheel(byId('pvc-tb-speed'), direction => setSpeed(Math.max(0.25, Math.min(3, toolbarState.speed + direction * 0.25))));
+    bindToolbarWheel(byId('pvc-tb-volume'), direction => setAudioVolume(Math.max(0, Math.min(300, toolbarState.volume + direction * 10))));
+    bindToolbarWheel(byId('pvc-tb-seek-step'), direction => { toolbarSeekStep = toolbarStepAfter(TOOLBAR_SEEK_STEPS, toolbarSeekStep, direction); syncToolbar(); });
+
+    // Group button: click moves on, the wheel goes either way, a double-click lists all groups.
+    const mode = byId('pvc-tb-mode');
+    mode.addEventListener('click', event => {
+      event.stopPropagation(); resetIdleTimer(popup);
+      if (event.detail > 1) return; // The second click of a double-click opens the list instead.
+      setToolbarGroup(toolbarGroupAfter(TOOLBAR_GROUP_IDS, toolbarGroup, 1));
+    });
+    mode.addEventListener('dblclick', event => { event.stopPropagation(); openToolbarPopover('groups'); });
+    bindToolbarWheel(mode, direction => setToolbarGroup(toolbarGroupAfter(TOOLBAR_GROUP_IDS, toolbarGroup, -direction)));
+    toolbar.querySelectorAll('[data-pvc-goto]').forEach(item => item.addEventListener('click', event => {
+      event.stopPropagation(); setToolbarGroup(item.getAttribute('data-pvc-goto')); closeToolbarPopover(true);
+    }));
+    toolbar.querySelectorAll('[data-pvc-classic]').forEach(button => button.addEventListener('click', event => {
+      event.stopPropagation();
+      const group = button.getAttribute('data-pvc-classic');
+      setHudLayout('classic');
+      byId(`pvc-tab-${group === 'accessibility' ? 'settings' : group}`)?.click();
+      if (group === 'accessibility') { const details = byId('pvc-accessibility'); if (details) details.open = true; }
+    }));
+    toolbar.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      if (toolbarOpenPopover) { event.stopPropagation(); closeToolbarPopover(true); }
+      else if (!byId('pvc-tb-bubble').hidden) { event.stopPropagation(); hideToolbarBubbleNow(); brand.focus(); }
+    });
+
+    // Classic Accessibility gets the preview switch, so either layout can be reached from the other.
+    const accessibility = byId('pvc-accessibility');
+    if (accessibility) {
+      const row = document.createElement('label'); row.className = 'pvc-setting-row';
+      const caption = document.createElement('span'); setUiText(caption, 'Kompakt araç çubuğu (önizleme)');
+      const control = document.createElement('span'); control.className = 'pvc-switch';
+      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = 'pvc-layout-toolbar-toggle'; checkbox.setAttribute('role', 'switch');
+      const track = document.createElement('span'); track.className = 'pvc-switch-track'; track.setAttribute('aria-hidden', 'true');
+      control.appendChild(checkbox); control.appendChild(track); row.appendChild(caption); row.appendChild(control);
+      accessibility.insertBefore(row, accessibility.querySelector('.pvc-settings-note'));
+      checkbox.addEventListener('change', event => { event.stopPropagation(); setHudLayout(checkbox.checked ? 'toolbar' : 'classic'); resetIdleTimer(popup); });
+    }
+
+    new MutationObserver(records => {
+      if (records.every(record => toolbar.contains(record.target))) return;
+      scheduleToolbarSync();
+    }).observe(popup, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'aria-pressed', 'style'] });
+    window.addEventListener('resize', () => applyToolbarLayout());
+    localizeUi(toolbar);
+    setToolbarGroup(toolbarGroup);
+  }
+
   function buildPvcPopup() {
     let popup = document.getElementById('pvc-controller-popup');
     if (popup) return popup;
@@ -6480,6 +6970,8 @@
     };
 
     setupHudNavigation(popup);
+    setupCompactToolbar(popup);
+    applyToolbarLayout();
     updateSubtitleAppearanceControls();
     if (!remotePresentation) syncLocalMediaHud();
     startQualityWatch();

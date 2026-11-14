@@ -9,7 +9,7 @@ function harness() {
   const context = vm.createContext({window, qualityWatchTimer:null, filterUpdateFrame:null, document:{getElementById:()=>null,addEventListener(){}},
     setTimeout: callback => {timers.set(++next,callback);return next;}, clearTimeout:id=>timers.delete(id),
     cancelAnimationFrame:id=>cancelledFrames.push(id),
-    currentHudPreferences:()=>({theme:'atlas',keepVisible:false,largeText:false,highContrast:false,reduceMotion:false}), applyHudPreferences(){}, adoptMediaVolume(){},
+    currentHudPreferences:()=>({theme:'atlas',layout:'classic',keepVisible:false,largeText:false,highContrast:false,reduceMotion:false}), applyHudPreferences(){}, adoptMediaVolume(){},
     flushVideoFilterDraw(){}, cancelVideoFilterDraw(){}, clearPipActivationPrompt(){}, clearFrameLossOffer(){}, frameLossAnswered:false, showToast(){}, findVideoAndPlayer:()=>({video:{},player:null}), setSpeed:value=>{calls.push(value);return true;},
     inputState:state(), session, owner, calls });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'..','frame-protocol.js'),'utf8'),context);
@@ -195,7 +195,7 @@ test('closing a remote session cancels an unsent animation-frame filter update',
 
 test('panel preferences go to a new source and return only when no command is pending',async()=>{
   const h=harness(),applied=[],sent=[];
-  h.context.currentHudPreferences=()=>({theme:'nova',keepVisible:true,largeText:false,highContrast:false,reduceMotion:false});
+  h.context.currentHudPreferences=()=>({theme:'nova',layout:'toolbar',keepVisible:true,largeText:false,highContrast:false,reduceMotion:false});
   h.context.applyHudPreferences=value=>applied.push(value.theme);
   const original=h.context.remoteControl;h.context.remoteControl=(name,value)=>{if(name==='hud-preferences')sent.push(value.theme);return original(name,value);};
   h.run('renderRemoteHud=function(){const state=remotePresentation;if(remoteRequests.size===0)applyHudPreferences(state.hudPreferences);}');
@@ -206,9 +206,9 @@ test('panel preferences go to a new source and return only when no command is pe
 
 test('source frame applies preference commands and publishes them',async()=>{
   const h=harness(),applied=[];h.context.applyHudPreferences=value=>applied.push(value.theme);
-  h.context.currentHudPreferences=()=>({theme:'atlas',keepVisible:false,largeText:false,highContrast:false,reduceMotion:false});
+  h.context.currentHudPreferences=()=>({theme:'atlas',layout:'classic',keepVisible:false,largeText:false,highContrast:false,reduceMotion:false});
   h.context.syncRemoteMediaOwner=()=>{};
-  const value={theme:'nova',keepVisible:false,largeText:true,highContrast:false,reduceMotion:false};
+  const value={theme:'nova',layout:'toolbar',keepVisible:false,largeText:true,highContrast:false,reduceMotion:false};
   h.run('remoteSourceSession=session;remoteSourceOwner=owner;remoteSourceRevision=1');
   h.context.commandPayload={session,id:1,command:{name:'hud-preferences',value,owner,revision:1}};
   await h.run('executeRemoteCommand(commandPayload)');

@@ -78,10 +78,11 @@ test('reply relay permits only bounded manual timing and validated diagnostic pa
   assert.equal(cleaned.ms, 40); assert.equal(cleaned.report.frame.context, 'iframe');
   assert.equal(JSON.stringify(cleaned).includes('PRIVATE'), false);
   assert.equal(protocol.cleanReply({ id: 1, owner, ok: true, code: 'ok', ms: Infinity }), null);
-  const preferences = { theme: 'atlas', keepVisible: true, largeText: false, highContrast: false, reduceMotion: true };
+  const preferences = { theme: 'atlas', layout: 'toolbar', keepVisible: true, largeText: false, highContrast: false, reduceMotion: true };
   assert.deepEqual({ ...protocol.cleanCommand({ name: 'hud-preferences', value: preferences, owner, revision: 1 }).value }, preferences);
   assert.equal(protocol.cleanCommand({ name: 'hud-preferences', value: { ...preferences, theme: 'https://private.invalid/' }, owner, revision: 1 }), null);
   assert.equal(protocol.cleanCommand({ name: 'hud-preferences', value: { ...preferences, largeText: 'yes' }, owner, revision: 1 }), null);
+  assert.equal(protocol.cleanCommand({ name: 'hud-preferences', value: { ...preferences, layout: 'https://private.invalid/' }, owner, revision: 1 }), null);
   assert.equal(protocol.cleanState({ ...state(), hudPreferences: { ...preferences, theme: 'x'.repeat(33) } }), null);
   assert.deepEqual(Object.keys(protocol.cleanState({ ...state(), hudPreferences: { ...preferences, privateText: 'PRIVATE' } }).hudPreferences).sort(), Object.keys(preferences).sort());
   assert.equal(protocol.cleanReply({ id: 1, owner, ok: false, code: 'failed', pingStatus: 'blocked' }).pingStatus, 'blocked');

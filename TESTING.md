@@ -60,6 +60,13 @@ Varsayılan Windows yolları kurulu Firefox ve Edge içindir. Farklı bir Chromi
 
 `tooltip-browser.cjs`, panel tooltip'ini gerçek fare ve klavyeyle sınar: gecikme, ekranda kalma ve paneli kaydırma alanından taşma, yan öğeye hemen geçiş, imlecin metne gidebilmesi, Esc'in yalnız tooltip'i kapatması, Tab ile ulaşma, açık metnin dil ayarını izlemesi, azaltılmış hareket, gömülü oynatıcının durumunu üst panelde açıklama. Dokunmatik kısmı sentetik `PointerEvent` kullanır; gerçek telefon kabulü değildir. Ekran okuyucu kabulü de değildir, yalnız `aria-describedby` bağlantısı sınanır. Kalite düğmesi ve durum satırı açıklamaları gerçek Video.js ile `quality-mapping-browser.cjs` içinde sınanır.
 
+`toolbar-browser.cjs`, kompakt araç çubuğu önizlemesini (TOOLBAR_REDESIGN.md) gerçek eklentiyle sınar: klasik panelin varsayılan kalması ve önizleme anahtarı, hız hazır değeri ile fare tekerleğinin videoya ulaşması (canvas akışı hızı tutmayabildiği için istenen değerler kaydedilir), tek açılır kutu kuralı, ses %0/%100 ve Mono'nun ortak duruma yansıması, sarma adımı ve tekerlek, Esc, "Playing" şeridi, kalite/adaptör/video hedefi aynalaması, ekranın alt yarısında açılır kutu ve şeridin üste geçmesi, grup düğmesi, çift tıklama listesi ve tekerlek, tema değişiminin araç çubuğu rengine ulaşması, FilmDeck üzerine gelince soldaki X baloncuğu ve kapatma; ayrı kökenli iframe'de üst araç çubuğunun çerçevedeki videonun hızını değiştirmesi. Gerçek sarma etkisi (canvas akışı sarılamaz), dar pencere geçişi ve sürükleme bu testte değildir; dar pencere ve yön kuralları `toolbar.test.cjs` içinde saf işlevlerle sınanır.
+
+```powershell
+node tests/toolbar-browser.cjs --engine=firefox
+node tests/toolbar-browser.cjs --engine=chromium
+```
+
 `subtitle-browser.cjs`, Altyazı sekmesindeki açıklamayı üst sayfada ve ayrı kökenli iframe'de sınar: boş aralık ve sıradaki satır, dil, duran ve duraklatılmış video ayrımı, gizli, dosya sonu, satır görünürken sessizlik, satır metninin açıklamaya girmemesi. Panel kapalıyken video öğesi değişince altyazının yeni videoyu izlemesini ve video kalkınca satırın kalmamasını da sınar. Sentetik akış ve dosya kullanır; gerçek site görsel kontrolü değildir.
 
 Panel "hareket azaltma" ayarını başlangıçta işletim sisteminden alır ve CI'daki Windows Server'da Firefox bunu açık görebilir. Bu yüzden animasyon sınayan testler önce ayarı kapatır. `--os-reduced-motion=true` Firefox test profilinde aynı durumu yerelde kurar.

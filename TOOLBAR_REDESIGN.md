@@ -97,3 +97,13 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Genişlik (14 Kasım'da çözüldü).** Araç çubuğu videoya değil pencereye bağlı ve taşınabilir; büyük yazı klasik panelde. Çizimlerdeki genişlikler, numara rozetleri çıkarıldığında yaklaşık: Player 760 px, Subtitles 810 px, Settings 740 px, Accessibility 1020 px. Pencere bundan darsa klasik panele geçilir (bölüm 2).
 - **Palet (14 Kasım'da kural kondu).** Bölüm 2.1'deki değişken eşlemesi uygulanacak; uygulamadan sonra en az bir açık, bir OLED temada ve yüksek kontrastta göz kontrolü yapılacak.
 - **Eski panelle ilişki (14 Kasım'da karar).** Araç çubuğu varsayılan; eski panel "Easy-read layout" olarak kalıyor ve kademeli büyütme alacak.
+
+## 6. Uygulama durumu
+
+### v0.7.19 — iskelet ve Player grubu (önizleme)
+
+- **Açma:** Klasik panel › Ayarlar › Erişilebilirlik › "Kompakt araç çubuğu (önizleme)". Dört grup bitene kadar klasik panel varsayılan kalır; diğer gruplar hazır olmadan araç çubuğunu varsayılan yapmak altyazı ve ayarlara erişimi keserdi. Seçim diğer tercihler gibi yalnız RAM'de durur, sayfa yenilenince sıfırlanır; tam ekran/gömülü oynatıcı çerçevesine tercih köprüsüyle (`layout` alanı) taşınır.
+- **Yapı:** Araç çubuğu klasik panelin kök öğesinin içinde (`#pvc-toolbar`). Düzen açıkken kök saydam bir çerçeveye döner ve klasik içerik gizlenir, ama DOM'da kalır. Böylece sürükleme, konum hafızası, mıknatıslı kenar, boşta solma, tema, erişilebilirlik sınıfları ve gömülü oynatıcı köprüsü ortak kalır.
+- **Durumun tek kaynağı:** Araç çubuğu düğmeleri klasik panelin çağırdığı işlevleri (`setSpeed`, `seekBy`, `setAudioVolume`, `setAudioMode`, `togglePictureInPicture`) çağırır veya klasik düğmeyi tetikler (kalite, kısayol, rapor, adaptör, kapatma). Gösterilen değerler klasik panelden okunur (`MutationObserver`, kare başına en fazla bir eşitleme).
+- **Hazır olanlar:** FilmDeck adı (üzerine gelince solda X baloncuğu, basılı tutup sürükleme), PiP, kısayol aç/kapa, rapor; Player grubunda hız, `« 10s »` sarma (adım 5/10/30/60, doğrudan −30/−10/+10/+30), ses ve Stereo/Mono, kalite ve oynatıcı tespiti; "Playing" şeridi; grup düğmesi (tıkla, çift tıkla liste, tekerlek); tek açılır kutu kuralı; üst/alt yarıya göre açılma yönü; dar pencerede klasik panele dönüş; hız, ses, sarma adımı ve grupta fare tekerleği; Esc ile kapatma; tema değişkenleri.
+- **Henüz yok:** Subtitles, Settings ve Accessibility grupları (yerlerinde "Klasik panelde aç" düğmesi var). Ertelenen anlık bildirimler (kare kaybı sorusu, "etkin oynatıcı bekleniyor", kaynağı yeniden dene) ve DRM rozeti araç çubuğu düzeninde görünmez; klasik panelde görünmeye devam eder. Stereo/Mono'nun son görünümü ve Easy-read'deki kademeli büyütme sonraki adımlara kaldı.

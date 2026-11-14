@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.18**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.19**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,15 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Kompakt araç çubuğu önizlemesi: iskelet ve Player grubu, v0.7.19 — 14 Kasım 2026
+
+Kullanıcı tasarımı onayladı ve uygulamayı başlattı. Ayrıntı ve kalan işler: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** Araç çubuğu klasik panelin kökünün içinde; düzen açıkken kök saydamlaşır, klasik içerik gizlenir ama DOM'da kalır. Sürükleme, konum hafızası, tema, boşta solma ve gömülü oynatıcı köprüsü ortak. Düğmeler klasik panelin işlevlerini çağırır; değerler klasik panelden okunur. Player grubu, FilmDeck/X baloncuğu, PiP, kısayol, rapor, grup düğmesi, tek açılır kutu, üst/alt yarı kuralı, dar pencerede klasik panele dönüş ve fare tekerleği hazır. Diğer üç grupta "Klasik panelde aç" düğmesi var.
+- **Ara karar (Claude):** Diğer gruplar olmadan araç çubuğu varsayılan yapılmadı; erişim kesilirdi. Klasik panel varsayılan; Ayarlar › Erişilebilirlik › "Kompakt araç çubuğu (önizleme)" ile açılır. Düzen tercihi `layout` alanıyla çerçeveler arası tercih köprüsüne eklendi (`frame-protocol.js` şeması).
+- **Kanıt:** `npm run check` geçti (289/289 Node; yeni `toolbar.test.cjs` yön, dar pencere, adım/grup kurallarını ve çevirileri sınar). Yeni `toolbar-browser.cjs` Edge ve Firefox'ta geçti: hız/ses/Mono/sarma adımı/tekerlek, tek kutu, alt yarıda üste açılma, grup listesi, tema rengi, X ile kapatma ve ayrı kökenli iframe'de üst araç çubuğunun çerçevedeki videonun hızını değiştirmesi. Firefox'ta ilk turda bir kez X ile kapatma adımında zaman aşımı oldu; sonraki 5 turda yeniden üretilemedi, nedeni bulunmadı. `ui-smoke`, `tooltip-browser`, `hud-state-browser` iki motorda, `hud-continuity-browser` Firefox'ta geçti. `hud-continuity-browser` Edge'de bu makinede başarısız: kapatıp açınca sağ boşluk 16 yerine 31 px (test sayfasının kaydırma çubuğu); aynı ölçüm `main` kodunda birebir aynı, değişiklikten değil. Görsel kontrol Edge ekran görüntüleriyle (Atlas, Daylight, Forge temaları; alt yarı).
+- **Sınır:** Gerçek site denenmedi. Gerçek sarma etkisi (test videosu canvas akışı), sürükleme ve dar pencere geçişi tarayıcıda otomatik sınanmadı; dar pencere kuralı saf işlev testinde. Kare kaybı sorusu, "etkin oynatıcı bekleniyor", kaynağı yeniden dene ve DRM rozeti araç çubuğu düzeninde görünmez (ertelenen kararlar). Hızlı art arda tık çift tıklama sayılır ve grup listesini açar (tasarım gereği). Uzak CI görülmedi.
 
 ## C araç çubuğu tasarımı — 13–14 Kasım 2026
 

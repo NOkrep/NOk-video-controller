@@ -33,9 +33,9 @@
   const appearance = shape({ fontSize: num(12, 48, true), bottom: num(0, 40, true), background: num(0, 100, true), color: choice(['white', 'yellow']) });
   const filters = shape({ brightness: num(50, 150), contrast: num(50, 150), saturate: num(0, 200), nightShield: bool, invert: bool });
   const placement = shape({ x: num(0, 1), y: num(0, 1) }); // Panel place as viewport ratios; never page coordinates or media position.
-  // Panel look only: a theme id and four switches. Never added to diagnostics or storage.
+  // Panel look only: a theme id, the layout and four switches. Never added to diagnostics or storage.
   const themeId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,31}$/.test(value) ? value : undefined;
-  const preferences = shape({ theme: themeId, keepVisible: bool, largeText: bool, highContrast: bool, reduceMotion: bool });
+  const preferences = shape({ theme: themeId, layout: choice(['classic', 'toolbar']), keepVisible: bool, largeText: bool, highContrast: bool, reduceMotion: bool });
   const stateSpec = {
     owner: value => cleanSession(value) || undefined, revision, hasVideo: bool, fullscreen: bool, hudCollapsed: bool, hudPlacement: nullable(placement), hudPreferences: preferences, paused: bool, muted: bool, pipActive: bool,
     width: num(0, 16384, true), height: num(0, 8640, true), rate: num(0, 16), requestedRate: num(0.25, 3),
