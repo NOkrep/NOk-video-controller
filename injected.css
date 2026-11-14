@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.19.1
+ * injected.css - FilmDeck by NOk v0.7.20
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1529,3 +1529,19 @@
 #pvc-toolbar .pvc-tb-muted { color: var(--pvc-muted) !important; font-weight: 400 !important; }
 #pvc-toolbar select { max-width: 60% !important; padding: 3px 6px !important; border-radius: 5px !important; border: 1px solid var(--pvc-border) !important; background: var(--pvc-surface) !important; color: var(--pvc-text) !important; font: 500 11px system-ui, sans-serif !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion #pvc-toolbar * { transition: none !important; }
+/* Subtitles group: offset marker on the timing control, status strip with the offset, appearance colours. */
+#pvc-toolbar .pvc-tb-seek { position: relative !important; }
+#pvc-toolbar .pvc-tb-dot { position: absolute !important; top: -2px !important; right: -2px !important; width: 8px !important; height: 8px !important; border-radius: 50% !important; background: var(--pvc-warning) !important; box-shadow: 0 0 0 2px var(--pvc-bg) !important; }
+#pvc-toolbar .pvc-tb-strip-text { max-width: 280px !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+#pvc-toolbar .pvc-tb-strip.pvc-tb-strip-muted { color: var(--pvc-muted) !important; font-weight: 500 !important; }
+#pvc-toolbar .pvc-tb-offset { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 2px 4px 2px 7px !important; border-radius: 8px !important; color: var(--pvc-warning) !important; font-weight: 650 !important; background: color-mix(in srgb, var(--pvc-warning) 16%, transparent) !important; }
+#pvc-toolbar .pvc-tb-big { font-size: 16px !important; font-weight: 650 !important; color: var(--pvc-accent-ink) !important; }
+#pvc-toolbar #pvc-tb-pop-subtiming { width: 290px !important; }
+#pvc-toolbar #pvc-tb-pop-subtiming .pvc-tb-opts { grid-template-columns: repeat(5, 1fr) !important; }
+#pvc-toolbar #pvc-tb-pop-sublook { width: 300px !important; }
+#pvc-toolbar .pvc-tb-card > .pvc-tb-opt { width: 100% !important; }
+#pvc-toolbar .pvc-tb-card > input[type="range"] { width: 100% !important; margin: 0 !important; }
+#pvc-toolbar .pvc-tb-seg { gap: 5px !important; }
+#pvc-toolbar .pvc-tb-swatch { width: 9px !important; height: 9px !important; border-radius: 50% !important; box-shadow: 0 0 0 1px var(--pvc-border) !important; }
+#pvc-toolbar .pvc-tb-swatch-white { background: #ffffff !important; }
+#pvc-toolbar .pvc-tb-swatch-yellow { background: #fde047 !important; }

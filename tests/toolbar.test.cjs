@@ -10,7 +10,7 @@ const start = source.indexOf('// BEGIN TOOLBAR GEOMETRY'), end = source.indexOf(
 assert.ok(start > 0 && end > start, 'geometry section is marked');
 const context = {};
 vm.runInNewContext(`${source.slice(start, end)}
-  Object.assign(globalThis, { TOOLBAR_SEEK_STEPS, toolbarOpensBelow, toolbarFitsViewport, toolbarPopoverLeft, toolbarStepAfter, toolbarGroupAfter });`, context);
+  Object.assign(globalThis, { TOOLBAR_SEEK_STEPS, TOOLBAR_SUBTITLE_STEPS, toolbarOpensBelow, toolbarFitsViewport, toolbarPopoverLeft, toolbarStepAfter, toolbarGroupAfter });`, context);
 
 test('popovers open below in the upper half of the screen and above in the lower half', () => {
   assert.equal(context.toolbarOpensBelow({ top: 16, height: 44 }, 900), true);
@@ -40,7 +40,11 @@ test('the seek step and the group stepper stop or wrap as designed', () => {
   assert.equal(context.toolbarStepAfter(context.TOOLBAR_SEEK_STEPS, 10, 1), 30);
   assert.equal(context.toolbarStepAfter(context.TOOLBAR_SEEK_STEPS, 60, 1), 60, 'stops at the largest step');
   assert.equal(context.toolbarStepAfter(context.TOOLBAR_SEEK_STEPS, 5, -1), 5, 'stops at the smallest step');
-  assert.equal(context.toolbarStepAfter(context.TOOLBAR_SEEK_STEPS, 7, 1), 30, 'an unknown step restarts from 10');
+  assert.equal(context.toolbarStepAfter(context.TOOLBAR_SEEK_STEPS, 7, 1, 10), 30, 'an unknown step restarts from the given default');
+  assert.deepEqual([...context.TOOLBAR_SUBTITLE_STEPS], [50, 100, 250, 500, 1000]);
+  assert.equal(context.toolbarStepAfter(context.TOOLBAR_SUBTITLE_STEPS, 100, 1, 100), 250);
+  assert.equal(context.toolbarStepAfter(context.TOOLBAR_SUBTITLE_STEPS, 1000, 1, 100), 1000, 'stops at one second');
+  assert.equal(context.toolbarStepAfter(context.TOOLBAR_SUBTITLE_STEPS, 3, -1, 100), 50, 'an unknown subtitle step restarts from 100');
   const groups = ['player', 'subtitles', 'settings', 'accessibility'];
   assert.equal(context.toolbarGroupAfter(groups, 'player', 1), 'subtitles');
   assert.equal(context.toolbarGroupAfter(groups, 'accessibility', 1), 'player', 'click wraps to the first group');
@@ -51,12 +55,15 @@ test('every new toolbar label has an English translation', () => {
   const markupStart = source.indexOf('function toolbarMarkup()'), markupEnd = source.indexOf('function toolbarPopoverAnchor');
   const markup = source.slice(markupStart, markupEnd);
   for (const label of ['Bu grup araç çubuğunda henüz hazır değil.', 'Klasik panelde aç', 'Ok adımı', 'Hemen atla', 'Ses ve kanallar',
-    'Oynatıcının bildirdiği seçenekler', 'Oynatıcı tespiti', 'Adaptör', 'Değiştir', 'Çözünürlük bekleniyor', 'Yenile']) {
+    'Oynatıcının bildirdiği seçenekler', 'Oynatıcı tespiti', 'Adaptör', 'Değiştir', 'Çözünürlük bekleniyor', 'Yenile',
+    'Dosya yükle', 'Görünür', 'Görünüm', '− ve + adımı', 'Şu anki kayma', 'Altyazı zamanlaması', 'Altyazıyı erken göster', 'Altyazıyı geç göster']) {
     assert.ok(markup.includes(label), `${label} is used`);
     assert.ok(source.includes(`'${label}': '`), `${label} is translated`);
   }
   for (const key of ['FilmDeck araç çubuğu', 'Kompakt araç çubuğu (önizleme)', 'Grup: {0} · tıkla: sonraki · çift tıkla: liste · tekerlek: değiştir',
-    'Geri sar: {0} sn', 'İleri sar: {0} sn', 'Oynatılıyor {0}', 'Klavye kısayolları açık', 'Klavye kısayolları kapalı']) {
+    'Geri sar: {0} sn', 'İleri sar: {0} sn', 'Oynatılıyor {0}', 'Klavye kısayolları açık', 'Klavye kısayolları kapalı',
+    'Gizli', 'Kayma {0}', 'Altyazıyı {0} ms erken göster', 'Altyazıyı {0} ms geç göster', 'Zamanlama adımı (fare tekerleği)',
+    'Altyazı dosyası yükle · .srt ve .vtt · yalnız bu sayfada tutulur', 'Altyazıyı göster veya gizle']) {
     assert.ok(source.includes(`'${key}': '`), `${key} is translated`);
   }
 });

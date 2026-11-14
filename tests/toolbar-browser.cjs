@@ -10,6 +10,10 @@ const video=document.querySelector('video');video.srcObject=canvas.captureStream
 const rate=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,'playbackRate');window.rates=[];
 Object.defineProperty(video,'playbackRate',{configurable:true,get(){return rate.get.call(this);},set(value){window.rates.push(value);rate.set.call(this,value);}});</script>`;
 const lastRate=expected=>window.rates.at(-1)===expected;
+// A two-line SRT given to the classic file input, as a file picker would.
+const loadSubtitles=()=>{const input=document.getElementById('pvc-sub-file-input'),data=new DataTransfer();
+  data.items.add(new File(['1\n00:00:01,000 --> 00:00:03,000\nFirst\n\n2\n00:00:04,000 --> 00:00:06,000\nSecond\n'],'sample.srt',{type:'text/plain'}));
+  input.files=data.files;input.dispatchEvent(new Event('change',{bubbles:true}));};
 const visible=id=>{const node=document.getElementById(id);if(!node)return false;const r=node.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden';};
 const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};};
 const wheel=(id,deltaY)=>document.getElementById(id).dispatchEvent(new WheelEvent('wheel',{deltaY,deltaMode:0,bubbles:true,cancelable:true}));
@@ -105,6 +109,43 @@ try{
   await driver.evaluate(page,wheel,'pvc-tb-mode',100);
   await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','wheel down returns');
 
+  // Subtitles group: load, show/hide, timing step and offset, appearance; the classic tab shows the same state.
+  await driver.pointerClick(page,'#pvc-tb-mode');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles','subtitles group');
+  await until(driver,page,visible,'subtitle status strip','pvc-tb-sub-strip');
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-strip'),false,'the playing strip belongs to the Player group');
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').textContent),/No subtitles loaded/);
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-load').getAttribute('data-pvc-tip')),/\.srt and \.vtt/,'file types on hover');
+  await driver.evaluate(page,loadSubtitles);
+  await until(driver,page,()=>/2 subtitle cues|2 satır/.test(document.getElementById('pvc-tb-sub-status').textContent),'loaded file shown in the strip');
+  await driver.pointerClick(page,'#pvc-tb-sub-step');
+  await until(driver,page,visible,'timing popover','pvc-tb-pop-subtiming');
+  await driver.pointerClick(page,'[data-pvc-substep="250"]');
+  await until(driver,page,()=>document.getElementById('pvc-tb-sub-step-val').textContent==='250ms','step 250ms');
+  await driver.press(page,'Escape');
+  await driver.pointerClick(page,'#pvc-tb-sub-later');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+250ms','later shifts by the step');
+  await until(driver,page,()=>{const shown=id=>document.getElementById(id).getClientRects().length>0;
+    return shown('pvc-tb-sub-offset')&&shown('pvc-tb-sub-dot')&&/\+250 ms/.test(document.getElementById('pvc-tb-sub-offset-val').textContent);},'offset shown in the strip with a marker');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
+  await until(driver,page,()=>{const shown=id=>document.getElementById(id).getClientRects().length>0;
+    return document.getElementById('pvc-sub-offset-badge').textContent==='0ms'&&!shown('pvc-tb-sub-offset')&&!shown('pvc-tb-sub-dot');},'reset from the strip');
+  await driver.pointerClick(page,'#pvc-tb-sub-toggle');
+  await until(driver,page,()=>!document.getElementById('pvc-sub-toggle-btn').classList.contains('pvc-active')&&document.getElementById('pvc-tb-sub-toggle-val').textContent==='Hidden','hide reaches the shared state');
+  await driver.pointerClick(page,'#pvc-tb-sub-toggle');
+  await until(driver,page,()=>document.getElementById('pvc-tb-sub-toggle').getAttribute('aria-pressed')==='true','shown again');
+  await driver.pointerClick(page,'#pvc-tb-sub-look');
+  await until(driver,page,visible,'appearance popover','pvc-tb-pop-sublook');
+  await driver.pointerClick(page,'#pvc-tb-sub-yellow');
+  await until(driver,page,()=>document.getElementById('pvc-sub-color').value==='yellow','yellow reaches the classic control');
+  await driver.evaluate(page,()=>{const input=document.getElementById('pvc-tb-sub-fontSize');input.value='30';input.dispatchEvent(new Event('input',{bubbles:true}));});
+  await until(driver,page,()=>document.getElementById('pvc-sub-fontSize-value').textContent==='30px'&&document.getElementById('pvc-tb-sub-fontSize-value').textContent==='30px','font size reaches the classic control');
+  await driver.pointerClick(page,'#pvc-tb-sub-look-reset');
+  await until(driver,page,()=>document.getElementById('pvc-sub-color').value==='white'&&document.getElementById('pvc-tb-sub-fontSize-value').textContent==='20px','appearance reset');
+  await driver.press(page,'Escape');
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="player"]').click());
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','back to Player');
+
   // Theme palette: the bar's border follows the theme's border colour.
   const borderOf=()=>getComputedStyle(document.querySelector('#pvc-toolbar .pvc-tb-bar')).borderTopColor;
   const before=await driver.evaluate(page,borderOf);
@@ -132,6 +173,13 @@ try{
   await driver.pointerClick(top,'[data-pvc-speed="2.0"]');
   await until(driver,owner,lastRate,'speed reaches the frame video',2);
   await until(driver,top,()=>document.getElementById('pvc-tb-speed-val').textContent==='2.0×','top chip shows the frame state');
+  // A 250 ms subtitle step crosses the frame bridge and comes back as the frame's own offset.
+  await driver.evaluate(top,()=>document.querySelector('[data-pvc-goto="subtitles"]').click());
+  await driver.evaluate(top,loadSubtitles);
+  await until(driver,top,()=>/2|loaded|yüklü/i.test(document.getElementById('pvc-tb-sub-status').textContent)&&!document.getElementById('pvc-tb-sub-strip').classList.contains('pvc-tb-strip-muted'),'frame reports the loaded file');
+  await driver.evaluate(top,()=>document.querySelector('[data-pvc-substep="250"]').click());
+  await driver.pointerClick(top,'#pvc-tb-sub-earlier');
+  await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-250ms'&&/-250 ms/.test(document.getElementById('pvc-tb-sub-offset-val').textContent),'frame offset comes back');
   console.log(JSON.stringify({engine,version:driver.version,result:'pass'}));
 }finally{await driver?.close();media.close();parent.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

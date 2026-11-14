@@ -53,7 +53,7 @@
     speed: num(0.25, 3), volume: num(0, 300), seek: choice([-30, -10, 10, 30]),
     audio: choice(['stereo', 'mono']), quality: num(0, 127, true), target: num(-1, 31, true),
     adapter: choice(adapters.filter(item => item !== 'unknown')), filters, appearance,
-    'subtitle-visible': bool, 'subtitle-offset': choice([-100, 0, 100]),
+    'subtitle-visible': bool, 'subtitle-offset': choice([-1000, -500, -250, -100, -50, 0, 50, 100, 250, 500, 1000]),
     'hotkeys': bool, 'presentation-active': bool, 'frame-loss-answered': bool, 'hud-collapsed': bool, 'hud-placement': placement, 'hud-preferences': preferences
   };
   function cleanCues(value) {

@@ -83,6 +83,8 @@ test('reply relay permits only bounded manual timing and validated diagnostic pa
   assert.equal(protocol.cleanCommand({ name: 'hud-preferences', value: { ...preferences, theme: 'https://private.invalid/' }, owner, revision: 1 }), null);
   assert.equal(protocol.cleanCommand({ name: 'hud-preferences', value: { ...preferences, largeText: 'yes' }, owner, revision: 1 }), null);
   assert.equal(protocol.cleanCommand({ name: 'hud-preferences', value: { ...preferences, layout: 'https://private.invalid/' }, owner, revision: 1 }), null);
+  for (const step of [-1000, -250, -50, 0, 50, 250, 1000]) assert.equal(protocol.cleanCommand({ name: 'subtitle-offset', value: step, owner, revision: 1 }).value, step);
+  for (const step of [200, 5000, 0.5]) assert.equal(protocol.cleanCommand({ name: 'subtitle-offset', value: step, owner, revision: 1 }), null);
   assert.equal(protocol.cleanState({ ...state(), hudPreferences: { ...preferences, theme: 'x'.repeat(33) } }), null);
   assert.deepEqual(Object.keys(protocol.cleanState({ ...state(), hudPreferences: { ...preferences, privateText: 'PRIVATE' } }).hudPreferences).sort(), Object.keys(preferences).sort());
   assert.equal(protocol.cleanReply({ id: 1, owner, ok: false, code: 'failed', pingStatus: 'blocked' }).pingStatus, 'blocked');
