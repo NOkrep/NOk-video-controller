@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.18**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.20**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -13,6 +13,67 @@
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
+- **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Kompakt araç çubuğu: Subtitles grubu, v0.7.20 — 15 Kasım 2026
+
+Kullanıcı Subtitles grubuna geçişi onayladı ("Evet, geç"). Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** Load file (ipucunda .srt/.vtt), göz simgeli Shown/Hidden, `− 100ms +` zamanlama (adım 50 ms–1 s, tekerlek), şu anki kaymayı gösteren kutu ve şerit, Appearance kutusu (White/Yellow başlığın sağında, kaydırıcılar, sıfırla). Düğmeler klasik panelin işlevlerini kullanır; durum tek kaynakta.
+- **Düzeltme:** Grup değişince araç çubuğu sağ kenarını koruyup sola büyür ve pencere içine sıkıştırılır; geniş grup sağdan taşıyordu.
+- **Köprü:** `subtitle-offset` gömülü çerçeveye tüm adımlarla (±50…±1000 ms) gider; protokol testi kabul/ret durumlarını sınar.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser.cjs` (altyazı yükleme, göster/gizle, adım ve tekerlek, kayma ve sıfırlama, görünüm, gömülü çerçevede −250 ms) ve `subtitle-browser.cjs` Edge ve Firefox'ta geçti; `hud-state`, `tooltip`, `dialog-keyboard` Edge'de, `ui-smoke` Firefox'ta geçti. Ekran görüntüsüyle görsel kontrol (Atlas).
+- **Sınır:** Gerçek site denenmedi. Settings ve Accessibility grupları sırada; araç çubuğu hâlâ önizleme anahtarıyla açılıyor.
+
+## Araç çubuğunda logo ve tema uyumlu kapatma, v0.7.19.1 — 15 Kasım 2026
+
+Kullanıcı istedi: kapatma düğmesinin kırmızısı temadan bağımsız duruyordu; adın yazısı yerine ürünün kendi logosu kullanılmalıydı.
+
+- **Kapatma:** X düğmesi artık temanın yazı, kenarlık ve yüzey renklerini kullanıyor (`--pvc-text`, `--pvc-border`); kırmızı (`--pvc-danger`) kaldırıldı.
+- **Logo:** Araç çubuğunun başında klasik başlıktaki ürün logosu (`FILMDECK_LOGO_URL`, `.pvc-product-logo`) aynı tema filtresiyle (koyu temada beyaz, açık temada siyah); görsel yüklenemezse "FilmDeck" yazısı yedek olarak görünür. Logoya basılı tutup sürükleme ve üzerine gelince kapatma baloncuğu aynen çalışır.
+- **Kanıt:** `npm run check` (289/289), `toolbar-browser.cjs` Edge ve Firefox'ta geçti. Atlas ve Daylight temalarında ekran görüntüsüyle görsel kontrol.
+
+## Kompakt araç çubuğu önizlemesi: iskelet ve Player grubu, v0.7.19 — 14 Kasım 2026
+
+Kullanıcı tasarımı onayladı ve uygulamayı başlattı. Ayrıntı ve kalan işler: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** Araç çubuğu klasik panelin kökünün içinde; düzen açıkken kök saydamlaşır, klasik içerik gizlenir ama DOM'da kalır. Sürükleme, konum hafızası, tema, boşta solma ve gömülü oynatıcı köprüsü ortak. Düğmeler klasik panelin işlevlerini çağırır; değerler klasik panelden okunur. Player grubu, FilmDeck/X baloncuğu, PiP, kısayol, rapor, grup düğmesi, tek açılır kutu, üst/alt yarı kuralı, dar pencerede klasik panele dönüş ve fare tekerleği hazır. Diğer üç grupta "Klasik panelde aç" düğmesi var.
+- **Ara karar (Claude):** Diğer gruplar olmadan araç çubuğu varsayılan yapılmadı; erişim kesilirdi. Klasik panel varsayılan; Ayarlar › Erişilebilirlik › "Kompakt araç çubuğu (önizleme)" ile açılır. Düzen tercihi `layout` alanıyla çerçeveler arası tercih köprüsüne eklendi (`frame-protocol.js` şeması).
+- **Kanıt:** `npm run check` geçti (289/289 Node; yeni `toolbar.test.cjs` yön, dar pencere, adım/grup kurallarını ve çevirileri sınar). Yeni `toolbar-browser.cjs` Edge ve Firefox'ta geçti: hız/ses/Mono/sarma adımı/tekerlek, tek kutu, alt yarıda üste açılma, grup listesi, tema rengi, X ile kapatma ve ayrı kökenli iframe'de üst araç çubuğunun çerçevedeki videonun hızını değiştirmesi. Firefox'ta ilk turda bir kez X ile kapatma adımında zaman aşımı oldu; sonraki 5 turda yeniden üretilemedi, nedeni bulunmadı. `ui-smoke`, `tooltip-browser`, `hud-state-browser` iki motorda, `hud-continuity-browser` Firefox'ta geçti. `hud-continuity-browser` Edge'de bu makinede başarısız: kapatıp açınca sağ boşluk 16 yerine 31 px (test sayfasının kaydırma çubuğu); aynı ölçüm `main` kodunda birebir aynı, değişiklikten değil. Görsel kontrol Edge ekran görüntüleriyle (Atlas, Daylight, Forge temaları; alt yarı).
+- **Sınır:** Gerçek site denenmedi. Gerçek sarma etkisi (test videosu canvas akışı), sürükleme ve dar pencere geçişi tarayıcıda otomatik sınanmadı; dar pencere kuralı saf işlev testinde. Kare kaybı sorusu, "etkin oynatıcı bekleniyor", kaynağı yeniden dene ve DRM rozeti araç çubuğu düzeninde görünmez (ertelenen kararlar). Hızlı art arda tık çift tıklama sayılır ve grup listesini açar (tasarım gereği). Uzak CI görülmedi.
+
+## C araç çubuğu tasarımı — 13–14 Kasım 2026
+
+Kod değişmedi; tasarım Figma'da (`FilmDeck MEC523 Wireframes`, sayfalar "C + tabs (models)", "Mode switch (models)", "Model 5 · current vs planned"). Reddedilen modeller silinmedi, sayfada işaretli duruyor.
+
+- **Seçilen yön:** Model 5. Araç çubuğunun en sağındaki düğme grupları sırayla değiştirir (Player → Subtitles → Settings) ve grubun adını yazar; solundaki düğmeler gruba göre değişir. Kullanıcı gerekçesi: HMI ilkemiz gereği her şey simgeyle birlikte adıyla da yazılmalı.
+- **Elenen:** Model 6 (dikey kayar anahtar) kesin elendi. Model 4, 7, 8, 9 karşılaştırma için sayfada duruyor.
+- **Player grubu, rev 2 (14 Kasım, kullanıcı istekleri):** hız kutusunda yalnız hız; ileri/geri sarma araç çubuğunda `« 10s »` biçiminde, ortadaki 10s'e basınca adım (5/10/30/60 sn) ve doğrudan atlama (−30/−10/+10/+30) açılır; Stereo/Mono ses kutusunun başlığının sağında; o an oynatılan çözünürlük araç çubuğunun altında "Playing 1280×720 · Refresh" şeridinde; PiP ve kısayol aç/kapa araç çubuğunda.
+- **Kullanıcıda açık:** Stereo/Mono denetiminin görünümü. Kullanıcı başka sitelerdeki düğme modellerini inceleyip bildirecek; o zamana kadar yer tutucu.
+- **Açık karar:** Adaptör ve video hedefi kalite kutusunun altında ("Player detection") mı, Settings grubunda mı. Kısayol aç/kapa hem araç çubuğunda hem Accessibility içinde mi kalacak.
+- **14 Kasım, kullanıcı kararları:**
+  - Küçültme düğmesi yok. Kapatma, FilmDeck adının üzerine gelince yanında açılan küçük baloncukta (ada tıklayınca kapatma önerilmedi: kazayla kapanma riski).
+  - Dört grup: Player, Subtitles, Settings, Accessibility. Grup düğmesinde fare tekerleği grup değiştirir; çift tıklama dört grubun listesini açar.
+  - **Fare tekerleği değer değişikliklerinde de kullanılacak** (hız, ses, sarma adımı, altyazı zamanlaması gibi). Uygulamada yalnız imleç o denetimin üzerindeyken sayfa kaydırması engellenir; klavye karşılığı da olmalı.
+  - PiP ve Shortcuts yalnız simge; adları üzerine gelince ve klavye odağında görünür.
+  - Subtitles: "Load file" üzerine gelince kabul edilen türleri (.srt, .vtt) yazar; zamanlama `− 100ms +` biçiminde, ortaya basınca adım ve sıfırlama açılır; Beyaz/Sarı seçimi "Subtitle appearance" başlığının sağında. Açık/Kapalı'nın yeri ve kayma (offset) değerinin yeri için Claude önerisi Figma'da (Subtitles rev 2).
+- **14 Kasım, ikinci tur (rev 3):**
+  - Araç çubuğunun başında yalnız "FilmDeck" yazısı, simge yok. Üzerine gelince yalnız X simgeli kapatma baloncuğu çıkar, sola doğru açılır.
+  - **Bütün ipuçları ve baloncuklar panel temasını kullanır** (beyaz değil). Bu kural bütün sistemlere uygulanır.
+  - Çift tıkla açılan grup listesi, seçili grup düğmesinin mavi kutusuyla aynı genişlikte sabit; "1 / 4" sıra yazısı yok. Bunun için grup düğmesinin genişliği en uzun ada ("Accessibility") göre sabitlenir.
+  - Subtitles aç/kapa göz simgesiyle kalır; yeri Load file'ın hemen sağı.
+  - Açılır kutuların içi eski paneldeki gibi biraz daha açık renkli kutulara bölünür, alanların sınırı belli olur.
+  - Settings: Picture ve Night mode birlikte (ikisi de video filtresi). Tema düğmesinde o anki tema adı yazar (ör. "Aurora"). Klavye kısayolu aç/kapa Settings'te yok; Help'te yalnız bilgi rehberi. Settings grubuna geçince Help kutusu kendiliğinden açık durur.
+  - **rev 4 (14 Kasım):** grup düğmesi o anki adın genişliğinde (sabit genişlik kaldırıldı), liste en uzun ada göre; rapor simgesi her grupta solda; dil kutusu kendi içeriği kadar; Reset all "Picture & night mode" başlığının sağında; tema adı "Theme" başlığının sağında; Help maddelerinde simgeler. Teknik kurallar ve bugünkü özelliklerin yeni yerleri [TOOLBAR_REDESIGN.md](TOOLBAR_REDESIGN.md) içinde; açılır kutular araç çubuğu ekranın üst yarısındaysa altta, alt yarısındaysa üstte açılır.
+  - Settings/Accessibility ayrımı Claude'a bırakıldı: Settings = dil, görüntü ve gece filtresi, tema, Help; Accessibility = paneli açık tut, büyük yazı, yüksek kontrast, hareketi azalt (her biri araç çubuğunda tek tıkla açılıp kapanan düğme). Kısayol aç/kapa her grupta solda duran simgede kalır, Accessibility'de ikinci kez yer almaz.
+
+## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
+
+Kullanıcının kendi denemesi, v0.7.18, Firefox, canlı yayın. Kod değişmedi, yeniden üretilmedi.
+
+- **Hız:** Canlı uçta hız değişikliği etkisizdi; kullanıcı bu yüzden yayının geçmişine geri dönüp izlerken denedi. Orada da panelde değiştirilen hız Kick'in kendi arayüzünde görünmüyor.
+- **Ses:** Panelde %0 seçildikten sonra seçilen ilk değer sitenin arayüzüne yansıyor; ondan sonraki değişiklikler yansımıyor. Sonraki değerler rastgele ve hep %100'ün altındaydı. v0.7.10'daki "oynatıcıya verilen ses sitenin simgesine yansır" kabulü bu sırada geçmiyor.
+- **Durum:** Açık. Kullanıcı önce C araç çubuğunu seçti. I-03'e dönüldüğünde Firefox'ta, canlı yayının geçmişinde (DVR) ve canlı uçta ayrı ayrı yeniden üretilecek; canlı uçta hızın etkisiz kalması beklenen bir sınır olabilir, ayrıca kontrol edilecek.
 
 ## v0.7.18 pre-release hazırlığı — 6 Kasım 2026
 

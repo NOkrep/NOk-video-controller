@@ -103,7 +103,7 @@ test('default export excludes identifiers, URLs, viewing position and device det
   const json = JSON.stringify(payload);
   for (const secret of ['UNIQUE_SECRET', 'PRIVATE_', 'personal.', '192-0-2', 'secret.example',
     'currentTime', 'duration', 'displaySize', 'timestamp', 'sampleUrl', 'userComments', 'domain', 'networkTelemetry',
-    'uiLanguage', 'currentUiThemeId', 'themeId', 'hudAccessibility', 'keepVisible', 'largeText', 'highContrast', 'reduceMotion']) {
+    'uiLanguage', 'currentUiThemeId', 'themeId', 'hudAccessibility', 'keepVisible', 'largeText', 'highContrast', 'reduceMotion', 'hudLayout', 'toolbar']) {
     assert.equal(json.includes(secret), false, secret);
   }
   assert.equal(payload.platform, 'other');
