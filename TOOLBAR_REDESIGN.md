@@ -128,3 +128,12 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Fare tekerleği:** açılır kutulardaki bütün kaydırıcılar (hız, ses, altyazı görünümü, görüntü filtreleri) artık tekerlekle birer adım değişir. v0.7.20 kaydında altyazı kaydırıcıları için yazılan tekerlek desteği o sürümde aslında yoktu; bu sürümde eklendi.
 - **Bildirim yeri:** araç çubuğu üstteyken bildirim, ekranın üst ortasına uzanan şerit ve açık kutuların altına iner.
 - **Henüz yok:** Accessibility grubu ("Klasik panelde aç"), Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler. Klavye kısayolu aç/kapa Help'te yer almaz; her grupta soldaki simgededir.
+
+### v0.7.22 — Accessibility grubu (dört grup tamam)
+
+- **Anahtarlar:** Keep visible, Easy-read layout, High contrast, Reduce motion; her biri araç çubuğunda tek tıkla açılıp kapanan, içinde küçük anahtarı olan bir düğme. İpuçları panel temasıyla tam adı ve ne yaptığını söyler. Altındaki şerit: tercihler sayfa yenilenince sıfırlanır; klavye kısayolları soldaki tuş simgesindedir.
+- **Durumun tek kaynağı:** Keep visible, High contrast ve Reduce motion klasik paneldeki onay kutularını tetikler; böylece iki düzen ve gömülü oynatıcı köprüsü (`hud-preferences`) aynı tercihi taşır.
+- **Easy-read layout:** klasik panele geçer, Ayarlar sekmesini ve Erişilebilirlik bölümünü açık getirir, odağı araç çubuğuna dönüş anahtarına koyar. Klasik paneldeki "Büyük yazı ve kontroller" seçeneği kademeli büyütme gelene kadar yerinde kalır.
+- **Yer tutucu kaldırıldı:** "Klasik panelde aç" düğmesi ve çevirileri artık yok; dört grubun hepsi kendi denetimleriyle araç çubuğunda.
+- **Bildirim:** panel açılırken çıkan bildirim araç çubuğu düzenine geçince çubuğun altına taşınır.
+- **Sıradaki (kullanıcı, 15 Kasım):** kullanıcı eski ve yeni paneli karşılaştırıp düzeltmeleri bildirecek; düzeltmelerden sonra araç çubuğu varsayılan yapılacak ve milestone birlikte doğrulanacak. Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler ve DRM rozeti hâlâ açık.

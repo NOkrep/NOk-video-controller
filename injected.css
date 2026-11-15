@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.21
+ * injected.css - FilmDeck by NOk v0.7.22
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1486,7 +1486,13 @@
 #pvc-toolbar .pvc-tb-dots > span.pvc-tb-on { width: 7px !important; height: 7px !important; background: var(--pvc-accent) !important; }
 #pvc-toolbar .pvc-tb-note { color: var(--pvc-muted) !important; font-size: 11px !important; font-weight: 400 !important; line-height: 1.4 !important; white-space: normal !important; }
 #pvc-toolbar .pvc-tb-bar .pvc-tb-note { white-space: nowrap !important; padding: 0 4px !important; }
-#pvc-toolbar .pvc-tb-classic { padding: 6px 9px !important; color: var(--pvc-accent-ink) !important; box-shadow: inset 0 0 0 1px var(--pvc-border) !important; }
+/* Accessibility switches: a chip with a small track; on uses the accent like the classic switches. */
+#pvc-toolbar .pvc-tb-toggle { padding: 5px 7px 5px 10px !important; gap: 7px !important; box-shadow: inset 0 0 0 1px var(--pvc-border) !important; }
+#pvc-toolbar .pvc-tb-toggle.pvc-tb-on { color: var(--pvc-accent-ink) !important; background: color-mix(in srgb, var(--pvc-accent) 14%, transparent) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pvc-accent) 60%, transparent) !important; }
+#pvc-toolbar .pvc-tb-switch { position: relative !important; flex: 0 0 26px !important; width: 26px !important; height: 15px !important; border-radius: 8px !important; background: color-mix(in srgb, var(--pvc-text) 22%, transparent) !important; transition: background-color 150ms ease-out !important; }
+#pvc-toolbar .pvc-tb-switch::after { content: "" !important; position: absolute !important; top: 2px !important; left: 2px !important; width: 11px !important; height: 11px !important; border-radius: 50% !important; background: var(--pvc-text) !important; transition: transform 150ms ease-out !important; }
+#pvc-toolbar .pvc-tb-toggle.pvc-tb-on .pvc-tb-switch { background: var(--pvc-accent) !important; }
+#pvc-toolbar .pvc-tb-toggle.pvc-tb-on .pvc-tb-switch::after { transform: translateX(11px) !important; background: var(--pvc-accent-on) !important; }
 
 /* Close bubble: to the left of the bar; stacked over or under the name when the bar touches the left edge. */
 #pvc-toolbar .pvc-tb-bubble { position: absolute !important; right: calc(100% + 8px) !important; top: 50% !important; transform: translateY(-50%) !important; padding: 5px !important; border-radius: 14px !important; background: var(--pvc-surface) !important; border: 1px solid var(--pvc-border) !important; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38) !important; }

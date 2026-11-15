@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.21**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.22**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,16 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Kompakt araç çubuğu: Accessibility grubu, v0.7.22 — 15 Kasım 2026
+
+Kullanıcı istedi: Accessibility bölümünü yap; ardından kullanıcı eski ve yeni paneli karşılaştırıp düzeltmeleri bildirecek, sonunda yeni panel varsayılan yapılıp milestone birlikte doğrulanacak. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** Keep visible, Easy-read layout, High contrast, Reduce motion anahtarları ve not şeridi (Figma "Accessibility · new group"). Anahtarlar klasik onay kutularını tetikler; Easy-read klasik panele geçip dönüş anahtarını açık getirir. "Klasik panelde aç" yer tutucusu kaldırıldı; dört grup tamam.
+- **Ek:** Açılışta çıkan bildirim araç çubuğu düzenine geçince çubuğun altına iner.
+- **Test kararlılığı:** Firefox'ta `toolbar-browser` gömülü çerçeve adımında ("top speed popover") dört koşudan birinde zaman aşımı oldu; sonraki koşular geçti. Olası neden: düzen değişiminden hemen sonra çerçeveden gelen durum paneli yeniden yerleştiriyor ve test eski koordinata tıklıyor. Test artık tıklamadan önce çubuğun yerinin oturmasını bekliyor; kök neden kesin doğrulanmadı.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser` (her motorda iki kez), `subtitle`, `hud-state`, `tooltip`, `dialog-keyboard`, `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle Atlas, yüksek kontrast, Daylight ve Easy-read geçişi kontrolü.
+- **Sınır:** Gerçek site denenmedi. Araç çubuğu hâlâ önizleme anahtarıyla açılıyor; varsayılan yapılması kullanıcının karşılaştırmasından sonra.
 
 ## Kompakt araç çubuğu: Settings grubu, v0.7.21 — 15 Kasım 2026
 

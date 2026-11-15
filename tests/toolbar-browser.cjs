@@ -190,8 +190,27 @@ try{
   await until(driver,page,()=>{const modal=document.getElementById('pvc-permissions-modal');return !!modal&&modal.getClientRects().length>0;},'help opens the shortcuts guide');
   await driver.press(page,'Escape');
   await until(driver,page,()=>{const modal=document.getElementById('pvc-permissions-modal');return !modal||!modal.getClientRects().length;},'guide closes');
+
+  // Accessibility group: one-click switches share the classic checkboxes; Easy-read is the classic panel.
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="accessibility"]').click());
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Accessibility'&&!document.getElementById('pvc-tb-pop-help').getClientRects().length,'accessibility group, help closes');
+  await until(driver,page,visible,'the note strip','pvc-tb-a11y-strip');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-a11y-keepVisible').getAttribute('aria-checked')),'true','keep visible mirrors the classic switch');
+  await driver.pointerClick(page,'#pvc-tb-a11y-highContrast');
+  await until(driver,page,()=>document.getElementById('pvc-a11y-highContrast').checked&&document.getElementById('pvc-controller-popup').classList.contains('pvc-a11y-contrast')&&document.getElementById('pvc-tb-a11y-highContrast').getAttribute('aria-checked')==='true','high contrast on');
+  await driver.pointerClick(page,'#pvc-tb-a11y-highContrast');
+  await until(driver,page,()=>!document.getElementById('pvc-a11y-highContrast').checked&&document.getElementById('pvc-tb-a11y-highContrast').getAttribute('aria-checked')==='false','high contrast off');
+  const motion=await driver.evaluate(page,()=>document.getElementById('pvc-a11y-reduceMotion').checked);
+  await driver.pointerClick(page,'#pvc-tb-a11y-reduceMotion');
+  await until(driver,page,previous=>document.getElementById('pvc-a11y-reduceMotion').checked!==previous&&document.getElementById('pvc-controller-popup').classList.contains('pvc-a11y-reduce-motion')!==previous,'reduce motion flips',motion);
+  await driver.pointerClick(page,'#pvc-tb-a11y-reduceMotion');
+  await until(driver,page,previous=>document.getElementById('pvc-a11y-reduceMotion').checked===previous,'and back',motion);
+  await driver.pointerClick(page,'#pvc-tb-a11y-easyRead');
+  await until(driver,page,()=>{const p=document.getElementById('pvc-controller-popup');return !p.classList.contains('pvc-layout-toolbar')&&!document.getElementById('pvc-layout-toolbar-toggle').checked&&document.getElementById('pvc-accessibility').open;},'easy-read shows the classic panel with the way back open');
+  await driver.evaluate(page,()=>document.getElementById('pvc-layout-toolbar-toggle').click());
+  await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar')&&document.getElementById('pvc-tb-a11y-easyRead').getAttribute('aria-checked')==='false','back to the toolbar');
   await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="player"]').click());
-  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player'&&!document.getElementById('pvc-tb-pop-help').getClientRects().length,'back to Player, help closes');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player'&&!document.getElementById('pvc-tb-a11y-strip').getClientRects().length,'back to Player');
 
   // Theme palette: the bar's border follows the theme's border colour.
   const borderOf=()=>getComputedStyle(document.querySelector('#pvc-toolbar .pvc-tb-bar')).borderTopColor;
@@ -215,6 +234,8 @@ try{
   await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','top panel opens');
   await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-layout-toolbar-toggle').click();});
   await until(driver,top,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'top toolbar layout');
+  // The frame's state can still re-place the panel just after the switch; click once the bar has settled.
+  await driver.evaluate(top,async()=>{let last='';for(let i=0;i<20;i++){const r=JSON.stringify(document.getElementById('pvc-tb-speed').getBoundingClientRect());if(r===last)return;last=r;await new Promise(f=>setTimeout(f,150));}});
   await driver.pointerClick(top,'#pvc-tb-speed');
   await until(driver,top,visible,'top speed popover','pvc-tb-pop-speed');
   await driver.pointerClick(top,'[data-pvc-speed="2.0"]');

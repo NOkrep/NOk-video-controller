@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.21 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.22 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.21';
+  const EXTENSION_VERSION = '0.7.22';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -385,8 +385,6 @@
     'Yenile': 'Refresh',
     'Grup: {0} · tıkla: sonraki · çift tıkla: liste · tekerlek: değiştir': 'Group: {0} · click: next · double-click: list · wheel: switch',
     'Gruplar': 'Groups',
-    'Bu grup araç çubuğunda henüz hazır değil.': 'This group is not on the toolbar yet.',
-    'Klasik panelde aç': 'Open in the classic panel',
     'Kompakt araç çubuğu (önizleme)': 'Compact toolbar (preview)',
     'Dosya yükle': 'Load file',
     'Altyazı dosyası yükle · .srt ve .vtt · yalnız bu sayfada tutulur': 'Load a subtitle file · .srt and .vtt · kept only for this page',
@@ -419,7 +417,15 @@
     'Tuşlar ve site erişimi rehberi': 'Guide to keys and site access',
     'Gizliliği koruyan teşhis raporu': 'Privacy-focused diagnostic report',
     'Sürüm {0} · MIT': 'Version {0} · MIT',
-    'Kaynak kodu': 'Source code'
+    'Kaynak kodu': 'Source code',
+    'Açık tut': 'Keep visible',
+    'Kolay okunur düzen': 'Easy-read layout',
+    'Hareketi azalt': 'Reduce motion',
+    'Araç çubuğu izlerken solmadan ekranda kalır': 'The toolbar stays on screen instead of fading while you watch',
+    'Klasik paneli gösterir; araç çubuğuna oradaki Erişilebilirlik bölümünden dönülür': 'Shows the classic panel; its Accessibility section brings the toolbar back',
+    'Tema renklerini geçici olarak yüksek kontrastlı renklerle değiştirir': 'Temporarily replaces theme colours with high-contrast ones',
+    'Panel animasyonlarını kapatır': 'Turns off panel animations',
+    'Bu tercihler sayfa yenilenince sıfırlanır · klavye kısayolları: soldaki tuş simgesi': 'These preferences reset when the page reloads · keyboard shortcuts: the key icon on the left'
   };
   const plainUiLabel = value => String(value).replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, '');
   // Keep legacy message keys for existing feedback; control labels no longer need emoji prefixes.
@@ -457,7 +463,9 @@
     chevron: '<path d="m7 10 5 5 5-5"/>',
     typeface: '<path d="M4 18 9 6l5 12M6 14h6M14 18l3.5-8 3.5 8M15.2 15.5h4.6"/>',
     access: '<circle cx="12" cy="4.5" r="1.8"/><path d="M5 8.5l7 1.5 7-1.5M12 10v5l-3 6m3-6 3 6"/>',
-    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>'
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>',
+    pin: '<path d="M9 3h6l-1 6 4 4H6l4-4Z"/><path d="M12 13v8"/>',
+    wave: '<path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>'
   };
   function uiIcon(name) {
     if (!Object.hasOwn(UI_ICON_PATHS, name)) return '';
@@ -5910,12 +5918,16 @@
   // END TOOLBAR GEOMETRY
 
   const TOOLBAR_GROUP_IDS = ['player', 'subtitles', 'settings', 'accessibility'];
+  // Accessibility switches: key, label, icon, tooltip. "easyRead" is the classic panel itself (TOOLBAR_REDESIGN.md).
+  const TOOLBAR_A11Y = [['keepVisible', 'Açık tut', 'pin', 'Araç çubuğu izlerken solmadan ekranda kalır'],
+    ['easyRead', 'Kolay okunur düzen', 'typeface', 'Klasik paneli gösterir; araç çubuğuna oradaki Erişilebilirlik bölümünden dönülür'],
+    ['highContrast', 'Yüksek kontrast', 'contrast', 'Tema renklerini geçici olarak yüksek kontrastlı renklerle değiştirir'],
+    ['reduceMotion', 'Hareketi azalt', 'wave', 'Panel animasyonlarını kapatır']];
   // Same ranges as the classic Picture filters: key, label, icon, min, max, step.
   const TOOLBAR_FILTERS = [['brightness', 'Parlaklık', 'sun', 50, 150, 5], ['contrast', 'Kontrast', 'contrast', 50, 150, 5], ['saturate', 'Doygunluk', 'palette', 0, 200, 10]];
   const TOOLBAR_GROUP_INFO = { player: ['Oynatıcı', 'video'], subtitles: ['Altyazı', 'subtitles'], settings: ['Ayarlar', 'sliders'], accessibility: ['Erişilebilirlik', 'access'] };
   function toolbarMarkup() {
     const opts = (attribute, values, label) => values.map(value => `<button type="button" class="pvc-tb-opt" data-pvc-${attribute}="${value}">${label(value)}</button>`).join('');
-    const placeholder = id => `<div class="pvc-tb-group" data-pvc-group="${id}" hidden><span class="pvc-tb-note">Bu grup araç çubuğunda henüz hazır değil.</span><button type="button" class="pvc-tb-chip pvc-tb-classic" data-pvc-classic="${id}">Klasik panelde aç</button></div>`;
     return `
       <div class="pvc-tb-bar">
         <div id="pvc-tb-brand" class="pvc-tb-brand" aria-label="FilmDeck: taşımak için sürükleyin"><span id="pvc-tb-brand-text">FilmDeck</span></div>
@@ -5951,13 +5963,16 @@
           <button type="button" id="pvc-tb-picture" class="pvc-tb-chip pvc-tb-marked" data-pvc-popover="picture"><span id="pvc-tb-picture-dot" class="pvc-tb-dot" hidden></span>${uiIcon('sun')}<span>Görüntü ve gece</span>${uiIcon('chevron')}</button>
           <button type="button" id="pvc-tb-theme" class="pvc-tb-chip" data-pvc-popover="theme">${uiIcon('palette')}<span id="pvc-tb-theme-val" data-pvc-i18n-skip>Atlas</span>${uiIcon('chevron')}</button>
         </div>
-        ${placeholder('accessibility')}
+        <div class="pvc-tb-group" data-pvc-group="accessibility" hidden>
+          ${TOOLBAR_A11Y.map(([key, label, icon]) => `<button type="button" id="pvc-tb-a11y-${key}" class="pvc-tb-chip pvc-tb-toggle" role="switch" aria-checked="false">${uiIcon(icon)}<span>${label}</span><span class="pvc-tb-switch" aria-hidden="true"></span></button>`).join('')}
+        </div>
         <span class="pvc-tb-sep"></span>
         <button type="button" id="pvc-tb-mode" class="pvc-tb-mode"><span id="pvc-tb-mode-icon" class="pvc-tb-mode-icon"></span><span id="pvc-tb-mode-label">Oynatıcı</span><span class="pvc-tb-dots"><span></span><span></span><span></span><span></span></span></button>
       </div>
       <div id="pvc-tb-strip" class="pvc-tb-strip" data-pvc-strip="player">${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button></div>
       <div id="pvc-tb-sub-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="subtitles" hidden>${uiIcon('subtitles')}<span id="pvc-tb-sub-status" class="pvc-tb-strip-text" data-pvc-i18n-skip></span>
         <span id="pvc-tb-sub-offset" class="pvc-tb-offset" hidden><span id="pvc-tb-sub-offset-val"></span><button type="button" id="pvc-tb-sub-offset-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></span></div>
+      <div id="pvc-tb-a11y-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="accessibility" hidden>${uiIcon('info')}<span>Bu tercihler sayfa yenilenince sıfırlanır · klavye kısayolları: soldaki tuş simgesi</span></div>
       <div id="pvc-tb-pop-subtiming" class="pvc-tb-popover" aria-label="Altyazı zamanlaması" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>− ve + adımı</span></div><div class="pvc-tb-opts">${opts('substep', TOOLBAR_SUBTITLE_STEPS, value => value >= 1000 ? `${value / 1000}s` : `${value}ms`)}</div></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu anki kayma</span><button type="button" id="pvc-tb-sub-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></div>
@@ -6176,7 +6191,12 @@
       if (!show) { closeToolbarPopover(); hideToolbarBubbleNow(); }
       if (popup.style.display !== 'none') clampPopupToViewport(popup);
     }
-    if (show) { syncToolbar(); updateToolbarSide(); placeToolbarPopover(); }
+    if (show) {
+      syncToolbar(); updateToolbarSide(); placeToolbarPopover();
+      // A toast shown just before the switch (e.g. "FilmDeck active") moves under the bar too.
+      const toast = document.getElementById('pvc-quick-toast'), toastTop = toolbarToastTop();
+      if (toast && toastTop !== null) toast.style.setProperty('top', `${toastTop}px`, 'important');
+    }
   }
   function setHudLayout(layout) {
     hudLayout = layout === 'toolbar' ? 'toolbar' : 'classic';
@@ -6344,6 +6364,13 @@
     }
     byId('pvc-tb-help-cdn')?.classList.toggle('pvc-tb-busy', cdn?.getAttribute('aria-busy') === 'true');
 
+    for (const [key] of TOOLBAR_A11Y) {
+      const button = byId(`pvc-tb-a11y-${key}`), on = key === 'easyRead' ? hudLayout === 'classic' : hudAccessibility[key] === true;
+      if (!button) continue;
+      button.classList.toggle('pvc-tb-on', on);
+      if (button.getAttribute('aria-checked') !== String(on)) button.setAttribute('aria-checked', String(on));
+    }
+
     // The bar's width depends on the group and the language; recheck that it still fits.
     const width = toolbar.querySelector('.pvc-tb-bar').offsetWidth;
     if (width && width !== toolbarWidthCache) {
@@ -6507,13 +6534,20 @@
     toolbar.querySelectorAll('[data-pvc-goto]').forEach(item => item.addEventListener('click', event => {
       event.stopPropagation(); setToolbarGroup(item.getAttribute('data-pvc-goto')); closeToolbarPopover(true);
     }));
-    toolbar.querySelectorAll('[data-pvc-classic]').forEach(button => button.addEventListener('click', event => {
-      event.stopPropagation();
-      const group = button.getAttribute('data-pvc-classic');
-      setHudLayout('classic');
-      byId(`pvc-tab-${group === 'accessibility' ? 'settings' : group}`)?.click();
-      if (group === 'accessibility') { const details = byId('pvc-accessibility'); if (details) details.open = true; }
-    }));
+    // Accessibility: each switch flips the classic checkbox, so both layouts and the frame bridge stay in step.
+    // Easy-read is the classic panel; its Accessibility section is opened so the way back is in view.
+    for (const [key, , , tip] of TOOLBAR_A11Y) {
+      const button = byId(`pvc-tb-a11y-${key}`);
+      setUiTip(button, tip);
+      button.addEventListener('click', event => {
+        event.stopPropagation(); resetIdleTimer(popup);
+        if (key !== 'easyRead') { byId(`pvc-a11y-${key}`)?.click(); scheduleToolbarSync(); return; }
+        setHudLayout('classic');
+        byId('pvc-tab-settings')?.click();
+        const details = byId('pvc-accessibility'); if (details) details.open = true;
+        byId('pvc-layout-toolbar-toggle')?.focus();
+      });
+    }
     toolbar.addEventListener('keydown', event => {
       if (event.key !== 'Escape') return;
       if (toolbarOpenPopover) { event.stopPropagation(); closeToolbarPopover(true); }
