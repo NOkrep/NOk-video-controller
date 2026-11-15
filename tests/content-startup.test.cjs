@@ -17,6 +17,8 @@ test('toolbar intent arriving during main-world load opens once after the engine
   const h=harness();h.run();h.click();h.finish();
   const delivered=h.posts.filter(p=>p.ready&&['PVC_OPEN_POPUP','PVC_TOOLBAR_TOGGLE'].includes(p.message.type));
   assert.equal(delivered.length,1);assert.equal(h.listeners.length,1);assert.equal(h.scripts.length,2);
+  // Pages in a legacy encoding must still read the engine as UTF-8 (toolbar-browser checks it on a windows-1254 page).
+  assert.deepEqual(h.scripts.map(script=>[script.src,script.charset]),[['extension:///frame-protocol.js','utf-8'],['extension:///injected.js','utf-8']]);
 });
 test('automatic initialization stays silent and repeated loading-time clicks can cancel pending open',()=>{
   const silent=harness();silent.run();silent.finish();assert.equal(silent.posts.length,0);

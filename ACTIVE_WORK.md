@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.25**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.25.1**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,15 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## UTF-8 bildirmeyen sayfalarda bozuk Türkçe ve çeviri, v0.7.25.1 — 16 Kasım 2026
+
+Kullanıcı istedi ("Yes, fix it"). v0.7.25 sırasında bulunan açık bulgunun düzeltmesi.
+
+- **Kök neden:** `content.js` motoru (`injected.js`) sayfaya `<script src>` ile ekliyor; eklenti dosyası karakter kodlaması bildirmeden sunulduğu için tarayıcı betiği sayfanın kodlamasıyla çözüyordu. Eski Türkçe kodlamalı (windows-1254) ya da kodlama bildirmeyen sayfalarda Türkçe metinler bozuluyor ("OynatÄ±cÄ±", "1.0Ã—") ve çeviri anahtarları eşleşmediği için İngilizce arayüz Türkçe/bozuk kalıyordu.
+- **Düzeltme:** eklenen iki betiğe `charset = 'utf-8'`; HTML'de bu öznitelik betiğin kodlamasını sayfanınkinden önce belirler. Arka plandaki `executeScript` yolu ve `content.js`'in kendisi zaten UTF-8 okunuyordu.
+- **Kanıt:** `toolbar-browser` artık videosuz sayfayı windows-1254 olarak sunuyor; düzeltmeden önce iki motorda başarısız oldu ("translations still found on a windows-1254 page"), sonra geçti. `content-startup.test.cjs` iki betiğin `charset` değerini denetliyor. `npm run check` (289/289); `toolbar`, `startup`, `subtitle`, `hud-state`, `tooltip`, `dialog-keyboard`, `frame-loss`, `ui-smoke` Edge ve Firefox'ta geçti.
+- **Sınır:** gerçek eski kodlamalı bir sitede denenmedi.
 
 ## Ertelenen anlık durumlar araç çubuğunda, v0.7.25 — 16 Kasım 2026
 

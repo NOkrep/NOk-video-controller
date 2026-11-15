@@ -21,9 +21,11 @@ const dblclickMode=()=>{const mode=document.getElementById('pvc-tb-mode');for(co
 const wheel=(id,deltaY)=>document.getElementById(id).dispatchEvent(new WheelEvent('wheel',{deltaY,deltaMode:0,bubbles:true,cancelable:true}));
 (async()=>{let driver;
 // The player page enforces Trusted Types, as some video sites do: the toolbar must not build UI from HTML strings at run time.
-// /empty is a page without any video, for the "waiting for a video" strip.
-const media=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"require-trusted-types-for 'script'"});
-  res.end(req.url==='/empty'?'<!doctype html><meta charset="utf-8"><body style="margin:0;background:#111;height:600px"><p style="color:#888">No video here.</p></body>':mediaHtml);});
+// /empty is a page without any video, for the "waiting for a video" strip. It is also served in a legacy
+// Turkish encoding (windows-1254), so the injected engine must still be read as UTF-8.
+const media=http.createServer((req,res)=>{const empty=req.url==='/empty';
+  res.writeHead(200,{'Content-Type':`text/html; charset=${empty?'windows-1254':'utf-8'}`,'Content-Security-Policy':"require-trusted-types-for 'script'"});
+  res.end(empty?'<!doctype html><body style="margin:0;background:#111;height:600px"><p style="color:#888">No video here.</p></body>':mediaHtml);});
 const parent=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
   res.end(`<!doctype html><body style="margin:0"><iframe style="width:700px;height:420px" allow="autoplay" src="http://127.0.0.1:${media.address().port}/"></iframe></body>`);});
 try{
@@ -298,7 +300,9 @@ try{
   await until(driver,empty,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens without a video');
   await driver.evaluate(empty,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-layout-toolbar-toggle').click();});
   await until(driver,empty,()=>{const on=id=>document.getElementById(id).getClientRects().length>0;return on('pvc-tb-waiting-strip')&&!on('pvc-tb-strip')&&on('pvc-tb-rescan')&&on('pvc-tb-waiting-report');},'waiting strip with its actions');
-  assert.match(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-waiting-strip').textContent),/Waiting for a video/);
+  assert.match(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-waiting-strip').textContent),/Waiting for a video/,'translations still found on a windows-1254 page');
+  assert.equal(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-speed-val').textContent),'1.0×','non-ASCII text intact on a windows-1254 page');
+  assert.equal(await driver.evaluate(empty,()=>document.characterSet.toLowerCase()),'windows-1254','the page really uses the legacy encoding');
   await driver.evaluate(empty,()=>document.querySelector('[data-pvc-goto="settings"]').click());
   assert.equal(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-waiting-strip').getClientRects().length>0),true,'the alert stays in every group');
 

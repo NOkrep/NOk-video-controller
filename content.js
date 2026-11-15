@@ -28,6 +28,9 @@
     boot.loading = true;
     try {
       const script = document.createElement('script');
+      // The extension serves the file without a charset, so a page in a legacy encoding (e.g. windows-1254)
+      // would decode its Turkish text wrongly and lose every translation. The attribute pins UTF-8.
+      script.charset = 'utf-8';
       script.src = browserAPI.runtime.getURL('injected.js');
       script.dataset.logoUrl = browserAPI.runtime.getURL('icons/nok-logo.svg');
       script.dataset.productLogoUrl = browserAPI.runtime.getURL('icons/filmdeck-logo.png');
@@ -46,6 +49,7 @@
       };
       script.onerror = function () { this.remove(); boot.loading = false; boot.ready = false; };
       const helper = document.createElement('script');
+      helper.charset = 'utf-8'; // ASCII today; kept in step with the engine above.
       helper.src = browserAPI.runtime.getURL('frame-protocol.js');
       const appendMain = function () { this.remove(); (document.head || document.documentElement).appendChild(script); };
       helper.onload = appendMain;
