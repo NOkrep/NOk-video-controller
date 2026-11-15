@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.20**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.24**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,60 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Karşılaştırma 3. tur: B3 açılır kutu stili ve grup düğmesi, v0.7.24 — 15 Kasım 2026
+
+Kullanıcı B3'ü seçti ("daha yenilikçi ve zarif") ve grup düğmesini netleştirdi: tek tıklama bir şey yapmaz, çift tıklama listeyi açar, tekerlek liste açılmadan gezer. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** bütün açılır kutular B3 stilinde (tek katman, ayraçlar, hap seçenekler, ince kaydırıcılar, anahtar satırları); çubuktaki oklar kaldırıldı; açık düğmede ve kutunun kenarında vurgu çizgisi; tema ve video hedefi için kendi listemiz; 150 ms açılış (hareketi azaltta yok).
+- **Ara karar (Claude):** klavyede çift tıklama olmadığından Enter/Boşluk grup listesini açar.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser` (tek tıklamanın bir şey açmaması, çift tıklama ve Enter ile liste, tekerlekle geçiş, kutunun düğmeye bağlanması, çubukta ok olmaması, kendi tema ve hedef listeleri, anahtar satırları), `subtitle`, `hud-state`, `tooltip`, `dialog-keyboard`, `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle Player, Subtitles, Settings ve açık tema listesi kontrolü.
+- **Sınır:** gerçek site denenmedi.
+
+## Karşılaştırma 2. tur: Subtitles düzeltmeleri, grup düğmesi, B modelleri, v0.7.23 — 15 Kasım 2026
+
+Kullanıcı B modelini en hoş buldu ama düğmelerdeki aşağı ok ile kutunun uçla düğmeden çıkıyormuş gibi durmasının birlikte gereksiz kalabalık yarattığını söyledi; Subtitles ve grup düğmesinde düzeltmeler bildirdi. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Düzeltilen:** göz simgesinin kaybolması (Trusted Types; eşitlemenin geri kalanını da durduruyordu), görünüm kaydırıcılarının kalın çubuk olması, şeritte satır sayısının kesilmesi (ad kısalır, sayı görünür, tamamı ipucunda), grup düğmesi (tıklama yalnız listeyi açar, tekerlek gezer).
+- **Figma:** "Popovers · models" sayfasına "B variants" eklendi: B1 yalnız ok, B2 yalnız uç, B3 ikisi de yok ve sessiz vurgu çizgisi. Karar bekliyor.
+- **Test:** `toolbar-browser` sayfası Trusted Types zorunlu hale getirildi; HTML dizesi kullanan satır geçici olarak geri konunca Edge'de test başarısız oldu, kaldırınca geçti. Yeni denetimler: göz simgeleri, ince kaydırıcı, satır sayısı ve ipucu, tıklamanın grubu değiştirmemesi, çift tıklamanın listeyi açık bırakması.
+
+## Açılır kutu modelleri (Figma) — 15 Kasım 2026
+
+Kod değişmedi. Kullanıcı açılır kutuların yeni panel tarzından bağımsız durduğunu söyledi ve önerileri Figma modeli olarak istedi. Sayfa: `FilmDeck MEC523 Wireframes` › "Popovers · models". Her modelde aynı üç kutu (Volume, Picture & night, Theme) açtığı düğmenin altında, Atlas teması.
+
+- **Current (v0.7.22):** köşeli, ağır gölgeli ayrı pencere görünümü; kutu içinde kenarlıklı kart; tarayıcının kendi seçim kutusu; dikdörtgen düğmeler. Karşılaştırma için.
+- **A · Aynı malzeme, tek katman:** kutu çubukla aynı yarı saydam zemin ve yuvarlak köşelerle; iç kutu yok, ince ayraç ve küçük soluk başlıklar; hap seçenekler, anahtarlar, kendi listemiz.
+- **B · A + düğmeye bağlı:** A'ya ek olarak düğmeyi gösteren küçük uç; açık düğme kutunun rengine bürünür; düğmeden kısa büyüme animasyonu (hareketi azalt açıkken yok).
+- **C · Yumuşak renk blokları:** eski paneldeki "açık renkli kutu" fikri kenarlıksız, yuvarlak, hafif tonlu bloklarla; hap seçenekler, anahtarlar, kendi listemiz.
+- **Karar bekliyor:** kullanıcı modeli seçecek; seçilen model bütün açılır kutulara (Help dahil) uygulanacak.
+
+## Karşılaştırma 1. tur: kapatma baloncuğu ve FilmDeck adı, v0.7.22.1 — 15 Kasım 2026
+
+Kullanıcı eski/yeni panel karşılaştırmasının ilk düzeltmelerini bildirdi. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Düzeltilen:** sürüklerken baloncuğun bazen açık kalması (basılı tutma ve sürükleme boyunca açılmıyor); baloncuk tam daire, yalnız X, üzerine gelince kırmızı halka; FilmDeck adının üzerine gelince çevresinde alan oluşmaması.
+- **Açık, karar bekliyor:** açılır kutuların tasarımı; Claude önerileri kullanıcıya sunuldu. Kullanıcı diğer grupları inceledikçe yeni düzeltmeler bildirecek.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser` yeni "basılıyken baloncuk yok" denetimiyle Edge ve Firefox'ta geçti; denetim düzeltme geri alınınca başarısız oluyor. `hud-state`, `tooltip` iki motorda, `hud-continuity` Firefox'ta geçti; Edge'de `hud-continuity` bilinen, `main`'de de olan rightGap 31 sorunuyla başarısız. Ekran görüntüsüyle Atlas ve Daylight kontrolü.
+
+## Kompakt araç çubuğu: Accessibility grubu, v0.7.22 — 15 Kasım 2026
+
+Kullanıcı istedi: Accessibility bölümünü yap; ardından kullanıcı eski ve yeni paneli karşılaştırıp düzeltmeleri bildirecek, sonunda yeni panel varsayılan yapılıp milestone birlikte doğrulanacak. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** Keep visible, Easy-read layout, High contrast, Reduce motion anahtarları ve not şeridi (Figma "Accessibility · new group"). Anahtarlar klasik onay kutularını tetikler; Easy-read klasik panele geçip dönüş anahtarını açık getirir. "Klasik panelde aç" yer tutucusu kaldırıldı; dört grup tamam.
+- **Ek:** Açılışta çıkan bildirim araç çubuğu düzenine geçince çubuğun altına iner.
+- **Test kararlılığı:** Firefox'ta `toolbar-browser` gömülü çerçeve adımında ("top speed popover") dört koşudan birinde zaman aşımı oldu; sonraki koşular geçti. Olası neden: düzen değişiminden hemen sonra çerçeveden gelen durum paneli yeniden yerleştiriyor ve test eski koordinata tıklıyor. Test artık tıklamadan önce çubuğun yerinin oturmasını bekliyor; kök neden kesin doğrulanmadı.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser` (her motorda iki kez), `subtitle`, `hud-state`, `tooltip`, `dialog-keyboard`, `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle Atlas, yüksek kontrast, Daylight ve Easy-read geçişi kontrolü.
+- **Sınır:** Gerçek site denenmedi. Araç çubuğu hâlâ önizleme anahtarıyla açılıyor; varsayılan yapılması kullanıcının karşılaştırmasından sonra.
+
+## Kompakt araç çubuğu: Settings grubu, v0.7.21 — 15 Kasım 2026
+
+Kullanıcı istedi: "settings grubuna başla". Tasarım Figma "Model 5 · rev 4" Settings çizimi. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** Dil (Türkçe/English, dar kutu), Picture & night (Reset all başlığın sağında, üç kaydırıcı, Night mode ve Invert, ayarlıyken düğmede nokta), tema adı düğmesi (tema adı başlığın sağında, liste, önceki/sonraki, örnek renkler; tekerlekle tema değişir). Help bu grupta hep açık, sağ uca hizalı; diğer kutular yanında açılır.
+- **Ek:** Açılır kutulardaki bütün kaydırıcılar fare tekerleğine bağlandı. v0.7.20 kaydındaki "altyazı kaydırıcıları tekerlekle" ifadesi o sürüm için doğru değildi; düzeltme bu sürümde (TOOLBAR_REDESIGN.md §6'da not edildi). Bildirim, üst ortaya uzanan açık kutuların altına iniyor.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser.cjs` (Help'in yeri ve kalıcılığı, kutunun Help'in yanında açılması, tekerlekle parlaklık, gece modu videoda ve klasik panelde, Reset all, dil geçişi, tema önceki/sonraki ve tekerlek, grup listesinde Help'in çekilmesi, kısayol rehberinin açılması; gömülü çerçevede gece modunun çerçevedeki videoya ulaşması), `subtitle-browser`, `hud-state`, `tooltip`, `dialog-keyboard` ve `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle Atlas, Daylight ve alt yarı kontrolü.
+- **Sınır:** Gerçek site denenmedi. CDN ölçümü testte tıklanmadı (ağ isteği); yalnız varsayılan açıklaması sınandı. Accessibility grubu sırada; araç çubuğu hâlâ önizleme anahtarıyla açılıyor.
 
 ## Kompakt araç çubuğu: Subtitles grubu, v0.7.20 — 15 Kasım 2026
 

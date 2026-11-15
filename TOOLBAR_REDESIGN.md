@@ -117,3 +117,47 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Grup değişince yer:** Gruplar farklı genişlikte olduğundan araç çubuğu grup değişiminde sağ kenarını korur ve sola doğru büyür/küçülür; ardından pencere içine sıkıştırılır. Önceden genişleyen grup sağ kenardan taşabiliyordu (Firefox testi yakaladı).
 - **Köprü:** Gömülü oynatıcıya giden `subtitle-offset` komutu artık tüm adımları (±50/100/250/500/1000 ms) kabul eder; öncekiler yalnız ±100'dü.
 - **Henüz yok:** Settings ve Accessibility grupları ("Klasik panelde aç"), Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler.
+
+### v0.7.21 — Settings grubu
+
+- **Düğmeler:** dil (o anki dilin adı), "Picture & night" ve o anki temanın adı (ör. Atlas). Hepsi klasik Ayarlar sekmesinin durumunu ve işlevlerini kullanır (`setUiLanguage`, `videoFilterState` ve `scheduleVideoFilterUpdate`, `setUiTheme`, klasik gece/ters renk/sıfırla ve önceki/sonraki düğmeleri); gömülü oynatıcıda filtreler mevcut köprüyle çerçevedeki videoya ulaşır.
+- **Dil kutusu:** içeriği kadar dar; Türkçe/English seçimi ve "yalnız bu sayfa açıkken tutulur" notu. Seçim bütün paneli ve araç çubuğunu anında çevirir.
+- **Picture & night kutusu:** başlığın sağında Reset all; parlaklık, kontrast, doygunluk kaydırıcıları (klasik aralıklar, çift tıkla %100); Filters kartında Night mode ve Invert. Görüntü varsayılandan farklıysa düğmenin köşesinde turuncu nokta yanar.
+- **Tema kutusu:** "Theme" başlığının sağında tema adı; tüm temalar listesi (Standart/Açık/OLED grupları), Previous · 6/20 · Next, örnek renkler ve yüksek kontrast notu. Tema düğmesinin üzerinde fare tekerleği önceki/sonraki temaya geçer.
+- **Help:** Settings grubundayken hep açık, araç çubuğunun sağ ucuna hizalı; simgeli dört madde: CDN response (son ölçüm sonucunu altında gösterir), Shortcuts & permissions (rehberi açar), Report a problem, About FilmDeck (sürüm, MIT, kaynak kodu bağlantısı). Diğer kutular Help'in yanında açılır, üstüne binmez; Esc yalnız diğer kutuyu kapatır. Grup listesi açıkken Help aynı yeri kullandığı için kısa süre gizlenir.
+- **Fare tekerleği:** açılır kutulardaki bütün kaydırıcılar (hız, ses, altyazı görünümü, görüntü filtreleri) artık tekerlekle birer adım değişir. v0.7.20 kaydında altyazı kaydırıcıları için yazılan tekerlek desteği o sürümde aslında yoktu; bu sürümde eklendi.
+- **Bildirim yeri:** araç çubuğu üstteyken bildirim, ekranın üst ortasına uzanan şerit ve açık kutuların altına iner.
+- **Henüz yok:** Accessibility grubu ("Klasik panelde aç"), Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler. Klavye kısayolu aç/kapa Help'te yer almaz; her grupta soldaki simgededir.
+
+### v0.7.22 — Accessibility grubu (dört grup tamam)
+
+- **Anahtarlar:** Keep visible, Easy-read layout, High contrast, Reduce motion; her biri araç çubuğunda tek tıkla açılıp kapanan, içinde küçük anahtarı olan bir düğme. İpuçları panel temasıyla tam adı ve ne yaptığını söyler. Altındaki şerit: tercihler sayfa yenilenince sıfırlanır; klavye kısayolları soldaki tuş simgesindedir.
+- **Durumun tek kaynağı:** Keep visible, High contrast ve Reduce motion klasik paneldeki onay kutularını tetikler; böylece iki düzen ve gömülü oynatıcı köprüsü (`hud-preferences`) aynı tercihi taşır.
+- **Easy-read layout:** klasik panele geçer, Ayarlar sekmesini ve Erişilebilirlik bölümünü açık getirir, odağı araç çubuğuna dönüş anahtarına koyar. Klasik paneldeki "Büyük yazı ve kontroller" seçeneği kademeli büyütme gelene kadar yerinde kalır.
+- **Yer tutucu kaldırıldı:** "Klasik panelde aç" düğmesi ve çevirileri artık yok; dört grubun hepsi kendi denetimleriyle araç çubuğunda.
+- **Bildirim:** panel açılırken çıkan bildirim araç çubuğu düzenine geçince çubuğun altına taşınır.
+- **Sıradaki (kullanıcı, 15 Kasım):** kullanıcı eski ve yeni paneli karşılaştırıp düzeltmeleri bildirecek; düzeltmelerden sonra araç çubuğu varsayılan yapılacak ve milestone birlikte doğrulanacak. Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler ve DRM rozeti hâlâ açık.
+
+### v0.7.22.1 — kapatma baloncuğu ve FilmDeck adı (kullanıcı karşılaştırması, 1. tur)
+
+- **Sürüklerken baloncuk:** FilmDeck'e basılı tutulduğu ve sürüklendiği sürece baloncuk açılmaz. Neden: mıknatıslı kenar ve pencere sınırında çubuk imleci tam izlemez; imleç addan çıkıp yeniden girince baloncuk açılıyordu. Bırakınca baloncuk bir sonraki üzerine gelişi bekler.
+- **Baloncuk görünümü:** dış alan tam daire; içinde yalnız X var, X'in ayrı renkli yuvarlak zemini kaldırıldı. Üzerine gelince ya da klavye odağında temanın tehlike rengiyle (`--pvc-danger`) kırmızı bir halka parlar, X de kırmızılaşır.
+- **FilmDeck adı:** üzerine gelince çevresinde alan oluşmaz; klavye odağı çerçevesi yerinde kalır.
+- **Açık:** açılır kutuların tasarımı yeniden ele alınacak (kullanıcı: yeni panel tarzından bağımsız duruyorlar). Modeller Figma'da "Popovers · models" sayfasında: Current, A (aynı malzeme, tek katman), B (A + düğmeye bağlı uç), C (yumuşak renk blokları). Karar bekliyor.
+
+### v0.7.23 — karşılaştırma 2. tur (Subtitles ve grup düğmesi)
+
+- **Göz simgesi (hata):** göster/gizle düğmesindeki simge çalışma anında HTML dizesiyle değiştiriliyordu. Trusted Types uygulayan sitelerde bu engellenir; simge siliniyor ama yenisi eklenemiyordu ve eşitleme o satırda durduğu için ardından gelen göstergeler (kayma şeridi, görünüm, Ayarlar ve Erişilebilirlik) de güncellenmiyordu. Artık iki göz de baştan yerinde, yalnız gösterilip gizleniyor. `toolbar-browser` test sayfası artık Trusted Types zorunlu; HTML dizesi kullanan eski satır geri konunca test başarısız oluyor.
+- **Görünüm kaydırıcıları:** ortak kaydırıcı sınıfındaki `flex: 1`, kartın dikey düzeninde kaydırıcıyı kalın bir çubuğa çeviriyordu. Klasik paneldeki 6 px iz ve halkalı tutamaç geri geldi.
+- **Durum şeridi:** uzun dosya adı ortadan kısalır, satır sayısı her zaman görünür; satırın tamamı ipucunda. Şerit en fazla 380 px.
+- **Grup düğmesi (kullanıcı kararı, 15 Kasım):** tıklama artık grubu değiştirmez, grup listesini açar; çift tıklama listeyi açık bırakır; fare tekerleği grupları gezer. Önceki "tıkla: sonraki grup" davranışı, çift tıklamada hem gruba geçip hem listeyi açtığı için kaldırıldı.
+- **Açık:** açılır kutu tasarımı için B'den türetilen üç yeni model Figma'da ("Popovers · models", "B variants"): B1 yalnız ok, B2 yalnız uç, B3 ikisi de yok, sessiz vurgu çizgisi. Karar bekliyor.
+
+### v0.7.24 — B3 açılır kutu stili ve grup düğmesi (karşılaştırma 3. tur)
+
+- **B3 (kullanıcı seçimi, 15 Kasım; Figma "Popovers · models" › B3):** bütün açılır kutular (Help ve grup listesi dahil) çubuğun malzemesinde: aynı yarı saydam koyu zemin, 18 px köşe, hafif gölge. İç kutular yok; bölümleri ince ayraç ve küçük, büyük harfli soluk başlıklar ayırır. Seçenekler hap biçiminde, kaydırıcılar ince iz ve düz tutamaçlı, Gece modu ve Ters renk anahtar satırı.
+- **Ok ve uç yok:** çubuktaki düğmelerden aşağı oklar kaldırıldı. Açık düğme kutunun rengini alır ve yazısının altında kısa bir vurgu çizgisi çıkar; kutunun üst kenarında (alt yarıda alt kenarında) aynı çizgi o düğmenin hizasında durur. Kutu Help'e çarpmamak için kaydığında çizgi kutunun düğmeye en yakın ucunda kalır.
+- **Kendi listemiz:** tema listesi ve video hedefi tarayıcının seçim kutusu yerine kutunun içinde açılan kendi listemizle seçilir (aile başlıkları, renk noktası, seçili olanda işaret). Tema için ‹ 6/20 › yuvarlak düğmeler.
+- **Açılış:** kutu 150 ms'lik kısa bir yükselmeyle görünür; "Hareketi azalt" açıkken animasyon yok.
+- **Kaydırıcılar:** v0.7.23'te klasik paneldeki kalın halkalı tutamaca dönülmüştü; B3 modelindeki ince iz ve düz tutamaç seçildiği için bu sürümde ona geçildi.
+- **Grup düğmesi (kullanıcı kararı, 15 Kasım):** tek tıklama hiçbir şey yapmaz; çift tıklama grup listesini açar; fare tekerleği liste açılmadan grupları gezer. Klavyede çift tıklama olmadığı için Enter/Boşluk listeyi açar.

@@ -16,9 +16,12 @@ const loadSubtitles=()=>{const input=document.getElementById('pvc-sub-file-input
   input.files=data.files;input.dispatchEvent(new Event('change',{bubbles:true}));};
 const visible=id=>{const node=document.getElementById(id);if(!node)return false;const r=node.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden';};
 const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};};
+// A real double-click: two clicks (detail 1 and 2) and then dblclick.
+const dblclickMode=()=>{const mode=document.getElementById('pvc-tb-mode');for(const detail of [1,2])mode.dispatchEvent(new MouseEvent('click',{bubbles:true,detail}));mode.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,detail:2}));};
 const wheel=(id,deltaY)=>document.getElementById(id).dispatchEvent(new WheelEvent('wheel',{deltaY,deltaMode:0,bubbles:true,cancelable:true}));
 (async()=>{let driver;
-const media=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(mediaHtml);});
+// The player page enforces Trusted Types, as some video sites do: the toolbar must not build UI from HTML strings at run time.
+const media=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"require-trusted-types-for 'script'"});res.end(mediaHtml);});
 const parent=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
   res.end(`<!doctype html><body style="margin:0"><iframe style="width:700px;height:420px" allow="autoplay" src="http://127.0.0.1:${media.address().port}/"></iframe></body>`);});
 try{
@@ -80,8 +83,14 @@ try{
   await driver.pointerClick(page,'#pvc-tb-quality');
   await until(driver,page,visible,'quality popover opens','pvc-tb-pop-quality');
   assert.ok(await driver.evaluate(page,()=>document.getElementById('pvc-tb-adapter').textContent.length>0),'adapter mirrored');
-  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-target').options.length),
-    await driver.evaluate(page,()=>document.getElementById('pvc-video-target').options.length),'video targets mirrored');
+  assert.equal(await driver.evaluate(page,()=>document.querySelectorAll('#pvc-tb-target-list [data-pvc-value]').length),
+    await driver.evaluate(page,()=>document.getElementById('pvc-video-target').options.length),'video targets mirrored in our own list');
+  // B3 link: the open button is marked and the popover carries the accent line under it; no arrows on the bar.
+  assert.ok(await driver.evaluate(page,()=>document.getElementById('pvc-tb-quality').getAttribute('aria-expanded')==='true'&&document.getElementById('pvc-tb-pop-quality').hasAttribute('data-pvc-linked')),'popover linked to its button');
+  assert.equal(await driver.evaluate(page,()=>[...document.querySelectorAll('#pvc-toolbar .pvc-tb-bar [data-pvc-popover]')].every(button=>button.querySelectorAll('svg').length<=1)),true,'no arrow icons on the bar buttons');
+  await driver.pointerClick(page,'#pvc-tb-target-btn');
+  await until(driver,page,visible,'our own target list opens','pvc-tb-target-list');
+  await driver.press(page,'Escape');
 
   // Lower half of the screen: the strip and popovers open above the bar.
   await driver.evaluate(page,()=>{const p=document.getElementById('pvc-controller-popup');p.style.setProperty('top',`${innerHeight-70}px`,'important');window.dispatchEvent(new Event('resize'));});
@@ -93,15 +102,24 @@ try{
   await driver.press(page,'Escape');
   await driver.evaluate(page,()=>{const p=document.getElementById('pvc-controller-popup');p.style.setProperty('top','16px','important');window.dispatchEvent(new Event('resize'));});
 
-  // Groups: click moves on, the double-click list is as wide as its longest name and has no position text.
+  // Groups: a single click does nothing, a double-click opens the list, the wheel switches without it, Enter opens it.
   await driver.pointerClick(page,'#pvc-tb-mode');
-  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles','next group');
-  assert.equal(await driver.evaluate(page,visible,'pvc-tb-speed'),false,'player buttons hidden in another group');
-  await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode').dispatchEvent(new MouseEvent('dblclick',{bubbles:true})));
-  await until(driver,page,visible,'group list opens','pvc-tb-pop-groups');
+  await delay(300);
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-pop-groups'),false,'a single click opens nothing');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode-label').textContent),'Player','a single click does not switch the group');
+  await driver.evaluate(page,dblclickMode);
+  await until(driver,page,visible,'a double-click opens the group list','pvc-tb-pop-groups');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode-label').textContent),'Player','a double-click does not switch the group');
   const list=await driver.evaluate(page,()=>[...document.querySelectorAll('#pvc-tb-pop-groups button')].map(b=>({text:b.textContent.trim(),on:b.getAttribute('aria-current')})));
   assert.deepEqual(list.map(item=>item.text),['Player','Subtitles','Settings','Accessibility']);
-  assert.equal(list.find(item=>item.on==='true').text,'Subtitles');
+  assert.equal(list.find(item=>item.on==='true').text,'Player');
+  await driver.pointerClick(page,'[data-pvc-goto="subtitles"]');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles'&&!document.getElementById('pvc-tb-pop-groups').getClientRects().length,'the list picks a group and closes');
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-speed'),false,'player buttons hidden in another group');
+  await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode').focus());
+  await driver.press(page,'Enter');
+  await until(driver,page,visible,'Enter opens the list from the keyboard','pvc-tb-pop-groups');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode-label').textContent),'Subtitles','Enter does not switch the group either');
   await driver.pointerClick(page,'[data-pvc-goto="player"]');
   await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','list picks a group');
   await driver.evaluate(page,wheel,'pvc-tb-mode',-100);
@@ -110,8 +128,8 @@ try{
   await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','wheel down returns');
 
   // Subtitles group: load, show/hide, timing step and offset, appearance; the classic tab shows the same state.
-  await driver.pointerClick(page,'#pvc-tb-mode');
-  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles','subtitles group');
+  await driver.evaluate(page,wheel,'pvc-tb-mode',100);
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles','wheel down goes to the next group');
   await until(driver,page,visible,'subtitle status strip','pvc-tb-sub-strip');
   assert.equal(await driver.evaluate(page,visible,'pvc-tb-strip'),false,'the playing strip belongs to the Player group');
   assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').textContent),/No subtitles loaded/);
@@ -130,12 +148,18 @@ try{
   await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
   await until(driver,page,()=>{const shown=id=>document.getElementById(id).getClientRects().length>0;
     return document.getElementById('pvc-sub-offset-badge').textContent==='0ms'&&!shown('pvc-tb-sub-offset')&&!shown('pvc-tb-sub-dot');},'reset from the strip');
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-count').textContent),/\(2 /,'the cue count stays visible beside a long name');
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').getAttribute('data-pvc-tip')),/sample\.srt.*2/,'the whole line is in the tooltip');
+  const eyes=()=>[document.getElementById('pvc-tb-sub-eye'),document.getElementById('pvc-tb-sub-eye-off')].map(node=>node.getClientRects().length>0&&!!node.querySelector('svg'));
+  assert.deepEqual(await driver.evaluate(page,eyes),[true,false],'open eye while shown');
   await driver.pointerClick(page,'#pvc-tb-sub-toggle');
   await until(driver,page,()=>!document.getElementById('pvc-sub-toggle-btn').classList.contains('pvc-active')&&document.getElementById('pvc-tb-sub-toggle-val').textContent==='Hidden','hide reaches the shared state');
+  assert.deepEqual(await driver.evaluate(page,eyes),[false,true],'crossed-out eye while hidden');
   await driver.pointerClick(page,'#pvc-tb-sub-toggle');
   await until(driver,page,()=>document.getElementById('pvc-tb-sub-toggle').getAttribute('aria-pressed')==='true','shown again');
   await driver.pointerClick(page,'#pvc-tb-sub-look');
   await until(driver,page,visible,'appearance popover','pvc-tb-pop-sublook');
+  assert.ok((await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-fontSize').getBoundingClientRect().height))<=16,'appearance sliders keep the classic thin track');
   await driver.pointerClick(page,'#pvc-tb-sub-yellow');
   await until(driver,page,()=>document.getElementById('pvc-sub-color').value==='yellow','yellow reaches the classic control');
   await driver.evaluate(page,()=>{const input=document.getElementById('pvc-tb-sub-fontSize');input.value='30';input.dispatchEvent(new Event('input',{bubbles:true}));});
@@ -143,8 +167,81 @@ try{
   await driver.pointerClick(page,'#pvc-tb-sub-look-reset');
   await until(driver,page,()=>document.getElementById('pvc-sub-color').value==='white'&&document.getElementById('pvc-tb-sub-fontSize-value').textContent==='20px','appearance reset');
   await driver.press(page,'Escape');
+
+  // Settings group: Help stays open at the bar's end; language, picture & night and theme share the classic state.
+  const shownNow=id=>document.getElementById(id).getClientRects().length>0;
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="settings"]').click());
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Settings','settings group');
+  await until(driver,page,visible,'help is open in Settings','pvc-tb-pop-help');
+  const barEnd=await driver.evaluate(page,()=>document.querySelector('#pvc-toolbar .pvc-tb-bar').getBoundingClientRect().right);
+  assert.ok(Math.abs((await driver.evaluate(page,rect,'pvc-tb-pop-help')).right-barEnd)<=1,'help lines up with the end of the bar');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-help-cdn-sub').textContent),'Media server response time');
+  await driver.pointerClick(page,'#pvc-tb-picture');
+  await until(driver,page,visible,'picture popover','pvc-tb-pop-picture');
+  assert.ok(await driver.evaluate(page,visible,'pvc-tb-pop-help'),'help stays open beside another popover');
+  assert.ok((await driver.evaluate(page,rect,'pvc-tb-pop-picture')).right<=(await driver.evaluate(page,rect,'pvc-tb-pop-help')).left+0.5,'the popover sits beside help, not over it');
+  await driver.evaluate(page,wheel,'pvc-tb-filter-brightness',-100);
+  await until(driver,page,()=>document.getElementById('pvc-val-brightness').textContent.includes('105')&&document.getElementById('pvc-tb-filter-brightness-value').textContent==='105%','the wheel steps a slider and reaches the classic control');
+  await until(driver,page,shownNow,'an adjusted picture is marked on its button','pvc-tb-picture-dot');
+  await driver.pointerClick(page,'#pvc-tb-night');
+  await until(driver,page,()=>document.getElementById('pvc-btn-night-shield').classList.contains('pvc-active')&&document.getElementById('pvc-tb-night').getAttribute('aria-checked')==='true','night mode is shared');
+  await until(driver,page,()=>/sepia/.test(document.querySelector('video').style.filter),'night mode reaches the video');
+  await driver.pointerClick(page,'#pvc-tb-filter-reset');
+  await until(driver,page,()=>!document.getElementById('pvc-btn-night-shield').classList.contains('pvc-active')&&document.getElementById('pvc-tb-filter-brightness-value').textContent==='100%'&&!document.getElementById('pvc-tb-picture-dot').getClientRects().length,'reset all');
+  await driver.pointerClick(page,'#pvc-tb-lang');
+  await until(driver,page,visible,'language popover','pvc-tb-pop-language');
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-pop-picture'),false,'one popover at a time');
+  await driver.pointerClick(page,'[data-pvc-lang="tr"]');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Ayarlar'&&document.getElementById('pvc-language-select').value==='tr'&&document.getElementById('pvc-tb-lang-val').textContent==='Türkçe','language switches the whole panel');
+  await driver.pointerClick(page,'[data-pvc-lang="en"]');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Settings','and back');
+  await driver.press(page,'Escape');
+  await until(driver,page,()=>!document.getElementById('pvc-tb-pop-language').getClientRects().length,'Escape closes the popover');
+  assert.ok(await driver.evaluate(page,visible,'pvc-tb-pop-help'),'Escape leaves help open');
+  const themeBefore=await driver.evaluate(page,()=>document.getElementById('pvc-theme-select').value);
+  await driver.pointerClick(page,'#pvc-tb-theme');
+  await until(driver,page,visible,'theme popover','pvc-tb-pop-theme');
+  await driver.pointerClick(page,'#pvc-tb-theme-next');
+  await until(driver,page,previous=>document.getElementById('pvc-theme-select').value!==previous&&document.getElementById('pvc-tb-theme-val').textContent===document.getElementById('pvc-theme-name').textContent,'next theme is shared',themeBefore);
+  await driver.evaluate(page,wheel,'pvc-tb-theme',-100);
+  await until(driver,page,previous=>document.getElementById('pvc-theme-select').value===previous,'wheel up goes back a theme',themeBefore);
+  // Our own theme list replaces the native select: it opens, marks the current theme and picks another.
+  await driver.pointerClick(page,'#pvc-tb-theme-list-btn');
+  await until(driver,page,visible,'theme list opens','pvc-tb-theme-list');
+  assert.equal(await driver.evaluate(page,()=>document.querySelector('#pvc-tb-theme-list .pvc-tb-on').getAttribute('data-pvc-value')),themeBefore,'the current theme is marked');
+  await driver.pointerClick(page,'#pvc-tb-theme-list [data-pvc-value="pine"]');
+  await until(driver,page,()=>document.getElementById('pvc-theme-select').value==='pine'&&!document.getElementById('pvc-tb-theme-list').getClientRects().length,'a theme picked from the list is shared and the list closes');
+  await driver.evaluate(page,previous=>{const s=document.getElementById('pvc-theme-select');s.value=previous;s.dispatchEvent(new Event('change',{bubbles:true}));},themeBefore);
+  await driver.press(page,'Escape');
+  await driver.evaluate(page,dblclickMode);
+  await until(driver,page,()=>document.getElementById('pvc-tb-pop-groups').getClientRects().length>0&&!document.getElementById('pvc-tb-pop-help').getClientRects().length,'the group list takes help\'s place for a moment');
+  await driver.pointerClick(page,'[data-pvc-goto="settings"]');
+  await until(driver,page,shownNow,'help returns after the list','pvc-tb-pop-help');
+  await driver.pointerClick(page,'#pvc-tb-help-keys');
+  await until(driver,page,()=>{const modal=document.getElementById('pvc-permissions-modal');return !!modal&&modal.getClientRects().length>0;},'help opens the shortcuts guide');
+  await driver.press(page,'Escape');
+  await until(driver,page,()=>{const modal=document.getElementById('pvc-permissions-modal');return !modal||!modal.getClientRects().length;},'guide closes');
+
+  // Accessibility group: one-click switches share the classic checkboxes; Easy-read is the classic panel.
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="accessibility"]').click());
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Accessibility'&&!document.getElementById('pvc-tb-pop-help').getClientRects().length,'accessibility group, help closes');
+  await until(driver,page,visible,'the note strip','pvc-tb-a11y-strip');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-a11y-keepVisible').getAttribute('aria-checked')),'true','keep visible mirrors the classic switch');
+  await driver.pointerClick(page,'#pvc-tb-a11y-highContrast');
+  await until(driver,page,()=>document.getElementById('pvc-a11y-highContrast').checked&&document.getElementById('pvc-controller-popup').classList.contains('pvc-a11y-contrast')&&document.getElementById('pvc-tb-a11y-highContrast').getAttribute('aria-checked')==='true','high contrast on');
+  await driver.pointerClick(page,'#pvc-tb-a11y-highContrast');
+  await until(driver,page,()=>!document.getElementById('pvc-a11y-highContrast').checked&&document.getElementById('pvc-tb-a11y-highContrast').getAttribute('aria-checked')==='false','high contrast off');
+  const motion=await driver.evaluate(page,()=>document.getElementById('pvc-a11y-reduceMotion').checked);
+  await driver.pointerClick(page,'#pvc-tb-a11y-reduceMotion');
+  await until(driver,page,previous=>document.getElementById('pvc-a11y-reduceMotion').checked!==previous&&document.getElementById('pvc-controller-popup').classList.contains('pvc-a11y-reduce-motion')!==previous,'reduce motion flips',motion);
+  await driver.pointerClick(page,'#pvc-tb-a11y-reduceMotion');
+  await until(driver,page,previous=>document.getElementById('pvc-a11y-reduceMotion').checked===previous,'and back',motion);
+  await driver.pointerClick(page,'#pvc-tb-a11y-easyRead');
+  await until(driver,page,()=>{const p=document.getElementById('pvc-controller-popup');return !p.classList.contains('pvc-layout-toolbar')&&!document.getElementById('pvc-layout-toolbar-toggle').checked&&document.getElementById('pvc-accessibility').open;},'easy-read shows the classic panel with the way back open');
+  await driver.evaluate(page,()=>document.getElementById('pvc-layout-toolbar-toggle').click());
+  await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar')&&document.getElementById('pvc-tb-a11y-easyRead').getAttribute('aria-checked')==='false','back to the toolbar');
   await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="player"]').click());
-  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','back to Player');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player'&&!document.getElementById('pvc-tb-a11y-strip').getClientRects().length,'back to Player');
 
   // Theme palette: the bar's border follows the theme's border colour.
   const borderOf=()=>getComputedStyle(document.querySelector('#pvc-toolbar .pvc-tb-bar')).borderTopColor;
@@ -152,6 +249,11 @@ try{
   await driver.evaluate(page,()=>{const select=document.getElementById('pvc-theme-select');select.value='daylight';select.dispatchEvent(new Event('change',{bubbles:true}));});
   await until(driver,page,(previous)=>getComputedStyle(document.querySelector('#pvc-toolbar .pvc-tb-bar')).borderTopColor!==previous,'theme reaches the toolbar',before);
 
+  // Holding the name to drag keeps the bubble closed even if the pointer leaves and re-enters the name.
+  assert.equal(await driver.evaluate(page,()=>{const brand=document.getElementById('pvc-tb-brand'),bubble=document.getElementById('pvc-tb-bubble');
+    const r=brand.getBoundingClientRect(),at={clientX:r.left+10,clientY:r.top+10,button:0,buttons:1,bubbles:true};
+    brand.dispatchEvent(new MouseEvent('mousedown',at));brand.dispatchEvent(new MouseEvent('mouseleave',at));brand.dispatchEvent(new MouseEvent('mouseenter',at));brand.dispatchEvent(new FocusEvent('focus'));
+    const shownWhileHeld=!bubble.hidden;window.dispatchEvent(new MouseEvent('mouseup',{...at,buttons:0}));return shownWhileHeld;}),false,'no bubble while the name is held');
   // Close bubble: shown beside the name on hover, to its left, and it closes FilmDeck.
   await driver.hover(page,'#pvc-tb-brand');
   await until(driver,page,visible,'bubble on hover','pvc-tb-bubble');
@@ -168,6 +270,8 @@ try{
   await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','top panel opens');
   await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-layout-toolbar-toggle').click();});
   await until(driver,top,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'top toolbar layout');
+  // The frame's state can still re-place the panel just after the switch; click once the bar has settled.
+  await driver.evaluate(top,async()=>{let last='';for(let i=0;i<20;i++){const r=JSON.stringify(document.getElementById('pvc-tb-speed').getBoundingClientRect());if(r===last)return;last=r;await new Promise(f=>setTimeout(f,150));}});
   await driver.pointerClick(top,'#pvc-tb-speed');
   await until(driver,top,visible,'top speed popover','pvc-tb-pop-speed');
   await driver.pointerClick(top,'[data-pvc-speed="2.0"]');
@@ -180,6 +284,12 @@ try{
   await driver.evaluate(top,()=>document.querySelector('[data-pvc-substep="250"]').click());
   await driver.pointerClick(top,'#pvc-tb-sub-earlier');
   await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-250ms'&&/-250 ms/.test(document.getElementById('pvc-tb-sub-offset-val').textContent),'frame offset comes back');
+  // Night mode from the top toolbar filters the frame's video.
+  await driver.evaluate(top,()=>document.querySelector('[data-pvc-goto="settings"]').click());
+  await driver.pointerClick(top,'#pvc-tb-picture');
+  await until(driver,top,visible,'top picture popover','pvc-tb-pop-picture');
+  await driver.pointerClick(top,'#pvc-tb-night');
+  await until(driver,owner,()=>/sepia/.test(document.querySelector('video').style.filter),'night mode reaches the frame video');
   console.log(JSON.stringify({engine,version:driver.version,result:'pass'}));
 }finally{await driver?.close();media.close();parent.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -54,16 +54,23 @@ test('the seek step and the group stepper stop or wrap as designed', () => {
 test('every new toolbar label has an English translation', () => {
   const markupStart = source.indexOf('function toolbarMarkup()'), markupEnd = source.indexOf('function toolbarPopoverAnchor');
   const markup = source.slice(markupStart, markupEnd);
-  for (const label of ['Bu grup araç çubuğunda henüz hazır değil.', 'Klasik panelde aç', 'Ok adımı', 'Hemen atla', 'Ses ve kanallar',
+  assert.equal(markup.includes('Klasik panelde aç'), false, 'every group has its own controls now');
+  for (const label of ['Ok adımı', 'Bu tercihler sayfa yenilenince sıfırlanır · klavye kısayolları: soldaki tuş simgesi', 'Hemen atla', 'Ses ve kanallar',
     'Oynatıcının bildirdiği seçenekler', 'Oynatıcı tespiti', 'Adaptör', 'Değiştir', 'Çözünürlük bekleniyor', 'Yenile',
-    'Dosya yükle', 'Görünür', 'Görünüm', '− ve + adımı', 'Şu anki kayma', 'Altyazı zamanlaması', 'Altyazıyı erken göster', 'Altyazıyı geç göster']) {
+    'Dosya yükle', 'Görünür', 'Görünüm', '− ve + adımı', 'Şu anki kayma', 'Altyazı zamanlaması', 'Altyazıyı erken göster', 'Altyazıyı geç göster',
+    'Görüntü ve gece', 'Görüntü ve gece modu', 'Tümünü sıfırla', 'Filtreler', 'Gece modu', 'Ters renk', 'Tema', 'Tüm temalar', 'Yardım',
+    'Medya sunucusunun yanıt süresi', 'Kısayollar ve izinler', 'Tuşlar ve site erişimi rehberi', 'Gizliliği koruyan teşhis raporu', 'Kaynak kodu',
+    'Dil seçimi yalnızca bu sayfa açıkken tutulur.', 'Önceki', 'Sonraki', 'Sorun bildir', 'FilmDeck Hakkında']) {
     assert.ok(markup.includes(label), `${label} is used`);
     assert.ok(source.includes(`'${label}': '`), `${label} is translated`);
   }
-  for (const key of ['FilmDeck araç çubuğu', 'Kompakt araç çubuğu (önizleme)', 'Grup: {0} · tıkla: sonraki · çift tıkla: liste · tekerlek: değiştir',
+  for (const key of ['FilmDeck araç çubuğu', 'Kompakt araç çubuğu (önizleme)', 'Grup: {0} · çift tıkla: liste · tekerlek: değiştir',
     'Geri sar: {0} sn', 'İleri sar: {0} sn', 'Oynatılıyor {0}', 'Klavye kısayolları açık', 'Klavye kısayolları kapalı',
     'Gizli', 'Kayma {0}', 'Altyazıyı {0} ms erken göster', 'Altyazıyı {0} ms geç göster', 'Zamanlama adımı (fare tekerleği)',
-    'Altyazı dosyası yükle · .srt ve .vtt · yalnız bu sayfada tutulur', 'Altyazıyı göster veya gizle']) {
+    'Altyazı dosyası yükle · .srt ve .vtt · yalnız bu sayfada tutulur', 'Altyazıyı göster veya gizle',
+    'Görüntü filtreleri ve gece modu', 'Tema (fare tekerleği: önceki/sonraki)', 'Sürüm {0} · MIT', 'Parlaklık', 'Kontrast', 'Doygunluk',
+    'Açık tut', 'Kolay okunur düzen', 'Yüksek kontrast', 'Hareketi azalt', 'Araç çubuğu izlerken solmadan ekranda kalır',
+    'Klasik paneli gösterir; araç çubuğuna oradaki Erişilebilirlik bölümünden dönülür', 'Tema renklerini geçici olarak yüksek kontrastlı renklerle değiştirir', 'Panel animasyonlarını kapatır']) {
     assert.ok(source.includes(`'${key}': '`), `${key} is translated`);
   }
 });
