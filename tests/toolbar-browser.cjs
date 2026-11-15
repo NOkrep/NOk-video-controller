@@ -218,6 +218,11 @@ try{
   await driver.evaluate(page,()=>{const select=document.getElementById('pvc-theme-select');select.value='daylight';select.dispatchEvent(new Event('change',{bubbles:true}));});
   await until(driver,page,(previous)=>getComputedStyle(document.querySelector('#pvc-toolbar .pvc-tb-bar')).borderTopColor!==previous,'theme reaches the toolbar',before);
 
+  // Holding the name to drag keeps the bubble closed even if the pointer leaves and re-enters the name.
+  assert.equal(await driver.evaluate(page,()=>{const brand=document.getElementById('pvc-tb-brand'),bubble=document.getElementById('pvc-tb-bubble');
+    const r=brand.getBoundingClientRect(),at={clientX:r.left+10,clientY:r.top+10,button:0,buttons:1,bubbles:true};
+    brand.dispatchEvent(new MouseEvent('mousedown',at));brand.dispatchEvent(new MouseEvent('mouseleave',at));brand.dispatchEvent(new MouseEvent('mouseenter',at));brand.dispatchEvent(new FocusEvent('focus'));
+    const shownWhileHeld=!bubble.hidden;window.dispatchEvent(new MouseEvent('mouseup',{...at,buttons:0}));return shownWhileHeld;}),false,'no bubble while the name is held');
   // Close bubble: shown beside the name on hover, to its left, and it closes FilmDeck.
   await driver.hover(page,'#pvc-tb-brand');
   await until(driver,page,visible,'bubble on hover','pvc-tb-bubble');

@@ -137,3 +137,10 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Yer tutucu kaldırıldı:** "Klasik panelde aç" düğmesi ve çevirileri artık yok; dört grubun hepsi kendi denetimleriyle araç çubuğunda.
 - **Bildirim:** panel açılırken çıkan bildirim araç çubuğu düzenine geçince çubuğun altına taşınır.
 - **Sıradaki (kullanıcı, 15 Kasım):** kullanıcı eski ve yeni paneli karşılaştırıp düzeltmeleri bildirecek; düzeltmelerden sonra araç çubuğu varsayılan yapılacak ve milestone birlikte doğrulanacak. Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler ve DRM rozeti hâlâ açık.
+
+### v0.7.22.1 — kapatma baloncuğu ve FilmDeck adı (kullanıcı karşılaştırması, 1. tur)
+
+- **Sürüklerken baloncuk:** FilmDeck'e basılı tutulduğu ve sürüklendiği sürece baloncuk açılmaz. Neden: mıknatıslı kenar ve pencere sınırında çubuk imleci tam izlemez; imleç addan çıkıp yeniden girince baloncuk açılıyordu. Bırakınca baloncuk bir sonraki üzerine gelişi bekler.
+- **Baloncuk görünümü:** dış alan tam daire; içinde yalnız X var, X'in ayrı renkli yuvarlak zemini kaldırıldı. Üzerine gelince ya da klavye odağında temanın tehlike rengiyle (`--pvc-danger`) kırmızı bir halka parlar, X de kırmızılaşır.
+- **FilmDeck adı:** üzerine gelince çevresinde alan oluşmaz; klavye odağı çerçevesi yerinde kalır.
+- **Açık:** açılır kutuların tasarımı yeniden ele alınacak (kullanıcı: yeni panel tarzından bağımsız duruyorlar); öneriler kullanıcıya sunuldu, karar bekliyor.

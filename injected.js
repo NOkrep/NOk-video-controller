@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.22 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.22.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.22';
+  const EXTENSION_VERSION = '0.7.22.1';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -905,7 +905,7 @@
   let hudLayout = 'classic';
   // Compact toolbar state (see COMPACT TOOLBAR); declared early because toasts read it.
   let toolbarGroup = 'player', toolbarSeekStep = 10, toolbarSubtitleStep = 100, toolbarShown = false, toolbarWidthCache = 0;
-  let toolbarOpenPopover = null, toolbarSyncFrame = 0, toolbarBubbleTimer = null;
+  let toolbarOpenPopover = null, toolbarSyncFrame = 0, toolbarBubbleTimer = null, toolbarBrandHeld = false;
   const toolbarState = { speed: 1, volume: 100 };
   function currentHudPreferences() {
     return { theme: currentUiThemeId, layout: hudLayout, ...Object.fromEntries(HUD_ACCESSIBILITY_KEYS.map(key => [key, hudAccessibility[key]])) };
@@ -6127,9 +6127,12 @@
     if (!bubble) return;
     clearTimeout(toolbarBubbleTimer);
     if (!show) { toolbarBubbleTimer = setTimeout(() => { bubble.hidden = true; }, 220); return; }
+    // While the name is held or dragged the bar can lag behind the pointer (edge snap, window edge), so the
+    // pointer may leave and re-enter the name; that must not bring the bubble back mid-drag.
+    const popup = document.getElementById('pvc-controller-popup');
+    if (toolbarBrandHeld || popup?.classList.contains('pvc-dragging')) { bubble.hidden = true; return; }
     bubble.hidden = false;
     // Opens to the left of the bar; without room there it sits above or below the name instead.
-    const popup = document.getElementById('pvc-controller-popup');
     const noRoom = popup.getBoundingClientRect().left < bubble.offsetWidth + 8 + EDGE_MARGIN;
     bubble.classList.toggle('pvc-tb-bubble-stack', noRoom);
   }
@@ -6435,9 +6438,11 @@
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault(); event.stopPropagation(); showToolbarBubble(true); byId('pvc-tb-close').focus();
     });
-    brand.addEventListener('mousedown', () => {
-      hideToolbarBubbleNow(); closeToolbarPopover();
-      window.addEventListener('mouseup', () => setTimeout(() => { updateToolbarSide(); placeToolbarPopover(); }, 0), { capture: true, once: true });
+    brand.addEventListener('mousedown', event => {
+      if (event.button !== 0) return;
+      toolbarBrandHeld = true; hideToolbarBubbleNow(); closeToolbarPopover();
+      // After the drop the bubble waits for the next hover, so it does not pop up under the released pointer.
+      window.addEventListener('mouseup', () => setTimeout(() => { toolbarBrandHeld = false; updateToolbarSide(); placeToolbarPopover(); }, 0), { capture: true, once: true });
     });
     const bubble = byId('pvc-tb-bubble');
     bubble.addEventListener('mouseenter', () => clearTimeout(toolbarBubbleTimer));
