@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.25.1**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.26**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,15 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Araç çubuğu varsayılan, Easy-read'de kademeli büyütme, v0.7.26 — 16 Kasım 2026
+
+Kullanıcı istedi: araç çubuğunu varsayılan yap, ardından kademeli büyütmeyi ekle. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** panel araç çubuğuyla açılır; klasik panel "Kolay okunur düzen" (iki yönlü anahtar: araç çubuğu Accessibility'de ve klasik Erişilebilirlik'in başında). "Büyük yazı" yerine 100/125/150 kademeleri (CSS `zoom` + genişlik; sığmayan kademe seçilemez, daralan pencerede sığan en büyük kademe). Tercih köprüsünde `largeText` → `textScale`.
+- **Yolda bulunan ve düzeltilen:** düzen değişince panel sol kenarını koruyup ekranın ortasında kalıyordu; artık sağ kenarını korur. Gömülü oynatıcı çerçevesi aynı oturumda yenilenince (sayfa içi gezinme) yeni kaynak varsayılan tercihlerle geliyor ve üstteki kullanıcı seçimini eziyordu; üst panel artık yeni kaynağa kendi tercihlerini gönderir. Eski varsayılan "klasik" olduğu için bu hata görünmüyordu.
+- **Testler:** klasik paneli sınayan tarayıcı testleri açılıştan sonra `easyRead` yardımcısıyla Kolay okunur düzene geçer; araç çubuğu testi varsayılanı, iki yönlü anahtarı, 125% kademesini ve araç çubuğunun büyümediğini sınar; birim testi kademe sınıflarını ve dar pencerede küçük kademeye düşmeyi, çerçeve testi yeni sahibe tercih gönderimini sınar. `hud-continuity` Edge'de artık geçiyor (önceki 31 px sağ boşluk sorunu düzen geçişindeki sağ kenar korumasıyla çözüldü).
+- **Stereo/Mono:** kullanıcı uiverse.io'dan beş örnek önerdi (topuzda simge taşıyan kayan anahtarlar, üstü çizilen etiket, dolan hap düğme); Claude görüşü kullanıcıya sunuldu, karar bekliyor.
 
 ## UTF-8 bildirmeyen sayfalarda bozuk Türkçe ve çeviri, v0.7.25.1 — 16 Kasım 2026
 

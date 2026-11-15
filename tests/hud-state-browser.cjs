@@ -1,6 +1,6 @@
 // Installed extension, isolated profiles and local cross-origin synthetic media only.
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path');
-const {createDriver,until}=require('./resource-driver.cjs');
+const {createDriver,until,easyRead}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox';
 const executable=args.browser||(engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe');
@@ -35,6 +35,7 @@ async function main(){
     await driver.pointerClick(page,'#open');
     await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block'
       &&document.querySelector('#pvc-active-adapter-badge')?.textContent==='GenericAdapter','remote HUD');
+    await easyRead(driver,page); // These checks drive the classic (Easy-read) panel.
     const click=(target,id)=>driver.evaluate(target,id=>document.getElementById(id).click(),id);
     const audioMatches=()=>document.querySelector('#pvc-audio-mono-btn')?.getAttribute('aria-pressed')==='true'
       &&document.querySelector('#pvc-audio-mono-btn').classList.contains('pvc-audio-active')
@@ -49,13 +50,13 @@ async function main(){
     const themeIds=await driver.evaluate(page,()=>[...document.getElementById('pvc-theme-select').options].map(option=>option.value));
     const chooseTheme=(target,id)=>driver.evaluate(target,id=>{const select=document.getElementById('pvc-theme-select');select.value=id;select.dispatchEvent(new Event('change',{bubbles:true}));},id);
     const firstTheme=themeIds[3],secondTheme=themeIds[7];assert.ok(firstTheme&&secondTheme&&firstTheme!==secondTheme,'two distinct themes');
-    await chooseTheme(page,firstTheme);await click(page,'pvc-a11y-largeText');await click(page,'pvc-a11y-keepVisible');
+    await chooseTheme(page,firstTheme);await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="125"]').click());await click(page,'pvc-a11y-keepVisible');
     await driver.pointerClick(page,'#fullscreen');
     await until(driver,media,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block'
       &&document.querySelector('#pvc-controller-popup').classList.contains('pvc-collapsed'),'fullscreen keeps collapsed');
     await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='none','top hidden in fullscreen');
     await click(media,'pvc-collapse-btn');await until(driver,media,audioMatches,'fullscreen mono selected');
-    const prefs=()=>{const popup=document.getElementById('pvc-controller-popup');return {theme:popup.getAttribute('data-pvc-theme'),select:document.getElementById('pvc-theme-select').value,large:popup.classList.contains('pvc-a11y-large-text'),contrast:popup.classList.contains('pvc-a11y-contrast'),largeBox:document.getElementById('pvc-a11y-largeText').checked,keepBox:document.getElementById('pvc-a11y-keepVisible').checked,contrastBox:document.getElementById('pvc-a11y-highContrast').checked};};
+    const prefs=()=>{const popup=document.getElementById('pvc-controller-popup');return {theme:popup.getAttribute('data-pvc-theme'),select:document.getElementById('pvc-theme-select').value,large:popup.classList.contains('pvc-a11y-scale-125'),contrast:popup.classList.contains('pvc-a11y-contrast'),largeBox:document.querySelector('[data-pvc-scale="125"]').getAttribute('aria-checked')==='true',keepBox:document.getElementById('pvc-a11y-keepVisible').checked,contrastBox:document.getElementById('pvc-a11y-highContrast').checked};};
     assert.deepEqual(await driver.evaluate(media,prefs),{theme:firstTheme,select:firstTheme,large:true,contrast:false,largeBox:true,keepBox:true,contrastBox:false},'fullscreen panel uses the chosen preferences');
     await chooseTheme(media,secondTheme);await click(media,'pvc-a11y-highContrast');
     await click(media,'pvc-audio-stereo-btn');
@@ -65,7 +66,7 @@ async function main(){
       &&document.querySelector('#pvc-audio-stereo-btn')?.getAttribute('aria-pressed')==='true','normal state restored');
     await until(driver,page,id=>document.getElementById('pvc-controller-popup').getAttribute('data-pvc-theme')===id&&document.getElementById('pvc-controller-popup').classList.contains('pvc-a11y-contrast'),'top panel receives fullscreen preference changes',secondTheme);
     assert.deepEqual(await driver.evaluate(page,prefs),{theme:secondTheme,select:secondTheme,large:true,contrast:true,largeBox:true,keepBox:true,contrastBox:true},'top panel controls match');
-    await click(page,'pvc-a11y-highContrast');await click(page,'pvc-a11y-largeText');await click(page,'pvc-a11y-keepVisible');
+    await click(page,'pvc-a11y-highContrast');await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="100"]').click());await click(page,'pvc-a11y-keepVisible');
     await driver.evaluate(page,()=>window.addEventListener('message',event=>{
       if(event.source===window&&event.data?.type==='PVC_REMOTE_STATE')window.__testOwner=event.data.payload.state.owner;
     }));

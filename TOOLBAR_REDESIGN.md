@@ -171,3 +171,10 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Şerit önceliği:** aynı anda tek şerit: video bekleniyor > kare kaybı sorusu > grubun kendi şeridi.
 - **İpucu (ara karar, Claude):** araç çubuğu düzeninde ipucu tıklamayı yakalamaz; çubuğun altına açılan ipucu şeritteki düğmeleri kapatıyordu. Üzerine gelinebilir ipucu klasik (Easy-read) panelde aynen kalır.
 - **DRM penceresi:** şifreleme türü bilinmediğinde gösterilen yedek ad İngilizce arayüzde de çevrilir.
+
+### v0.7.26 — araç çubuğu varsayılan, Easy-read'de kademeli büyütme (milestone adımı)
+
+- **Varsayılan düzen (kullanıcı kararı, 14 Kasım; uygulama 16 Kasım):** panel artık araç çubuğuyla açılır. Klasik panel "Kolay okunur düzen"dir: araç çubuğundaki Accessibility › Easy-read layout anahtarıyla ya da klasik paneldeki Erişilebilirlik bölümünün en üstündeki "Kolay okunur düzen" anahtarıyla geçilir; anahtar kapatılınca araç çubuğuna dönülür. Önizleme anahtarı ("Kompakt araç çubuğu (önizleme)") kaldırıldı. Dar pencerede kendiliğinden klasik panele geçiş aynen sürer.
+- **Kademeli büyütme:** klasik paneldeki açık/kapalı "Büyük yazı ve kontroller" yerine "Yazı ve denetim boyutu: 100% · 125% · 150%". Panelin içeriği kademe oranında büyütülür (CSS `zoom`), panel genişliği de aynı oranda artar (388 → 485 → 582 px); panelin kendi konumu ve yerleşim hesabı değişmez, yükseklik sığmazsa mevcut kaydırma kullanılır. Pencereye sığmayan kademe seçilemez (ipucu: "Pencere bu boyut için dar"); pencere sonradan daralırsa seçim korunur, sığan en büyük kademe gösterilir. Araç çubuğu kademeden etkilenmez; pencereler ve bildirimler kademe 100'ün üstündeyken eskisi gibi büyük yazı kullanır.
+- **Tercih köprüsü:** `largeText` (açık/kapalı) yerini `textScale` (100/125/150) aldı; gömülü oynatıcı çerçevesine bu taşınır, başka değer reddedilir.
+- **Testler:** klasik paneli sınayan tarayıcı testleri paneli açtıktan sonra kullanıcının basacağı anahtarla Kolay okunur düzene geçer (`resource-driver.cjs` › `easyRead`).

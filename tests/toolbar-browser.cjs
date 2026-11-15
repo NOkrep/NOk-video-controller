@@ -39,10 +39,8 @@ try{
   await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens');
   await driver.evaluate(page,()=>document.getElementById('pvc-a11y-keepVisible').click());
 
-  // The classic panel stays the default; the preview switch turns the toolbar on.
-  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar')),false,'classic by default');
-  await driver.evaluate(page,()=>document.getElementById('pvc-layout-toolbar-toggle').click());
-  await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'toolbar layout');
+  // The toolbar is the default layout (user decision, 14 Nov); the classic panel is Easy-read.
+  await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'toolbar by default');
   assert.equal(await driver.evaluate(page,visible,'pvc-tb-mode'),true,'the toolbar is shown');
   assert.equal(await driver.evaluate(page,visible,'pvc-drag-header'),false,'the classic header is hidden');
   assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode-label').textContent),'Player');
@@ -268,9 +266,18 @@ try{
   await driver.pointerClick(page,'#pvc-tb-a11y-reduceMotion');
   await until(driver,page,previous=>document.getElementById('pvc-a11y-reduceMotion').checked===previous,'and back',motion);
   await driver.pointerClick(page,'#pvc-tb-a11y-easyRead');
-  await until(driver,page,()=>{const p=document.getElementById('pvc-controller-popup');return !p.classList.contains('pvc-layout-toolbar')&&!document.getElementById('pvc-layout-toolbar-toggle').checked&&document.getElementById('pvc-accessibility').open;},'easy-read shows the classic panel with the way back open');
-  await driver.evaluate(page,()=>document.getElementById('pvc-layout-toolbar-toggle').click());
+  await until(driver,page,()=>{const p=document.getElementById('pvc-controller-popup');return !p.classList.contains('pvc-layout-toolbar')&&document.getElementById('pvc-layout-easyread-toggle').checked&&document.getElementById('pvc-accessibility').open;},'easy-read shows the classic panel with the way back open');
+  // Stepwise enlargement lives in Easy-read: 125% widens the panel and zooms its contents; the toolbar ignores it.
+  const panelWidth=()=>Math.round(document.getElementById('pvc-controller-popup').getBoundingClientRect().width);
+  const baseWidth=await driver.evaluate(page,panelWidth);
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="125"]').click());
+  await until(driver,page,base=>{const p=document.getElementById('pvc-controller-popup');return p.classList.contains('pvc-a11y-scale-125')&&p.getBoundingClientRect().width>base*1.2;},'125% enlarges the Easy-read panel',baseWidth);
+  assert.equal(await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="125"]').getAttribute('aria-checked')),'true');
+  assert.equal(await driver.evaluate(page,()=>{const r=document.getElementById('pvc-controller-popup').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;}),true,'the enlarged panel stays inside the window');
+  await driver.evaluate(page,()=>document.getElementById('pvc-layout-easyread-toggle').click());
   await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar')&&document.getElementById('pvc-tb-a11y-easyRead').getAttribute('aria-checked')==='false','back to the toolbar');
+  assert.equal(await driver.evaluate(page,()=>{const p=document.getElementById('pvc-controller-popup');return getComputedStyle(p.querySelector('#pvc-toolbar')).zoom;}),'1','the toolbar keeps its own size');
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="100"]').click());
   await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="player"]').click());
   await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player'&&!document.getElementById('pvc-tb-a11y-strip').getClientRects().length,'back to Player');
 
@@ -298,7 +305,7 @@ try{
   const empty=await driver.open(`http://127.0.0.1:${media.address().port}/empty`);
   await driver.toolbar(empty);
   await until(driver,empty,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens without a video');
-  await driver.evaluate(empty,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-layout-toolbar-toggle').click();});
+  await driver.evaluate(empty,()=>{document.getElementById('pvc-a11y-keepVisible').click();});
   await until(driver,empty,()=>{const on=id=>document.getElementById(id).getClientRects().length>0;return on('pvc-tb-waiting-strip')&&!on('pvc-tb-strip')&&on('pvc-tb-rescan')&&on('pvc-tb-waiting-report');},'waiting strip with its actions');
   assert.match(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-waiting-strip').textContent),/Waiting for a video/,'translations still found on a windows-1254 page');
   assert.equal(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-speed-val').textContent),'1.0×','non-ASCII text intact on a windows-1254 page');
@@ -313,7 +320,7 @@ try{
   assert.ok(owner,'frame video plays');
   await driver.toolbar(top);
   await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','top panel opens');
-  await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-layout-toolbar-toggle').click();});
+  await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();});
   await until(driver,top,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'top toolbar layout');
   // The frame's state can still re-place the panel just after the switch; click once the bar has settled.
   await driver.evaluate(top,async()=>{let last='';for(let i=0;i<20;i++){const r=JSON.stringify(document.getElementById('pvc-tb-speed').getBoundingClientRect());if(r===last)return;last=r;await new Promise(f=>setTimeout(f,150));}});

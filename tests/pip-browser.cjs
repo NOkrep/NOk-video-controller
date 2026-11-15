@@ -1,6 +1,6 @@
 // Real native PiP requests through installed-extension UI, isolated local cross-origin frames.
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path'),fs=require('node:fs');
-const {createDriver,until,delay}=require('./resource-driver.cjs');
+const {createDriver,until,delay,easyRead}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox';
 const executable=args.browser||(engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe');
@@ -37,6 +37,7 @@ async function main(){
     await driver.pointerClick(page,'#open');
     await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block'
       &&document.querySelector('#pvc-active-adapter-badge')?.textContent==='GenericAdapter','remote HUD');
+    await easyRead(driver,page); // PiP buttons of the classic (Easy-read) panel.
     // Isolate PiP activation from idle visibility; this setting changes only the top HUD.
     await driver.evaluate(page,()=>{const input=document.getElementById('pvc-a11y-keepVisible');input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));});
     // Driver evaluations can grant user activation. Let that expire in the media frame.

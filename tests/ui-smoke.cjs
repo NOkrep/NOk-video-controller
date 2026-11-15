@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const {createDriver, until} = require('./resource-driver.cjs');
+const {createDriver, until, easyRead} = require('./resource-driver.cjs');
 const root = path.resolve(__dirname, '..');
 const args = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split(/=(.*)/s).slice(0,2)));
 const engine = args.engine || 'firefox';
@@ -36,6 +36,7 @@ async function main() {
     await until(driver,page,()=>document.querySelector('video').readyState >= 2,'synthetic video');
     assert.equal(await driver.evaluate(page,()=>!!document.querySelector('#pvc-controller-popup')),false,'HUD must wait for user action');
     await driver.pointerClick(page,'#open');
+    await easyRead(driver,page); // This smoke test covers the classic (Easy-read) panel.
     await until(driver,page,()=>!!document.querySelector('.pvc-product-ready'),'product logo loaded');
     const evaluate = fn=>driver.evaluate(page,fn);
     const logo=await evaluate(()=>{const image=document.querySelector('.pvc-product-logo'),style=getComputedStyle(image),rect=image.getBoundingClientRect();return {loaded:image.naturalWidth>0,display:style.display,width:rect.width,height:rect.height};});
@@ -76,13 +77,13 @@ async function main() {
       assert.equal(state.volume,'40');assert.equal(state.svg,true);assert.ok(state.close);
     }
     // Keyboard navigation keeps the ARIA selection and panel in sync.
-    await evaluate(()=>{for(const key of ['largeText','highContrast','reduceMotion']){const input=document.querySelector('#pvc-a11y-'+key);input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));}});
+    await evaluate(()=>{document.querySelector('[data-pvc-scale="125"]').click();for(const key of ['highContrast','reduceMotion']){const input=document.querySelector('#pvc-a11y-'+key);input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));}});
     await evaluate(()=>document.querySelector('#pvc-tab-settings').dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true})));
     assert.equal(await evaluate(()=>document.querySelector('#pvc-panel-player').hidden),false);
     const bounds=await evaluate(()=>{const p=document.querySelector('#pvc-controller-popup'),r=p.getBoundingClientRect();return {width:r.width,left:r.left,right:r.right,top:r.top,bottom:r.bottom,vw:innerWidth,vh:innerHeight,overflow:p.scrollWidth-p.clientWidth};});
     assert.ok(bounds.left>=0 && bounds.right<=bounds.vw+1 && bounds.top>=0 && bounds.bottom<=bounds.vh+1,'HUD within viewport');
     assert.ok(bounds.overflow<=1,'HUD has no horizontal overflow');
-    await evaluate(()=>{for(const key of ['largeText','highContrast','reduceMotion']){const input=document.querySelector('#pvc-a11y-'+key);input.checked=false;input.dispatchEvent(new Event('change',{bubbles:true}));}});
+    await evaluate(()=>{document.querySelector('[data-pvc-scale="100"]').click();for(const key of ['highContrast','reduceMotion']){const input=document.querySelector('#pvc-a11y-'+key);input.checked=false;input.dispatchEvent(new Event('change',{bubbles:true}));}});
     await driver.pointerClick(page,'#pvc-collapse-btn');
     assert.equal(await evaluate(()=>document.querySelector('#pvc-controller-popup').classList.contains('pvc-collapsed')),true);
     assert.equal(await evaluate(()=>!!document.querySelector('#pvc-collapse-btn svg')),true);

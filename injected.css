@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.25.1
+ * injected.css - FilmDeck by NOk v0.7.26
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1432,7 +1432,7 @@
 #pvc-controller-popup #pvc-sub-why { margin: 0 0 6px !important; }
 #pvc-controller-popup #pvc-sub-why[hidden] { display: none !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion .pvc-tooltip { transition: none !important; transform: none !important; }
-#pvc-controller-popup.pvc-a11y-large-text .pvc-tooltip { font-size: 14px !important; max-width: min(320px, calc(100vw - 16px)) !important; }
+#pvc-controller-popup:is(.pvc-a11y-scale-125, .pvc-a11y-scale-150):not(.pvc-layout-toolbar) .pvc-tooltip { font-size: 14px !important; max-width: min(320px, calc(100vw - 16px)) !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion .pvc-loading-grid { display: none !important; }
 #pvc-controller-popup .pvc-val-badge,
 #pvc-controller-popup #pvc-active-adapter-badge { background: var(--pvc-surface) !important; }
@@ -1664,3 +1664,17 @@
 #pvc-toolbar .pvc-tb-alert .pvc-tb-mini { color: var(--pvc-text) !important; flex: 0 0 auto !important; }
 #pvc-toolbar .pvc-tb-mini-strong { background: color-mix(in srgb, currentColor 22%, transparent) !important; font-weight: 650 !important; }
 #pvc-toolbar .pvc-tb-alert .pvc-tb-mini-strong { background: color-mix(in srgb, var(--pvc-text) 18%, transparent) !important; }
+
+/* Easy-read stepwise enlargement (user decision, 14 Nov): the classic panel's contents are zoomed by the step and
+   the panel widens by the same step, so its own left/top placement stays exact; the height keeps the existing
+   scroll. The tooltip (fixed) and the toolbar are not zoomed. Widths follow CLASSIC_PANEL_WIDTH in injected.js. */
+#pvc-controller-popup.pvc-a11y-scale-125:not(.pvc-layout-toolbar) { width: 485px !important; }
+#pvc-controller-popup.pvc-a11y-scale-150:not(.pvc-layout-toolbar) { width: 582px !important; }
+#pvc-controller-popup.pvc-collapsed.pvc-a11y-scale-125:not(.pvc-layout-toolbar) { width: 388px !important; }
+#pvc-controller-popup.pvc-collapsed.pvc-a11y-scale-150:not(.pvc-layout-toolbar) { width: 465px !important; }
+#pvc-controller-popup.pvc-a11y-scale-125:not(.pvc-layout-toolbar) > :not(#pvc-tooltip):not(#pvc-toolbar) { zoom: 1.25 !important; }
+#pvc-controller-popup.pvc-a11y-scale-150:not(.pvc-layout-toolbar) > :not(#pvc-tooltip):not(#pvc-toolbar) { zoom: 1.5 !important; }
+#pvc-controller-popup .pvc-scale-row { flex-wrap: wrap !important; gap: 8px !important; }
+#pvc-controller-popup .pvc-scale-options { display: inline-flex !important; gap: 4px !important; }
+#pvc-controller-popup .pvc-scale-btn { min-width: 52px !important; justify-content: center !important; }
+#pvc-controller-popup .pvc-scale-btn:disabled { opacity: 0.45 !important; cursor: not-allowed !important; }

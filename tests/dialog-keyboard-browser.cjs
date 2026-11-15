@@ -1,7 +1,7 @@
 // D-02: real keyboard events on the installed extension, local synthetic media, isolated profile.
 // node tests/dialog-keyboard-browser.cjs --engine=firefox|chromium [--report=true]
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path');
-const {createDriver,until,delay}=require('./resource-driver.cjs');
+const {createDriver,until,delay,easyRead}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox',reportOnly=args.report==='true';
 const executable=args.browser||(engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe');
@@ -26,7 +26,7 @@ async function main(){
     driver=await createDriver(engine,executable,args.packages||path.resolve(__dirname,'../node_modules'),{viewport:{width:1200,height:900},visible:args.headless==='false'});
     await driver.install();
     const open=async query=>{const page=await driver.open(`http://127.0.0.1:${parent.address().port}/${query}`);await driver.activate(page);await until(driver,page,()=>window.__NOK_VIDEO_CONTROLLER_INJECTED__===true,'engine');await delay(800);
-      await driver.pointerClick(page,'#open');await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','HUD');await driver.evaluate(page,()=>document.getElementById('pvc-a11y-keepVisible')?.click());return page;};
+      await driver.pointerClick(page,'#open');await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','HUD');await easyRead(driver,page);await driver.evaluate(page,()=>document.getElementById('pvc-a11y-keepVisible')?.click());return page;};
     const inspect=async(page,name,{openerId,modalId,prep})=>{
       if(prep)await prep(page);
       const focused=await driver.evaluate(page,id=>{const opener=document.getElementById(id);opener.scrollIntoView({block:'center'});opener.focus();return {active:document.activeElement===opener,tag:opener.tagName};},openerId);

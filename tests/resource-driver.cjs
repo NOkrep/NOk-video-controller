@@ -257,4 +257,14 @@ async function createDriver(engine,executablePath,packages,options={}){
 async function until(driver,page,fn,label,...args){
   const deadline=Date.now()+15000;while(Date.now()<deadline){if(await driver.evaluate(page,fn,...args))return;await delay(100);}throw Error('Timeout: '+label);
 }
-module.exports={createDriver,until,delay};
+// The toolbar is the default layout; tests of the classic panel switch an open panel to Easy-read first,
+// through the same switch a user would press.
+async function easyRead(driver,page){
+  await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel open before Easy-read');
+  await driver.evaluate(page,()=>{const popup=document.getElementById('pvc-controller-popup');
+    if(popup.classList.contains('pvc-layout-toolbar'))document.getElementById('pvc-tb-a11y-easyRead').click();});
+  await until(driver,page,()=>!document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'Easy-read layout');
+  // The switch opens Settings › Accessibility so the way back is in view; these tests start from the Player tab.
+  await driver.evaluate(page,()=>{document.getElementById('pvc-tab-player')?.click();const details=document.getElementById('pvc-accessibility');if(details)details.open=false;});
+}
+module.exports={createDriver,until,delay,easyRead};

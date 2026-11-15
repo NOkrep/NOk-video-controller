@@ -1,6 +1,6 @@
 // Functional guard for the report's measured rendering cost and existing privacy behavior.
 const assert=require('node:assert/strict'),path=require('node:path');
-const {createFixture}=require('./resource-fixture.cjs'),{createDriver,until}=require('./resource-driver.cjs');
+const {createFixture}=require('./resource-fixture.cjs'),{createDriver,until,easyRead}=require('./resource-driver.cjs');
 const engine=process.argv.find(arg=>arg.startsWith('--engine='))?.slice(9)||'firefox';
 async function main(){
   let fixture,driver;
@@ -9,7 +9,7 @@ async function main(){
     driver=await createDriver(engine,engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',path.resolve(__dirname,'../node_modules'),{visible:!process.argv.includes('--headless=true'),toolbarControls:true});
     await driver.install();const page=await driver.open(fixture.url);
     await until(driver,page,()=>document.querySelector('video')?.readyState>=2,'video ready');await driver.toolbar(page);
-    await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block','HUD opens');
+    await until(driver,page,()=>document.querySelector('#pvc-controller-popup')?.style.display==='block','HUD opens');await easyRead(driver,page);
     await driver.pointerClick(page,'#pvc-tab-settings');await driver.pointerClick(page,'#pvc-report-err-btn');
     await until(driver,page,()=>!!document.querySelector('#pvc-modal-code-block')?.textContent,'report preview');
     assert.equal(await driver.evaluate(page,()=>getComputedStyle(document.querySelector('#pvc-error-modal')).backdropFilter),'none','report must not continuously blur playing content');

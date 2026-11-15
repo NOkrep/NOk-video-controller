@@ -99,7 +99,7 @@ test('its motion is short, compositor-only and covered by the panel settings', (
   const rule = css.slice(at, css.indexOf('}', at));
   assert.match(rule, /transition: opacity 0\.125s .*transform 0\.125s /);
   assert.match(rule, /transform: scale\(0\.97\)/);
-  assert.match(css, /#pvc-controller-popup\.pvc-a11y-large-text \.pvc-tooltip/);
+  assert.match(css, /#pvc-controller-popup:is\(\.pvc-a11y-scale-125, \.pvc-a11y-scale-150\):not\(\.pvc-layout-toolbar\) \.pvc-tooltip/);
   assert.match(css, /#pvc-controller-popup\.pvc-a11y-reduce-motion \.pvc-tooltip \{ transition: none !important;/, 'the general rule has the same weight and comes earlier');
   assert.match(css, /#pvc-controller-popup \.pvc-tooltip\[hidden\] \{ display: none !important; \}/);
 });

@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.25.1 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.26 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.25.1';
+  const EXTENSION_VERSION = '0.7.26';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -385,7 +385,8 @@
     'Yenile': 'Refresh',
     'Grup: {0} · çift tıkla: liste · tekerlek: değiştir': 'Group: {0} · double-click: list · wheel: switch',
     'Gruplar': 'Groups',
-    'Kompakt araç çubuğu (önizleme)': 'Compact toolbar (preview)',
+    'Yazı ve denetim boyutu': 'Text and control size',
+    'Pencere bu boyut için dar': 'The window is too narrow for this size',
     'Dosya yükle': 'Load file',
     'Altyazı dosyası yükle · .srt ve .vtt · yalnız bu sayfada tutulur': 'Load a subtitle file · .srt and .vtt · kept only for this page',
     'Görünür': 'Shown',
@@ -886,15 +887,31 @@
 
   // Presentation preferences stay in RAM and reach only the panel's other frame; never added to diagnostics.
   const hudAccessibility = {
-    keepVisible: false, largeText: false, highContrast: false,
+    keepVisible: false, textScale: 100, highContrast: false,
     reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
   };
+  // Easy-read (the classic panel) enlarges in steps; the toolbar keeps its own size. Widths match injected.css.
+  const TEXT_SCALES = [100, 125, 150];
+  const CLASSIC_PANEL_WIDTH = 388;
+  const textScaleButtons = [];
+  function textScaleFits(scale) {
+    return CLASSIC_PANEL_WIDTH * scale / 100 + 24 <= (window.innerWidth || document.documentElement?.clientWidth || 0);
+  }
+  // The chosen step, or the largest smaller one that still fits the window; nothing while the toolbar is shown.
+  function effectiveTextScale() {
+    if (toolbarShown) return 100;
+    return [...TEXT_SCALES].reverse().find(scale => scale <= hudAccessibility.textScale && textScaleFits(scale)) || 100;
+  }
   function applyUiAccessibility(root) {
     if (!root) return;
     applyUiTheme(root);
     for (const [key, className] of Object.entries({
-      largeText: 'pvc-a11y-large-text', highContrast: 'pvc-a11y-contrast', reduceMotion: 'pvc-a11y-reduce-motion'
+      highContrast: 'pvc-a11y-contrast', reduceMotion: 'pvc-a11y-reduce-motion'
     })) root.classList.toggle(className, hudAccessibility[key]);
+    const scale = effectiveTextScale();
+    if (root.id === 'pvc-controller-popup') {
+      root.classList.toggle('pvc-a11y-scale-125', scale === 125); root.classList.toggle('pvc-a11y-scale-150', scale === 150);
+    } else root.classList.toggle('pvc-a11y-large-text', scale > 100); // Dialogs and toasts keep the single larger text size.
     if (root.id === 'pvc-quick-toast') root.style.setProperty('transition', hudAccessibility.reduceMotion
       ? 'none' : 'opacity 0.2s ease, transform 0.2s ease', 'important');
   }
@@ -902,13 +919,21 @@
     for (const id of UI_ROOT_IDS) {
       applyUiAccessibility(document.getElementById(id));
     }
-    updateThemeControls();
+    updateThemeControls(); updateTextScaleControls();
     resetIdleTimer(popup);
     clampPopupToViewport(popup);
   }
-  const HUD_ACCESSIBILITY_KEYS = ['keepVisible', 'largeText', 'highContrast', 'reduceMotion'];
-  // The user's layout choice. 'classic' stays the default until every toolbar group exists.
-  let hudLayout = 'classic';
+  // Step buttons show the chosen size; a step the window cannot hold is disabled and says why.
+  function updateTextScaleControls() {
+    for (const button of textScaleButtons) {
+      const scale = Number(button.getAttribute('data-pvc-scale')), on = scale === hudAccessibility.textScale, fits = textScaleFits(scale);
+      button.classList.toggle('pvc-chip-active', on); button.setAttribute('aria-checked', String(on));
+      button.disabled = !fits; setUiTip(button, fits ? null : 'Pencere bu boyut için dar');
+    }
+  }
+  const HUD_ACCESSIBILITY_KEYS = ['keepVisible', 'textScale', 'highContrast', 'reduceMotion'];
+  // The user's layout choice (user decision, 14 Nov): the toolbar is the default; 'classic' is Easy-read.
+  let hudLayout = 'toolbar';
   // Compact toolbar state (see COMPACT TOOLBAR); declared early because toasts read it.
   let toolbarGroup = 'player', toolbarSeekStep = 10, toolbarSubtitleStep = 100, toolbarShown = false, toolbarWidthCache = 0;
   let toolbarOpenPopover = null, toolbarSyncFrame = 0, toolbarBubbleTimer = null, toolbarBrandHeld = false;
@@ -929,7 +954,7 @@
       if (checkbox) checkbox.checked = next[key];
     }
     for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id));
-    updateThemeControls();
+    updateThemeControls(); updateTextScaleControls();
     const popup = document.getElementById('pvc-controller-popup');
     if (popup && popup.style.display !== 'none') clampPopupToViewport(popup);
   }
@@ -1008,10 +1033,30 @@
     const summary = document.createElement('summary');
     setUiText(summary, 'Erişilebilirlik'); accessibility.appendChild(summary);
     const options = [
-      ['keepVisible', 'Paneli açık tut'], ['largeText', 'Büyük yazı ve kontroller'],
+      ['keepVisible', 'Paneli açık tut'], ['textScale'],
       ['highContrast', 'Yüksek kontrast'], ['reduceMotion', 'Panel animasyonlarını azalt']
     ];
     for (const [key, label] of options) {
+      if (key === 'textScale') {
+        // Stepwise enlargement replaces the old on/off "larger text" switch (user decision, 14 Nov).
+        const row = document.createElement('div'); row.className = 'pvc-setting-row pvc-scale-row';
+        const caption = document.createElement('span'); caption.id = 'pvc-a11y-scale-label'; setUiText(caption, 'Yazı ve denetim boyutu');
+        const group = document.createElement('div'); group.className = 'pvc-scale-options'; group.setAttribute('role', 'radiogroup');
+        group.setAttribute('aria-labelledby', caption.id);
+        for (const scale of TEXT_SCALES) {
+          const button = document.createElement('button'); button.type = 'button'; button.className = 'pvc-chip-btn pvc-scale-btn';
+          button.setAttribute('data-pvc-scale', String(scale)); button.setAttribute('role', 'radio'); button.setAttribute('data-pvc-i18n-skip', '');
+          button.textContent = `${scale}%`;
+          button.addEventListener('click', e => {
+            e.stopPropagation(); if (button.disabled) return;
+            hudAccessibility.textScale = scale; refreshUiAccessibility(popup); syncHudPreferences();
+          });
+          group.appendChild(button); textScaleButtons.push(button);
+        }
+        row.appendChild(caption); row.appendChild(group); accessibility.appendChild(row);
+        updateTextScaleControls();
+        continue;
+      }
       const row = document.createElement('label'); row.className = 'pvc-setting-row';
       const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
       checkbox.id = `pvc-a11y-${key}`; checkbox.checked = hudAccessibility[key];
@@ -1457,11 +1502,14 @@
       const popup = document.getElementById('pvc-controller-popup');
       if (popup) { resumePresentation = popup.__nokLastActivity === true; popup.__nokLastActivity = null; }
     }
+    // A source engine that restarts inside the same session (e.g. the frame navigates) begins from defaults;
+    // the visible top HUD's own choices go to it, or its defaults (toolbar layout, size, theme) would replace them.
+    const newOwner = !first && !!remotePresentation && remotePresentation.owner !== state.owner;
     remotePresentationSession = session; remotePresentation = state;
     // The visible top HUD owns the initial preference; later snapshots carry source/fullscreen changes.
     if (first && state.hudCollapsed !== hudCollapsed) remoteControl('hud-collapsed', hudCollapsed);
     if (first && hudPlacement) remoteControl('hud-placement', hudPlacement);
-    if (first) remoteControl('hud-preferences', currentHudPreferences());
+    if (first || newOwner) remoteControl('hud-preferences', currentHudPreferences());
     renderRemoteHud();
     if (resumePresentation) document.getElementById('pvc-controller-popup')?.__nokActivity?.(true);
     if (leftFullscreen && state.hudPlacement) {
@@ -6238,18 +6286,30 @@
   // Shows the toolbar when the user chose it and the window has room; otherwise the classic panel.
   function applyToolbarLayout() {
     const popup = document.getElementById('pvc-controller-popup'), toolbar = document.getElementById('pvc-toolbar');
-    const toggle = document.getElementById('pvc-layout-toolbar-toggle');
-    if (toggle) toggle.checked = hudLayout === 'toolbar';
+    const toggle = document.getElementById('pvc-layout-easyread-toggle');
+    if (toggle) toggle.checked = hudLayout === 'classic';
     if (!popup || !toolbar) return;
     if (hudLayout === 'toolbar') toolbarWidthCache = measureToolbarWidth(popup, toolbar) || toolbarWidthCache;
     const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
     const show = hudLayout === 'toolbar' && toolbarFitsViewport(toolbarWidthCache, viewportWidth, toolbarShown, EDGE_MARGIN);
     if (show !== toolbarShown || popup.classList.contains('pvc-layout-toolbar') !== show) {
+      // Switching layouts keeps the panel's right edge, as a group change does, so a toolbar near the right edge
+      // becomes a panel near the right edge (and back) instead of leaving it mid-screen.
+      const before = popup.style.display !== 'none' ? popup.getBoundingClientRect() : null;
       toolbarShown = show;
       popup.classList.toggle('pvc-layout-toolbar', show);
       if (!show) { closeToolbarPopover(); hideToolbarBubbleNow(); }
-      if (popup.style.display !== 'none') clampPopupToViewport(popup);
+      for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id)); // The width depends on the size step.
+      const after = before ? popup.getBoundingClientRect() : null;
+      if (after && Math.abs(after.width - before.width) > 0.5) {
+        popup.style.setProperty('left', `${Math.round(before.right - after.width)}px`, 'important');
+        popup.style.setProperty('right', 'auto', 'important');
+      }
     }
+    // Easy-read's size step depends on the layout and the window width, so it is re-applied on every pass.
+    for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id));
+    updateTextScaleControls();
+    if (popup.style.display !== 'none') clampPopupToViewport(popup);
     if (show) {
       syncToolbar(); updateToolbarSide(); placeToolbarPopover();
       // A toast shown just before the switch (e.g. "FilmDeck active") moves under the bar too.
@@ -6669,7 +6729,7 @@
         setHudLayout('classic');
         byId('pvc-tab-settings')?.click();
         const details = byId('pvc-accessibility'); if (details) details.open = true;
-        byId('pvc-layout-toolbar-toggle')?.focus();
+        byId('pvc-layout-easyread-toggle')?.focus();
       });
     }
     toolbar.addEventListener('keydown', event => {
@@ -6678,17 +6738,17 @@
       else if (!byId('pvc-tb-bubble').hidden) { event.stopPropagation(); hideToolbarBubbleNow(); brand.focus(); }
     });
 
-    // Classic Accessibility gets the preview switch, so either layout can be reached from the other.
+    // Classic Accessibility leads the list with the Easy-read switch: on is this panel, off returns to the toolbar.
     const accessibility = byId('pvc-accessibility');
     if (accessibility) {
       const row = document.createElement('label'); row.className = 'pvc-setting-row';
-      const caption = document.createElement('span'); setUiText(caption, 'Kompakt araç çubuğu (önizleme)');
+      const caption = document.createElement('span'); setUiText(caption, 'Kolay okunur düzen');
       const control = document.createElement('span'); control.className = 'pvc-switch';
-      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = 'pvc-layout-toolbar-toggle'; checkbox.setAttribute('role', 'switch');
+      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = 'pvc-layout-easyread-toggle'; checkbox.setAttribute('role', 'switch');
       const track = document.createElement('span'); track.className = 'pvc-switch-track'; track.setAttribute('aria-hidden', 'true');
       control.appendChild(checkbox); control.appendChild(track); row.appendChild(caption); row.appendChild(control);
-      accessibility.insertBefore(row, accessibility.querySelector('.pvc-settings-note'));
-      checkbox.addEventListener('change', event => { event.stopPropagation(); setHudLayout(checkbox.checked ? 'toolbar' : 'classic'); resetIdleTimer(popup); });
+      accessibility.insertBefore(row, accessibility.querySelector('summary').nextSibling);
+      checkbox.addEventListener('change', event => { event.stopPropagation(); setHudLayout(checkbox.checked ? 'classic' : 'toolbar'); resetIdleTimer(popup); });
     }
 
     new MutationObserver(records => {
