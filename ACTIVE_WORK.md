@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.22.1**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.23**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,14 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Karşılaştırma 2. tur: Subtitles düzeltmeleri, grup düğmesi, B modelleri, v0.7.23 — 15 Kasım 2026
+
+Kullanıcı B modelini en hoş buldu ama düğmelerdeki aşağı ok ile kutunun uçla düğmeden çıkıyormuş gibi durmasının birlikte gereksiz kalabalık yarattığını söyledi; Subtitles ve grup düğmesinde düzeltmeler bildirdi. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Düzeltilen:** göz simgesinin kaybolması (Trusted Types; eşitlemenin geri kalanını da durduruyordu), görünüm kaydırıcılarının kalın çubuk olması, şeritte satır sayısının kesilmesi (ad kısalır, sayı görünür, tamamı ipucunda), grup düğmesi (tıklama yalnız listeyi açar, tekerlek gezer).
+- **Figma:** "Popovers · models" sayfasına "B variants" eklendi: B1 yalnız ok, B2 yalnız uç, B3 ikisi de yok ve sessiz vurgu çizgisi. Karar bekliyor.
+- **Test:** `toolbar-browser` sayfası Trusted Types zorunlu hale getirildi; HTML dizesi kullanan satır geçici olarak geri konunca Edge'de test başarısız oldu, kaldırınca geçti. Yeni denetimler: göz simgeleri, ince kaydırıcı, satır sayısı ve ipucu, tıklamanın grubu değiştirmemesi, çift tıklamanın listeyi açık bırakması.
 
 ## Açılır kutu modelleri (Figma) — 15 Kasım 2026
 

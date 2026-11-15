@@ -144,3 +144,11 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Baloncuk görünümü:** dış alan tam daire; içinde yalnız X var, X'in ayrı renkli yuvarlak zemini kaldırıldı. Üzerine gelince ya da klavye odağında temanın tehlike rengiyle (`--pvc-danger`) kırmızı bir halka parlar, X de kırmızılaşır.
 - **FilmDeck adı:** üzerine gelince çevresinde alan oluşmaz; klavye odağı çerçevesi yerinde kalır.
 - **Açık:** açılır kutuların tasarımı yeniden ele alınacak (kullanıcı: yeni panel tarzından bağımsız duruyorlar). Modeller Figma'da "Popovers · models" sayfasında: Current, A (aynı malzeme, tek katman), B (A + düğmeye bağlı uç), C (yumuşak renk blokları). Karar bekliyor.
+
+### v0.7.23 — karşılaştırma 2. tur (Subtitles ve grup düğmesi)
+
+- **Göz simgesi (hata):** göster/gizle düğmesindeki simge çalışma anında HTML dizesiyle değiştiriliyordu. Trusted Types uygulayan sitelerde bu engellenir; simge siliniyor ama yenisi eklenemiyordu ve eşitleme o satırda durduğu için ardından gelen göstergeler (kayma şeridi, görünüm, Ayarlar ve Erişilebilirlik) de güncellenmiyordu. Artık iki göz de baştan yerinde, yalnız gösterilip gizleniyor. `toolbar-browser` test sayfası artık Trusted Types zorunlu; HTML dizesi kullanan eski satır geri konunca test başarısız oluyor.
+- **Görünüm kaydırıcıları:** ortak kaydırıcı sınıfındaki `flex: 1`, kartın dikey düzeninde kaydırıcıyı kalın bir çubuğa çeviriyordu. Klasik paneldeki 6 px iz ve halkalı tutamaç geri geldi.
+- **Durum şeridi:** uzun dosya adı ortadan kısalır, satır sayısı her zaman görünür; satırın tamamı ipucunda. Şerit en fazla 380 px.
+- **Grup düğmesi (kullanıcı kararı, 15 Kasım):** tıklama artık grubu değiştirmez, grup listesini açar; çift tıklama listeyi açık bırakır; fare tekerleği grupları gezer. Önceki "tıkla: sonraki grup" davranışı, çift tıklamada hem gruba geçip hem listeyi açtığı için kaldırıldı.
+- **Açık:** açılır kutu tasarımı için B'den türetilen üç yeni model Figma'da ("Popovers · models", "B variants"): B1 yalnız ok, B2 yalnız uç, B3 ikisi de yok, sessiz vurgu çizgisi. Karar bekliyor.

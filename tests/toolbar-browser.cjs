@@ -18,7 +18,8 @@ const visible=id=>{const node=document.getElementById(id);if(!node)return false;
 const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};};
 const wheel=(id,deltaY)=>document.getElementById(id).dispatchEvent(new WheelEvent('wheel',{deltaY,deltaMode:0,bubbles:true,cancelable:true}));
 (async()=>{let driver;
-const media=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(mediaHtml);});
+// The player page enforces Trusted Types, as some video sites do: the toolbar must not build UI from HTML strings at run time.
+const media=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"require-trusted-types-for 'script'"});res.end(mediaHtml);});
 const parent=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
   res.end(`<!doctype html><body style="margin:0"><iframe style="width:700px;height:420px" allow="autoplay" src="http://127.0.0.1:${media.address().port}/"></iframe></body>`);});
 try{
@@ -93,15 +94,19 @@ try{
   await driver.press(page,'Escape');
   await driver.evaluate(page,()=>{const p=document.getElementById('pvc-controller-popup');p.style.setProperty('top','16px','important');window.dispatchEvent(new Event('resize'));});
 
-  // Groups: click moves on, the double-click list is as wide as its longest name and has no position text.
+  // Groups: a click only opens the list (it never switches by itself), a double-click leaves it open, the wheel switches.
   await driver.pointerClick(page,'#pvc-tb-mode');
-  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles','next group');
-  assert.equal(await driver.evaluate(page,visible,'pvc-tb-speed'),false,'player buttons hidden in another group');
-  await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode').dispatchEvent(new MouseEvent('dblclick',{bubbles:true})));
-  await until(driver,page,visible,'group list opens','pvc-tb-pop-groups');
+  await until(driver,page,visible,'a click opens the group list','pvc-tb-pop-groups');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode-label').textContent),'Player','a click does not switch the group');
   const list=await driver.evaluate(page,()=>[...document.querySelectorAll('#pvc-tb-pop-groups button')].map(b=>({text:b.textContent.trim(),on:b.getAttribute('aria-current')})));
   assert.deepEqual(list.map(item=>item.text),['Player','Subtitles','Settings','Accessibility']);
-  assert.equal(list.find(item=>item.on==='true').text,'Subtitles');
+  assert.equal(list.find(item=>item.on==='true').text,'Player');
+  await driver.pointerClick(page,'[data-pvc-goto="subtitles"]');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles'&&!document.getElementById('pvc-tb-pop-groups').getClientRects().length,'the list picks a group and closes');
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-speed'),false,'player buttons hidden in another group');
+  await driver.evaluate(page,()=>{const mode=document.getElementById('pvc-tb-mode');for(const detail of [1,2])mode.dispatchEvent(new MouseEvent('click',{bubbles:true,detail}));mode.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,detail:2}));});
+  await until(driver,page,visible,'a double-click leaves the list open','pvc-tb-pop-groups');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode-label').textContent),'Subtitles','a double-click does not switch the group either');
   await driver.pointerClick(page,'[data-pvc-goto="player"]');
   await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','list picks a group');
   await driver.evaluate(page,wheel,'pvc-tb-mode',-100);
@@ -110,8 +115,8 @@ try{
   await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','wheel down returns');
 
   // Subtitles group: load, show/hide, timing step and offset, appearance; the classic tab shows the same state.
-  await driver.pointerClick(page,'#pvc-tb-mode');
-  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles','subtitles group');
+  await driver.evaluate(page,wheel,'pvc-tb-mode',100);
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Subtitles','wheel down goes to the next group');
   await until(driver,page,visible,'subtitle status strip','pvc-tb-sub-strip');
   assert.equal(await driver.evaluate(page,visible,'pvc-tb-strip'),false,'the playing strip belongs to the Player group');
   assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').textContent),/No subtitles loaded/);
@@ -130,12 +135,18 @@ try{
   await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
   await until(driver,page,()=>{const shown=id=>document.getElementById(id).getClientRects().length>0;
     return document.getElementById('pvc-sub-offset-badge').textContent==='0ms'&&!shown('pvc-tb-sub-offset')&&!shown('pvc-tb-sub-dot');},'reset from the strip');
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-count').textContent),/\(2 /,'the cue count stays visible beside a long name');
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').getAttribute('data-pvc-tip')),/sample\.srt.*2/,'the whole line is in the tooltip');
+  const eyes=()=>[document.getElementById('pvc-tb-sub-eye'),document.getElementById('pvc-tb-sub-eye-off')].map(node=>node.getClientRects().length>0&&!!node.querySelector('svg'));
+  assert.deepEqual(await driver.evaluate(page,eyes),[true,false],'open eye while shown');
   await driver.pointerClick(page,'#pvc-tb-sub-toggle');
   await until(driver,page,()=>!document.getElementById('pvc-sub-toggle-btn').classList.contains('pvc-active')&&document.getElementById('pvc-tb-sub-toggle-val').textContent==='Hidden','hide reaches the shared state');
+  assert.deepEqual(await driver.evaluate(page,eyes),[false,true],'crossed-out eye while hidden');
   await driver.pointerClick(page,'#pvc-tb-sub-toggle');
   await until(driver,page,()=>document.getElementById('pvc-tb-sub-toggle').getAttribute('aria-pressed')==='true','shown again');
   await driver.pointerClick(page,'#pvc-tb-sub-look');
   await until(driver,page,visible,'appearance popover','pvc-tb-pop-sublook');
+  assert.ok((await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-fontSize').getBoundingClientRect().height))<=16,'appearance sliders keep the classic thin track');
   await driver.pointerClick(page,'#pvc-tb-sub-yellow');
   await until(driver,page,()=>document.getElementById('pvc-sub-color').value==='yellow','yellow reaches the classic control');
   await driver.evaluate(page,()=>{const input=document.getElementById('pvc-tb-sub-fontSize');input.value='30';input.dispatchEvent(new Event('input',{bubbles:true}));});
@@ -182,7 +193,7 @@ try{
   await driver.evaluate(page,wheel,'pvc-tb-theme',-100);
   await until(driver,page,previous=>document.getElementById('pvc-theme-select').value===previous,'wheel up goes back a theme',themeBefore);
   await driver.press(page,'Escape');
-  await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode').dispatchEvent(new MouseEvent('dblclick',{bubbles:true})));
+  await driver.pointerClick(page,'#pvc-tb-mode');
   await until(driver,page,()=>document.getElementById('pvc-tb-pop-groups').getClientRects().length>0&&!document.getElementById('pvc-tb-pop-help').getClientRects().length,'the group list takes help\'s place for a moment');
   await driver.pointerClick(page,'[data-pvc-goto="settings"]');
   await until(driver,page,shownNow,'help returns after the list','pvc-tb-pop-help');

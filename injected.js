@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.22.1 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.23 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.22.1';
+  const EXTENSION_VERSION = '0.7.23';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -383,7 +383,7 @@
     'Oynatılıyor {0}': 'Playing {0}',
     'Çözünürlük bekleniyor': 'Waiting for the resolution',
     'Yenile': 'Refresh',
-    'Grup: {0} · tıkla: sonraki · çift tıkla: liste · tekerlek: değiştir': 'Group: {0} · click: next · double-click: list · wheel: switch',
+    'Grup: {0} · tıkla: liste · tekerlek: değiştir': 'Group: {0} · click: list · wheel: switch',
     'Gruplar': 'Groups',
     'Kompakt araç çubuğu (önizleme)': 'Compact toolbar (preview)',
     'Dosya yükle': 'Load file',
@@ -5949,7 +5949,7 @@
         </div>
         <div class="pvc-tb-group" data-pvc-group="subtitles" hidden>
           <button type="button" id="pvc-tb-sub-load" class="pvc-tb-chip">${uiIcon('folder')}<span>Dosya yükle</span></button>
-          <button type="button" id="pvc-tb-sub-toggle" class="pvc-tb-chip">${uiIcon('eye')}<span id="pvc-tb-sub-toggle-val">Görünür</span></button>
+          <button type="button" id="pvc-tb-sub-toggle" class="pvc-tb-chip"><span id="pvc-tb-sub-eye" class="pvc-tb-iconbox">${uiIcon('eye')}</span><span id="pvc-tb-sub-eye-off" class="pvc-tb-iconbox" hidden>${uiIcon('eyeOff')}</span><span id="pvc-tb-sub-toggle-val">Görünür</span></button>
           <div id="pvc-tb-sub-timing" class="pvc-tb-seek" aria-label="Altyazı zamanlaması">
             <button type="button" id="pvc-tb-sub-earlier" class="pvc-tb-icon" aria-label="Altyazıyı erken göster">${uiIcon('minus')}</button>
             <button type="button" id="pvc-tb-sub-step" class="pvc-tb-step" data-pvc-popover="subtiming"><span id="pvc-tb-sub-step-val" data-pvc-i18n-skip>100ms</span>${uiIcon('chevron')}</button>
@@ -5970,7 +5970,7 @@
         <button type="button" id="pvc-tb-mode" class="pvc-tb-mode"><span id="pvc-tb-mode-icon" class="pvc-tb-mode-icon"></span><span id="pvc-tb-mode-label">Oynatıcı</span><span class="pvc-tb-dots"><span></span><span></span><span></span><span></span></span></button>
       </div>
       <div id="pvc-tb-strip" class="pvc-tb-strip" data-pvc-strip="player">${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button></div>
-      <div id="pvc-tb-sub-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="subtitles" hidden>${uiIcon('subtitles')}<span id="pvc-tb-sub-status" class="pvc-tb-strip-text" data-pvc-i18n-skip></span>
+      <div id="pvc-tb-sub-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="subtitles" hidden>${uiIcon('subtitles')}<span id="pvc-tb-sub-status" class="pvc-tb-strip-text" data-pvc-i18n-skip><span id="pvc-tb-sub-name" class="pvc-tb-strip-name"></span><span id="pvc-tb-sub-count" class="pvc-tb-strip-count"></span></span>
         <span id="pvc-tb-sub-offset" class="pvc-tb-offset" hidden><span id="pvc-tb-sub-offset-val"></span><button type="button" id="pvc-tb-sub-offset-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></span></div>
       <div id="pvc-tb-a11y-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="accessibility" hidden>${uiIcon('info')}<span>Bu tercihler sayfa yenilenince sıfırlanır · klavye kısayolları: soldaki tuş simgesi</span></div>
       <div id="pvc-tb-pop-subtiming" class="pvc-tb-popover" aria-label="Altyazı zamanlaması" hidden>
@@ -6171,7 +6171,7 @@
   // The group name inside the hint is translated on its own, so it is rebuilt on every sync.
   function updateToolbarModeTip() {
     const mode = document.getElementById('pvc-tb-mode');
-    if (mode) setUiTip(mode, uiText('Grup: {0} · tıkla: sonraki · çift tıkla: liste · tekerlek: değiştir').replace('{0}', uiText(TOOLBAR_GROUP_INFO[toolbarGroup][0])));
+    if (mode) setUiTip(mode, uiText('Grup: {0} · tıkla: liste · tekerlek: değiştir').replace('{0}', uiText(TOOLBAR_GROUP_INFO[toolbarGroup][0])));
   }
   function measureToolbarWidth(popup, toolbar) {
     popup.classList.add('pvc-toolbar-measure');
@@ -6314,12 +6314,8 @@
     const subtitlesOn = subtitleOverlayEnabled !== false;
     const subToggle = byId('pvc-tb-sub-toggle');
     pressed(subToggle, subtitlesOn);
-    if (subToggle && subToggle.dataset.pvcEye !== String(subtitlesOn)) {
-      subToggle.dataset.pvcEye = String(subtitlesOn);
-      subToggle.querySelector('svg')?.remove();
-      subToggle.insertAdjacentHTML('afterbegin', uiIcon(subtitlesOn ? 'eye' : 'eyeOff'));
-    }
-    setUiText(byId('pvc-tb-sub-toggle-val'), subtitlesOn ? 'Görünür' : 'Gizli');
+    // Both eyes are in the markup and only shown or hidden: pages with Trusted Types reject HTML strings.
+    byId('pvc-tb-sub-eye').hidden = !subtitlesOn; byId('pvc-tb-sub-eye-off').hidden = subtitlesOn;    setUiText(byId('pvc-tb-sub-toggle-val'), subtitlesOn ? 'Görünür' : 'Gizli');
     const offset = Number(subtitleOffsetMs) || 0, offsetText = `${offset > 0 ? '+' : ''}${offset} ms`;
     shown('pvc-tb-sub-step-val', toolbarSubtitleStep >= 1000 ? `${toolbarSubtitleStep / 1000}s` : `${toolbarSubtitleStep}ms`);
     toolbar.querySelectorAll('[data-pvc-substep]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-substep')) === toolbarSubtitleStep));
@@ -6329,7 +6325,10 @@
     byId('pvc-tb-sub-offset').hidden = offset === 0; byId('pvc-tb-sub-dot').hidden = offset === 0;
     if (offset !== 0) setUiText(byId('pvc-tb-sub-offset-val'), `Kayma ${offsetText}`);
     const status = byId('pvc-sub-status-text')?.textContent.replace(/^[\p{Extended_Pictographic}️‍]+\s*/u, '').trim() || '';
-    shown('pvc-tb-sub-status', status);
+    // A long file name is shortened, but the cue count stays visible; the whole line is in the tooltip.
+    const statusParts = /^(.*?)\s*(\([^()]*\))$/.exec(status);
+    shown('pvc-tb-sub-name', statusParts ? statusParts[1] : status); shown('pvc-tb-sub-count', statusParts ? ` ${statusParts[2]}` : '');
+    setUiTip(byId('pvc-tb-sub-status'), status || null);
     const loaded = remotePresentation ? remotePresentation.subtitleLoaded === true : customSubtitleCues.length > 0;
     byId('pvc-tb-sub-strip').classList.toggle('pvc-tb-strip-muted', !loaded);
     const why = byId('pvc-sub-why');
@@ -6529,12 +6528,14 @@
 
     // Group button: click moves on, the wheel goes either way, a double-click lists all groups.
     const mode = byId('pvc-tb-mode');
+    // A click opens the group list (it never switches by itself); the wheel steps through the groups.
+    // The second click of a double-click is ignored, so a double-click leaves the list open.
     mode.addEventListener('click', event => {
       event.stopPropagation(); resetIdleTimer(popup);
-      if (event.detail > 1) return; // The second click of a double-click opens the list instead.
-      setToolbarGroup(toolbarGroupAfter(TOOLBAR_GROUP_IDS, toolbarGroup, 1));
+      if (event.detail > 1) return;
+      openToolbarPopover('groups');
     });
-    mode.addEventListener('dblclick', event => { event.stopPropagation(); openToolbarPopover('groups'); });
+    mode.addEventListener('dblclick', event => event.stopPropagation());
     bindToolbarWheel(mode, direction => setToolbarGroup(toolbarGroupAfter(TOOLBAR_GROUP_IDS, toolbarGroup, -direction)));
     toolbar.querySelectorAll('[data-pvc-goto]').forEach(item => item.addEventListener('click', event => {
       event.stopPropagation(); setToolbarGroup(item.getAttribute('data-pvc-goto')); closeToolbarPopover(true);
