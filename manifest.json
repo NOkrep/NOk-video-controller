@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FilmDeck by NOk",
-  "version": "0.7.26",
+  "version": "0.7.27",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "author": "NOkrep",

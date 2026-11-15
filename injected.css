@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.26
+ * injected.css - FilmDeck by NOk v0.7.27
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1678,3 +1678,18 @@
 #pvc-controller-popup .pvc-scale-options { display: inline-flex !important; gap: 4px !important; }
 #pvc-controller-popup .pvc-scale-btn { min-width: 52px !important; justify-content: center !important; }
 #pvc-controller-popup .pvc-scale-btn:disabled { opacity: 0.45 !important; cursor: not-allowed !important; }
+
+/* Stereo/Mono sliding switch (user choice, 16 Nov; Figma "Stereo / Mono · models"). At rest: the name and a plain
+   knob. On hover or keyboard focus the icons fade in (headphones = stereo, one source sending both ways = mono)
+   and the tooltip explains; the chosen side's icon sits on the knob. */
+#pvc-toolbar .pvc-tb-channel { display: inline-flex !important; align-items: center !important; gap: 7px !important; }
+#pvc-toolbar .pvc-tb-channel-name { min-width: 34px !important; text-align: right !important; color: var(--pvc-accent-ink) !important; font-size: 11px !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-channel-switch { position: relative !important; display: inline-block !important; width: 58px !important; height: 26px !important; padding: 0 !important; border-radius: 13px !important; background: color-mix(in srgb, var(--pvc-text) 10%, transparent) !important; box-shadow: inset 0 0 0 1px var(--pvc-border) !important; transition: background-color 150ms ease-out, box-shadow 150ms ease-out !important; }
+#pvc-toolbar .pvc-tb-channel-switch:hover, #pvc-toolbar .pvc-tb-channel-switch:focus-visible { background: color-mix(in srgb, var(--pvc-text) 14%, transparent) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pvc-accent) 70%, transparent) !important; }
+#pvc-toolbar .pvc-tb-channel-knob { position: absolute !important; top: 2px !important; left: 2px !important; width: 28px !important; height: 22px !important; border-radius: 11px !important; background: var(--pvc-accent) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important; transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1) !important; }
+#pvc-toolbar .pvc-tb-channel-switch[aria-checked="true"] .pvc-tb-channel-knob { transform: translateX(26px) !important; }
+#pvc-toolbar .pvc-tb-channel-icon { position: absolute !important; top: 5px !important; display: inline-flex !important; color: var(--pvc-muted) !important; opacity: 0 !important; transition: opacity 150ms ease-out !important; pointer-events: none !important; }
+#pvc-toolbar .pvc-tb-channel-stereo { left: 8px !important; }
+#pvc-toolbar .pvc-tb-channel-mono { left: 34px !important; }
+#pvc-toolbar .pvc-tb-channel-switch:is(:hover, :focus-visible) .pvc-tb-channel-icon { opacity: 1 !important; }
+#pvc-toolbar .pvc-tb-channel-switch[aria-checked="false"] .pvc-tb-channel-stereo, #pvc-toolbar .pvc-tb-channel-switch[aria-checked="true"] .pvc-tb-channel-mono { color: var(--pvc-accent-on) !important; }

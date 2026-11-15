@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.26 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.27 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.26';
+  const EXTENSION_VERSION = '0.7.27';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -424,6 +424,7 @@
     'DRM korumalı akış: kalkanlı ayarlar sınırlı · ayrıntı için tıkla': 'DRM-protected stream: settings with a shield are limited · click for details',
     'Video kalitesi (Alt+Q) · 1080p kaynağını yeniden deneme seçeneği var': 'Video quality (Alt+Q) · a 1080p source retry is available',
     'Oynat / duraklat': 'Play / pause',
+    'Stereo: sol ve sağ ayrı kalır · Mono: iki kanal iki kulakta, tek kulakla dinlemeye uygun': 'Stereo: left and right stay separate · Mono: both channels in both ears, good for one ear',
     'Açık tut': 'Keep visible',
     'Kolay okunur düzen': 'Easy-read layout',
     'Hareketi azalt': 'Reduce motion',
@@ -452,6 +453,8 @@
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     eyeOff: '<path d="M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-2.6 3.4M6.6 6.6C3.7 8.4 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/>',
     headphones: '<path d="M4 14v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="12" width="4" height="8" rx="2"/><rect x="17" y="12" width="4" height="8" rx="2"/>',
+    // Mono: one source sending sound to both sides (user choice; echoes the one/two-circle channel convention).
+    monoSource: '<circle cx="12" cy="12" r="3.4"/><path d="M6.8 9a4.2 4.2 0 0 0 0 6M17.2 9a4.2 4.2 0 0 1 0 6M3.8 6.6a7.6 7.6 0 0 0 0 10.8M20.2 6.6a7.6 7.6 0 0 1 0 10.8"/>',
     rewind: '<path d="m11 5-8 7 8 7Zm10 0-8 7 8 7Z"/>',
     forward: '<path d="m3 5 8 7-8 7Zm10 0 8 7-8 7Z"/>',
     play: '<path d="m7 4 14 8-14 8Z"/>',
@@ -6076,7 +6079,7 @@
       </div>
       <div id="pvc-tb-pop-volume" class="pvc-tb-popover" aria-label="Ses ve kanallar" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Ses ve kanallar</span>
-            <span class="pvc-tb-segment"><button type="button" id="pvc-tb-stereo" class="pvc-tb-seg">Stereo</button><button type="button" id="pvc-tb-mono" class="pvc-tb-seg">Mono</button></span></div>
+            <span class="pvc-tb-channel"><span id="pvc-tb-channel-val" class="pvc-tb-channel-name">Stereo</span><button type="button" id="pvc-tb-channel" class="pvc-tb-channel-switch" role="switch" aria-checked="false" aria-label="Mono"><span class="pvc-tb-channel-knob"></span><span class="pvc-tb-channel-icon pvc-tb-channel-stereo">${uiIcon('headphones')}</span><span class="pvc-tb-channel-icon pvc-tb-channel-mono">${uiIcon('monoSource')}</span></button></span></div>
           <div class="pvc-tb-range"><span>0%</span><input type="range" id="pvc-tb-volume-slider" class="pvc-range-slider" min="0" max="300" step="5" value="100" aria-label="Ses" /><span>300%</span></div>
           <div class="pvc-tb-opts">${opts('vol', [0, 100, 200, 300], value => `${value}%`)}</div></div>
       </div>
@@ -6409,7 +6412,9 @@
     toolbar.querySelectorAll('[data-pvc-vol]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-vol')) === toolbarState.volume));
     toolbar.querySelectorAll('[data-pvc-step]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-step')) === toolbarSeekStep));
     const mono = byId('pvc-audio-mono-btn')?.classList.contains('pvc-audio-active') === true;
-    pressed(byId('pvc-tb-mono'), mono); pressed(byId('pvc-tb-stereo'), !mono);
+    const channel = byId('pvc-tb-channel');
+    if (channel && channel.getAttribute('aria-checked') !== String(mono)) channel.setAttribute('aria-checked', String(mono));
+    setUiText(byId('pvc-tb-channel-val'), mono ? 'Mono' : 'Stereo');
     const keysOn = byId('pvc-hotkeys-toggle-btn')?.classList.contains('pvc-btn-active') === true;
     pressed(byId('pvc-tb-keys'), keysOn);
     setUiTip(byId('pvc-tb-keys'), keysOn ? 'Klavye kısayolları açık' : 'Klavye kısayolları kapalı');
@@ -6642,8 +6647,17 @@
     for (const type of ['play', 'pause']) document.addEventListener(type, () => scheduleToolbarSync(), true);
     on('pvc-tb-seek-back', () => seekBy(-toolbarSeekStep));
     on('pvc-tb-seek-fwd', () => seekBy(toolbarSeekStep));
-    on('pvc-tb-stereo', () => setAudioMode('stereo'));
-    on('pvc-tb-mono', () => setAudioMode('mono'));
+    // Stereo/Mono (user choice, 16 Nov): a sliding switch; its icons and tooltip appear on hover or keyboard focus,
+    // the name beside it always shows the current mode. Click/Space flips it, ←/→ pick a side, the wheel steps.
+    const channel = byId('pvc-tb-channel'), channelMono = () => channel.getAttribute('aria-checked') === 'true';
+    on('pvc-tb-channel', () => setAudioMode(channelMono() ? 'stereo' : 'mono'));
+    channel.addEventListener('keydown', event => {
+      const side = { ArrowLeft: 'stereo', ArrowRight: 'mono' }[event.key];
+      if (!side) return;
+      event.preventDefault(); event.stopPropagation(); if ((side === 'mono') !== channelMono()) setAudioMode(side);
+    });
+    bindToolbarWheel(channel, direction => setAudioMode(direction < 0 ? 'mono' : 'stereo'));
+    setUiTip(channel, 'Stereo: sol ve sağ ayrı kalır · Mono: iki kanal iki kulakta, tek kulakla dinlemeye uygun');
     on('pvc-tb-adapter-change', () => { closeToolbarPopover(); byId('pvc-change-adapter-btn')?.click(); });
     toolbar.querySelectorAll('[data-pvc-speed]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); setSpeed(parseFloat(button.getAttribute('data-pvc-speed'))); }));
     toolbar.querySelectorAll('[data-pvc-vol]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); setAudioVolume(Number(button.getAttribute('data-pvc-vol'))); }));

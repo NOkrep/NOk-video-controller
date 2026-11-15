@@ -178,3 +178,11 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Kademeli büyütme:** klasik paneldeki açık/kapalı "Büyük yazı ve kontroller" yerine "Yazı ve denetim boyutu: 100% · 125% · 150%". Panelin içeriği kademe oranında büyütülür (CSS `zoom`), panel genişliği de aynı oranda artar (388 → 485 → 582 px); panelin kendi konumu ve yerleşim hesabı değişmez, yükseklik sığmazsa mevcut kaydırma kullanılır. Pencereye sığmayan kademe seçilemez (ipucu: "Pencere bu boyut için dar"); pencere sonradan daralırsa seçim korunur, sığan en büyük kademe gösterilir. Araç çubuğu kademeden etkilenmez; pencereler ve bildirimler kademe 100'ün üstündeyken eskisi gibi büyük yazı kullanır.
 - **Tercih köprüsü:** `largeText` (açık/kapalı) yerini `textScale` (100/125/150) aldı; gömülü oynatıcı çerçevesine bu taşınır, başka değer reddedilir.
 - **Testler:** klasik paneli sınayan tarayıcı testleri paneli açtıktan sonra kullanıcının basacağı anahtarla Kolay okunur düzene geçer (`resource-driver.cjs` › `easyRead`).
+
+### v0.7.27 — Stereo/Mono kayan anahtarı (kullanıcı seçimi, 16 Kasım; Figma "Stereo / Mono · models")
+
+- Ses kutusunun başlığındaki iki parçalı `Stereo | Mono` seçici yerine Model 1: kayan anahtar. Solunda o anki ad ("Stereo"/"Mono") her zaman yazar; durgunken anahtar sade bir topuzdur.
+- Üzerine gelince ya da klavye odağında simgeler belirir: stereo kulak üstü kulaklık, mono iki yana ses yayan tek kaynak (daire). Seçili tarafın simgesi topuzun üstündedir. İpucu: "Stereo: sol ve sağ ayrı kalır · Mono: iki kanal iki kulakta, tek kulakla dinlemeye uygun".
+- Tıklama ve Boşluk çevirir, ← stereo, → mono seçer, fare tekerleği aşağı mono, yukarı stereo. Topuz 150 ms kayar; "Hareketi azalt" açıkken animasyon yok. Ekran okuyucuya "Mono" adlı bir anahtar olarak duyurulur.
+- Simge arayışı: kutu hoparlör, daireler, kulaklık, dalgalar, harfler, tek kapak ve kulak denendi; yerleşik bir mono simgesi bulunamadı (telefon ve Windows "Mono ses"i yalnız yazıyla gösteriyor). Seçim: stereo için 5c'deki kulaklık, mono için 6'daki tek kaynaktan iki yana yayılan ses.
+- Kolay okunur düzendeki eski Stereo/Mono düğmeleri olduğu gibi kaldı.

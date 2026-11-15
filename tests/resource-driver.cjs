@@ -181,7 +181,7 @@ async function createDriver(engine,executablePath,packages,options={}){
       type:(page,text)=>send('input.performActions',{context:page,actions:[{type:'key',id:'nok-report-typing',actions:[...text].flatMap(value=>[
         {type:'keyDown',value},{type:'keyUp',value},{type:'pause',duration:20}])}]}),
       press:(page,key)=>{ // Same key names as Playwright, as WebDriver key values.
-        const codes={Tab:'',Escape:'',Enter:'',' ':' '},parts=key.split('+'),value=codes[parts.at(-1)]||parts.at(-1),shift=parts.includes('Shift');
+        const codes={Tab:'',Escape:'',Enter:'',' ':' ',ArrowLeft:'',ArrowUp:'',ArrowRight:'',ArrowDown:''},parts=key.split('+'),value=codes[parts.at(-1)]||parts.at(-1),shift=parts.includes('Shift');
         return send('input.performActions',{context:page,actions:[{type:'key',id:'nok-key-press',actions:[...(shift?[{type:'keyDown',value:''}]:[]),{type:'keyDown',value},{type:'keyUp',value},...(shift?[{type:'keyUp',value:''}]:[])]}]});
       },
       gc:async page=>{

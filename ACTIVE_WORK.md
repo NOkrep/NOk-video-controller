@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.26**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.27**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,15 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Stereo/Mono kayan anahtarı, v0.7.27 — 16 Kasım 2026
+
+Kullanıcı seçti: Model 1 kayan anahtar, simgeler "5c stereo + 6 mono" (kulaklık / tek kaynaktan iki yana yayılan ses). Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** ses kutusundaki iki parçalı seçici yerine anahtar; ad her zaman görünür, simgeler ve ipucu üzerine gelince ya da klavye odağında; tıklama, Boşluk, ←/→ ve fare tekerleğiyle değişir.
+- **Test:** `toolbar-browser` durgunken simgelerin gizli, üzerine gelince görünür olduğunu, tıklama, ← ve tekerlekle değişimi ve klasik paneldeki ortak durumu sınar. Firefox sürücüsüne (`resource-driver.cjs`) ok tuşlarının WebDriver karşılıkları eklendi.
+- **Kanıt:** `npm run check` (289/289); `toolbar`, `hud-state`, `tooltip`, `dialog-keyboard`, `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle durgun/üzerine gelinmiş, Stereo/Mono kontrolü.
+- **Sınır:** gerçek site denenmedi.
 
 ## Araç çubuğu varsayılan, Easy-read'de kademeli büyütme, v0.7.26 — 16 Kasım 2026
 

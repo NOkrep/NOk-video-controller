@@ -64,10 +64,21 @@ try{
   await until(driver,page,()=>document.querySelector('video').muted===true&&document.getElementById('pvc-tb-volume-val').textContent==='0%','volume 0 mutes');
   await driver.pointerClick(page,'[data-pvc-vol="100"]');
   await until(driver,page,()=>document.querySelector('video').muted===false&&document.getElementById('pvc-tb-volume-val').textContent==='100%','volume back to 100');
-  await driver.pointerClick(page,'#pvc-tb-mono');
+  // Stereo/Mono switch: icons only on hover or focus, the name always; click, arrow keys and the wheel switch it.
+  const channelIcons=()=>getComputedStyle(document.querySelector('#pvc-tb-channel .pvc-tb-channel-mono')).opacity;
+  await driver.hover(page,'#pvc-tb-volume-slider');await delay(250);
+  assert.equal(await driver.evaluate(page,channelIcons),'0','icons hidden at rest');
+  await driver.hover(page,'#pvc-tb-channel');
+  await until(driver,page,()=>getComputedStyle(document.querySelector('#pvc-tb-channel .pvc-tb-channel-mono')).opacity==='1','icons on hover');
+  await driver.pointerClick(page,'#pvc-tb-channel');
   await until(driver,page,()=>document.getElementById('pvc-audio-mono-btn').classList.contains('pvc-audio-active')
-    &&document.getElementById('pvc-tb-mono').getAttribute('aria-pressed')==='true','mono reaches the shared state');
-  await driver.pointerClick(page,'#pvc-tb-stereo');
+    &&document.getElementById('pvc-tb-channel').getAttribute('aria-checked')==='true'&&document.getElementById('pvc-tb-channel-val').textContent==='Mono','mono reaches the shared state and the name');
+  await driver.press(page,'ArrowLeft');
+  await until(driver,page,()=>!document.getElementById('pvc-audio-mono-btn').classList.contains('pvc-audio-active')&&document.getElementById('pvc-tb-channel-val').textContent==='Stereo','← chooses stereo');
+  await driver.evaluate(page,wheel,'pvc-tb-channel',100);
+  await until(driver,page,()=>document.getElementById('pvc-tb-channel').getAttribute('aria-checked')==='true','wheel down chooses mono');
+  await driver.press(page,'ArrowLeft');
+  await until(driver,page,()=>document.getElementById('pvc-tb-channel').getAttribute('aria-checked')==='false','back to stereo');
 
   // Seek step: popover choice, wheel stepping and the arrows' label.
   await driver.pointerClick(page,'#pvc-tb-seek-step');
