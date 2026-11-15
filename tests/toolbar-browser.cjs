@@ -143,8 +143,55 @@ try{
   await driver.pointerClick(page,'#pvc-tb-sub-look-reset');
   await until(driver,page,()=>document.getElementById('pvc-sub-color').value==='white'&&document.getElementById('pvc-tb-sub-fontSize-value').textContent==='20px','appearance reset');
   await driver.press(page,'Escape');
+
+  // Settings group: Help stays open at the bar's end; language, picture & night and theme share the classic state.
+  const shownNow=id=>document.getElementById(id).getClientRects().length>0;
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="settings"]').click());
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Settings','settings group');
+  await until(driver,page,visible,'help is open in Settings','pvc-tb-pop-help');
+  const barEnd=await driver.evaluate(page,()=>document.querySelector('#pvc-toolbar .pvc-tb-bar').getBoundingClientRect().right);
+  assert.ok(Math.abs((await driver.evaluate(page,rect,'pvc-tb-pop-help')).right-barEnd)<=1,'help lines up with the end of the bar');
+  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-help-cdn-sub').textContent),'Media server response time');
+  await driver.pointerClick(page,'#pvc-tb-picture');
+  await until(driver,page,visible,'picture popover','pvc-tb-pop-picture');
+  assert.ok(await driver.evaluate(page,visible,'pvc-tb-pop-help'),'help stays open beside another popover');
+  assert.ok((await driver.evaluate(page,rect,'pvc-tb-pop-picture')).right<=(await driver.evaluate(page,rect,'pvc-tb-pop-help')).left+0.5,'the popover sits beside help, not over it');
+  await driver.evaluate(page,wheel,'pvc-tb-filter-brightness',-100);
+  await until(driver,page,()=>document.getElementById('pvc-val-brightness').textContent.includes('105')&&document.getElementById('pvc-tb-filter-brightness-value').textContent==='105%','the wheel steps a slider and reaches the classic control');
+  await until(driver,page,shownNow,'an adjusted picture is marked on its button','pvc-tb-picture-dot');
+  await driver.pointerClick(page,'#pvc-tb-night');
+  await until(driver,page,()=>document.getElementById('pvc-btn-night-shield').classList.contains('pvc-active')&&document.getElementById('pvc-tb-night').getAttribute('aria-pressed')==='true','night mode is shared');
+  await until(driver,page,()=>/sepia/.test(document.querySelector('video').style.filter),'night mode reaches the video');
+  await driver.pointerClick(page,'#pvc-tb-filter-reset');
+  await until(driver,page,()=>!document.getElementById('pvc-btn-night-shield').classList.contains('pvc-active')&&document.getElementById('pvc-tb-filter-brightness-value').textContent==='100%'&&!document.getElementById('pvc-tb-picture-dot').getClientRects().length,'reset all');
+  await driver.pointerClick(page,'#pvc-tb-lang');
+  await until(driver,page,visible,'language popover','pvc-tb-pop-language');
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-pop-picture'),false,'one popover at a time');
+  await driver.pointerClick(page,'[data-pvc-lang="tr"]');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Ayarlar'&&document.getElementById('pvc-language-select').value==='tr'&&document.getElementById('pvc-tb-lang-val').textContent==='Türkçe','language switches the whole panel');
+  await driver.pointerClick(page,'[data-pvc-lang="en"]');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Settings','and back');
+  await driver.press(page,'Escape');
+  await until(driver,page,()=>!document.getElementById('pvc-tb-pop-language').getClientRects().length,'Escape closes the popover');
+  assert.ok(await driver.evaluate(page,visible,'pvc-tb-pop-help'),'Escape leaves help open');
+  const themeBefore=await driver.evaluate(page,()=>document.getElementById('pvc-theme-select').value);
+  await driver.pointerClick(page,'#pvc-tb-theme');
+  await until(driver,page,visible,'theme popover','pvc-tb-pop-theme');
+  await driver.pointerClick(page,'#pvc-tb-theme-next');
+  await until(driver,page,previous=>document.getElementById('pvc-theme-select').value!==previous&&document.getElementById('pvc-tb-theme-val').textContent===document.getElementById('pvc-theme-name').textContent,'next theme is shared',themeBefore);
+  await driver.evaluate(page,wheel,'pvc-tb-theme',-100);
+  await until(driver,page,previous=>document.getElementById('pvc-theme-select').value===previous,'wheel up goes back a theme',themeBefore);
+  await driver.press(page,'Escape');
+  await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode').dispatchEvent(new MouseEvent('dblclick',{bubbles:true})));
+  await until(driver,page,()=>document.getElementById('pvc-tb-pop-groups').getClientRects().length>0&&!document.getElementById('pvc-tb-pop-help').getClientRects().length,'the group list takes help\'s place for a moment');
+  await driver.pointerClick(page,'[data-pvc-goto="settings"]');
+  await until(driver,page,shownNow,'help returns after the list','pvc-tb-pop-help');
+  await driver.pointerClick(page,'#pvc-tb-help-keys');
+  await until(driver,page,()=>{const modal=document.getElementById('pvc-permissions-modal');return !!modal&&modal.getClientRects().length>0;},'help opens the shortcuts guide');
+  await driver.press(page,'Escape');
+  await until(driver,page,()=>{const modal=document.getElementById('pvc-permissions-modal');return !modal||!modal.getClientRects().length;},'guide closes');
   await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="player"]').click());
-  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player','back to Player');
+  await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player'&&!document.getElementById('pvc-tb-pop-help').getClientRects().length,'back to Player, help closes');
 
   // Theme palette: the bar's border follows the theme's border colour.
   const borderOf=()=>getComputedStyle(document.querySelector('#pvc-toolbar .pvc-tb-bar')).borderTopColor;
@@ -180,6 +227,12 @@ try{
   await driver.evaluate(top,()=>document.querySelector('[data-pvc-substep="250"]').click());
   await driver.pointerClick(top,'#pvc-tb-sub-earlier');
   await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-250ms'&&/-250 ms/.test(document.getElementById('pvc-tb-sub-offset-val').textContent),'frame offset comes back');
+  // Night mode from the top toolbar filters the frame's video.
+  await driver.evaluate(top,()=>document.querySelector('[data-pvc-goto="settings"]').click());
+  await driver.pointerClick(top,'#pvc-tb-picture');
+  await until(driver,top,visible,'top picture popover','pvc-tb-pop-picture');
+  await driver.pointerClick(top,'#pvc-tb-night');
+  await until(driver,owner,()=>/sepia/.test(document.querySelector('video').style.filter),'night mode reaches the frame video');
   console.log(JSON.stringify({engine,version:driver.version,result:'pass'}));
 }finally{await driver?.close();media.close();parent.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.20**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.21**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,15 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Kompakt araç çubuğu: Settings grubu, v0.7.21 — 15 Kasım 2026
+
+Kullanıcı istedi: "settings grubuna başla". Tasarım Figma "Model 5 · rev 4" Settings çizimi. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** Dil (Türkçe/English, dar kutu), Picture & night (Reset all başlığın sağında, üç kaydırıcı, Night mode ve Invert, ayarlıyken düğmede nokta), tema adı düğmesi (tema adı başlığın sağında, liste, önceki/sonraki, örnek renkler; tekerlekle tema değişir). Help bu grupta hep açık, sağ uca hizalı; diğer kutular yanında açılır.
+- **Ek:** Açılır kutulardaki bütün kaydırıcılar fare tekerleğine bağlandı. v0.7.20 kaydındaki "altyazı kaydırıcıları tekerlekle" ifadesi o sürüm için doğru değildi; düzeltme bu sürümde (TOOLBAR_REDESIGN.md §6'da not edildi). Bildirim, üst ortaya uzanan açık kutuların altına iniyor.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser.cjs` (Help'in yeri ve kalıcılığı, kutunun Help'in yanında açılması, tekerlekle parlaklık, gece modu videoda ve klasik panelde, Reset all, dil geçişi, tema önceki/sonraki ve tekerlek, grup listesinde Help'in çekilmesi, kısayol rehberinin açılması; gömülü çerçevede gece modunun çerçevedeki videoya ulaşması), `subtitle-browser`, `hud-state`, `tooltip`, `dialog-keyboard` ve `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle Atlas, Daylight ve alt yarı kontrolü.
+- **Sınır:** Gerçek site denenmedi. CDN ölçümü testte tıklanmadı (ağ isteği); yalnız varsayılan açıklaması sınandı. Accessibility grubu sırada; araç çubuğu hâlâ önizleme anahtarıyla açılıyor.
 
 ## Kompakt araç çubuğu: Subtitles grubu, v0.7.20 — 15 Kasım 2026
 

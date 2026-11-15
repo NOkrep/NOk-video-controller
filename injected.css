@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.20
+ * injected.css - FilmDeck by NOk v0.7.21
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1545,3 +1545,35 @@
 #pvc-toolbar .pvc-tb-swatch { width: 9px !important; height: 9px !important; border-radius: 50% !important; box-shadow: 0 0 0 1px var(--pvc-border) !important; }
 #pvc-toolbar .pvc-tb-swatch-white { background: #ffffff !important; }
 #pvc-toolbar .pvc-tb-swatch-yellow { background: #fde047 !important; }
+/* Settings group: language list, picture filters, theme picker and the Help panel that stays open. */
+#pvc-toolbar .pvc-tb-marked { position: relative !important; }
+#pvc-toolbar #pvc-tb-pop-language { width: 170px !important; }
+#pvc-toolbar #pvc-tb-pop-picture { width: 300px !important; }
+#pvc-toolbar #pvc-tb-pop-theme { width: 280px !important; }
+#pvc-toolbar .pvc-tb-list { display: flex !important; flex-direction: column !important; gap: 2px !important; }
+#pvc-toolbar .pvc-tb-radio { gap: 9px !important; padding: 6px 8px !important; border-radius: 7px !important; font-size: 12px !important; }
+#pvc-toolbar .pvc-tb-radio-mark { width: 12px !important; height: 12px !important; flex: 0 0 12px !important; box-sizing: border-box !important; border-radius: 50% !important; border: 1.5px solid var(--pvc-muted) !important; }
+#pvc-toolbar .pvc-tb-radio.pvc-tb-on { color: var(--pvc-accent-ink) !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-radio.pvc-tb-on .pvc-tb-radio-mark { border-color: var(--pvc-accent) !important; background: var(--pvc-accent) !important; box-shadow: inset 0 0 0 2px var(--pvc-elevated) !important; }
+#pvc-toolbar .pvc-tb-filter { display: grid !important; grid-template-columns: 96px 1fr 38px !important; align-items: center !important; gap: 8px !important; font-size: 11px !important; }
+#pvc-toolbar .pvc-tb-filter-name { display: inline-flex !important; align-items: center !important; gap: 6px !important; color: var(--pvc-muted) !important; }
+#pvc-toolbar .pvc-tb-filter-name .pvc-ui-icon { width: 13px !important; height: 13px !important; flex-basis: 13px !important; }
+#pvc-toolbar .pvc-tb-filter input { width: 100% !important; min-width: 0 !important; margin: 0 !important; }
+#pvc-toolbar .pvc-tb-filter > .pvc-tb-muted { text-align: right !important; font-variant-numeric: tabular-nums !important; }
+#pvc-toolbar .pvc-tb-opts.pvc-tb-opts-2 { grid-template-columns: 1fr 1fr !important; }
+#pvc-toolbar .pvc-tb-opts-2 .pvc-tb-opt { gap: 6px !important; padding: 7px 6px !important; }
+#pvc-toolbar .pvc-tb-opts-2 .pvc-ui-icon { width: 14px !important; height: 14px !important; flex-basis: 14px !important; }
+#pvc-toolbar .pvc-tb-accent { color: var(--pvc-accent-ink) !important; }
+#pvc-toolbar .pvc-tb-theme-nav { display: grid !important; grid-template-columns: 1fr auto 1fr !important; align-items: center !important; gap: 8px !important; font-size: 11px !important; }
+#pvc-toolbar .pvc-tb-swatches { display: flex !important; gap: 6px !important; }
+#pvc-toolbar .pvc-tb-swatches > span { width: 14px !important; height: 14px !important; border-radius: 50% !important; box-shadow: 0 0 0 1px var(--pvc-border) !important; }
+#pvc-toolbar .pvc-tb-help { width: 270px !important; gap: 6px !important; }
+#pvc-toolbar .pvc-tb-help-title { padding: 0 2px 2px !important; font-size: 12px !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-help-item { display: flex !important; align-items: flex-start !important; gap: 10px !important; padding: 8px 10px !important; border-radius: 8px !important; background: var(--pvc-elevated) !important; border: 1px solid color-mix(in srgb, var(--pvc-border) 70%, transparent) !important; box-sizing: border-box !important; width: 100% !important; white-space: normal !important; }
+#pvc-toolbar button.pvc-tb-help-item:hover { background: color-mix(in srgb, var(--pvc-text) 8%, var(--pvc-elevated)) !important; }
+#pvc-toolbar .pvc-tb-help-item > .pvc-ui-icon { margin-top: 1px !important; color: var(--pvc-accent-ink) !important; }
+#pvc-toolbar .pvc-tb-help-text { display: flex !important; flex-direction: column !important; gap: 2px !important; min-width: 0 !important; }
+#pvc-toolbar .pvc-tb-help-text strong { font-size: 12px !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-help-text > span { color: var(--pvc-muted) !important; font-size: 10.5px !important; font-weight: 400 !important; line-height: 1.35 !important; }
+#pvc-toolbar .pvc-tb-help-text a { color: var(--pvc-accent-ink) !important; text-decoration: underline !important; }
+#pvc-toolbar .pvc-tb-help-item.pvc-tb-busy { opacity: 0.75 !important; cursor: progress !important; }

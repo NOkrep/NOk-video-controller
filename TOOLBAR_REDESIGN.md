@@ -117,3 +117,14 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Grup değişince yer:** Gruplar farklı genişlikte olduğundan araç çubuğu grup değişiminde sağ kenarını korur ve sola doğru büyür/küçülür; ardından pencere içine sıkıştırılır. Önceden genişleyen grup sağ kenardan taşabiliyordu (Firefox testi yakaladı).
 - **Köprü:** Gömülü oynatıcıya giden `subtitle-offset` komutu artık tüm adımları (±50/100/250/500/1000 ms) kabul eder; öncekiler yalnız ±100'dü.
 - **Henüz yok:** Settings ve Accessibility grupları ("Klasik panelde aç"), Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler.
+
+### v0.7.21 — Settings grubu
+
+- **Düğmeler:** dil (o anki dilin adı), "Picture & night" ve o anki temanın adı (ör. Atlas). Hepsi klasik Ayarlar sekmesinin durumunu ve işlevlerini kullanır (`setUiLanguage`, `videoFilterState` ve `scheduleVideoFilterUpdate`, `setUiTheme`, klasik gece/ters renk/sıfırla ve önceki/sonraki düğmeleri); gömülü oynatıcıda filtreler mevcut köprüyle çerçevedeki videoya ulaşır.
+- **Dil kutusu:** içeriği kadar dar; Türkçe/English seçimi ve "yalnız bu sayfa açıkken tutulur" notu. Seçim bütün paneli ve araç çubuğunu anında çevirir.
+- **Picture & night kutusu:** başlığın sağında Reset all; parlaklık, kontrast, doygunluk kaydırıcıları (klasik aralıklar, çift tıkla %100); Filters kartında Night mode ve Invert. Görüntü varsayılandan farklıysa düğmenin köşesinde turuncu nokta yanar.
+- **Tema kutusu:** "Theme" başlığının sağında tema adı; tüm temalar listesi (Standart/Açık/OLED grupları), Previous · 6/20 · Next, örnek renkler ve yüksek kontrast notu. Tema düğmesinin üzerinde fare tekerleği önceki/sonraki temaya geçer.
+- **Help:** Settings grubundayken hep açık, araç çubuğunun sağ ucuna hizalı; simgeli dört madde: CDN response (son ölçüm sonucunu altında gösterir), Shortcuts & permissions (rehberi açar), Report a problem, About FilmDeck (sürüm, MIT, kaynak kodu bağlantısı). Diğer kutular Help'in yanında açılır, üstüne binmez; Esc yalnız diğer kutuyu kapatır. Grup listesi açıkken Help aynı yeri kullandığı için kısa süre gizlenir.
+- **Fare tekerleği:** açılır kutulardaki bütün kaydırıcılar (hız, ses, altyazı görünümü, görüntü filtreleri) artık tekerlekle birer adım değişir. v0.7.20 kaydında altyazı kaydırıcıları için yazılan tekerlek desteği o sürümde aslında yoktu; bu sürümde eklendi.
+- **Bildirim yeri:** araç çubuğu üstteyken bildirim, ekranın üst ortasına uzanan şerit ve açık kutuların altına iner.
+- **Henüz yok:** Accessibility grubu ("Klasik panelde aç"), Easy-read'deki kademeli büyütme, ertelenen anlık bildirimler. Klavye kısayolu aç/kapa Help'te yer almaz; her grupta soldaki simgededir.
