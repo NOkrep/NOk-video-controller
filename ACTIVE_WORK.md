@@ -15,6 +15,16 @@
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
 
+## Açılır kutu modelleri (Figma) — 15 Kasım 2026
+
+Kod değişmedi. Kullanıcı açılır kutuların yeni panel tarzından bağımsız durduğunu söyledi ve önerileri Figma modeli olarak istedi. Sayfa: `FilmDeck MEC523 Wireframes` › "Popovers · models". Her modelde aynı üç kutu (Volume, Picture & night, Theme) açtığı düğmenin altında, Atlas teması.
+
+- **Current (v0.7.22):** köşeli, ağır gölgeli ayrı pencere görünümü; kutu içinde kenarlıklı kart; tarayıcının kendi seçim kutusu; dikdörtgen düğmeler. Karşılaştırma için.
+- **A · Aynı malzeme, tek katman:** kutu çubukla aynı yarı saydam zemin ve yuvarlak köşelerle; iç kutu yok, ince ayraç ve küçük soluk başlıklar; hap seçenekler, anahtarlar, kendi listemiz.
+- **B · A + düğmeye bağlı:** A'ya ek olarak düğmeyi gösteren küçük uç; açık düğme kutunun rengine bürünür; düğmeden kısa büyüme animasyonu (hareketi azalt açıkken yok).
+- **C · Yumuşak renk blokları:** eski paneldeki "açık renkli kutu" fikri kenarlıksız, yuvarlak, hafif tonlu bloklarla; hap seçenekler, anahtarlar, kendi listemiz.
+- **Karar bekliyor:** kullanıcı modeli seçecek; seçilen model bütün açılır kutulara (Help dahil) uygulanacak.
+
 ## Karşılaştırma 1. tur: kapatma baloncuğu ve FilmDeck adı, v0.7.22.1 — 15 Kasım 2026
 
 Kullanıcı eski/yeni panel karşılaştırmasının ilk düzeltmelerini bildirdi. Ayrıntı: TOOLBAR_REDESIGN.md §6.

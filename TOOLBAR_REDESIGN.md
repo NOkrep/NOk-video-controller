@@ -143,4 +143,4 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Sürüklerken baloncuk:** FilmDeck'e basılı tutulduğu ve sürüklendiği sürece baloncuk açılmaz. Neden: mıknatıslı kenar ve pencere sınırında çubuk imleci tam izlemez; imleç addan çıkıp yeniden girince baloncuk açılıyordu. Bırakınca baloncuk bir sonraki üzerine gelişi bekler.
 - **Baloncuk görünümü:** dış alan tam daire; içinde yalnız X var, X'in ayrı renkli yuvarlak zemini kaldırıldı. Üzerine gelince ya da klavye odağında temanın tehlike rengiyle (`--pvc-danger`) kırmızı bir halka parlar, X de kırmızılaşır.
 - **FilmDeck adı:** üzerine gelince çevresinde alan oluşmaz; klavye odağı çerçevesi yerinde kalır.
-- **Açık:** açılır kutuların tasarımı yeniden ele alınacak (kullanıcı: yeni panel tarzından bağımsız duruyorlar); öneriler kullanıcıya sunuldu, karar bekliyor.
+- **Açık:** açılır kutuların tasarımı yeniden ele alınacak (kullanıcı: yeni panel tarzından bağımsız duruyorlar). Modeller Figma'da "Popovers · models" sayfasında: Current, A (aynı malzeme, tek katman), B (A + düğmeye bağlı uç), C (yumuşak renk blokları). Karar bekliyor.
