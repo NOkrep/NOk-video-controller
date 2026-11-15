@@ -1,6 +1,6 @@
 {
   "name": "filmdeck",
-  "version": "0.7.23",
+  "version": "0.7.24",
   "private": true,
   "license": "MIT",
   "description": "Development checks for the FilmDeck browser extension",

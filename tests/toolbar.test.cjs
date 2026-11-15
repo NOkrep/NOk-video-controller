@@ -64,7 +64,7 @@ test('every new toolbar label has an English translation', () => {
     assert.ok(markup.includes(label), `${label} is used`);
     assert.ok(source.includes(`'${label}': '`), `${label} is translated`);
   }
-  for (const key of ['FilmDeck araç çubuğu', 'Kompakt araç çubuğu (önizleme)', 'Grup: {0} · tıkla: liste · tekerlek: değiştir',
+  for (const key of ['FilmDeck araç çubuğu', 'Kompakt araç çubuğu (önizleme)', 'Grup: {0} · çift tıkla: liste · tekerlek: değiştir',
     'Geri sar: {0} sn', 'İleri sar: {0} sn', 'Oynatılıyor {0}', 'Klavye kısayolları açık', 'Klavye kısayolları kapalı',
     'Gizli', 'Kayma {0}', 'Altyazıyı {0} ms erken göster', 'Altyazıyı {0} ms geç göster', 'Zamanlama adımı (fare tekerleği)',
     'Altyazı dosyası yükle · .srt ve .vtt · yalnız bu sayfada tutulur', 'Altyazıyı göster veya gizle',

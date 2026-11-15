@@ -152,3 +152,12 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Durum şeridi:** uzun dosya adı ortadan kısalır, satır sayısı her zaman görünür; satırın tamamı ipucunda. Şerit en fazla 380 px.
 - **Grup düğmesi (kullanıcı kararı, 15 Kasım):** tıklama artık grubu değiştirmez, grup listesini açar; çift tıklama listeyi açık bırakır; fare tekerleği grupları gezer. Önceki "tıkla: sonraki grup" davranışı, çift tıklamada hem gruba geçip hem listeyi açtığı için kaldırıldı.
 - **Açık:** açılır kutu tasarımı için B'den türetilen üç yeni model Figma'da ("Popovers · models", "B variants"): B1 yalnız ok, B2 yalnız uç, B3 ikisi de yok, sessiz vurgu çizgisi. Karar bekliyor.
+
+### v0.7.24 — B3 açılır kutu stili ve grup düğmesi (karşılaştırma 3. tur)
+
+- **B3 (kullanıcı seçimi, 15 Kasım; Figma "Popovers · models" › B3):** bütün açılır kutular (Help ve grup listesi dahil) çubuğun malzemesinde: aynı yarı saydam koyu zemin, 18 px köşe, hafif gölge. İç kutular yok; bölümleri ince ayraç ve küçük, büyük harfli soluk başlıklar ayırır. Seçenekler hap biçiminde, kaydırıcılar ince iz ve düz tutamaçlı, Gece modu ve Ters renk anahtar satırı.
+- **Ok ve uç yok:** çubuktaki düğmelerden aşağı oklar kaldırıldı. Açık düğme kutunun rengini alır ve yazısının altında kısa bir vurgu çizgisi çıkar; kutunun üst kenarında (alt yarıda alt kenarında) aynı çizgi o düğmenin hizasında durur. Kutu Help'e çarpmamak için kaydığında çizgi kutunun düğmeye en yakın ucunda kalır.
+- **Kendi listemiz:** tema listesi ve video hedefi tarayıcının seçim kutusu yerine kutunun içinde açılan kendi listemizle seçilir (aile başlıkları, renk noktası, seçili olanda işaret). Tema için ‹ 6/20 › yuvarlak düğmeler.
+- **Açılış:** kutu 150 ms'lik kısa bir yükselmeyle görünür; "Hareketi azalt" açıkken animasyon yok.
+- **Kaydırıcılar:** v0.7.23'te klasik paneldeki kalın halkalı tutamaca dönülmüştü; B3 modelindeki ince iz ve düz tutamaç seçildiği için bu sürümde ona geçildi.
+- **Grup düğmesi (kullanıcı kararı, 15 Kasım):** tek tıklama hiçbir şey yapmaz; çift tıklama grup listesini açar; fare tekerleği liste açılmadan grupları gezer. Klavyede çift tıklama olmadığı için Enter/Boşluk listeyi açar.

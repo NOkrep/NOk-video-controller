@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.23 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.24 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.23';
+  const EXTENSION_VERSION = '0.7.24';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -383,7 +383,7 @@
     'Oynatılıyor {0}': 'Playing {0}',
     'Çözünürlük bekleniyor': 'Waiting for the resolution',
     'Yenile': 'Refresh',
-    'Grup: {0} · tıkla: liste · tekerlek: değiştir': 'Group: {0} · click: list · wheel: switch',
+    'Grup: {0} · çift tıkla: liste · tekerlek: değiştir': 'Group: {0} · double-click: list · wheel: switch',
     'Gruplar': 'Groups',
     'Kompakt araç çubuğu (önizleme)': 'Compact toolbar (preview)',
     'Dosya yükle': 'Load file',
@@ -465,6 +465,7 @@
     access: '<circle cx="12" cy="4.5" r="1.8"/><path d="M5 8.5l7 1.5 7-1.5M12 10v5l-3 6m3-6 3 6"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>',
     pin: '<path d="M9 3h6l-1 6 4 4H6l4-4Z"/><path d="M12 13v8"/>',
+    left: '<path d="m15 6-6 6 6 6"/>', right: '<path d="m9 6 6 6-6 6"/>', check: '<path d="m5 12 5 5 9-10"/>',
     wave: '<path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>'
   };
   function uiIcon(name) {
@@ -5938,30 +5939,30 @@
         <button type="button" id="pvc-tb-report" class="pvc-tb-icon" aria-label="Sorun bildir">${uiIcon('report')}</button>
         <span class="pvc-tb-sep"></span>
         <div class="pvc-tb-group" data-pvc-group="player">
-          <button type="button" id="pvc-tb-speed" class="pvc-tb-chip" data-pvc-popover="speed">${uiIcon('speed')}<span id="pvc-tb-speed-val" data-pvc-i18n-skip>1.0×</span>${uiIcon('chevron')}</button>
+          <button type="button" id="pvc-tb-speed" class="pvc-tb-chip" data-pvc-popover="speed">${uiIcon('speed')}<span id="pvc-tb-speed-val" data-pvc-i18n-skip>1.0×</span></button>
           <div id="pvc-tb-seek" class="pvc-tb-seek" aria-label="Sarma">
             <button type="button" id="pvc-tb-seek-back" class="pvc-tb-icon" aria-label="Geri sar">${uiIcon('rewind')}</button>
-            <button type="button" id="pvc-tb-seek-step" class="pvc-tb-step" data-pvc-popover="seek"><span id="pvc-tb-seek-val" data-pvc-i18n-skip>10s</span>${uiIcon('chevron')}</button>
+            <button type="button" id="pvc-tb-seek-step" class="pvc-tb-step" data-pvc-popover="seek"><span id="pvc-tb-seek-val" data-pvc-i18n-skip>10s</span></button>
             <button type="button" id="pvc-tb-seek-fwd" class="pvc-tb-icon" aria-label="İleri sar">${uiIcon('forward')}</button>
           </div>
-          <button type="button" id="pvc-tb-volume" class="pvc-tb-chip" data-pvc-popover="volume">${uiIcon('volume')}<span id="pvc-tb-volume-val" data-pvc-i18n-skip>100%</span>${uiIcon('chevron')}</button>
-          <button type="button" id="pvc-tb-quality" class="pvc-tb-chip" data-pvc-popover="quality">${uiIcon('video')}<span id="pvc-tb-quality-val">Kalite</span>${uiIcon('chevron')}</button>
+          <button type="button" id="pvc-tb-volume" class="pvc-tb-chip" data-pvc-popover="volume">${uiIcon('volume')}<span id="pvc-tb-volume-val" data-pvc-i18n-skip>100%</span></button>
+          <button type="button" id="pvc-tb-quality" class="pvc-tb-chip" data-pvc-popover="quality">${uiIcon('video')}<span id="pvc-tb-quality-val">Kalite</span></button>
         </div>
         <div class="pvc-tb-group" data-pvc-group="subtitles" hidden>
           <button type="button" id="pvc-tb-sub-load" class="pvc-tb-chip">${uiIcon('folder')}<span>Dosya yükle</span></button>
           <button type="button" id="pvc-tb-sub-toggle" class="pvc-tb-chip"><span id="pvc-tb-sub-eye" class="pvc-tb-iconbox">${uiIcon('eye')}</span><span id="pvc-tb-sub-eye-off" class="pvc-tb-iconbox" hidden>${uiIcon('eyeOff')}</span><span id="pvc-tb-sub-toggle-val">Görünür</span></button>
           <div id="pvc-tb-sub-timing" class="pvc-tb-seek" aria-label="Altyazı zamanlaması">
             <button type="button" id="pvc-tb-sub-earlier" class="pvc-tb-icon" aria-label="Altyazıyı erken göster">${uiIcon('minus')}</button>
-            <button type="button" id="pvc-tb-sub-step" class="pvc-tb-step" data-pvc-popover="subtiming"><span id="pvc-tb-sub-step-val" data-pvc-i18n-skip>100ms</span>${uiIcon('chevron')}</button>
+            <button type="button" id="pvc-tb-sub-step" class="pvc-tb-step" data-pvc-popover="subtiming"><span id="pvc-tb-sub-step-val" data-pvc-i18n-skip>100ms</span></button>
             <button type="button" id="pvc-tb-sub-later" class="pvc-tb-icon" aria-label="Altyazıyı geç göster">${uiIcon('plus')}</button>
             <span id="pvc-tb-sub-dot" class="pvc-tb-dot" hidden></span>
           </div>
-          <button type="button" id="pvc-tb-sub-look" class="pvc-tb-chip" data-pvc-popover="sublook">${uiIcon('typeface')}<span>Görünüm</span>${uiIcon('chevron')}</button>
+          <button type="button" id="pvc-tb-sub-look" class="pvc-tb-chip" data-pvc-popover="sublook">${uiIcon('typeface')}<span>Görünüm</span></button>
         </div>
         <div class="pvc-tb-group" data-pvc-group="settings" hidden>
-          <button type="button" id="pvc-tb-lang" class="pvc-tb-chip" data-pvc-popover="language">${uiIcon('globe')}<span id="pvc-tb-lang-val" data-pvc-i18n-skip>Türkçe</span>${uiIcon('chevron')}</button>
-          <button type="button" id="pvc-tb-picture" class="pvc-tb-chip pvc-tb-marked" data-pvc-popover="picture"><span id="pvc-tb-picture-dot" class="pvc-tb-dot" hidden></span>${uiIcon('sun')}<span>Görüntü ve gece</span>${uiIcon('chevron')}</button>
-          <button type="button" id="pvc-tb-theme" class="pvc-tb-chip" data-pvc-popover="theme">${uiIcon('palette')}<span id="pvc-tb-theme-val" data-pvc-i18n-skip>Atlas</span>${uiIcon('chevron')}</button>
+          <button type="button" id="pvc-tb-lang" class="pvc-tb-chip" data-pvc-popover="language">${uiIcon('globe')}<span id="pvc-tb-lang-val" data-pvc-i18n-skip>Türkçe</span></button>
+          <button type="button" id="pvc-tb-picture" class="pvc-tb-chip pvc-tb-marked" data-pvc-popover="picture"><span id="pvc-tb-picture-dot" class="pvc-tb-dot" hidden></span>${uiIcon('sun')}<span>Görüntü ve gece</span></button>
+          <button type="button" id="pvc-tb-theme" class="pvc-tb-chip" data-pvc-popover="theme">${uiIcon('palette')}<span id="pvc-tb-theme-val" data-pvc-i18n-skip>Atlas</span></button>
         </div>
         <div class="pvc-tb-group" data-pvc-group="accessibility" hidden>
           ${TOOLBAR_A11Y.map(([key, label, icon]) => `<button type="button" id="pvc-tb-a11y-${key}" class="pvc-tb-chip pvc-tb-toggle" role="switch" aria-checked="false">${uiIcon(icon)}<span>${label}</span><span class="pvc-tb-switch" aria-hidden="true"></span></button>`).join('')}
@@ -6012,7 +6013,8 @@
           <span id="pvc-tb-quality-status" class="pvc-tb-note" data-pvc-i18n-skip></span></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcı tespiti</span></div>
           <div class="pvc-tb-row"><span class="pvc-tb-muted">Adaptör</span><span class="pvc-tb-row-end"><span id="pvc-tb-adapter" class="pvc-tb-badge" data-pvc-i18n-skip></span><button type="button" id="pvc-tb-adapter-change" class="pvc-tb-mini">Değiştir</button></span></div>
-          <label class="pvc-tb-row"><span class="pvc-tb-muted">Video hedefi</span><select id="pvc-tb-target" aria-label="Video hedefi"></select></label></div>
+          <div class="pvc-tb-row"><span class="pvc-tb-muted">Video hedefi</span><button type="button" id="pvc-tb-target-btn" class="pvc-tb-select" aria-haspopup="listbox" aria-expanded="false" aria-label="Video hedefi"><span id="pvc-tb-target-val" data-pvc-i18n-skip></span>${uiIcon('chevron')}</button></div>
+          <div id="pvc-tb-target-list" class="pvc-tb-listbox" role="listbox" aria-label="Video hedefi" hidden></div></div>
       </div>
       <div id="pvc-tb-pop-language" class="pvc-tb-popover" aria-label="Dil" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-list">
@@ -6025,12 +6027,14 @@
           ${TOOLBAR_FILTERS.map(([key, label, icon, min, max, step]) => `<div class="pvc-tb-filter"><span class="pvc-tb-filter-name">${uiIcon(icon)}<span>${label}</span></span>
             <input type="range" id="pvc-tb-filter-${key}" class="pvc-range-slider" min="${min}" max="${max}" step="${step}" value="100" aria-label="${label}" /><span id="pvc-tb-filter-${key}-value" class="pvc-tb-muted" data-pvc-i18n-skip>100%</span></div>`).join('')}</div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Filtreler</span></div>
-          <div class="pvc-tb-opts pvc-tb-opts-2"><button type="button" id="pvc-tb-night" class="pvc-tb-opt">${uiIcon('moon')}<span>Gece modu</span></button><button type="button" id="pvc-tb-invert" class="pvc-tb-opt">${uiIcon('contrast')}<span>Ters renk</span></button></div></div>
+          <button type="button" id="pvc-tb-night" class="pvc-tb-switchrow" role="switch" aria-checked="false">${uiIcon('moon')}<span>Gece modu</span><span class="pvc-tb-switch" aria-hidden="true"></span></button>
+          <button type="button" id="pvc-tb-invert" class="pvc-tb-switchrow" role="switch" aria-checked="false">${uiIcon('contrast')}<span>Ters renk</span><span class="pvc-tb-switch" aria-hidden="true"></span></button></div>
       </div>
       <div id="pvc-tb-pop-theme" class="pvc-tb-popover" aria-label="Tema" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Tema</span><span id="pvc-tb-theme-name" class="pvc-tb-accent" data-pvc-i18n-skip>Atlas</span></div>
-          <label class="pvc-tb-row"><span class="pvc-tb-muted">Tüm temalar</span><select id="pvc-tb-theme-select" aria-label="Tema seç"></select></label>
-          <div class="pvc-tb-theme-nav"><button type="button" id="pvc-tb-theme-prev" class="pvc-tb-opt">Önceki</button><span id="pvc-tb-theme-pos" class="pvc-tb-muted" data-pvc-i18n-skip></span><button type="button" id="pvc-tb-theme-next" class="pvc-tb-opt">Sonraki</button></div>
+          <div class="pvc-tb-row"><button type="button" id="pvc-tb-theme-list-btn" class="pvc-tb-select" aria-haspopup="listbox" aria-expanded="false"><span>Tüm temalar</span>${uiIcon('chevron')}</button>
+            <span class="pvc-tb-stepper"><button type="button" id="pvc-tb-theme-prev" class="pvc-tb-round" aria-label="Önceki">${uiIcon('left')}</button><span id="pvc-tb-theme-pos" class="pvc-tb-muted" data-pvc-i18n-skip></span><button type="button" id="pvc-tb-theme-next" class="pvc-tb-round" aria-label="Sonraki">${uiIcon('right')}</button></span></div>
+          <div id="pvc-tb-theme-list" class="pvc-tb-listbox" role="listbox" aria-label="Tüm temalar" hidden></div>
           <div class="pvc-tb-swatches" aria-hidden="true">${['bg', 'surface', 'elevated', 'text', 'accent'].map(color => `<span style="background: var(--pvc-${color})"></span>`).join('')}</div>
           <span id="pvc-tb-theme-note" class="pvc-tb-note" hidden>Yüksek kontrast açıkken tema renkleri geçici olarak geçersiz kılınır.</span></div>
       </div>
@@ -6096,13 +6100,23 @@
       const helpLeft = help.getBoundingClientRect().left;
       if (start + panel.offsetWidth > helpLeft - 8) start = Math.max(EDGE_MARGIN, helpLeft - 8 - panel.offsetWidth);
     }
-    panel.style.setProperty('left', `${toolbarPopoverLeft(start, panel.offsetWidth, root.left, viewportWidth, EDGE_MARGIN)}px`, 'important');
+    const left = toolbarPopoverLeft(start, panel.offsetWidth, root.left, viewportWidth, EDGE_MARGIN);
+    panel.style.setProperty('left', `${left}px`, 'important');
+    // B3 link: a short accent line on the popover's edge, right under (or over) the button that opened it.
+    if (panel.id === 'pvc-tb-pop-groups') { panel.removeAttribute('data-pvc-linked'); return; }
+    const linkWidth = Math.max(16, Math.min(at.width - 16, 72)), corner = 16;
+    const linkLeft = Math.max(corner, Math.min(at.left - root.left - left + (at.width - linkWidth) / 2, panel.offsetWidth - corner - linkWidth));
+    panel.style.setProperty('--pvc-tb-link-left', `${Math.round(linkLeft)}px`);
+    panel.style.setProperty('--pvc-tb-link-width', `${Math.round(linkWidth)}px`);
+    panel.setAttribute('data-pvc-linked', '');
   }
   function closeToolbarPopover(returnFocus = false) {
     if (!toolbarOpenPopover) return;
     const { panel, anchor } = toolbarOpenPopover;
     toolbarOpenPopover = null;
     panel.hidden = true; anchor.setAttribute('aria-expanded', 'false');
+    panel.querySelectorAll('.pvc-tb-listbox').forEach(list => { list.hidden = true; });
+    panel.querySelectorAll('[aria-haspopup="listbox"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
     document.removeEventListener('pointerdown', onToolbarOutsidePointer, true);
     if (panel.id === 'pvc-tb-pop-groups') updateToolbarSide(); // Brings Help back in Settings.
     if (returnFocus) anchor.focus();
@@ -6171,7 +6185,7 @@
   // The group name inside the hint is translated on its own, so it is rebuilt on every sync.
   function updateToolbarModeTip() {
     const mode = document.getElementById('pvc-tb-mode');
-    if (mode) setUiTip(mode, uiText('Grup: {0} · tıkla: liste · tekerlek: değiştir').replace('{0}', uiText(TOOLBAR_GROUP_INFO[toolbarGroup][0])));
+    if (mode) setUiTip(mode, uiText('Grup: {0} · çift tıkla: liste · tekerlek: değiştir').replace('{0}', uiText(TOOLBAR_GROUP_INFO[toolbarGroup][0])));
   }
   function measureToolbarWidth(popup, toolbar) {
     popup.classList.add('pvc-toolbar-measure');
@@ -6212,6 +6226,48 @@
     if (!slider) return;
     const percent = Math.round(Math.max(0, Math.min(1, ratio)) * 1000) / 10;
     slider.style.setProperty('background', `linear-gradient(90deg, ${color} 0%, ${color} ${percent}%, color-mix(in srgb, var(--pvc-text) 18%, transparent) ${percent}%, color-mix(in srgb, var(--pvc-text) 18%, transparent) 100%)`, 'important');
+  }
+  // Our own list in place of a native <select> (B3 popover style). Items: { value, label, color?, base? } or
+  // { header }. Built from DOM nodes only, so pages with Trusted Types accept it.
+  function fillToolbarList(list, items) {
+    if (!list) return;
+    setUiMarkup(list, '');
+    for (const item of items) {
+      if (item.header) { const head = document.createElement('span'); head.className = 'pvc-tb-list-head'; setUiText(head, item.header); list.appendChild(head); continue; }
+      const option = document.createElement('button');
+      option.type = 'button'; option.className = 'pvc-tb-option'; option.setAttribute('role', 'option');
+      option.setAttribute('data-pvc-value', item.value); option.setAttribute('data-pvc-i18n-skip', '');
+      if (item.color) {
+        const dot = document.createElement('span'); dot.className = 'pvc-tb-option-dot';
+        dot.style.setProperty('background', `linear-gradient(135deg, ${item.base || item.color} 50%, ${item.color} 50%)`, 'important');
+        option.appendChild(dot);
+      }
+      const label = document.createElement('span'); label.textContent = item.label; option.appendChild(label);
+      list.appendChild(option);
+    }
+  }
+  function markToolbarList(list, value) {
+    list?.querySelectorAll('[data-pvc-value]').forEach(option => {
+      const on = option.getAttribute('data-pvc-value') === value;
+      option.classList.toggle('pvc-tb-on', on);
+      if (option.getAttribute('aria-selected') !== String(on)) option.setAttribute('aria-selected', String(on));
+    });
+  }
+  function showToolbarList(button, list, show) {
+    if (!button || !list) return;
+    list.hidden = !show; button.setAttribute('aria-expanded', String(show));
+    const current = show && list.querySelector('.pvc-tb-on');
+    if (current) list.scrollTop = Math.max(0, current.offsetTop - list.clientHeight / 2 + current.offsetHeight / 2);
+    placeToolbarPopover();
+  }
+  function bindToolbarList(button, list, pick) {
+    if (!button || !list) return;
+    button.addEventListener('click', event => { event.stopPropagation(); resetIdleTimer(document.getElementById('pvc-controller-popup')); showToolbarList(button, list, list.hidden); });
+    list.addEventListener('click', event => {
+      const option = event.target.closest('[data-pvc-value]'); if (!option) return;
+      event.stopPropagation(); resetIdleTimer(document.getElementById('pvc-controller-popup'));
+      pick(option.getAttribute('data-pvc-value')); showToolbarList(button, list, false); button.focus(); scheduleToolbarSync();
+    });
   }
   // A toast sits at the top centre; when the toolbar is up there, the toast moves under it.
   function toolbarToastTop() {
@@ -6295,18 +6351,15 @@
     byId('pvc-tb-quality')?.classList.toggle('pvc-tb-pending', pending);
     shown('pvc-tb-quality-status', byId('pvc-quality-status')?.textContent.trim() || '');
     shown('pvc-tb-adapter', byId('pvc-active-adapter-badge')?.textContent.trim() || '');
-    const target = byId('pvc-tb-target'), classicTarget = byId('pvc-video-target');
-    if (target && classicTarget) {
+    const targetList = byId('pvc-tb-target-list'), classicTarget = byId('pvc-video-target');
+    if (targetList && classicTarget) {
       const targetSignature = JSON.stringify([...classicTarget.options].map(option => [option.value, option.textContent]));
-      if (target.__nokSignature !== targetSignature) {
-        target.__nokSignature = targetSignature;
-        setUiMarkup(target, '');
-        for (const source of classicTarget.options) {
-          const option = document.createElement('option'); option.value = source.value; option.textContent = source.textContent;
-          option.setAttribute('data-pvc-i18n-skip', ''); target.appendChild(option);
-        }
+      if (targetList.__nokSignature !== targetSignature) {
+        targetList.__nokSignature = targetSignature;
+        fillToolbarList(targetList, [...classicTarget.options].map(option => ({ value: option.value, label: option.textContent.trim() })));
       }
-      if (document.activeElement !== target) target.value = classicTarget.value;
+      markToolbarList(targetList, classicTarget.value);
+      shown('pvc-tb-target-val', classicTarget.selectedOptions[0]?.textContent.trim() || '');
     }
     setUiText(byId('pvc-tb-playing'), playing ? `Oynatılıyor ${playing[1]}×${playing[2]}` : 'Çözünürlük bekleniyor');
 
@@ -6349,13 +6402,15 @@
       slider(`pvc-tb-filter-${key}`, filters[key]); shown(`pvc-tb-filter-${key}-value`, `${filters[key]}%`);
       paintToolbarRange(byId(`pvc-tb-filter-${key}`), (filters[key] - min) / (max - min), 'var(--pvc-accent-ink)');
     }
-    pressed(byId('pvc-tb-night'), filters.nightShield); pressed(byId('pvc-tb-invert'), filters.invert);
+    for (const [id, on] of [['pvc-tb-night', filters.nightShield], ['pvc-tb-invert', filters.invert]]) {
+      const row = byId(id); if (!row) continue;
+      row.classList.toggle('pvc-tb-on', on); if (row.getAttribute('aria-checked') !== String(on)) row.setAttribute('aria-checked', String(on));
+    }
     byId('pvc-tb-picture-dot').hidden = !(filters.brightness !== 100 || filters.contrast !== 100 || filters.saturate !== 100 || filters.nightShield || filters.invert);
     const theme = UI_THEMES.find(item => item.id === currentUiThemeId) || UI_THEMES[0];
     shown('pvc-tb-theme-val', theme.name); shown('pvc-tb-theme-name', theme.name);
     shown('pvc-tb-theme-pos', `${UI_THEMES.indexOf(theme) + 1} / ${UI_THEMES.length}`);
-    const themeSelect = byId('pvc-tb-theme-select');
-    if (themeSelect && document.activeElement !== themeSelect && themeSelect.value !== theme.id) themeSelect.value = theme.id;
+    markToolbarList(byId('pvc-tb-theme-list'), theme.id);
     byId('pvc-tb-theme-note').hidden = !hudAccessibility.highContrast;
     // Help › CDN response shows the classic button's last result (or "measuring") under its name.
     const cdn = byId('pvc-ping-btn'), cdnSub = byId('pvc-tb-help-cdn-sub');
@@ -6465,10 +6520,9 @@
     toolbar.querySelectorAll('[data-pvc-step]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); toolbarSeekStep = Number(button.getAttribute('data-pvc-step')); syncToolbar(); }));
     byId('pvc-tb-speed-slider').addEventListener('input', event => { event.stopPropagation(); resetIdleTimer(popup); setSpeed(parseFloat(event.target.value)); });
     byId('pvc-tb-volume-slider').addEventListener('input', event => { event.stopPropagation(); resetIdleTimer(popup); setAudioVolume(parseInt(event.target.value, 10)); });
-    byId('pvc-tb-target').addEventListener('change', event => {
-      event.stopPropagation();
+    bindToolbarList(byId('pvc-tb-target-btn'), byId('pvc-tb-target-list'), value => {
       const classicTarget = byId('pvc-video-target'); if (!classicTarget) return;
-      classicTarget.value = event.target.value; classicTarget.dispatchEvent(new Event('change'));
+      classicTarget.value = value; classicTarget.dispatchEvent(new Event('change'));
     });
     // Subtitles group: the same functions and buttons as the classic Subtitles tab.
     on('pvc-tb-sub-load', () => byId('pvc-sub-load-btn')?.click());
@@ -6498,16 +6552,9 @@
     on('pvc-tb-night', () => { byId('pvc-btn-night-shield')?.click(); scheduleToolbarSync(); });
     on('pvc-tb-invert', () => { byId('pvc-btn-invert-color')?.click(); scheduleToolbarSync(); });
     on('pvc-tb-filter-reset', () => { byId('pvc-btn-reset-filters')?.click(); scheduleToolbarSync(); });
-    const themeSelect = byId('pvc-tb-theme-select');
-    for (const [family, name] of [['standard', 'Standart / koyu'], ['light', 'Açık'], ['oled', 'OLED']]) {
-      const group = document.createElement('optgroup'); setUiAttribute(group, 'label', name);
-      for (const theme of UI_THEMES.filter(item => item.family === family)) {
-        const option = document.createElement('option'); option.value = theme.id; option.textContent = theme.name;
-        option.setAttribute('data-pvc-i18n-skip', ''); group.appendChild(option);
-      }
-      themeSelect.appendChild(group);
-    }
-    themeSelect.addEventListener('change', event => { event.stopPropagation(); resetIdleTimer(popup); setUiTheme(themeSelect.value); syncHudPreferences(); scheduleToolbarSync(); });
+    fillToolbarList(byId('pvc-tb-theme-list'), [['standard', 'Standart / koyu'], ['light', 'Açık'], ['oled', 'OLED']].flatMap(([family, name]) =>
+      [{ header: name }, ...UI_THEMES.filter(item => item.family === family).map(theme => ({ value: theme.id, label: theme.name, color: theme.colors.accent, base: theme.colors.bg }))]));
+    bindToolbarList(byId('pvc-tb-theme-list-btn'), byId('pvc-tb-theme-list'), value => { setUiTheme(value); syncHudPreferences(); });
     on('pvc-tb-theme-prev', () => { byId('pvc-theme-previous')?.click(); scheduleToolbarSync(); });
     on('pvc-tb-theme-next', () => { byId('pvc-theme-next')?.click(); scheduleToolbarSync(); });
     bindToolbarWheel(byId('pvc-tb-theme'), direction => { byId(direction < 0 ? 'pvc-theme-next' : 'pvc-theme-previous')?.click(); scheduleToolbarSync(); });
@@ -6528,14 +6575,14 @@
 
     // Group button: click moves on, the wheel goes either way, a double-click lists all groups.
     const mode = byId('pvc-tb-mode');
-    // A click opens the group list (it never switches by itself); the wheel steps through the groups.
-    // The second click of a double-click is ignored, so a double-click leaves the list open.
+    // Group button (user decision, 15 Nov): a single click does nothing, a double-click opens the group list,
+    // the wheel steps through the groups without opening it. Enter/Space (a click with detail 0) opens the
+    // list too, since a keyboard has no double-click.
     mode.addEventListener('click', event => {
       event.stopPropagation(); resetIdleTimer(popup);
-      if (event.detail > 1) return;
-      openToolbarPopover('groups');
+      if (event.detail === 0) openToolbarPopover('groups');
     });
-    mode.addEventListener('dblclick', event => event.stopPropagation());
+    mode.addEventListener('dblclick', event => { event.stopPropagation(); resetIdleTimer(popup); openToolbarPopover('groups'); });
     bindToolbarWheel(mode, direction => setToolbarGroup(toolbarGroupAfter(TOOLBAR_GROUP_IDS, toolbarGroup, -direction)));
     toolbar.querySelectorAll('[data-pvc-goto]').forEach(item => item.addEventListener('click', event => {
       event.stopPropagation(); setToolbarGroup(item.getAttribute('data-pvc-goto')); closeToolbarPopover(true);

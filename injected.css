@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.23
+ * injected.css - FilmDeck by NOk v0.7.24
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1491,8 +1491,8 @@
 #pvc-toolbar .pvc-tb-toggle.pvc-tb-on { color: var(--pvc-accent-ink) !important; background: color-mix(in srgb, var(--pvc-accent) 14%, transparent) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pvc-accent) 60%, transparent) !important; }
 #pvc-toolbar .pvc-tb-switch { position: relative !important; flex: 0 0 26px !important; width: 26px !important; height: 15px !important; border-radius: 8px !important; background: color-mix(in srgb, var(--pvc-text) 22%, transparent) !important; transition: background-color 150ms ease-out !important; }
 #pvc-toolbar .pvc-tb-switch::after { content: "" !important; position: absolute !important; top: 2px !important; left: 2px !important; width: 11px !important; height: 11px !important; border-radius: 50% !important; background: var(--pvc-text) !important; transition: transform 150ms ease-out !important; }
-#pvc-toolbar .pvc-tb-toggle.pvc-tb-on .pvc-tb-switch { background: var(--pvc-accent) !important; }
-#pvc-toolbar .pvc-tb-toggle.pvc-tb-on .pvc-tb-switch::after { transform: translateX(11px) !important; background: var(--pvc-accent-on) !important; }
+#pvc-toolbar .pvc-tb-on > .pvc-tb-switch { background: var(--pvc-accent) !important; }
+#pvc-toolbar .pvc-tb-on > .pvc-tb-switch::after { transform: translateX(11px) !important; background: var(--pvc-accent-on) !important; }
 
 /* Close bubble: to the left of the bar; stacked over or under the name when the bar touches the left edge. */
 /* A plain circle holding only the X; hovering or focusing it lights a red ring (the theme's danger colour). */
@@ -1515,7 +1515,8 @@
 #pvc-toolbar .pvc-tb-strip .pvc-ui-icon { width: 14px !important; height: 14px !important; flex-basis: 14px !important; }
 #pvc-toolbar .pvc-tb-mini { padding: 3px 7px !important; gap: 4px !important; border-radius: 8px !important; font-size: 10.5px !important; font-weight: 500 !important; background: color-mix(in srgb, var(--pvc-text) 8%, transparent) !important; }
 #pvc-toolbar .pvc-tb-mini .pvc-ui-icon { width: 12px !important; height: 12px !important; flex-basis: 12px !important; }
-#pvc-toolbar .pvc-tb-popover { position: absolute !important; display: flex !important; flex-direction: column !important; gap: 8px !important; padding: 10px !important; border-radius: 12px !important; background: var(--pvc-surface) !important; border: 1px solid var(--pvc-border) !important; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42) !important; white-space: normal !important; }
+/* B3 popover style (user choice, 15 Nov): the bar's own material, one layer, a quiet accent link to its button. */
+#pvc-toolbar .pvc-tb-popover { position: absolute !important; display: flex !important; flex-direction: column !important; gap: 10px !important; padding: 14px !important; border-radius: 18px !important; background: color-mix(in srgb, var(--pvc-bg) 94%, transparent) !important; border: 1px solid var(--pvc-border) !important; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.30) !important; white-space: normal !important; }
 #pvc-toolbar #pvc-tb-pop-speed { width: 250px !important; }
 #pvc-toolbar #pvc-tb-pop-seek { width: 260px !important; }
 #pvc-toolbar #pvc-tb-pop-volume { width: 280px !important; }
@@ -1523,11 +1524,13 @@
 #pvc-toolbar .pvc-tb-grouplist { padding: 4px !important; gap: 2px !important; width: max-content !important; }
 #pvc-toolbar .pvc-tb-group-item { width: 100% !important; gap: 8px !important; padding: 7px 10px 7px 8px !important; border-radius: 9px !important; font-weight: 650 !important; font-size: 12px !important; }
 #pvc-toolbar .pvc-tb-group-item.pvc-tb-on { background: color-mix(in srgb, var(--pvc-accent) 20%, transparent) !important; color: var(--pvc-accent-ink) !important; }
-#pvc-toolbar .pvc-tb-card { display: flex !important; flex-direction: column !important; gap: 7px !important; padding: 9px 10px 10px !important; border-radius: 8px !important; background: var(--pvc-elevated) !important; border: 1px solid color-mix(in srgb, var(--pvc-border) 70%, transparent) !important; }
+#pvc-toolbar .pvc-tb-card { display: flex !important; flex-direction: column !important; gap: 8px !important; padding: 0 !important; border-radius: 0 !important; background: none !important; border: 0 !important; }
+#pvc-toolbar .pvc-tb-card + .pvc-tb-card { padding-top: 10px !important; border-top: 1px solid color-mix(in srgb, var(--pvc-text) 10%, transparent) !important; }
+#pvc-toolbar .pvc-tb-card-head > span:first-child, #pvc-toolbar .pvc-tb-help-title { color: var(--pvc-muted) !important; font-size: 9.5px !important; font-weight: 650 !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; }
 #pvc-toolbar .pvc-tb-card-head { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 8px !important; font-size: 12px !important; font-weight: 650 !important; }
 #pvc-toolbar .pvc-tb-badge { padding: 2px 6px !important; border-radius: 4px !important; border: 1px solid var(--pvc-border) !important; color: var(--pvc-muted) !important; font-size: 10px !important; font-weight: 500 !important; }
 #pvc-toolbar .pvc-tb-opts { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(46px, 1fr)) !important; gap: 5px !important; }
-#pvc-toolbar .pvc-tb-opt { justify-content: center !important; padding: 6px 3px !important; border-radius: 6px !important; font-size: 11px !important; background: color-mix(in srgb, var(--pvc-text) 5%, transparent) !important; box-shadow: inset 0 0 0 1px var(--pvc-border) !important; }
+#pvc-toolbar .pvc-tb-opt { justify-content: center !important; padding: 5px 6px !important; border-radius: 14px !important; font-size: 11px !important; font-weight: 500 !important; background: color-mix(in srgb, var(--pvc-text) 7%, transparent) !important; box-shadow: none !important; }
 #pvc-toolbar .pvc-tb-opt.pvc-tb-on, #pvc-toolbar .pvc-tb-seg.pvc-tb-on { background: var(--pvc-accent) !important; color: var(--pvc-accent-on) !important; box-shadow: none !important; }
 #pvc-toolbar .pvc-tb-opt.pvc-tb-pending { box-shadow: inset 0 0 0 1px var(--pvc-warning) !important; }
 #pvc-toolbar .pvc-tb-range { display: flex !important; align-items: center !important; gap: 7px !important; font-size: 10px !important; color: var(--pvc-muted) !important; }
@@ -1555,7 +1558,7 @@
 #pvc-toolbar .pvc-tb-card > .pvc-tb-opt { width: 100% !important; }
 /* The shared slider class grows with flex: 1; inside a card's column that made it a tall bar. Keep the
    classic panel's 6 px track here too. */
-#pvc-toolbar .pvc-tb-card > input[type="range"] { flex: 0 0 auto !important; width: 100% !important; height: 6px !important; margin: 4px 0 !important; }
+#pvc-toolbar .pvc-tb-card > input[type="range"] { flex: 0 0 auto !important; width: 100% !important; margin: 5px 0 !important; }
 #pvc-toolbar .pvc-tb-seg { gap: 5px !important; }
 #pvc-toolbar .pvc-tb-swatch { width: 9px !important; height: 9px !important; border-radius: 50% !important; box-shadow: 0 0 0 1px var(--pvc-border) !important; }
 #pvc-toolbar .pvc-tb-swatch-white { background: #ffffff !important; }
@@ -1584,11 +1587,50 @@
 #pvc-toolbar .pvc-tb-swatches > span { width: 14px !important; height: 14px !important; border-radius: 50% !important; box-shadow: 0 0 0 1px var(--pvc-border) !important; }
 #pvc-toolbar .pvc-tb-help { width: 270px !important; gap: 6px !important; }
 #pvc-toolbar .pvc-tb-help-title { padding: 0 2px 2px !important; font-size: 12px !important; font-weight: 650 !important; }
-#pvc-toolbar .pvc-tb-help-item { display: flex !important; align-items: flex-start !important; gap: 10px !important; padding: 8px 10px !important; border-radius: 8px !important; background: var(--pvc-elevated) !important; border: 1px solid color-mix(in srgb, var(--pvc-border) 70%, transparent) !important; box-sizing: border-box !important; width: 100% !important; white-space: normal !important; }
-#pvc-toolbar button.pvc-tb-help-item:hover { background: color-mix(in srgb, var(--pvc-text) 8%, var(--pvc-elevated)) !important; }
+#pvc-toolbar .pvc-tb-help-item { display: flex !important; align-items: flex-start !important; gap: 10px !important; padding: 8px 6px !important; border-radius: 10px !important; background: none !important; border: 0 !important; box-sizing: border-box !important; width: 100% !important; white-space: normal !important; }
+#pvc-toolbar .pvc-tb-help-item + .pvc-tb-help-item { border-top: 1px solid color-mix(in srgb, var(--pvc-text) 8%, transparent) !important; border-radius: 0 0 10px 10px !important; }
+#pvc-toolbar button.pvc-tb-help-item:hover { background: color-mix(in srgb, var(--pvc-text) 6%, transparent) !important; }
 #pvc-toolbar .pvc-tb-help-item > .pvc-ui-icon { margin-top: 1px !important; color: var(--pvc-accent-ink) !important; }
 #pvc-toolbar .pvc-tb-help-text { display: flex !important; flex-direction: column !important; gap: 2px !important; min-width: 0 !important; }
 #pvc-toolbar .pvc-tb-help-text strong { font-size: 12px !important; font-weight: 650 !important; }
 #pvc-toolbar .pvc-tb-help-text > span { color: var(--pvc-muted) !important; font-size: 10.5px !important; font-weight: 400 !important; line-height: 1.35 !important; }
 #pvc-toolbar .pvc-tb-help-text a { color: var(--pvc-accent-ink) !important; text-decoration: underline !important; }
 #pvc-toolbar .pvc-tb-help-item.pvc-tb-busy { opacity: 0.75 !important; cursor: progress !important; }
+
+/* B3 popover parts. Sliders: a thin track with a plain thumb, as in the chosen model. */
+#pvc-toolbar .pvc-tb-popover input[type="range"] { height: 4px !important; border-radius: 2px !important; }
+#pvc-toolbar .pvc-tb-popover input[type="range"]::-webkit-slider-thumb { width: 13px !important; height: 13px !important; border: 0 !important; background: var(--pvc-text) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45) !important; }
+#pvc-toolbar .pvc-tb-popover input[type="range"]::-moz-range-thumb { width: 13px !important; height: 13px !important; border: 0 !important; background: var(--pvc-text) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45) !important; }
+#pvc-toolbar .pvc-tb-popover input[type="range"]::-moz-range-track { height: 4px !important; }
+/* Night mode and Invert: a row with a switch, like the Accessibility switches. */
+#pvc-toolbar .pvc-tb-switchrow { width: 100% !important; justify-content: flex-start !important; gap: 8px !important; padding: 5px 4px !important; border-radius: 10px !important; font-size: 12px !important; font-weight: 500 !important; }
+#pvc-toolbar .pvc-tb-switchrow > .pvc-tb-switch { margin-left: auto !important; }
+#pvc-toolbar .pvc-tb-switchrow.pvc-tb-on > .pvc-ui-icon { color: var(--pvc-accent-ink) !important; }
+/* Our own list instead of a native select. */
+#pvc-toolbar .pvc-tb-select { gap: 6px !important; padding: 5px 8px 5px 10px !important; border-radius: 14px !important; font-size: 11px !important; font-weight: 500 !important; background: color-mix(in srgb, var(--pvc-text) 7%, transparent) !important; max-width: 62% !important; }
+#pvc-toolbar .pvc-tb-select > span { overflow: hidden !important; text-overflow: ellipsis !important; }
+#pvc-toolbar .pvc-tb-select .pvc-ui-icon { width: 12px !important; height: 12px !important; flex-basis: 12px !important; color: var(--pvc-muted) !important; }
+#pvc-toolbar .pvc-tb-select[aria-expanded="true"] .pvc-ui-icon { transform: rotate(180deg) !important; }
+#pvc-toolbar .pvc-tb-listbox { position: relative !important; display: flex !important; flex-direction: column !important; gap: 1px !important; max-height: 190px !important; overflow-y: auto !important; padding: 4px !important; border-radius: 12px !important; background: color-mix(in srgb, var(--pvc-text) 5%, transparent) !important; scrollbar-width: thin !important; }
+#pvc-toolbar .pvc-tb-list-head { padding: 6px 8px 3px !important; color: var(--pvc-muted) !important; font-size: 9.5px !important; font-weight: 650 !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; }
+#pvc-toolbar .pvc-tb-option { width: 100% !important; gap: 8px !important; padding: 5px 8px !important; border-radius: 9px !important; font-size: 11.5px !important; }
+#pvc-toolbar .pvc-tb-option > span:last-child { overflow: hidden !important; text-overflow: ellipsis !important; }
+#pvc-toolbar .pvc-tb-option.pvc-tb-on { background: color-mix(in srgb, var(--pvc-accent) 18%, transparent) !important; color: var(--pvc-accent-ink) !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-option.pvc-tb-on::after { content: "✓" !important; margin-left: auto !important; }
+#pvc-toolbar .pvc-tb-option-dot { flex: 0 0 10px !important; width: 10px !important; height: 10px !important; border-radius: 50% !important; box-shadow: 0 0 0 1px var(--pvc-border) !important; }
+#pvc-toolbar .pvc-tb-stepper { display: inline-flex !important; align-items: center !important; gap: 6px !important; font-size: 11px !important; }
+#pvc-toolbar .pvc-tb-round { width: 24px !important; height: 24px !important; justify-content: center !important; border-radius: 50% !important; background: color-mix(in srgb, var(--pvc-text) 7%, transparent) !important; }
+#pvc-toolbar .pvc-tb-round .pvc-ui-icon { width: 12px !important; height: 12px !important; flex-basis: 12px !important; }
+/* The link: the open button takes the popover's colour with a short accent line under its label, and the
+   popover carries the same line on its edge right under that button. No arrows, no tip. */
+#pvc-toolbar .pvc-tb-chip, #pvc-toolbar .pvc-tb-step { position: relative !important; }
+#pvc-toolbar .pvc-tb-bar [data-pvc-popover][aria-expanded="true"] { background: var(--pvc-bg) !important; color: var(--pvc-accent-ink) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pvc-accent) 80%, transparent) !important; }
+#pvc-toolbar .pvc-tb-bar [data-pvc-popover][aria-expanded="true"]::after { content: "" !important; position: absolute !important; left: 50% !important; bottom: 3px !important; width: 18px !important; height: 2px !important; margin-left: -9px !important; border-radius: 1px !important; background: var(--pvc-accent-ink) !important; }
+#pvc-toolbar .pvc-tb-popover[data-pvc-linked]::before { content: "" !important; position: absolute !important; top: -1px !important; left: var(--pvc-tb-link-left, 16px) !important; width: var(--pvc-tb-link-width, 40px) !important; height: 2.5px !important; border-radius: 2px !important; background: var(--pvc-accent-ink) !important; }
+#pvc-toolbar.pvc-tb-above .pvc-tb-popover[data-pvc-linked]::before { top: auto !important; bottom: -1px !important; }
+/* A short rise as a popover opens; none with Reduce motion. */
+@keyframes pvc-tb-pop-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+@keyframes pvc-tb-pop-in-up { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+#pvc-toolbar .pvc-tb-popover:not([hidden]) { animation: pvc-tb-pop-in 150ms cubic-bezier(0.23, 1, 0.32, 1) both !important; }
+#pvc-toolbar.pvc-tb-above .pvc-tb-popover:not([hidden]) { animation-name: pvc-tb-pop-in-up !important; }
+#pvc-controller-popup.pvc-a11y-reduce-motion #pvc-toolbar .pvc-tb-popover { animation: none !important; }
