@@ -15,6 +15,15 @@
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
 
+## Ertelenen anlık durumlar için modeller (Figma) — 16 Kasım 2026
+
+Kod değişmedi. Kullanıcı ertelenen dört kararı (oynat/duraklat, DRM, kare kaybı sorusu, "video bekleniyor" ve "kaynağı yeniden dene") eski panel görüntüleriyle karşılaştırıp seçmek istedi. Sayfa: `FilmDeck MEC523 Wireframes` › "Transient states · models".
+
+- **Eski hal:** gerçek eklentiden (v0.7.24 klasik panel, Edge, yerel test sayfası) alınmış ekran görüntüleri: küçültülmüş çubuk, DRM rozeti ve penceresi, kare kaybı sorusu, "Waiting for a video", "Retry 1080p source". Bekleme uyarısı ve yeniden dene düğmesi panelin kendi taraması onları hemen gizlediği için yalnız test sayfasında geçici bir stille açık tutuldu.
+- **Öneriler (her satırda üç, B3 tarzında):** oynat/duraklat — A yok, B Player grubunun başında, C Playing şeridinde; DRM — A soldaki sabit simgeler arasında kalkan + açılır kutu, B Playing şeridinde etiket, C ses düğmesinde kalkan ve ses kutusunda açıklama; kare kaybı — A şerit (Claude'un önceki önerisi), B çubuğun sonunda sessiz çip + kutu, C cevap bekleyen kart; bekleme/yeniden dene — A kırmızı şerit + Playing şeridinde "Retry 1080p", B çubuğun kendisi "bekleniyor" der, C kısa şerit + Quality kutusunda düğme.
+- **Bulunan küçük hata:** İngilizce DRM penceresinde şifreleme türü bilinmeyince Türkçe "Yok" kelimesi çevrilmeden görünüyor ("uses **Yok** encryption"). Henüz düzeltilmedi.
+- **Karar bekliyor:** kullanıcı her satır için bir öneri seçecek; satırlar karıştırılabilir.
+
 ## Karşılaştırma 3. tur: B3 açılır kutu stili ve grup düğmesi, v0.7.24 — 15 Kasım 2026
 
 Kullanıcı B3'ü seçti ("daha yenilikçi ve zarif") ve grup düğmesini netleştirdi: tek tıklama bir şey yapmaz, çift tıklama listeyi açar, tekerlek liste açılmadan gezer. Ayrıntı: TOOLBAR_REDESIGN.md §6.
