@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.24 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.7.25 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.24';
+  const EXTENSION_VERSION = '0.7.25';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -418,6 +418,11 @@
     'Gizliliği koruyan teşhis raporu': 'Privacy-focused diagnostic report',
     'Sürüm {0} · MIT': 'Version {0} · MIT',
     'Kaynak kodu': 'Source code',
+    'EME Korumalı (Widevine / FairPlay)': 'EME protected (Widevine / FairPlay)',
+    'Korumalı akış': 'Protected stream',
+    'DRM korumalı akış: kalkanlı ayarlar sınırlı · ayrıntı için tıkla': 'DRM-protected stream: settings with a shield are limited · click for details',
+    'Video kalitesi (Alt+Q) · 1080p kaynağını yeniden deneme seçeneği var': 'Video quality (Alt+Q) · a 1080p source retry is available',
+    'Oynat / duraklat': 'Play / pause',
     'Açık tut': 'Keep visible',
     'Kolay okunur düzen': 'Easy-read layout',
     'Hareketi azalt': 'Reduce motion',
@@ -1508,6 +1513,9 @@
     setNoVideoAlertVisible(!state.hasVideo);
     renderFrameLossNotice();
     renderRemoteQualities(); renderRemoteTargets();
+    // The frame's paused state is not shown anywhere in the classic panel, so the toolbar is told directly.
+    // (The guard lets unit tests run this function on its own.)
+    if (typeof scheduleToolbarSync === 'function') scheduleToolbarSync();
   }
   function renderRemoteQualities() {
     const state = remotePresentation, container = document.getElementById('pvc-dynamic-quality-container');
@@ -4714,6 +4722,16 @@
     }
   }
 
+  // Play/pause for both layouts; returns whether the video is now paused (null when there is nothing to toggle
+  // here, e.g. the request went to an embedded player frame).
+  function togglePlayback() {
+    if (remotePresentation) { remoteControl('play'); return null; }
+    const { video } = findVideoAndPlayer();
+    if (!video) return null;
+    if (video.paused) { video.play().catch(() => {}); return false; }
+    video.pause(); return true;
+  }
+
   function setAudioMode(mode) {
     if (remotePresentation) { remoteControl('audio', mode); return; }
     if (mode !== 'stereo' && mode !== 'mono') return;
@@ -5691,7 +5709,7 @@
         else e.stopPropagation();
       });
     });
-    modal.querySelector('#pvc-drm-key-system').textContent = drm.keySystem;
+    modal.querySelector('#pvc-drm-key-system').textContent = uiText(drm.keySystem); // Our own fallback names are translated; real key-system ids pass through.
     document.getElementById('pvc-close-drm-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
     document.getElementById('pvc-dismiss-drm-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
     activateUiDialog(modal, { initial: '#pvc-dismiss-drm-btn' });
@@ -5919,6 +5937,9 @@
   // END TOOLBAR GEOMETRY
 
   const TOOLBAR_GROUP_IDS = ['player', 'subtitles', 'settings', 'accessibility'];
+  // Shown while the stream is DRM-protected: the strip's shield plus a shield on each control DRM limits.
+  // A control that becomes limited later gets its own mark here.
+  const TOOLBAR_DRM_MARKS = ['pvc-tb-drm', 'pvc-tb-volume-limit'];
   // Accessibility switches: key, label, icon, tooltip. "easyRead" is the classic panel itself (TOOLBAR_REDESIGN.md).
   const TOOLBAR_A11Y = [['keepVisible', 'Açık tut', 'pin', 'Araç çubuğu izlerken solmadan ekranda kalır'],
     ['easyRead', 'Kolay okunur düzen', 'typeface', 'Klasik paneli gösterir; araç çubuğuna oradaki Erişilebilirlik bölümünden dönülür'],
@@ -5945,8 +5966,8 @@
             <button type="button" id="pvc-tb-seek-step" class="pvc-tb-step" data-pvc-popover="seek"><span id="pvc-tb-seek-val" data-pvc-i18n-skip>10s</span></button>
             <button type="button" id="pvc-tb-seek-fwd" class="pvc-tb-icon" aria-label="İleri sar">${uiIcon('forward')}</button>
           </div>
-          <button type="button" id="pvc-tb-volume" class="pvc-tb-chip" data-pvc-popover="volume">${uiIcon('volume')}<span id="pvc-tb-volume-val" data-pvc-i18n-skip>100%</span></button>
-          <button type="button" id="pvc-tb-quality" class="pvc-tb-chip" data-pvc-popover="quality">${uiIcon('video')}<span id="pvc-tb-quality-val">Kalite</span></button>
+          <button type="button" id="pvc-tb-volume" class="pvc-tb-chip" data-pvc-popover="volume">${uiIcon('volume')}<span id="pvc-tb-volume-val" data-pvc-i18n-skip>100%</span><span id="pvc-tb-volume-limit" class="pvc-tb-limit" hidden>${uiIcon('shield')}</span></button>
+          <button type="button" id="pvc-tb-quality" class="pvc-tb-chip" data-pvc-popover="quality">${uiIcon('video')}<span id="pvc-tb-quality-val">Kalite</span><span id="pvc-tb-quality-retry" class="pvc-tb-mark" hidden>${uiIcon('refresh')}</span></button>
         </div>
         <div class="pvc-tb-group" data-pvc-group="subtitles" hidden>
           <button type="button" id="pvc-tb-sub-load" class="pvc-tb-chip">${uiIcon('folder')}<span>Dosya yükle</span></button>
@@ -5970,10 +5991,14 @@
         <span class="pvc-tb-sep"></span>
         <button type="button" id="pvc-tb-mode" class="pvc-tb-mode"><span id="pvc-tb-mode-icon" class="pvc-tb-mode-icon"></span><span id="pvc-tb-mode-label">Oynatıcı</span><span class="pvc-tb-dots"><span></span><span></span><span></span><span></span></span></button>
       </div>
-      <div id="pvc-tb-strip" class="pvc-tb-strip" data-pvc-strip="player">${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button></div>
+      <div id="pvc-tb-strip" class="pvc-tb-strip" data-pvc-strip="player"><button type="button" id="pvc-tb-playpause" class="pvc-tb-play" aria-label="Oynat / duraklat"><span id="pvc-tb-play-icon" class="pvc-tb-iconbox">${uiIcon('play')}</span><span id="pvc-tb-pause-icon" class="pvc-tb-iconbox" hidden>${uiIcon('pause')}</span></button>${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button><button type="button" id="pvc-tb-drm" class="pvc-tb-shield" hidden>${uiIcon('shield')}<span class="pvc-tb-shield-label">Korumalı akış</span></button></div>
       <div id="pvc-tb-sub-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="subtitles" hidden>${uiIcon('subtitles')}<span id="pvc-tb-sub-status" class="pvc-tb-strip-text" data-pvc-i18n-skip><span id="pvc-tb-sub-name" class="pvc-tb-strip-name"></span><span id="pvc-tb-sub-count" class="pvc-tb-strip-count"></span></span>
         <span id="pvc-tb-sub-offset" class="pvc-tb-offset" hidden><span id="pvc-tb-sub-offset-val"></span><button type="button" id="pvc-tb-sub-offset-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></span></div>
       <div id="pvc-tb-a11y-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="accessibility" hidden>${uiIcon('info')}<span>Bu tercihler sayfa yenilenince sıfırlanır · klavye kısayolları: soldaki tuş simgesi</span></div>
+      <div id="pvc-tb-waiting-strip" class="pvc-tb-strip pvc-tb-alert pvc-tb-alert-danger" role="status" hidden>${uiIcon('warning')}<span class="pvc-tb-alert-text"><strong>Aktif Oynatıcı Bekleniyor</strong><span>Sayfadaki video henüz başlamadı veya farklı bir çerçeve içinde.</span></span>
+        <button type="button" id="pvc-tb-rescan" class="pvc-tb-mini pvc-tb-mini-strong">${uiIcon('refresh')}<span>Yeniden Tara</span></button><button type="button" id="pvc-tb-waiting-report" class="pvc-tb-mini">${uiIcon('report')}<span>Teşhis Raporu</span></button></div>
+      <div id="pvc-tb-frameloss-strip" class="pvc-tb-strip pvc-tb-alert pvc-tb-alert-warning" role="status" hidden>${uiIcon('warning')}<span id="pvc-tb-frameloss-text" class="pvc-tb-alert-text" data-pvc-i18n-skip></span>
+        <button type="button" id="pvc-tb-frameloss-yes" class="pvc-tb-mini pvc-tb-mini-strong">Evet</button><button type="button" id="pvc-tb-frameloss-no" class="pvc-tb-mini">Hayır</button></div>
       <div id="pvc-tb-pop-subtiming" class="pvc-tb-popover" aria-label="Altyazı zamanlaması" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>− ve + adımı</span></div><div class="pvc-tb-opts">${opts('substep', TOOLBAR_SUBTITLE_STEPS, value => value >= 1000 ? `${value / 1000}s` : `${value}ms`)}</div></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu anki kayma</span><button type="button" id="pvc-tb-sub-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></div>
@@ -6010,7 +6035,9 @@
       <div id="pvc-tb-pop-quality" class="pvc-tb-popover" aria-label="Video kalitesi" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcının bildirdiği seçenekler</span></div>
           <div id="pvc-tb-quality-list" class="pvc-tb-opts"></div>
-          <span id="pvc-tb-quality-status" class="pvc-tb-note" data-pvc-i18n-skip></span></div>
+          <span id="pvc-tb-quality-status" class="pvc-tb-note" data-pvc-i18n-skip></span>
+          <button type="button" id="pvc-tb-retry-source" class="pvc-tb-opt pvc-tb-wide" hidden>${uiIcon('refresh')}<span>1080p kaynağını yeniden dene</span></button>
+          <span id="pvc-tb-retry-note" class="pvc-tb-note" hidden>Alternatif 1080p kaynağını yeniden dener; gerekirse sayfayı yeniler. Yenileme bellek içi ayarları ve altyazıları sıfırlar.</span></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcı tespiti</span></div>
           <div class="pvc-tb-row"><span class="pvc-tb-muted">Adaptör</span><span class="pvc-tb-row-end"><span id="pvc-tb-adapter" class="pvc-tb-badge" data-pvc-i18n-skip></span><button type="button" id="pvc-tb-adapter-change" class="pvc-tb-mini">Değiştir</button></span></div>
           <div class="pvc-tb-row"><span class="pvc-tb-muted">Video hedefi</span><button type="button" id="pvc-tb-target-btn" class="pvc-tb-select" aria-haspopup="listbox" aria-expanded="false" aria-label="Video hedefi"><span id="pvc-tb-target-val" data-pvc-i18n-skip></span>${uiIcon('chevron')}</button></div>
@@ -6053,6 +6080,21 @@
   function toolbarPopoverAnchor(name) {
     return document.getElementById({ speed: 'pvc-tb-speed', seek: 'pvc-tb-seek-step', volume: 'pvc-tb-volume', quality: 'pvc-tb-quality', groups: 'pvc-tb-mode',
       subtiming: 'pvc-tb-sub-step', sublook: 'pvc-tb-sub-look', language: 'pvc-tb-lang', picture: 'pvc-tb-picture', theme: 'pvc-tb-theme' }[name]);
+  }
+  // One strip at a time under the bar: a pending alert (no video found, then the frame-loss question) takes
+  // the place of the group's own strip until it is resolved, in every group. Alerts mirror the classic panel.
+  function updateToolbarStrips() {
+    const toolbar = document.getElementById('pvc-toolbar');
+    if (!toolbar) return;
+    const waiting = document.getElementById('pvc-no-video-alert')?.style.display === 'block';
+    const frameLoss = !waiting && document.getElementById('pvc-frame-loss-notice')?.style.display === 'block';
+    const alert = waiting ? 'pvc-tb-waiting-strip' : frameLoss ? 'pvc-tb-frameloss-strip' : null;
+    let changed = false;
+    for (const strip of toolbar.querySelectorAll('.pvc-tb-strip')) {
+      const show = alert ? strip.id === alert : strip.getAttribute('data-pvc-strip') === toolbarGroup;
+      if (strip.hidden === show) { strip.hidden = !show; changed = true; }
+    }
+    if (changed) { updateToolbarSide(); placeToolbarPopover(); }
   }
   function visibleToolbarStrip() {
     return [...(document.getElementById('pvc-toolbar')?.querySelectorAll('.pvc-tb-strip') || [])].find(node => !node.hidden) || null;
@@ -6163,7 +6205,7 @@
     const before = toolbarShown && popup && popup.style.display !== 'none' ? popup.getBoundingClientRect() : null;
     if (toolbarOpenPopover?.panel.id !== 'pvc-tb-pop-groups') closeToolbarPopover();
     for (const group of toolbar.querySelectorAll('[data-pvc-group]')) group.hidden = group.getAttribute('data-pvc-group') !== id;
-    for (const strip of toolbar.querySelectorAll('[data-pvc-strip]')) strip.hidden = strip.getAttribute('data-pvc-strip') !== id;
+    updateToolbarStrips();
     const [label, icon] = TOOLBAR_GROUP_INFO[id];
     setUiMarkup(document.getElementById('pvc-tb-mode-icon'), uiIcon(icon));
     setUiText(document.getElementById('pvc-tb-mode-label'), label);
@@ -6362,6 +6404,24 @@
       shown('pvc-tb-target-val', classicTarget.selectedOptions[0]?.textContent.trim() || '');
     }
     setUiText(byId('pvc-tb-playing'), playing ? `Oynatılıyor ${playing[1]}×${playing[2]}` : 'Çözünürlük bekleniyor');
+    // Play/pause follows the video (or the embedded player's reported state).
+    if (toolbarGroup === 'player') {
+      const playingVideo = controlledVideo?.isConnected ? controlledVideo : findVideoAndPlayer().video; // Sync runs often; reuse the chosen video.
+      const pausedNow = remotePresentation ? remotePresentation.paused !== false : playingVideo?.paused !== false;
+      byId('pvc-tb-play-icon').hidden = !pausedNow; byId('pvc-tb-pause-icon').hidden = pausedNow;
+      setUiTip(byId('pvc-tb-playpause'), pausedNow ? 'Oynat' : 'Duraklat');
+    }
+    // DRM: a shield in the Playing strip (hover names it, a click explains it) and the same shield on every
+    // control the protection limits (today: volume). The explanation lives only behind the strip's shield.
+    const drmOn = byId('pvc-drm-status-badge')?.style.display === 'block';
+    for (const id of TOOLBAR_DRM_MARKS) byId(id).hidden = !drmOn;
+    // Site-specific source retry: a button in the Quality popover, announced by a small mark on the Quality button.
+    const classicRetry = byId('pvc-puhu-retry-source-btn'), retryOn = !!classicRetry && !classicRetry.hidden;
+    for (const id of ['pvc-tb-retry-source', 'pvc-tb-retry-note', 'pvc-tb-quality-retry']) byId(id).hidden = !retryOn;
+    byId('pvc-tb-retry-source').disabled = classicRetry?.disabled === true;
+    setUiTip(byId('pvc-tb-quality'), retryOn ? 'Video kalitesi (Alt+Q) · 1080p kaynağını yeniden deneme seçeneği var' : 'Video kalitesi (Alt+Q)');
+    shown('pvc-tb-frameloss-text', byId('pvc-frame-loss-text')?.textContent.trim() || '');
+    updateToolbarStrips();
 
     // Subtitles: shared state lives in the panel's variables (the embedded-player bridge updates them too).
     const subtitlesOn = subtitleOverlayEnabled !== false;
@@ -6509,6 +6569,17 @@
     on('pvc-tb-keys', () => { byId('pvc-hotkeys-toggle-btn')?.click(); scheduleToolbarSync(); });
     on('pvc-tb-report', () => byId('pvc-report-err-btn')?.click());
     on('pvc-tb-refresh', () => byId('pvc-refresh-res-btn')?.click());
+    on('pvc-tb-playpause', () => { togglePlayback(); scheduleToolbarSync(); });
+    on('pvc-tb-drm', () => showDrmInfoModal());
+    setUiTip(byId('pvc-tb-drm'), 'DRM korumalı akış: kalkanlı ayarlar sınırlı · ayrıntı için tıkla');
+    on('pvc-tb-retry-source', () => { byId('pvc-puhu-retry-source-btn')?.click(); scheduleToolbarSync(); });
+    // Alert strips answer through the classic buttons, so the panel's own logic decides what happens next.
+    on('pvc-tb-rescan', () => byId('pvc-rescan-btn')?.click());
+    on('pvc-tb-waiting-report', () => byId('pvc-quick-report-btn')?.click());
+    on('pvc-tb-frameloss-yes', () => { byId('pvc-frame-loss-yes')?.click(); scheduleToolbarSync(); });
+    on('pvc-tb-frameloss-no', () => { byId('pvc-frame-loss-no')?.click(); scheduleToolbarSync(); });
+    // Media play/pause events do not touch the panel, so they ask for a sync themselves.
+    for (const type of ['play', 'pause']) document.addEventListener(type, () => scheduleToolbarSync(), true);
     on('pvc-tb-seek-back', () => seekBy(-toolbarSeekStep));
     on('pvc-tb-seek-fwd', () => seekBy(toolbarSeekStep));
     on('pvc-tb-stereo', () => setAudioMode('stereo'));
@@ -6623,7 +6694,7 @@
     new MutationObserver(records => {
       if (records.every(record => toolbar.contains(record.target))) return;
       scheduleToolbarSync();
-    }).observe(popup, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'aria-pressed', 'style'] });
+    }).observe(popup, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'aria-pressed', 'style', 'hidden', 'disabled'] });
     window.addEventListener('resize', () => applyToolbarLayout());
     localizeUi(toolbar);
     setToolbarGroup(toolbarGroup);
@@ -7007,18 +7078,11 @@
     popup.querySelector('#pvc-mini-pip-btn').onclick = (e) => { e.stopPropagation(); togglePictureInPicture(); };
     popup.querySelector('#pvc-mini-play-pause').onclick = (e) => {
       e.stopPropagation();
-      if (remotePresentation) { remoteControl('play'); return; }
-      const { video } = findVideoAndPlayer();
-      if (!video) return;
-      if (video.paused) {
-        video.play().catch(() => {});
-        e.currentTarget.querySelector('svg').outerHTML = uiIcon('pause');
-        setUiText(e.currentTarget, '⏸️ Duraklat');
-      } else {
-        video.pause();
-        e.currentTarget.querySelector('svg').outerHTML = uiIcon('play');
-        setUiText(e.currentTarget, '▶️ Oynat');
-      }
+      const button = e.currentTarget, nowPaused = togglePlayback();
+      if (nowPaused === null) return;
+      // Rebuilt through setUiMarkup: assigning outerHTML is refused on pages with Trusted Types.
+      setUiMarkup(button, uiLabel(nowPaused ? 'play' : 'pause', nowPaused ? 'Oynat' : 'Duraklat'));
+      localizeUi(button);
     };
 
     // Hız Slider + Çift Tıkla Sıfırlama (Madde 8)

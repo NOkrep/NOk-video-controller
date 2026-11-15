@@ -161,3 +161,13 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Açılış:** kutu 150 ms'lik kısa bir yükselmeyle görünür; "Hareketi azalt" açıkken animasyon yok.
 - **Kaydırıcılar:** v0.7.23'te klasik paneldeki kalın halkalı tutamaca dönülmüştü; B3 modelindeki ince iz ve düz tutamaç seçildiği için bu sürümde ona geçildi.
 - **Grup düğmesi (kullanıcı kararı, 15 Kasım):** tek tıklama hiçbir şey yapmaz; çift tıklama grup listesini açar; fare tekerleği liste açılmadan grupları gezer. Klavyede çift tıklama olmadığı için Enter/Boşluk listeyi açar.
+
+### v0.7.25 — ertelenen anlık durumlar (kullanıcı seçimi, 16 Kasım; Figma "Transient states · models")
+
+- **Oynat/duraklat (1C):** Playing şeridinin başında küçük yuvarlak düğme; simgesi videonun durumunu izler (gömülü oynatıcıda çerçevenin bildirdiği durum). Klasik küçültülmüş çubuk da aynı `togglePlayback` işlevini kullanır; onun simgesini `outerHTML` ile değiştiren eski satır Trusted Types sitelerinde hata verirdi, düzeltildi.
+- **DRM (2B + C, kullanıcının birleşimi):** Playing şeridinin sağ ucunda yalnız kalkan; üzerine gelince solunda "Protected stream" açılır, tıklayınca açıklama penceresi. DRM'nin sınırladığı her denetimde aynı kalkan (bugün yalnız ses); açılır kutularda ayrıca açıklama satırı yok, bilgi şeritteki kalkanda (kullanıcı, 16 Kasım). Yeni sınırlanan denetim `TOOLBAR_DRM_MARKS` listesine eklenir. Kalkan şeridin son öğesidir ve yazı soluna açılır; böylece yazı açılırken kalkan imlecin altından kaymaz.
+- **Kare kaybı sorusu (3A):** cevaplanana kadar grup şeridinin yerini turuncu şerit alır; Evet/Hayır klasik paneldeki düğmelerle cevaplar.
+- **Video bekleniyor ve kaynağı yeniden dene (4A + C):** video bulunamazken her grupta kırmızı şerit (Yeniden tara, Teşhis raporu). Siteye özel 1080p yeniden deneme Quality kutusunda düğme ve açıklama; seçenek varken Quality düğmesinin köşesinde küçük yeniden-dene işareti ve ipucunda not.
+- **Şerit önceliği:** aynı anda tek şerit: video bekleniyor > kare kaybı sorusu > grubun kendi şeridi.
+- **İpucu (ara karar, Claude):** araç çubuğu düzeninde ipucu tıklamayı yakalamaz; çubuğun altına açılan ipucu şeritteki düğmeleri kapatıyordu. Üzerine gelinebilir ipucu klasik (Easy-read) panelde aynen kalır.
+- **DRM penceresi:** şifreleme türü bilinmediğinde gösterilen yedek ad İngilizce arayüzde de çevrilir.

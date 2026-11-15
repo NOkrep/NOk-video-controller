@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.24**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.7.25**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,15 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+
+## Ertelenen anlık durumlar araç çubuğunda, v0.7.25 — 16 Kasım 2026
+
+Kullanıcı seçti: 1C, 2B+C (şeritte yalnız kalkan, üzerine gelince "Protected stream"; sınırlanan her denetimde kalkan, kutuda açıklama satırı yok), 3A, 4A+C (kırmızı bekleme şeridi; yeniden deneme Quality kutusunda, Quality düğmesinde işaret). Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Yolda bulunan ve düzeltilen:** klasik küçültülmüş çubuktaki oynat düğmesi `outerHTML` kullanıyordu (Trusted Types sitelerinde hata); ipucu çubuğun altında şeridin üstüne binip tıklamayı yakalıyordu; kalkan yazısı açılırken kalkan imlecin altından kayabiliyordu; DRM penceresindeki yedek şifreleme adı çevrilmiyordu. Önceki kayıttaki "Yok" bulgusu yalnız rozet elle açıldığında görülüyor, gerçek DRM'de çıkmıyor.
+- **Açık bulgu (ayrı iş, kullanıcıya önerildi):** `content.js` `injected.js`'i `<script src>` ile ekliyor; UTF-8 bildirmeyen bir sayfada betik sayfanın kodlamasıyla çözülüyor, Türkçe metinler bozuluyor ve çeviriler bulunamıyor (karakter kodlaması bildirmeyen yerel test sayfasında görüldü). Bu işten önce de vardı.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser` (oynat/duraklat, DRM kalkanı gerçek algılayıcıyla, üzerine gelince yazının açık kalması, ses düğmesinde kalkan, yeniden dene işareti ve düğmesi, kare kaybı şeridi ve Hayır, videosuz sayfada kırmızı şerit ve her grupta kalması), `subtitle`, `hud-state`, `tooltip`, `dialog-keyboard`, `frame-loss`, `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle kontrol.
+- **Sınır:** gerçek DRM'li site ve gerçek 1080p yeniden deneme sitesi denenmedi.
 
 ## Ertelenen anlık durumlar için modeller (Figma) — 16 Kasım 2026
 
