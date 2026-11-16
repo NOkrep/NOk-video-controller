@@ -16,8 +16,8 @@ function setVersion(root, version) {
     ['injected.js', /injected\.js - FilmDeck by NOk v[\d.]+/, `injected.js - FilmDeck by NOk v${version}`],
     ['injected.css', /injected\.css - FilmDeck by NOk v[\d.]+/, `injected.css - FilmDeck by NOk v${version}`],
     ['README.md', /^# FilmDeck by NOk \(v[\d.]+/m, `# FilmDeck by NOk (v${version}`],
-    ['PROJECT_MASTER_GUIDE.md', /^> \*\*Sürüm:\*\* v[\d.]+/m, `> **Sürüm:** v${version}`],
-    ['ACTIVE_WORK.md', /Kaynak sürümü \*\*v[\d.]+/, `Kaynak sürümü **v${version}`]
+    ['docs/dev/PROJECT_MASTER_GUIDE.md', /^> \*\*Sürüm:\*\* v[\d.]+/m, `> **Sürüm:** v${version}`],
+    ['docs/dev/ACTIVE_WORK.md', /Kaynak sürümü \*\*v[\d.]+/, `Kaynak sürümü **v${version}`]
   ];
   for (const [name, pattern, replacement] of changes) {
     const file = path.join(root,name);

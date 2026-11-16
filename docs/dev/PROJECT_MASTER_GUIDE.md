@@ -1,6 +1,6 @@
 # FilmDeck by NOk — Kapsamlı Proje & Mimari Kılavuzu (Master Architecture & Handover Guide)
 
-> Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
+> Önceki paket kanıtı (22 Ekim 2026): **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](../history/RELEASE_NOTES_v0.7.0.1.md).
 
 > **Sürüm:** v0.8.0 (FilmDeck kimliği; release/ZIP/push yapılmadı; önceki gerçek site kabulü açık)
 > **Geliştirici:** NOkrep ([GitHub](https://github.com/NOkrep/NOk-video-controller) | `ihsanartrk07@gmail.com`)  
@@ -657,7 +657,7 @@ Lütfen ilk olarak PROJECT_MASTER_GUIDE.md dosyasını incele ve [BURAYA YAPMAK 
 
 ## 22 Ekim 2026 — yeni raporlar sonrası kaynak çalışması
 
-Güncel kapsam [ACTIVE_WORK.md](./ACTIVE_WORK.md), 152 Node testi ve tarayıcı kontrol sınırları [DEVELOPMENT_STATUS.md](./DEVELOPMENT_STATUS.md), Firefox/Chromium bellek bulguları [MEMORY_MEASUREMENTS.md](./MEMORY_MEASUREMENTS.md) içinde tutulur. Rapor platformu varsayılan other; kullanıcı seçerse önizlemedeki alan adı/platform paylaşılır. Açıklama sınırı görünür sayaçlı 4000 karakterdir; anonimleştirme değildir. Özel site test notları Git dışında yerelde kalır. Eski paket kanıtları yukarıda tarihleriyle korunur; yeni release veya ZIP hazırlanmadı.
+Güncel kapsam [ACTIVE_WORK.md](ACTIVE_WORK.md), 152 Node testi ve tarayıcı kontrol sınırları [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md), Firefox/Chromium bellek bulguları [MEMORY_MEASUREMENTS.md](../measurements/MEMORY_MEASUREMENTS.md) içinde tutulur. Rapor platformu varsayılan other; kullanıcı seçerse önizlemedeki alan adı/platform paylaşılır. Açıklama sınırı görünür sayaçlı 4000 karakterdir; anonimleştirme değildir. Özel site test notları Git dışında yerelde kalır. Eski paket kanıtları yukarıda tarihleriyle korunur; yeni release veya ZIP hazırlanmadı.
 
 ### v0.7.2 — sahipli ses bağlamı ve bellek temizliği
 

@@ -23,7 +23,7 @@ VHS davranışı ve kullanılan SDK yolu için birincil kaynak: [playlist-contro
 
 Kullanıcı Firefox'ta v0.7.0 ile Özel test sitesi'da bozulma/performance gerilemesi gözlediğini bildirdi; belirli adım ve belirti şu anda bilinmiyor. Bu sitenin v0.7.0.1 ile düzeldiği **doğrulanmadı**. Yerel test, site uyumluluğu onayı değildir.
 
-Gerçek Kick/TRT/diğer site kalite ve reklam akışları, cihazda yüksek çözünürlüklü filtre maliyeti, ekran okuyucu ve gerçek %200 tarayıcı zoom kabulü açık kalır. Çerçeveye özgü tema/erişilebilirlik tercihlerinin fullscreen panelinde farklı kalabilmesi ve native fullscreen/PiP altyazı sınırları önceki adayla aynıdır. Uiverse farkları [ANIMATION_DETAILS.md](./ANIMATION_DETAILS.md) içinde; bu pakette animasyon kapsamı genişletilmedi.
+Gerçek Kick/TRT/diğer site kalite ve reklam akışları, cihazda yüksek çözünürlüklü filtre maliyeti, ekran okuyucu ve gerçek %200 tarayıcı zoom kabulü açık kalır. Çerçeveye özgü tema/erişilebilirlik tercihlerinin fullscreen panelinde farklı kalabilmesi ve native fullscreen/PiP altyazı sınırları önceki adayla aynıdır. Uiverse farkları [ANIMATION_DETAILS.md](../design/ANIMATION_DETAILS.md) içinde; bu pakette animasyon kapsamı genişletilmedi.
 
 ## Deneme
 

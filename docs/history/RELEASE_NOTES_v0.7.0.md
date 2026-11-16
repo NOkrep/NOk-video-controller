@@ -11,7 +11,7 @@
 - Açık reklam işaretinde 16x isteği, sessizleştirme ve geri getirilebilir en düşük kalite; bitişte 1x, önceki ses/mute ve eşleşen kalite/otomatik mod.
 - Firefox hızını etkileyebilen gereksiz Web Audio bağlantısını önlemek için ses grafiğini yalnızca gerektiğinde kurma; Video.js kalite seçimi ve sayısal etiket düzeltmeleri.
 - Sabit anonim platform sınıfına `platformScope` ekleme; ham alan adı eklenmez. Rapor önizlemesi, isteğe bağlı açıklama ve çözülünce silme talebi korunur.
-- İngilizce başlangıç, Türkçe seçimi ve 20 tema korunur. Animasyon uyarlamaları ve ertelenen örnekler [ANIMATION_DETAILS.md](./ANIMATION_DETAILS.md) içinde açıklanır.
+- İngilizce başlangıç, Türkçe seçimi ve 20 tema korunur. Animasyon uyarlamaları ve ertelenen örnekler [ANIMATION_DETAILS.md](../design/ANIMATION_DETAILS.md) içinde açıklanır.
 
 ## Doğrulananlar
 

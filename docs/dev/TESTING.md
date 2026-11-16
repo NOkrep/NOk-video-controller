@@ -1,6 +1,6 @@
 # FilmDeck geliştirme kontrolleri
 
-GitHub akışı [quality.yml](.github/workflows/quality.yml) içindedir. Dosya GitHub'a yüklendiğinde push, pull request ve elle çalıştırmada devreye girer. Tag push'ları da kapsanır. Bu akış commit, tag, ZIP, release veya mağaza yayını oluşturmaz.
+GitHub akışı [quality.yml](../../.github/workflows/quality.yml) içindedir. Dosya GitHub'a yüklendiğinde push, pull request ve elle çalıştırmada devreye girer. Tag push'ları da kapsanır. Bu akış commit, tag, ZIP, release veya mağaza yayını oluşturmaz.
 
 ## Otomatik kontroller
 

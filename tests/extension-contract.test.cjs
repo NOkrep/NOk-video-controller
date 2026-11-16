@@ -10,7 +10,7 @@ const root = path.resolve(__dirname,'..');
 
 function fixture(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(),'filmdeck-contract-'));
-  const paths = checkExtension(root).runtimeFiles.concat(['package.json','package-lock.json','README.md','PROJECT_MASTER_GUIDE.md','ACTIVE_WORK.md','LICENSE','THIRD_PARTY_NOTICES.md']);
+  const paths = checkExtension(root).runtimeFiles.concat(['package.json','package-lock.json','README.md','docs/dev/PROJECT_MASTER_GUIDE.md','docs/dev/ACTIVE_WORK.md','LICENSE','THIRD_PARTY_NOTICES.md']);
   for (const name of new Set(paths)) { fs.mkdirSync(path.dirname(path.join(dir,name)),{recursive:true});fs.copyFileSync(path.join(root,name),path.join(dir,name)); }
   t.after(()=>{assert.equal(path.dirname(dir),os.tmpdir());assert.ok(path.basename(dir).startsWith('filmdeck-contract-'));fs.rmSync(dir,{recursive:true});});
   return dir;

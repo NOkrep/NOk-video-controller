@@ -2,7 +2,7 @@
 
 Güncelleme: 19 Ekim 2026 · v0.5.10. Bu dosya proje kaydıdır; tarayıcı tercihleri yalnızca RAM'de tutulur. Kullanıcının seçtiği referanslar aşağıdadır. Kullanım durumu değişirse ilgili satır, sürüm ve uyarlama notu birlikte güncellenmelidir.
 
-20 Ekim 2026 / v0.6.0 ek notu: tüm temalar ve aşağıdaki kullanım durumları korunur. Kaynak animasyon süreleri, eğriler, taşınan ve taşınmayan parçalar ayrıntılı olarak [ANIMATION_DETAILS.md](./ANIMATION_DETAILS.md) içinde karşılaştırılmıştır. Bu aşamada yeni dekoratif animasyon eklenmedi.
+20 Ekim 2026 / v0.6.0 ek notu: tüm temalar ve aşağıdaki kullanım durumları korunur. Kaynak animasyon süreleri, eğriler, taşınan ve taşınmayan parçalar ayrıntılı olarak [ANIMATION_DETAILS.md](ANIMATION_DETAILS.md) içinde karşılaştırılmıştır. Bu aşamada yeni dekoratif animasyon eklenmedi.
 
 ## Uygulanan bileşenler
 
@@ -14,7 +14,7 @@ Güncelleme: 19 Ekim 2026 · v0.5.10. Bu dosya proje kaydıdır; tarayıcı terc
 | [Nawsome — loaders](https://uiverse.io/Nawsome/slimy-tiger-93) | **Kullanılıyor, v0.5.10:** kullanıcı CDN ölçümünü başlattığında, gerçek işlem süresince (`pvc-loading-grid`). | Beş kareli hareket 4px kare / 5px aralığa indirildi; keyframe adları `pvc-*`. `aria-busy` ve yazılı bekleme durumu vardır. İşlem bitince/başarısız olunca kaldırılır; hareket azaltmada animasyon gösterilmez. |
 | [eslam-hany — inputs](https://uiverse.io/eslam-hany/strange-goose-48) | **Kullanılıyor, v0.5.10:** isteğe bağlı rapor açıklaması (`pvc-feedback-field`). | Ofset kenarlık/gölge ve focus alt çizgisi. Mevcut textarea, görünür yönerge, aria-label, disabled ve gizlilik seçimi korunur; kaynağın gizlenen etiketi taşınmaz. |
 
-Bu beş örneğin HTML/CSS'i Uiverse'in [resmî Galaxy arşivinden](https://github.com/uiverse-io/galaxy) incelendi. Doğrudan Uiverse kaynak indirmesi engellendiği için herkese açık arşiv kullanıldı. Çalışma sırasında üçüncü taraf JS çalıştırılmadı; projeye uzak bağımlılık, font veya ağ çağrısı eklenmedi. Dağıtım bildirimleri [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) içindedir.
+Bu beş örneğin HTML/CSS'i Uiverse'in [resmî Galaxy arşivinden](https://github.com/uiverse-io/galaxy) incelendi. Doğrudan Uiverse kaynak indirmesi engellendiği için herkese açık arşiv kullanıldı. Çalışma sırasında üçüncü taraf JS çalıştırılmadı; projeye uzak bağımlılık, font veya ağ çağrısı eklenmedi. Dağıtım bildirimleri [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) içindedir.
 
 Arşiv yolları:
 
@@ -34,6 +34,6 @@ Arşiv yolları:
 
 ## Temalar
 
-[SevenGrid](https://sevengrid.app/?ref=grave) sayfasının herkese açık tema bandı ve CSS renk değişkenleri tarayıcıda incelendi. **20 temanın tümü** Settings → Themes içine eklenmiştir. Sayfanın JS'i, yazıları, görselleri veya uygulama özellikleri kopyalanmadı; renk değerleri/adları HUD tokenlarına eşlendi. Açık/koyu/OLED aileleri ve değerlendirme [THEME_EVALUATION.md](./THEME_EVALUATION.md) içindedir.
+[SevenGrid](https://sevengrid.app/?ref=grave) sayfasının herkese açık tema bandı ve CSS renk değişkenleri tarayıcıda incelendi. **20 temanın tümü** Settings → Themes içine eklenmiştir. Sayfanın JS'i, yazıları, görselleri veya uygulama özellikleri kopyalanmadı; renk değerleri/adları HUD tokenlarına eşlendi. Açık/koyu/OLED aileleri ve değerlendirme [THEME_EVALUATION.md](THEME_EVALUATION.md) içindedir.
 
 Atlas başlangıçtır. Temalar yerel tanımlıdır ve çevrimdışı uygulanır. Seçim çerçeve belleğinde kalır; kapat/aç korur, sayfa yenileme Atlas'a döndürür. Tema kimliği ve erişilebilirlik tercihleri teşhis JSON'una eklenmez. Kullanıcının finalist beş tema seçimi henüz yapılmadı. **5 Kasım 2026 kullanıcı kararı:** finalist seçilmeyecek, 20 tema kalıyor.

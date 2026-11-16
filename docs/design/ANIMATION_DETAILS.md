@@ -24,7 +24,7 @@ Mevcut sınıflar: `pvc-raised-button`, `pvc-check-input`/`pvc-check-visual`, `p
 
 ## v0.7.15 rapor penceresi güncellemesi (D-08)
 
-Kullanıcı kararıyla rapor penceresindeki iki bileşen kaynağa yaklaştırıldı. Yukarıdaki tablo 20 Ekim durumunun kaydıdır ve değiştirilmedi. Ölçümler [ANIMATION_PERFORMANCE.md](./ANIMATION_PERFORMANCE.md) içindedir.
+Kullanıcı kararıyla rapor penceresindeki iki bileşen kaynağa yaklaştırıldı. Yukarıdaki tablo 20 Ekim durumunun kaydıdır ve değiştirilmedi. Ölçümler [ANIMATION_PERFORMANCE.md](../measurements/ANIMATION_PERFORMANCE.md) içindedir.
 
 | Bileşen | Eklenen | Kaynaktan farkı |
 | --- | --- | --- |

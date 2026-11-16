@@ -2,7 +2,7 @@
 
 ## Güncel durum
 
-5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
+5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
 - **Sürüm:** Kaynak sürümü **v0.8.0**, `claude/workTogether` dalında; `main` de `0.7.24` (#124); v0.7.25–v0.8.0 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
@@ -172,7 +172,7 @@ Kod değişmedi; tasarım Figma'da (`FilmDeck MEC523 Wireframes`, sayfalar "C + 
   - Subtitles aç/kapa göz simgesiyle kalır; yeri Load file'ın hemen sağı.
   - Açılır kutuların içi eski paneldeki gibi biraz daha açık renkli kutulara bölünür, alanların sınırı belli olur.
   - Settings: Picture ve Night mode birlikte (ikisi de video filtresi). Tema düğmesinde o anki tema adı yazar (ör. "Aurora"). Klavye kısayolu aç/kapa Settings'te yok; Help'te yalnız bilgi rehberi. Settings grubuna geçince Help kutusu kendiliğinden açık durur.
-  - **rev 4 (14 Kasım):** grup düğmesi o anki adın genişliğinde (sabit genişlik kaldırıldı), liste en uzun ada göre; rapor simgesi her grupta solda; dil kutusu kendi içeriği kadar; Reset all "Picture & night mode" başlığının sağında; tema adı "Theme" başlığının sağında; Help maddelerinde simgeler. Teknik kurallar ve bugünkü özelliklerin yeni yerleri [TOOLBAR_REDESIGN.md](TOOLBAR_REDESIGN.md) içinde; açılır kutular araç çubuğu ekranın üst yarısındaysa altta, alt yarısındaysa üstte açılır.
+  - **rev 4 (14 Kasım):** grup düğmesi o anki adın genişliğinde (sabit genişlik kaldırıldı), liste en uzun ada göre; rapor simgesi her grupta solda; dil kutusu kendi içeriği kadar; Reset all "Picture & night mode" başlığının sağında; tema adı "Theme" başlığının sağında; Help maddelerinde simgeler. Teknik kurallar ve bugünkü özelliklerin yeni yerleri [TOOLBAR_REDESIGN.md](../design/TOOLBAR_REDESIGN.md) içinde; açılır kutular araç çubuğu ekranın üst yarısındaysa altta, alt yarısındaysa üstte açılır.
   - Settings/Accessibility ayrımı Claude'a bırakıldı: Settings = dil, görüntü ve gece filtresi, tema, Help; Accessibility = paneli açık tut, büyük yazı, yüksek kontrast, hareketi azalt (her biri araç çubuğunda tek tıkla açılıp kapanan düğme). Kısayol aç/kapa her grupta solda duran simgede kalır, Accessibility'de ikinci kez yer almaz.
 
 ## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026
