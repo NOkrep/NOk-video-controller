@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.8.1 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.1.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.8.1';
+  const EXTENSION_VERSION = '0.8.1.1';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -5926,12 +5926,20 @@
     popup.style.setProperty('bottom', 'auto', 'important');
   }
 
+  // The part of the window the page shows, without a classic (always visible) scroll bar. With
+  // innerWidth a panel could slide under the scroll bar, and its default corner gap would look 15 px wider.
+  function visibleViewport() {
+    const root = document.compatMode === 'BackCompat' ? document.body : document.documentElement;
+    const innerW = window.innerWidth || 0, innerH = window.innerHeight || 0;
+    const width = root?.clientWidth || innerW, height = root?.clientHeight || innerH;
+    return { width: innerW ? Math.min(width, innerW) : width, height: innerH ? Math.min(height, innerH) : height };
+  }
+
   function clampPopupToViewport(popup) {
     const target = popup || document.getElementById('pvc-controller-popup');
     if (!target || target.style.display === 'none') return;
 
-    const vw = window.innerWidth || document.documentElement.clientWidth;
-    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const { width: vw, height: vh } = visibleViewport();
     const rect = target.getBoundingClientRect();
     const w = rect.width || target.offsetWidth || 320;
     const h = rect.height || target.offsetHeight || 200;
@@ -5960,8 +5968,7 @@
   // The normal and fullscreen panels of an embedded player are separate elements in separate
   // documents, so their shared place travels as a ratio of the free viewport space.
   function hudFreeSpace(rect) {
-    const vw = window.innerWidth || document.documentElement.clientWidth;
-    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const { width: vw, height: vh } = visibleViewport();
     return { x: Math.max(0, vw - rect.width - 2 * EDGE_MARGIN), y: Math.max(0, vh - rect.height - 2 * EDGE_MARGIN) };
   }
   function rememberHudPlacement(popup) {

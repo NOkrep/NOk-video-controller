@@ -10,10 +10,12 @@ const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const videoScript=`function startVideo(host){const video=document.createElement('video');video.muted=true;video.autoplay=true;video.playsInline=true;video.style.cssText='width:640px;height:360px;display:block';
   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;const ctx=canvas.getContext('2d');setInterval(()=>{ctx.fillStyle='#213847';ctx.fillRect(0,0,640,360);},100);
   video.srcObject=canvas.captureStream(10);host.appendChild(video);video.play().catch(()=>{});return video;}`;
+// Gaps are measured from the visible page edge: a visible window can show classic scroll bars (15 px in Edge).
 const hudState=()=>{
   const popup=document.getElementById('pvc-controller-popup'),rect=popup?.getBoundingClientRect(),visible=!!popup&&popup.style.display==='block'&&rect.width>0;
+  const vw=document.documentElement.clientWidth||innerWidth,vh=document.documentElement.clientHeight||innerHeight;
   return {visible,toolbar:!!popup?.classList.contains('pvc-layout-toolbar'),huds:document.querySelectorAll('#pvc-controller-popup').length,collapsed:popup?.classList.contains('pvc-collapsed')??null,left:visible?Math.round(rect.left):null,top:visible?Math.round(rect.top):null,
-    rightGap:visible?Math.round(innerWidth-rect.right):null,bottomGap:visible?Math.round(innerHeight-rect.bottom):null,viewport:[innerWidth,innerHeight],noVideoAlert:popup?getComputedStyle(popup.querySelector('#pvc-no-video-alert')).display!=='none':null,
+    rightGap:visible?Math.round(vw-rect.right):null,bottomGap:visible?Math.round(vh-rect.bottom):null,viewport:[vw,vh],scrollbar:innerWidth-vw,noVideoAlert:popup?getComputedStyle(popup.querySelector('#pvc-no-video-alert')).display!=='none':null,
     adapter:popup?.querySelector('#pvc-active-adapter-badge')?.textContent??null,video:!!document.querySelector('video'),engine:window.__NOK_VIDEO_CONTROLLER_INJECTED__===true};
 };
 const dragBy=(dx,dy)=>{

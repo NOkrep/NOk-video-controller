@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.1**, `claude/workTogether` dalında; `main` de `0.8.0` (#125); belge taşıması ve v0.8.1 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.1.1**, `claude/workTogether` dalında; `main` de `0.8.0` (#125); belge taşıması ve v0.8.1 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -25,7 +25,7 @@ Kullanıcı raporu (Firefox, iframe, Generic, harici SRT; site adı kayda geçme
 - **Rapor:** `videoState.subtitleOffsetMs`, `videoState.subtitleDriftMsPerMinute` ve dört altyazı zamanlama olayı; art arda − / + basışları tek olay. Oynatma konumu yine rapora girmez.
 - **Küçük düzeltme:** sıfır kayma rozeti `+0ms` yerine `0ms`.
 - **Kanıt:** `npm run check` 297/297 (yeni `subtitle-drift.test.cjs` 8 test). `toolbar-browser` Edge 152 ve Firefox 160'ta geçti; kayma adımları sahte video saatiyle (canvas akışı sarılamaz) üst sayfada ve ayrı kökenli iframe'de, tarayıcı izi, katman ve rapor dahil sınandı.
-- **Yan bulgu:** `hud-continuity-browser` Edge'de "close and reopen: default corner", Firefox'ta "iframe: normal position returns after exit" adımında düşüyor; değişiklikler geri alınmış 0.8.0 kodunda da aynı, yani bu işten değil. 16 Kasım'da geçmişti; ortam mı kod mu, incelenmedi.
+- **Yan bulgu (v0.8.1.1'de çözüldü):** `hud-continuity-browser` Edge'de "close and reopen: default corner", Firefox'ta bir kez "iframe: normal position returns after exit" adımında düştü; 0.8.0 kodunda da aynıydı. Kök neden: görünür test penceresinde Edge artık klasik (her zaman görünen, 15 px) kaydırma çubuğu gösteriyor. Panel `right: 16px` ile sayfa kenarına doğru yerleşiyordu, ama kenara yapıştırma ve konum oranı `innerWidth` (kaydırma çubuğu dahil) kullanıyordu; panel kaydırma çubuğunun altına kayabiliyordu. Test de boşluğu `innerWidth`'ten ölçtüğü için 31 px gördü. Düzeltme: `visibleViewport()` (kaydırma çubuğu hariç, quirks sayfada `body`) yapıştırma ve oran hesabında; test boşlukları görünür kenardan ölçüyor. Firefox'taki tek düşüş sonraki dört koşuda tekrarlanmadı (zamanlama). Araç çubuğunun kendi açılır kutu yerleşimi hâlâ `innerWidth` kullanıyor; kaydırma çubuklu sayfada en fazla 15 px fark, ayrıca ele alınmadı.
 - **Açık:** gerçek dosyayla kullanıcı denemesi. Kurgu farkında (bir noktada birden atlama) düz çizgi uymaz; o durumda − / + yeter.
 
 ## Belgeler docs/ altında, kısa README — 16–17 Kasım 2026
