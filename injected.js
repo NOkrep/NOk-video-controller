@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.8.1.1 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.2 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.8.1.1';
+  const EXTENSION_VERSION = '0.8.2';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -263,6 +263,7 @@
     '🎨 Görüntü Filtreleri Sıfırlandı': '🎨 Picture filters reset',
     'Önce bir .srt veya .vtt altyazı dosyası yükleyin': 'Load an .srt or .vtt subtitle file first',
     '💬 Altyazı Senkronu: {0}ms': '💬 Subtitle offset: {0} ms',
+    '💬 Altyazı Senkronu: {0}': '💬 Subtitle offset: {0}',
     'Video elementi bulunamadı': 'No video element found',
     'TRT hız kilidi açık. Panelden 1x seçerek veya hız çubuğuna çift tıklayarak kapatın.': 'TRT speed lock is on. Select 1x in the panel or double-click the speed slider to release it.',
     '⚡ Hız: {0}x': '⚡ Speed: {0}x',
@@ -403,6 +404,18 @@
     'Kayma {0} · zamanla düzeltiliyor': 'Offset {0} · drift corrected',
     'Kayma {0}': 'Offset {0}',
     'Zamanla kayma': 'Drift over time',
+    'Uygula': 'Apply',
+    'Kaymayı yaz (− erken, + geç)': 'Type the offset (− earlier, + later)',
+    'örn. -41:35 veya +2.5': 'e.g. -41:35 or +2.5',
+    'Kaymayı yaz veya satır seç': 'Type the offset or pick a line',
+    'Şu an bu satır': 'Now this line',
+    'Satır ara': 'Search lines',
+    'Altyazı satırları': 'Subtitle lines',
+    'Duyduğunuz bir kelimeyi yazın': 'Type a word you hear',
+    'Şu an duyduğunuz satırı seçin; altyazı o satırdan devam eder.': 'Pick the line you hear now; the subtitles continue from that line.',
+    'Eşleşen satır yok.': 'No matching line.',
+    'Satırlar oynatıcı çerçevesinde; listelemek için dosyayı bu panelden yeniden yükleyin.': 'The lines are in the player frame; load the file again from this panel to list them.',
+    'Kayma anlaşılamadı. Örnek: -41:35, +2.5 veya -2500ms': 'Offset not understood. Examples: -41:35, +2.5 or -2500ms',
     'Zamanla kayma düzeltmesi': 'Drift correction',
     '1. noktayı kaydet': 'Save point 1',
     '2. noktayı kaydet': 'Save point 2',
@@ -1351,6 +1364,8 @@
       subtitleLoaded: customSubtitleCues.length > 0, subtitleEnabled: subtitleOverlayEnabled,
       subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs, ...subtitleFrameState(video),
       subtitleDriftRate: subtitleDrift ? subtitleDrift.rate : 0, subtitleSyncPoint: subtitleSyncPoint ? bounded(subtitleSyncPoint.time, 0, 864000) : -1,
+      // The file's clock now, for the top panel's "now this line" list; frame bridge only, never a report.
+      subtitleClock: video && customSubtitleCues.length ? bounded(subtitleClockAt(subtitleOffsetMs, subtitleDrift, video.currentTime), -1, 864000, -1) : -1,
       appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
       candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo),
       frameLoss: frameLossState()
@@ -1486,6 +1501,8 @@
           case 'subtitle-visible': subtitleOverlayEnabled = value; injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); break;
           case 'subtitle-offset': if (value === 0) { resetSubtitleTiming(); applySubtitleTiming(); addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: 0 }); } else shiftSubtitleSync(value); break;
           case 'subtitle-drift': if (value === 'mark') markSubtitleSyncPoint(); else clearSubtitleDrift(value); break;
+          case 'subtitle-offset-set': setSubtitleOffset(value); break;
+          case 'subtitle-align': alignSubtitleCueNow(value); break;
           case 'hotkeys': hotkeysEnabled = value; break;
           case 'presentation-active': remoteSourceActive = value; break;
           case 'frame-loss-answered': frameLossAnswered = value; clearFrameLossOffer(); break;
@@ -1578,7 +1595,7 @@
     setUiTipStop(document.getElementById('pvc-active-adapter-badge'), adapterTip(state.adapter));
     updatePipButtonsState(state.pipActive);
     text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
-    text('pvc-sub-offset-badge', `${state.subtitleOffset >= 0 ? '+' : ''}${state.subtitleOffset}ms`);
+    text('pvc-sub-offset-badge', subtitleOffsetText(state.subtitleOffset, false));
     updateSubtitleDriftControls();
     text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
     document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
@@ -1671,7 +1688,7 @@
     const toggle = document.getElementById('pvc-sub-toggle-btn');
     setUiText(toggle, subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli'); toggle?.classList.toggle('pvc-active', subtitleOverlayEnabled);
     if (customSubtitleCues.length) setUiText(document.getElementById('pvc-sub-status-text'), `💬 Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
-    setUiText(document.getElementById('pvc-sub-offset-badge'), `${subtitleOffsetMs >= 0 ? '+' : ''}${subtitleOffsetMs}ms`);
+    setUiText(document.getElementById('pvc-sub-offset-badge'), subtitleOffsetText(subtitleOffsetMs, false));
     updateSubtitleDriftControls();
     updateFilterUiBadges(); updateSubtitleAppearanceControls(); updateRealtimeResolutionBadge();
   }
@@ -1989,7 +2006,8 @@
     KICK_SYNC_FAILED: [], QUALITY_REJECTED: [],
     TRT_RATE_REAPPLIED: ['rate'], TRT_RATE_GAVE_UP: [], TRT_RATE_INTERCEPTED: ['rate'],
     SUBTITLE_LOADED: [], SUBTITLE_PARSE_EMPTY: [], SUBTITLE_READ_FAILED: [],
-    SUBTITLE_OFFSET_CHANGED: ['offsetMs'], SUBTITLE_SYNC_POINT_MARKED: [], SUBTITLE_DRIFT_SET: ['driftMsPerMinute'], SUBTITLE_DRIFT_CLEARED: []
+    SUBTITLE_OFFSET_CHANGED: ['offsetMs'], SUBTITLE_SYNC_POINT_MARKED: [], SUBTITLE_DRIFT_SET: ['driftMsPerMinute'], SUBTITLE_DRIFT_CLEARED: [],
+    SUBTITLE_LINE_ALIGNED: []
   });
   // Repeated − / + presses within a few seconds are one correction; the last value replaces the earlier ones.
   const DIAGNOSTIC_COALESCED_EVENTS = Object.freeze({ SUBTITLE_OFFSET_CHANGED: 5000 });
@@ -2006,7 +2024,7 @@
       rate: [0.25, 3, 0.01], percent: [0, 300, 1], mono: [0, 1, 1],
       delta: [-30, 30, 1], height: [0, 4320, 1],
       reactInvoked: [0, 1, 1], ivsInvoked: [0, 1, 1],
-      offsetMs: [-3600000, 3600000, 10], driftMsPerMinute: [-3000, 3000, 1]
+      offsetMs: [-21600000, 21600000, 10], driftMsPerMinute: [-3000, 3000, 1]
     };
     for (const key of DIAGNOSTIC_EVENT_FIELDS[event]) {
       const value = diagnosticNumber(details?.[key], ...ranges[key]);
@@ -4266,9 +4284,41 @@
   // A file timed for another cut or frame rate slides a little further every minute. Two sync points give
   // a straight line: offset(t) = base + rate * (t - anchor), with rate in ms per second of video.
   const SUBTITLE_DRIFT_MIN_GAP = 60, SUBTITLE_DRIFT_MAX_RATE = 50; // seconds apart; 5 % covers 23.976 ↔ 25 fps
+  // Six hours: a file that joins several episodes can need a shift of more than one episode.
+  const SUBTITLE_OFFSET_LIMIT = 21600000;
+  const clampSubtitleOffset = offset => Math.max(-SUBTITLE_OFFSET_LIMIT, Math.min(SUBTITLE_OFFSET_LIMIT, offset));
   function subtitleOffsetAt(base, drift, time) {
-    const offset = base + (drift ? drift.rate * (time - drift.anchor) : 0);
-    return Math.max(-3600000, Math.min(3600000, offset));
+    return clampSubtitleOffset(base + (drift ? drift.rate * (time - drift.anchor) : 0));
+  }
+  // A typed shift: "-41:35", "1:02:03.5", "+2.5" or "+2,5" (seconds), "-2500ms". − shows the lines earlier.
+  function parseSubtitleOffsetInput(text) {
+    const raw = String(text ?? '').replace(/\s+/g, '').replace(/[−–]/g, '-').replace(',', '.');
+    const match = /^([+-]?)(.+)$/.exec(raw);
+    if (!match) return null;
+    const body = match[2].toLowerCase();
+    let ms;
+    if (/^\d+(?:\.\d+)?ms$/.test(body)) ms = parseFloat(body);
+    else if (/^\d+(?:\.\d+)?(?:s|sn)?$/.test(body)) ms = parseFloat(body) * 1000;
+    else {
+      const parts = /^(?:(\d+):)?(\d+):(\d{1,2}(?:\.\d+)?)$/.exec(body);
+      if (!parts || Number(parts[3]) >= 60 || (parts[1] !== undefined && Number(parts[2]) >= 60)) return null;
+      ms = (Number(parts[1] || 0) * 3600 + Number(parts[2]) * 60 + Number(parts[3])) * 1000;
+    }
+    ms = Math.round(match[1] === '-' ? -ms : ms);
+    return Number.isFinite(ms) && Math.abs(ms) <= SUBTITLE_OFFSET_LIMIT ? ms || 0 : null;
+  }
+  // "+250 ms" below a minute, "-41:35.0" from a minute on.
+  function subtitleOffsetText(ms, spaced = true) {
+    const value = Math.round(ms) || 0, sign = value > 0 ? '+' : value < 0 ? '-' : '', abs = Math.abs(value);
+    if (abs < 60000) return `${sign}${abs}${spaced ? ' ' : ''}ms`;
+    const tenths = Math.round(abs / 100), hours = Math.floor(tenths / 36000), minutes = Math.floor(tenths / 600) % 60, rest = tenths % 600;
+    const seconds = `${String(Math.floor(rest / 10)).padStart(2, '0')}.${rest % 10}`;
+    return hours ? `${sign}${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${sign}${minutes}:${seconds}`;
+  }
+  function formatCueTime(seconds) {
+    const total = Math.max(0, Math.floor(seconds)), hours = Math.floor(total / 3600), minutes = Math.floor(total / 60) % 60;
+    const rest = String(total % 60).padStart(2, '0');
+    return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
   }
   // The subtitle file's clock at a video time.
   function subtitleClockAt(base, drift, time) { return time - subtitleOffsetAt(base, drift, time) / 1000; }
@@ -4325,6 +4375,31 @@
     line.hidden = !text;
   }
   // END SUBTITLE EXPLANATION
+
+  // SUBTITLE LINES: "now this line" reads cue text, so it lives apart from the explanation, which never does.
+  // Lines are shown only in the panel; they never reach a report, a tooltip or the frame bridge state.
+  function subtitleLineText(cue) { return String(cue.text).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(); }
+  // Search ignores case and Turkish accents: "isigi" finds "Işığı".
+  function foldSubtitleSearch(text) {
+    return String(text).toLocaleLowerCase('tr').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i');
+  }
+  // With words: matching lines from the whole file. Without: ten lines around the subtitle clock now.
+  function findSubtitleLines(cues, query, clock, limit = 40) {
+    const words = foldSubtitleSearch(query || '').split(/\s+/).filter(Boolean);
+    if (words.length) {
+      const found = [];
+      for (const cue of cues) {
+        const text = foldSubtitleSearch(subtitleLineText(cue));
+        if (words.every(word => text.includes(word)) && found.push(cue) >= limit) break;
+      }
+      return found;
+    }
+    let index = clock >= 0 ? cues.findIndex(cue => cue.end >= clock) : 0;
+    if (index < 0) index = cues.length;
+    const start = Math.max(0, Math.min(index - 5, cues.length - 10));
+    return cues.slice(start, start + 10);
+  }
+  // END SUBTITLE LINES
 
   function ensureSubtitleOverlayElement() {
     let overlay = document.getElementById('pvc-subtitle-overlay');
@@ -4429,14 +4504,77 @@
       showToast('Önce bir .srt veya .vtt altyazı dosyası yükleyin');
       return;
     }
-    subtitleOffsetMs = Math.max(-3600000, Math.min(3600000, subtitleOffsetMs + deltaMs));
+    subtitleOffsetMs = clampSubtitleOffset(subtitleOffsetMs + deltaMs);
     applySubtitleTiming();
     addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: subtitleOffsetMs });
-    showToast(`💬 Altyazı Senkronu: ${subtitleOffsetMs >= 0 ? '+' : ''}${subtitleOffsetMs}ms`);
+    showToast(`💬 Altyazı Senkronu: ${subtitleOffsetText(subtitleOffsetMs, false)}`);
+  }
+  // A typed or line-based shift replaces the timing: any drift line belonged to the old shift.
+  function setSubtitleOffset(ms) {
+    if (remotePresentation) { remoteControl('subtitle-offset-set', ms); return; }
+    if (customSubtitleCues.length === 0) { showToast('Önce bir .srt veya .vtt altyazı dosyası yükleyin'); return; }
+    subtitleOffsetMs = clampSubtitleOffset(Math.round(ms)); subtitleDrift = null; subtitleSyncPoint = null;
+    applySubtitleTiming();
+    addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: subtitleOffsetMs });
+    showToast(`💬 Altyazı Senkronu: ${subtitleOffsetText(subtitleOffsetMs, false)}`);
+  }
+  // "Now this line": the chosen line starts at the video's current time.
+  function alignSubtitleCueNow(start) {
+    if (remotePresentation) { remoteControl('subtitle-align', start); return; }
+    const { video } = findVideoAndPlayer();
+    if (!video || customSubtitleCues.length === 0) { showToast('Önce bir .srt veya .vtt altyazı dosyası yükleyin'); return; }
+    addDiagnosticLog('INFO', 'SUBTITLE_LINE_ALIGNED');
+    setSubtitleOffset(video.currentTime * 1000 - start * 1000);
+  }
+  function applyTypedSubtitleOffset(input) {
+    if (!input) return;
+    const ms = parseSubtitleOffsetInput(input.value);
+    input.setAttribute('aria-invalid', String(ms === null));
+    if (ms === null) { showToast('Kayma anlaşılamadı. Örnek: -41:35, +2.5 veya -2500ms'); return; }
+    input.value = '';
+    setSubtitleOffset(ms);
+  }
+  // Lines are shown only in the panel, as text; they never reach a report or a tooltip.
+  function renderSubtitleLines(list, query) {
+    if (!list) return;
+    const { video } = remotePresentation ? { video: null } : findVideoAndPlayer();
+    const clock = remotePresentation ? remotePresentation.subtitleClock
+      : video ? subtitleClockAt(subtitleOffsetMs, subtitleDrift, video.currentTime) : -1;
+    const lines = findSubtitleLines(customSubtitleCues, query, clock);
+    setUiMarkup(list, '');
+    if (lines.length === 0) {
+      const empty = document.createElement('span'); empty.className = 'pvc-sub-lines-empty';
+      setUiText(empty, customSubtitleCues.length ? 'Eşleşen satır yok.'
+        : remotePresentation?.subtitleLoaded ? 'Satırlar oynatıcı çerçevesinde; listelemek için dosyayı bu panelden yeniden yükleyin.' : 'Önce bir .srt veya .vtt altyazı dosyası yükleyin');
+      list.appendChild(empty); return;
+    }
+    for (const cue of lines) {
+      const option = document.createElement('button');
+      option.type = 'button'; option.className = 'pvc-sub-line'; option.setAttribute('role', 'option');
+      option.setAttribute('data-pvc-cue-start', String(cue.start)); option.setAttribute('data-pvc-i18n-skip', '');
+      const time = document.createElement('span'); time.className = 'pvc-sub-line-time'; time.textContent = formatCueTime(cue.start);
+      const text = document.createElement('span'); text.className = 'pvc-sub-line-text'; text.textContent = subtitleLineText(cue);
+      option.appendChild(time); option.appendChild(text); list.appendChild(option);
+    }
+  }
+  function bindSubtitleLinePicker(search, list) {
+    if (!search || !list) return;
+    search.addEventListener('input', event => { event.stopPropagation(); renderSubtitleLines(list, search.value); });
+    list.addEventListener('click', event => {
+      const option = event.target.closest?.('[data-pvc-cue-start]');
+      if (!option) return;
+      event.stopPropagation(); alignSubtitleCueNow(Number(option.getAttribute('data-pvc-cue-start')));
+      search.value = ''; renderSubtitleLines(list, '');
+    });
+  }
+  function bindSubtitleOffsetInput(input, apply) {
+    if (!input) return;
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); applyTypedSubtitleOffset(input); } });
+    apply?.addEventListener('click', event => { event.stopPropagation(); applyTypedSubtitleOffset(input); });
   }
   // Redraws the line and rebuilds the browser's own track after any timing change.
   function applySubtitleTiming() {
-    setUiText(document.getElementById('pvc-sub-offset-badge'), `${subtitleOffsetMs > 0 ? '+' : ''}${subtitleOffsetMs}ms`);
+    setUiText(document.getElementById('pvc-sub-offset-badge'), subtitleOffsetText(subtitleOffsetMs, false));
     updateSubtitleDriftControls();
     const { video } = findVideoAndPlayer();
     if (video) { injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); }
@@ -5498,7 +5636,7 @@
           ['not-loaded', 'disabled', 'no-video', 'no-active-cue', 'overlay-requested', 'native-requested', 'video-offscreen']),
         // The user's shift (at the second sync point when drift is corrected) and the drift per minute.
         // Neither reveals a line, the file or where the video is; the report never reads the playback position.
-        subtitleOffsetMs: customSubtitleCues.length > 0 ? diagnosticNumber(subtitleOffsetMs, -3600000, 3600000, 10) : null,
+        subtitleOffsetMs: customSubtitleCues.length > 0 ? diagnosticNumber(subtitleOffsetMs, -21600000, 21600000, 10) : null,
         subtitleDriftMsPerMinute: customSubtitleCues.length > 0 ? diagnosticNumber(subtitleDrift ? subtitleDrift.rate * 60 : 0, -3000, 3000, 1) : null
       } : null,
       quality: {
@@ -6175,7 +6313,12 @@
       <div id="pvc-tb-pop-subtiming" class="pvc-tb-popover" aria-label="Altyazı zamanlaması" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>− ve + adımı</span></div><div class="pvc-tb-opts">${opts('substep', TOOLBAR_SUBTITLE_STEPS, value => value >= 1000 ? `${value / 1000}s` : `${value}ms`)}</div></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu anki kayma</span><button type="button" id="pvc-tb-sub-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></div>
-          <span id="pvc-tb-sub-offset-big" class="pvc-tb-big" data-pvc-i18n-skip>0 ms</span></div>
+          <span id="pvc-tb-sub-offset-big" class="pvc-tb-big" data-pvc-i18n-skip>0 ms</span>
+          <span class="pvc-sub-field-row"><input type="text" id="pvc-tb-sub-offset-input" class="pvc-sub-input" placeholder="örn. -41:35 veya +2.5" aria-label="Kaymayı yaz (− erken, + geç)" autocomplete="off" spellcheck="false" /><button type="button" id="pvc-tb-sub-offset-apply" class="pvc-tb-mini">Uygula</button></span></div>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu an bu satır</span></div>
+          <input type="search" id="pvc-tb-sub-line-search" class="pvc-sub-input" placeholder="Duyduğunuz bir kelimeyi yazın" aria-label="Satır ara" autocomplete="off" spellcheck="false" />
+          <div id="pvc-tb-sub-lines" class="pvc-sub-lines" role="listbox" aria-label="Altyazı satırları"></div>
+          <span class="pvc-tb-note">Şu an duyduğunuz satırı seçin; altyazı o satırdan devam eder.</span></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Zamanla kayma</span></div>
           <span id="pvc-tb-sub-drift-text" class="pvc-tb-note" data-pvc-i18n-skip></span>
           <div class="pvc-tb-opts pvc-tb-drift-opts"><button type="button" id="pvc-tb-sub-drift-mark" class="pvc-tb-opt">${uiIcon('pin')}<span id="pvc-tb-sub-drift-mark-val" data-pvc-i18n-skip>1. noktayı kaydet</span></button><button type="button" id="pvc-tb-sub-drift-cancel" class="pvc-tb-opt" hidden><span id="pvc-tb-sub-drift-cancel-val" data-pvc-i18n-skip>Vazgeç</span></button></div></div>
@@ -6351,6 +6494,7 @@
     closeToolbarPopover();
     toolbarOpenPopover = { panel, anchor };
     panel.hidden = false; anchor.setAttribute('aria-expanded', 'true');
+    if (name === 'subtiming') renderSubtitleLines(document.getElementById('pvc-tb-sub-lines'), document.getElementById('pvc-tb-sub-line-search')?.value || '');
     syncToolbar(); placeToolbarPopover();
     document.addEventListener('pointerdown', onToolbarOutsidePointer, true);
   }
@@ -6619,7 +6763,7 @@
     pressed(subToggle, subtitlesOn);
     // Both eyes are in the markup and only shown or hidden: pages with Trusted Types reject HTML strings.
     byId('pvc-tb-sub-eye').hidden = !subtitlesOn; byId('pvc-tb-sub-eye-off').hidden = subtitlesOn;    setUiText(byId('pvc-tb-sub-toggle-val'), subtitlesOn ? 'Görünür' : 'Gizli');
-    const offset = Number(subtitleOffsetMs) || 0, offsetText = `${offset > 0 ? '+' : ''}${offset} ms`;
+    const offset = Number(subtitleOffsetMs) || 0, offsetText = subtitleOffsetText(offset);
     shown('pvc-tb-sub-step-val', toolbarSubtitleStep >= 1000 ? `${toolbarSubtitleStep / 1000}s` : `${toolbarSubtitleStep}ms`);
     toolbar.querySelectorAll('[data-pvc-substep]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-substep')) === toolbarSubtitleStep));
     setUiTip(byId('pvc-tb-sub-earlier'), `Altyazıyı ${toolbarSubtitleStep} ms erken göster`);
@@ -6808,6 +6952,8 @@
     on('pvc-tb-sub-later', () => { shiftSubtitleSync(toolbarSubtitleStep); scheduleToolbarSync(); });
     for (const id of ['pvc-tb-sub-reset', 'pvc-tb-sub-offset-reset']) on(id, () => { byId('pvc-sub-sync-reset')?.click(); scheduleToolbarSync(); });
     for (const id of ['mark', 'cancel']) on(`pvc-tb-sub-drift-${id}`, () => { byId(`pvc-sub-drift-${id}`)?.click(); scheduleToolbarSync(); });
+    bindSubtitleOffsetInput(byId('pvc-tb-sub-offset-input'), byId('pvc-tb-sub-offset-apply'));
+    bindSubtitleLinePicker(byId('pvc-tb-sub-line-search'), byId('pvc-tb-sub-lines'));
     toolbar.querySelectorAll('[data-pvc-substep]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); toolbarSubtitleStep = Number(button.getAttribute('data-pvc-substep')); syncToolbar(); }));
     bindToolbarWheel(byId('pvc-tb-sub-step'), direction => { toolbarSubtitleStep = toolbarStepAfter(TOOLBAR_SUBTITLE_STEPS, toolbarSubtitleStep, direction, 100); syncToolbar(); });
     on('pvc-tb-sub-white', () => { setSubtitleAppearance('color', 'white'); scheduleToolbarSync(); });
@@ -7141,6 +7287,15 @@
               <button id="pvc-sub-drift-cancel" class="pvc-action-btn" data-pvc-drift-action="cancel" hidden>Vazgeç</button>
             </div>
           </div>
+          <details id="pvc-sub-jump" class="pvc-sub-appearance">
+            <summary>Kaymayı yaz veya satır seç</summary>
+            <label class="pvc-sub-field"><span>Kaymayı yaz (− erken, + geç)</span>
+              <span class="pvc-sub-field-row"><input type="text" id="pvc-sub-offset-input" class="pvc-sub-input" placeholder="örn. -41:35 veya +2.5" autocomplete="off" spellcheck="false" /><button id="pvc-sub-offset-apply" class="pvc-action-btn">Uygula</button></span></label>
+            <label class="pvc-sub-field"><span>Şu an bu satır</span>
+              <input type="search" id="pvc-sub-line-search" class="pvc-sub-input" placeholder="Duyduğunuz bir kelimeyi yazın" autocomplete="off" spellcheck="false" /></label>
+            <div id="pvc-sub-lines" class="pvc-sub-lines" role="listbox" aria-label="Altyazı satırları"></div>
+            <p class="pvc-settings-note">Şu an duyduğunuz satırı seçin; altyazı o satırdan devam eder.</p>
+          </details>
           <details class="pvc-sub-appearance">
             <summary>Altyazı görünümü</summary>
             <label>Yazı boyutu <output id="pvc-sub-fontSize-value">20px</output><input id="pvc-sub-fontSize" type="range" min="12" max="48" value="20" class="pvc-range-slider" /></label>
@@ -7501,6 +7656,11 @@
     popup.querySelector('#pvc-sub-drift-cancel').onclick = e => {
       e.stopPropagation(); clearSubtitleDrift(e.currentTarget.getAttribute('data-pvc-drift-action') === 'cancel' ? 'cancel' : 'clear');
     };
+    bindSubtitleOffsetInput(popup.querySelector('#pvc-sub-offset-input'), popup.querySelector('#pvc-sub-offset-apply'));
+    bindSubtitleLinePicker(popup.querySelector('#pvc-sub-line-search'), popup.querySelector('#pvc-sub-lines'));
+    popup.querySelector('#pvc-sub-jump').addEventListener('toggle', event => {
+      if (event.target.open) renderSubtitleLines(popup.querySelector('#pvc-sub-lines'), popup.querySelector('#pvc-sub-line-search').value);
+    });
     updateSubtitleDriftControls();
 
     // Çözünürlük, Adaptör, DRM ve Footer Butonları

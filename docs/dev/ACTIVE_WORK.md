@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.1.1**, `claude/workTogether` dalında; `main` de `0.8.0` (#125); belge taşıması ve v0.8.1 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.2**, `claude/workTogether` dalında; `main` de `0.8.0` (#125); belge taşıması ve v0.8.1 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -16,6 +16,18 @@
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
 - **16 Kasım — milestone 0.8 (araç çubuğu) tamam:** kullanıcı karşılaştırmayı bitirdi ve iki gerçek sitede denedi; sürüm `0.8.0`. Sıradaki seçili işler: I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
+- **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
+
+## Büyük kayma: kaymayı yaz ve "Şu an bu satır", v0.8.2 — 17 Kasım 2026
+
+Kullanıcının altyazı dosyası iki bölümün birleşimiydi (başka sitelerdeki dosyalarda da aynı); ~40 dakika kaydırmak gerekti. Dosyayı şimdilik kendisi düzenleyecek. Önerilen dört yoldan kullanıcı "Şu an bu satır" ile kaymayı elle yazmayı seçti.
+
+- **Kaymayı yaz:** Altyazı zamanlaması kutusunda "Şu anki kayma" altında, Kolay okunur düzende "Kaymayı yaz veya satır seç" içinde. `-41:35`, `1:02:03.5`, `+2.5` / `+2,5` (sn), `-2500ms`; tipografik eksi de olur. Yanlış değer kırmızı çerçeveyle işaretlenir, hiçbir şey değişmez. Yazılan kayma zamanla kayma düzeltmesini ve bekleyen noktayı kaldırır (o doğru eski kaymaya aitti).
+- **Şu an bu satır:** Arama kutusu ve liste. Kelime yazılınca tüm dosyada büyük/küçük harf ve Türkçe işaretler gözetmeden arar (en fazla 40 satır); boşken o anki konumun çevresindeki 10 satırı gösterir. Seçilen satır videonun şu anki zamanında başlar. Gömülü oynatıcıda üst panel satırın başlangıç zamanını gönderir, kaymayı medya çerçevesi kendi video saatiyle hesaplar.
+- **Sınır ve gösterim:** kayma sınırı 1 saatten 6 saate çıktı (birden çok bölümü birleştiren dosyalar). 1 dakikanın üstündeki kayma `-41:35.0` biçiminde gösterilir.
+- **Gizlilik:** satır metinleri yalnız panelde, metin olarak gösterilir; rapora, ipucuna ve çerçeve durumuna girmez. Rapora yalnız `SUBTITLE_LINE_ALIGNED` olayı ve kaymanın sayısı girer. Satır kodu, satır metnine hiç dokunmayan altyazı açıklama bölümünden ayrı tutuldu.
+- **Reddedilen öneri — bölüm seçici:** dosya yüklenince büyük boşluklardan ya da 00:00'a dönen zamandan bölümleri bulup "hangi bölüm?" diye sormak. Kullanıcı "mantıksız" buldu; yapılmadı. Bilinen sınır kayıtta: zamanı 00:00'dan yeniden başlayan birleşik dosyalar gömülü oynatıcıya aktarılamıyor (`cleanCues` sıralı başlangıç ister), üst sayfada ilk bölümün satırı gösterilir. Gerekirse yeniden sorulur.
+- **Kanıt:** `npm run check` 302/302 (yeni `subtitle-jump.test.cjs` 5 test). `toolbar-browser` Edge 152 ve Firefox 160'ta geçti: gerçek tuşlarla `-41:35` (alandaki `-` hız kısayolunu tetiklemedi), yanlış değer, arama, satır seçimi ve katman, Kolay okunur düzen; ayrı kökenli iframe'de yazılan kayma ve satır hizalama. `subtitle`, `hud-state`, `report`, `dialog-keyboard`, `hud-continuity`, `ui-smoke` (geniş ve dar) iki motorda geçti. Firefox `hud-continuity` bir koşuda "spa: iframe becomes top video: vertical position" adımında düştü, sonraki iki koşu geçti; ekrana sığmayan Firefox penceresinde (1408×663) zamanlamaya bağlı görünüyor, incelenmedi.
 
 ## Altyazı zamanla kayma düzeltmesi ve raporda kayma, v0.8.1 — 17 Kasım 2026
 

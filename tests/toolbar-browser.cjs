@@ -229,6 +229,33 @@ try{
   await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+6000ms'&&/save point 1 while they match/.test(document.getElementById('pvc-tb-sub-drift-text').textContent),'removal keeps the current shift');
   await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
   await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='0ms'&&document.getElementById('pvc-tb-sub-offset').getClientRects().length===0,'reset after the drift');
+  // Large shifts: a typed value (real keys, which must not reach FilmDeck's or the site's shortcuts) and "now this line".
+  const ratesBefore=await driver.evaluate(page,()=>window.rates.length);
+  await driver.pointerClick(page,'#pvc-tb-sub-step');
+  await until(driver,page,visible,'timing popover for a typed shift','pvc-tb-sub-offset-input');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-input');
+  await driver.type(page,'-41:35');await driver.press(page,'Enter');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-41:35.0'&&document.getElementById('pvc-tb-sub-offset-big').textContent==='-41:35.0','typed -41:35 applies as a clock value');
+  assert.equal(await driver.evaluate(page,()=>window.rates.length),ratesBefore,'typing "-" in the field is not the speed shortcut');
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-pop-subtiming'),true,'Enter keeps the popover open');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-input');await driver.type(page,'abc');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-apply');
+  await until(driver,page,()=>document.getElementById('pvc-tb-sub-offset-input').getAttribute('aria-invalid')==='true'&&document.getElementById('pvc-sub-offset-badge').textContent==='-41:35.0','a wrong value is marked and changes nothing');
+  await driver.evaluate(page,()=>{document.getElementById('pvc-tb-sub-offset-input').value='';});
+  await driver.evaluate(page,()=>{window.fakeTime=100;});
+  await driver.pointerClick(page,'#pvc-tb-sub-line-search');await driver.type(page,'seco');
+  await until(driver,page,()=>{const lines=[...document.querySelectorAll('#pvc-tb-sub-lines [data-pvc-cue-start]')];return lines.length===1&&lines[0].textContent==='0:04Second';},'the search finds the line');
+  await driver.pointerClick(page,'#pvc-tb-sub-lines [data-pvc-cue-start]');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+1:36.0','the chosen line starts now: 100 s - 4 s');
+  await driver.evaluate(page,()=>{window.fakeTime=101;document.querySelector('video').dispatchEvent(new Event('timeupdate'));});
+  await until(driver,page,()=>document.getElementById('pvc-subtitle-overlay')?.textContent==='Second','the overlay continues from that line');
+  await until(driver,page,()=>document.querySelectorAll('#pvc-tb-sub-lines [data-pvc-cue-start]').length===2&&document.getElementById('pvc-tb-sub-line-search').value==='','after a choice the list shows the lines around now again');
+  await driver.press(page,'Escape');
+  // The Easy-read panel has the same two controls.
+  await driver.evaluate(page,()=>{document.getElementById('pvc-sub-jump').open=true;const input=document.getElementById('pvc-sub-offset-input');input.value='+2.5';input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));});
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+2500ms'&&document.querySelectorAll('#pvc-sub-lines [data-pvc-cue-start]').length===2,'classic typed shift and line list');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='0ms','reset after the large shifts');
   await driver.evaluate(page,()=>{delete document.querySelector('video').currentTime;window.fakeTime=undefined;document.querySelector('[data-pvc-substep="250"]').click();});
   assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-count').textContent),/\(2 /,'the cue count stays visible beside a long name');
   assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').getAttribute('data-pvc-tip')),/sample\.srt.*2/,'the whole line is in the tooltip');
@@ -401,6 +428,14 @@ try{
   assert.ok(Math.abs(await driver.evaluate(owner,()=>document.querySelector('video').textTracks[0].cues[0].startTime)-(1+(-1250+1000*700/600)/1000)/(1+1/600))<0.001,'the frame video track follows the line');
   await driver.evaluate(top,()=>document.getElementById('pvc-tb-sub-drift-cancel').click());
   await until(driver,top,()=>/save point 1 while they match/.test(document.getElementById('pvc-sub-drift-status').textContent),'removal crosses the bridge');
+  // A typed shift and a chosen line cross the bridge; the frame computes the line from its own video time.
+  await driver.evaluate(top,()=>{const input=document.getElementById('pvc-tb-sub-offset-input');input.value='-41:35';document.getElementById('pvc-tb-sub-offset-apply').click();});
+  await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-41:35.0','the frame applies a typed shift');
+  await driver.evaluate(owner,()=>{window.fakeTime=300;});
+  await driver.evaluate(top,()=>{const search=document.getElementById('pvc-tb-sub-line-search');search.value='first';search.dispatchEvent(new Event('input',{bubbles:true}));});
+  await until(driver,top,()=>document.querySelectorAll('#pvc-tb-sub-lines [data-pvc-cue-start]').length===1,'the top panel lists the file it sent');
+  await driver.evaluate(top,()=>document.querySelector('#pvc-tb-sub-lines [data-pvc-cue-start]').click());
+  await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+4:59.0','the frame aligns the line to its video time: 300 s - 1 s');
   // Night mode from the top toolbar filters the frame's video.
   await driver.evaluate(top,()=>document.querySelector('[data-pvc-goto="settings"]').click());
   await driver.pointerClick(top,'#pvc-tb-picture');

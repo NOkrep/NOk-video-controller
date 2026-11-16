@@ -1,4 +1,4 @@
-# FilmDeck by NOk (v0.8.1.1 — kaynak geliştirmesi)
+# FilmDeck by NOk (v0.8.2 — kaynak geliştirmesi)
 
 Sitelerin farklı ve eksik video denetimleri yerine her sitede aynı, tek bir denetim çubuğu. Firefox ve Chromium (Chrome, Edge, Brave, Opera) için Manifest V3 eklentisi.
 

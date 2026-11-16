@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.8.1.1
+ * injected.css - FilmDeck by NOk v0.8.2
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1562,6 +1562,21 @@
 #pvc-controller-popup .pvc-sub-drift { margin-top: 8px !important; }
 #pvc-controller-popup .pvc-sub-drift .pvc-settings-note { margin: 0 0 6px !important; }
 #pvc-controller-popup .pvc-sub-drift [hidden] { display: none !important; }
+/* Typed offset and "now this line": shared by the toolbar popover and the Easy-read panel. */
+#pvc-toolbar #pvc-tb-pop-subtiming { width: 320px !important; }
+#pvc-controller-popup .pvc-sub-field { display: flex !important; flex-direction: column !important; gap: 4px !important; margin: 0 0 8px !important; font-size: 11px !important; color: var(--pvc-muted) !important; }
+#pvc-controller-popup .pvc-sub-field-row { display: flex !important; gap: 6px !important; align-items: center !important; }
+#pvc-controller-popup .pvc-sub-input { flex: 1 1 auto !important; min-width: 0 !important; width: 100% !important; box-sizing: border-box !important; height: 28px !important; padding: 0 9px !important; border-radius: 8px !important; border: 1px solid color-mix(in srgb, var(--pvc-text) 18%, transparent) !important; background: color-mix(in srgb, var(--pvc-text) 6%, transparent) !important; color: var(--pvc-text) !important; font: inherit !important; font-size: 12px !important; outline: none !important; }
+#pvc-controller-popup .pvc-sub-input:focus-visible { border-color: var(--pvc-accent-ink) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--pvc-accent-ink) 30%, transparent) !important; }
+#pvc-controller-popup .pvc-sub-input[aria-invalid="true"] { border-color: var(--pvc-danger, #f43f5e) !important; }
+#pvc-controller-popup .pvc-sub-input::placeholder { color: var(--pvc-muted) !important; opacity: 0.8 !important; }
+#pvc-controller-popup .pvc-sub-field-row .pvc-action-btn { flex: 0 0 auto !important; width: auto !important; }
+#pvc-controller-popup .pvc-sub-lines { display: flex !important; flex-direction: column !important; gap: 2px !important; max-height: 168px !important; overflow-y: auto !important; overscroll-behavior: contain !important; margin: 0 0 6px !important; }
+#pvc-controller-popup button.pvc-sub-line { display: flex !important; align-items: baseline !important; justify-content: flex-start !important; gap: 8px !important; width: 100% !important; height: auto !important; min-height: 0 !important; padding: 5px 8px !important; border: 0 !important; border-radius: 8px !important; background: none !important; color: var(--pvc-text) !important; text-align: left !important; font-size: 11.5px !important; font-weight: 400 !important; line-height: 1.35 !important; white-space: normal !important; cursor: pointer !important; }
+#pvc-controller-popup button.pvc-sub-line:hover, #pvc-controller-popup button.pvc-sub-line:focus-visible { background: color-mix(in srgb, var(--pvc-text) 9%, transparent) !important; }
+#pvc-controller-popup .pvc-sub-line-time { flex: 0 0 auto !important; color: var(--pvc-muted) !important; font-variant-numeric: tabular-nums !important; }
+#pvc-controller-popup .pvc-sub-line-text { flex: 1 1 auto !important; min-width: 0 !important; overflow: hidden !important; display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important; }
+#pvc-controller-popup .pvc-sub-lines-empty { padding: 6px 8px !important; color: var(--pvc-muted) !important; font-size: 11px !important; }
 #pvc-toolbar #pvc-tb-pop-sublook { width: 300px !important; }
 #pvc-toolbar .pvc-tb-card > .pvc-tb-opt { width: 100% !important; }
 /* The shared slider class grows with flex: 1; inside a card's column that made it a tall bar. Keep the
