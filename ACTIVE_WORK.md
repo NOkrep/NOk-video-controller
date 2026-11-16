@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.27**, `claude/workTogether` dalında; `main` de `0.7.24` (#124, 16 Kasım'da doğrulandı; dal `main` ile eşit). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.0**, `claude/workTogether` dalında; `main` de `0.7.24` (#124); v0.7.25–v0.8.0 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,15 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+- **16 Kasım — milestone 0.8 (araç çubuğu) tamam:** kullanıcı karşılaştırmayı bitirdi ve iki gerçek sitede denedi; sürüm `0.8.0`. Sıradaki seçili işler: I-03, I-04, I-05, I-09 ve I-10, D-06.
+
+## Milestone 0.8: kompakt araç çubuğu, v0.8.0 — 16 Kasım 2026
+
+Kullanıcı kararı: eski/yeni panel karşılaştırması tamam ("bir sorun gözlemlemedim"), araç çubuğu iki gerçek sitede denendi ("şimdilik yeterli"; site adları kayda geçmedi). Milestone `0.7` → `0.8`; sürüm `0.8.0`. Kullanıcı PR'ı sürüm artışından sonra açmayı tercih etti.
+
+- **Milestone kapsamı (v0.7.19–v0.7.27):** Model 5 araç çubuğu ve dört grubu (Player, Subtitles, Settings, Accessibility); B3 açılır kutu stili; ertelenen anlık durumlar (oynat/duraklat, DRM kalkanı, kare kaybı ve video bekleniyor şeritleri, 1080p yeniden deneme); Stereo/Mono kayan anahtarı; araç çubuğu varsayılan, eski panel Kolay okunur düzen ve 100/125/150 kademeleri; yolda bulunan hatalar (Trusted Types, UTF-8 dışı sayfalarda kodlama, düzen değişiminde konum, çerçeve yenilenince tercihin ezilmesi). Ayrıntı: TOOLBAR_REDESIGN.md §6.
+- **Kanıt (0.8.0 üzerinde):** `npm run check` 289/289. Tarayıcı: `toolbar`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `volume-mirror`, `cdn-measure`, `pip`, `startup`, `report`, `frame-loss`, `tooltip`, `subtitle`, `quality-mapping`, `hls-early-attach`, `ad-lifecycle`, `ui-smoke` (geniş ve dar) Edge 152 ve Firefox 160'ta geçti.
+- **Açık:** B5 kesin sürüm kuralı kullanıcıda. Gerçek site kabulü kullanıcının iki sitesiyle sınırlı; DRM'li ve 1080p yeniden deneme siteleri ayrıca denenmedi.
 
 ## Stereo/Mono kayan anahtarı, v0.7.27 — 16 Kasım 2026
 
