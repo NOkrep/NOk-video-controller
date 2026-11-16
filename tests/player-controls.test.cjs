@@ -168,7 +168,7 @@ function subtitleHarness() {
   h.window.innerWidth = 1200; h.window.innerHeight = 800;
   h.video.getBoundingClientRect = () => ({ left: 100, top: 100, width: 640, height: 360 });
   h.context.customSubtitleCues = [{ start: 1, end: 5, text: '<img onerror=SECRET> düz metin' }];
-  h.context.subtitleOffsetMs = 0; h.context.subtitleOverlayEnabled = true;
+  h.context.subtitleOffsetMs = 0; h.context.subtitleDrift = null; h.context.subtitleOverlayEnabled = true;
   h.context.subtitleRenderStatus = 'not-loaded'; h.video.currentTime = 2;
   h.context.document.getElementById = id => overlays.get(id) || null;
   h.context.document.createElement = () => {

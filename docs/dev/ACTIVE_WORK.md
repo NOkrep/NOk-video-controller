@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.0**, `claude/workTogether` dalında; `main` de `0.7.24` (#124); v0.7.25–v0.8.0 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.1**, `claude/workTogether` dalında; `main` de `0.8.0` (#125); belge taşıması ve v0.8.1 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -15,6 +15,18 @@
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
 - **16 Kasım — milestone 0.8 (araç çubuğu) tamam:** kullanıcı karşılaştırmayı bitirdi ve iki gerçek sitede denedi; sürüm `0.8.0`. Sıradaki seçili işler: I-03, I-04, I-05, I-09 ve I-10, D-06.
+- **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
+
+## Altyazı zamanla kayma düzeltmesi ve raporda kayma, v0.8.1 — 17 Kasım 2026
+
+Kullanıcı raporu (Firefox, iframe, Generic, harici SRT; site adı kayda geçmedi): altyazı başta doğruydu, bölüm boyunca her 10–15 dakikada ~3 sn ileri almak gerekti, sonunda ~9 sn. Kök neden: motor sabit kaymayı videonun gerçek saatine uyguluyor ve zaman ayrıştırma doğru; dosya başka kurgu/kare hızına göre zamanlanmış. Rapor sorunu gösteremedi, çünkü kayma değeri ve kaydırma olayı rapora girmiyordu. Kullanıcı ikisini de seçti.
+
+- **İki noktalı düzeltme:** Altyazı zamanlaması kutusunda (araç çubuğu) ve klasik Altyazı bölümünde "1. noktayı kaydet / 2. noktayı kaydet", "Vazgeç", "Düzeltmeyi kaldır". Kaldırınca altyazı o anki yerinde kalır; Sıfırla ve yeni dosya her şeyi sıfırlar. Şerit "Kayma … · zamanla düzeltiliyor" der. Gömülü oynatıcıda düzeltme medya çerçevesinde hesaplanır. Ayrıntı: PROJECT_MASTER_GUIDE.md (altyazı gizliliği bölümü).
+- **Rapor:** `videoState.subtitleOffsetMs`, `videoState.subtitleDriftMsPerMinute` ve dört altyazı zamanlama olayı; art arda − / + basışları tek olay. Oynatma konumu yine rapora girmez.
+- **Küçük düzeltme:** sıfır kayma rozeti `+0ms` yerine `0ms`.
+- **Kanıt:** `npm run check` 297/297 (yeni `subtitle-drift.test.cjs` 8 test). `toolbar-browser` Edge 152 ve Firefox 160'ta geçti; kayma adımları sahte video saatiyle (canvas akışı sarılamaz) üst sayfada ve ayrı kökenli iframe'de, tarayıcı izi, katman ve rapor dahil sınandı.
+- **Yan bulgu:** `hud-continuity-browser` Edge'de "close and reopen: default corner", Firefox'ta "iframe: normal position returns after exit" adımında düşüyor; değişiklikler geri alınmış 0.8.0 kodunda da aynı, yani bu işten değil. 16 Kasım'da geçmişti; ortam mı kod mu, incelenmedi.
+- **Açık:** gerçek dosyayla kullanıcı denemesi. Kurgu farkında (bir noktada birden atlama) düz çizgi uymaz; o durumda − / + yeter.
 
 ## Belgeler docs/ altında, kısa README — 16–17 Kasım 2026
 

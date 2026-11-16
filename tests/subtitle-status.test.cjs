@@ -14,7 +14,7 @@ const code = section('  // SUBTITLE EXPLANATION', '  // END SUBTITLE EXPLANATION
 function harness() {
   const nodes = new Map();
   const node = id => { if (!nodes.has(id)) nodes.set(id, { id, hidden: false, textContent: '' }); return nodes.get(id); };
-  const context = vm.createContext({ document: { getElementById: node }, setUiText(element, text) { element.textContent = text; }, customSubtitleCues: [], subtitleOffsetMs: 0, subtitleRenderStatus: 'not-loaded', remotePresentation: null });
+  const context = vm.createContext({ document: { getElementById: node }, setUiText(element, text) { element.textContent = text; }, customSubtitleCues: [], subtitleOffsetMs: 0, subtitleDrift: null, subtitleRenderStatus: 'not-loaded', remotePresentation: null });
   vm.runInContext(code, context);
   return { context, node, run: text => vm.runInContext(text, context) };
 }

@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.8.0 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.8.0';
+  const EXTENSION_VERSION = '0.8.1';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -400,7 +400,23 @@
     'Zamanlama adımı (fare tekerleği)': 'Timing step (mouse wheel)',
     '− ve + adımı': 'Step for − and +',
     'Şu anki kayma': 'Current offset',
+    'Kayma {0} · zamanla düzeltiliyor': 'Offset {0} · drift corrected',
     'Kayma {0}': 'Offset {0}',
+    'Zamanla kayma': 'Drift over time',
+    'Zamanla kayma düzeltmesi': 'Drift correction',
+    '1. noktayı kaydet': 'Save point 1',
+    '2. noktayı kaydet': 'Save point 2',
+    'Düzeltmeyi kaldır': 'Remove correction',
+    'Altyazı zamanla kayıyorsa: doğruyken 1. noktayı kaydedin, kayınca − / + ile düzeltip 2. noktayı kaydedin.':
+      'If the subtitles drift over time: save point 1 while they match, then fix them with − / + once they drift and save point 2.',
+    '1. nokta {0} anında kaydedildi. Altyazı kayınca − / + ile düzeltip 2. noktayı kaydedin.':
+      'Point 1 saved at {0}. Once the subtitles drift, fix them with − / + and save point 2.',
+    'Düzeltme açık: her 10 dakikada {0} sn': 'Correction on: {0} s every 10 minutes',
+    '1. nokta kaydedildi. Altyazı kayınca − / + ile düzeltip 2. noktayı kaydedin.': 'Point 1 saved. Once the subtitles drift, fix them with − / + and save point 2.',
+    '2. nokta 1. noktadan en az 1 dakika uzakta olmalı.': 'Point 2 must be at least 1 minute away from point 1.',
+    'İki noktada kayma aynı; zamanla kayma yok.': 'The offset is the same at both points; there is no drift.',
+    'Kayma çok hızlı; dosya bu videoya ait olmayabilir.': 'The drift is too fast; the file may belong to another video.',
+    '💬 Kayma düzeltmesi açık: her 10 dakikada {0} sn': '💬 Drift correction on: {0} s every 10 minutes',
     'Görünüm': 'Appearance',
     'Görüntü ve gece': 'Picture & night',
     'Görüntü ve gece modu': 'Picture & night mode',
@@ -1218,7 +1234,9 @@
 
   // Bellek İçi Harici Altyazı Durumu (In-Memory)
   let customSubtitleCues = []; // [{ start: number, end: number, text: string }]
-  let subtitleOffsetMs = 0;
+  let subtitleOffsetMs = 0; // With a drift correction this is the offset at drift.anchor.
+  let subtitleDrift = null; // { rate: ms per video second, anchor: video seconds } once two sync points are set.
+  let subtitleSyncPoint = null; // The first sync point { time, offset } while the second one is awaited.
   let subtitleFileName = '';
   let subtitleOverlayEnabled = true;
   let subtitleLoadStatus = 'not-loaded';
@@ -1332,6 +1350,7 @@
       decodedMatch: request.decodedMatch, renditionMatch: request.renditionMatch, playlistMapping: request.playlistMapping,
       subtitleLoaded: customSubtitleCues.length > 0, subtitleEnabled: subtitleOverlayEnabled,
       subtitleStatus: subtitleRenderStatus, subtitleOffset: subtitleOffsetMs, ...subtitleFrameState(video),
+      subtitleDriftRate: subtitleDrift ? subtitleDrift.rate : 0, subtitleSyncPoint: subtitleSyncPoint ? bounded(subtitleSyncPoint.time, 0, 864000) : -1,
       appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
       candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo),
       frameLoss: frameLossState()
@@ -1461,11 +1480,12 @@
           case 'appearance': Object.assign(subtitleAppearance, value); updateSubtitleAppearanceControls();
             if (video.__nokSubtitleTrack?.cues) for (const cue of video.__nokSubtitleTrack.cues) { cue.snapToLines = false; cue.line = 100 - value.bottom; }
             renderCustomSubtitleCue(video); break;
-          case 'subtitle-load': customSubtitleCues = value; subtitleFileName = 'External subtitles'; subtitleOffsetMs = 0;
+          case 'subtitle-load': customSubtitleCues = value; subtitleFileName = 'External subtitles'; resetSubtitleTiming();
             subtitleOverlayEnabled = true; subtitleLoadStatus = 'loaded'; addDiagnosticLog('INFO', 'SUBTITLE_LOADED');
             injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); break;
           case 'subtitle-visible': subtitleOverlayEnabled = value; injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); break;
-          case 'subtitle-offset': if (value === 0) { subtitleOffsetMs = 0; injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); } else shiftSubtitleSync(value); break;
+          case 'subtitle-offset': if (value === 0) { resetSubtitleTiming(); applySubtitleTiming(); addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: 0 }); } else shiftSubtitleSync(value); break;
+          case 'subtitle-drift': if (value === 'mark') markSubtitleSyncPoint(); else clearSubtitleDrift(value); break;
           case 'hotkeys': hotkeysEnabled = value; break;
           case 'presentation-active': remoteSourceActive = value; break;
           case 'frame-loss-answered': frameLossAnswered = value; clearFrameLossOffer(); break;
@@ -1542,6 +1562,9 @@
       applyHudPreferences(state.hudPreferences);
       syncAudioModeUi(currentAudioMode); setHudCollapsed(state.hudCollapsed);
       subtitleOverlayEnabled = state.subtitleEnabled; subtitleOffsetMs = state.subtitleOffset;
+      // The top panel only shows the correction; the media frame computes and applies it.
+      subtitleDrift = state.subtitleDriftRate ? { rate: state.subtitleDriftRate, anchor: 0 } : null;
+      subtitleSyncPoint = state.subtitleSyncPoint >= 0 ? { time: state.subtitleSyncPoint, offset: 0 } : null;
       value('pvc-speed-slider', state.requestedRate); value('pvc-volume-slider', state.requestedVolume);
       updateVolumeSliderVisualGain(document.getElementById('pvc-volume-slider'), state.requestedVolume);
       updateFilterUiBadges(); updateSubtitleAppearanceControls();
@@ -1556,6 +1579,7 @@
     updatePipButtonsState(state.pipActive);
     text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
     text('pvc-sub-offset-badge', `${state.subtitleOffset >= 0 ? '+' : ''}${state.subtitleOffset}ms`);
+    updateSubtitleDriftControls();
     text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
     document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
     text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
@@ -1648,6 +1672,7 @@
     setUiText(toggle, subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli'); toggle?.classList.toggle('pvc-active', subtitleOverlayEnabled);
     if (customSubtitleCues.length) setUiText(document.getElementById('pvc-sub-status-text'), `💬 Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
     setUiText(document.getElementById('pvc-sub-offset-badge'), `${subtitleOffsetMs >= 0 ? '+' : ''}${subtitleOffsetMs}ms`);
+    updateSubtitleDriftControls();
     updateFilterUiBadges(); updateSubtitleAppearanceControls(); updateRealtimeResolutionBadge();
   }
   // END FRAME PRESENTATION
@@ -1963,8 +1988,11 @@
     KICK_SPEED_UI_INVOKED: ['rate'], KICK_SPEED_UI_UNAVAILABLE: [],
     KICK_SYNC_FAILED: [], QUALITY_REJECTED: [],
     TRT_RATE_REAPPLIED: ['rate'], TRT_RATE_GAVE_UP: [], TRT_RATE_INTERCEPTED: ['rate'],
-    SUBTITLE_LOADED: [], SUBTITLE_PARSE_EMPTY: [], SUBTITLE_READ_FAILED: []
+    SUBTITLE_LOADED: [], SUBTITLE_PARSE_EMPTY: [], SUBTITLE_READ_FAILED: [],
+    SUBTITLE_OFFSET_CHANGED: ['offsetMs'], SUBTITLE_SYNC_POINT_MARKED: [], SUBTITLE_DRIFT_SET: ['driftMsPerMinute'], SUBTITLE_DRIFT_CLEARED: []
   });
+  // Repeated − / + presses within a few seconds are one correction; the last value replaces the earlier ones.
+  const DIAGNOSTIC_COALESCED_EVENTS = Object.freeze({ SUBTITLE_OFFSET_CHANGED: 5000 });
 
   function diagnosticNumber(value, min, max, step = 1) {
     return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
@@ -1977,14 +2005,19 @@
     const ranges = {
       rate: [0.25, 3, 0.01], percent: [0, 300, 1], mono: [0, 1, 1],
       delta: [-30, 30, 1], height: [0, 4320, 1],
-      reactInvoked: [0, 1, 1], ivsInvoked: [0, 1, 1]
+      reactInvoked: [0, 1, 1], ivsInvoked: [0, 1, 1],
+      offsetMs: [-3600000, 3600000, 10], driftMsPerMinute: [-3000, 3000, 1]
     };
     for (const key of DIAGNOSTIC_EVENT_FIELDS[event]) {
       const value = diagnosticNumber(details?.[key], ...ranges[key]);
       if (value !== null) safeDetails[key] = value;
     }
+    const now = performance.now(), last = DIAGNOSTIC_LOG_BUFFER[DIAGNOSTIC_LOG_BUFFER.length - 1];
+    if (last && last.event === event && Object.hasOwn(DIAGNOSTIC_COALESCED_EVENTS, event) && now - last.at < DIAGNOSTIC_COALESCED_EVENTS[event]) {
+      last.at = now; last.details = safeDetails; return;
+    }
     DIAGNOSTIC_LOG_BUFFER.push({
-      at: performance.now(),
+      at: now,
       level: ['INFO', 'WARN', 'ERROR'].includes(level) ? level : 'INFO',
       event,
       details: safeDetails
@@ -4230,6 +4263,33 @@
   // END SUBTITLE APPEARANCE
 
   // SUBTITLE EXPLANATION: says why nothing is on screen. Times and states only, never a line of the file.
+  // A file timed for another cut or frame rate slides a little further every minute. Two sync points give
+  // a straight line: offset(t) = base + rate * (t - anchor), with rate in ms per second of video.
+  const SUBTITLE_DRIFT_MIN_GAP = 60, SUBTITLE_DRIFT_MAX_RATE = 50; // seconds apart; 5 % covers 23.976 ↔ 25 fps
+  function subtitleOffsetAt(base, drift, time) {
+    const offset = base + (drift ? drift.rate * (time - drift.anchor) : 0);
+    return Math.max(-3600000, Math.min(3600000, offset));
+  }
+  // The subtitle file's clock at a video time.
+  function subtitleClockAt(base, drift, time) { return time - subtitleOffsetAt(base, drift, time) / 1000; }
+  // The video time at which a subtitle time is shown: the inverse, for the browser's own fullscreen/PiP track.
+  function videoTimeForSubtitle(base, drift, time) {
+    const rate = drift ? drift.rate : 0, anchor = drift ? drift.anchor : 0;
+    return (time + (base - rate * anchor) / 1000) / (1 - rate / 1000);
+  }
+  function subtitleDriftFrom(first, second) {
+    const gap = second.time - first.time;
+    if (!(Math.abs(gap) >= SUBTITLE_DRIFT_MIN_GAP)) return { error: 'too-close' };
+    const rate = (second.offset - first.offset) / gap;
+    if (Math.abs(rate) < 0.01) return { error: 'no-change' }; // under 0.6 s an hour
+    if (Math.abs(rate) > SUBTITLE_DRIFT_MAX_RATE) return { error: 'too-large' };
+    return { rate, anchor: second.time, base: Math.round(second.offset) };
+  }
+  // "+2.4": the seconds the correction adds every ten minutes of video.
+  function subtitleDriftAmount(rate) {
+    const seconds = Math.round(rate * 6) / 10;
+    return `${seconds > 0 ? '+' : ''}${seconds.toFixed(1)}`;
+  }
   function formatCueDelay(seconds) {
     const total = Math.max(1, Math.ceil(seconds)), hours = Math.floor(total / 3600), minutes = Math.floor(total / 60) % 60;
     const rest = String(total % 60).padStart(2, '0');
@@ -4252,7 +4312,7 @@
   function subtitleFrameState(video) {
     return {
       subtitleBuffering: !!video && !video.paused && video.readyState < 3,
-      subtitleNextIn: video ? nextCueDelay(customSubtitleCues, video.currentTime - subtitleOffsetMs / 1000) : -1
+      subtitleNextIn: video ? nextCueDelay(customSubtitleCues, subtitleClockAt(subtitleOffsetMs, subtitleDrift, video.currentTime)) : -1
     };
   }
   function updateSubtitleExplanation(video) {
@@ -4292,7 +4352,7 @@
     targetOverlay.style.setProperty('font-size', `${subtitleAppearance.fontSize}px`, 'important');
     targetOverlay.style.setProperty('background', `rgba(9, 13, 22, ${subtitleAppearance.background / 100})`, 'important');
     targetOverlay.style.setProperty('color', subtitleAppearance.color === 'yellow' ? '#fff176' : '#ffffff', 'important');
-    const effectiveTime = video.currentTime - (subtitleOffsetMs / 1000);
+    const effectiveTime = subtitleClockAt(subtitleOffsetMs, subtitleDrift, video.currentTime);
     const activeCue = customSubtitleCues.find(c => effectiveTime >= c.start && effectiveTime <= c.end);
 
     if (activeCue) {
@@ -4352,10 +4412,9 @@
       while (track.cues && track.cues.length > 0) {
         track.removeCue(track.cues[0]);
       }
-      const offsetSec = subtitleOffsetMs / 1000;
       customSubtitleCues.forEach(c => {
-        const s = Math.max(0, c.start + offsetSec);
-        const e = Math.max(s + 0.2, c.end + offsetSec);
+        const s = Math.max(0, videoTimeForSubtitle(subtitleOffsetMs, subtitleDrift, c.start));
+        const e = Math.max(s + 0.2, videoTimeForSubtitle(subtitleOffsetMs, subtitleDrift, c.end));
         const cue = new window.VTTCue(s, e, c.text);
         cue.snapToLines = false;
         cue.line = 100 - subtitleAppearance.bottom;
@@ -4371,16 +4430,68 @@
       return;
     }
     subtitleOffsetMs = Math.max(-3600000, Math.min(3600000, subtitleOffsetMs + deltaMs));
-    const badge = document.getElementById('pvc-sub-offset-badge');
-    if (badge) {
-      setUiText(badge, `${subtitleOffsetMs >= 0 ? '+' : ''}${subtitleOffsetMs}ms`);
-    }
-    const { video } = findVideoAndPlayer();
-    if (video) {
-      injectNativeTextTrackCues(video);
-      renderCustomSubtitleCue(video);
-    }
+    applySubtitleTiming();
+    addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: subtitleOffsetMs });
     showToast(`💬 Altyazı Senkronu: ${subtitleOffsetMs >= 0 ? '+' : ''}${subtitleOffsetMs}ms`);
+  }
+  // Redraws the line and rebuilds the browser's own track after any timing change.
+  function applySubtitleTiming() {
+    setUiText(document.getElementById('pvc-sub-offset-badge'), `${subtitleOffsetMs > 0 ? '+' : ''}${subtitleOffsetMs}ms`);
+    updateSubtitleDriftControls();
+    const { video } = findVideoAndPlayer();
+    if (video) { injectNativeTextTrackCues(video); renderCustomSubtitleCue(video); }
+  }
+  function resetSubtitleTiming() {
+    subtitleOffsetMs = 0; subtitleDrift = null; subtitleSyncPoint = null;
+  }
+  // First press: "the subtitle is right now". Second press, after fixing it with − / +: the drift line.
+  function markSubtitleSyncPoint() {
+    if (remotePresentation) { remoteControl('subtitle-drift', 'mark'); return; }
+    const { video } = findVideoAndPlayer();
+    if (customSubtitleCues.length === 0 || !video) { showToast('Önce bir .srt veya .vtt altyazı dosyası yükleyin'); return; }
+    const point = { time: video.currentTime, offset: subtitleOffsetAt(subtitleOffsetMs, subtitleDrift, video.currentTime) };
+    if (!subtitleSyncPoint) {
+      subtitleSyncPoint = point; addDiagnosticLog('INFO', 'SUBTITLE_SYNC_POINT_MARKED');
+      showToast('1. nokta kaydedildi. Altyazı kayınca − / + ile düzeltip 2. noktayı kaydedin.');
+      applySubtitleTiming(); return;
+    }
+    const result = subtitleDriftFrom(subtitleSyncPoint, point);
+    if (result.error === 'too-close') { showToast('2. nokta 1. noktadan en az 1 dakika uzakta olmalı.'); return; }
+    subtitleSyncPoint = null;
+    if (result.error) {
+      showToast(result.error === 'no-change' ? 'İki noktada kayma aynı; zamanla kayma yok.' : 'Kayma çok hızlı; dosya bu videoya ait olmayabilir.');
+    } else {
+      subtitleDrift = { rate: result.rate, anchor: result.anchor }; subtitleOffsetMs = result.base;
+      addDiagnosticLog('INFO', 'SUBTITLE_DRIFT_SET', { driftMsPerMinute: result.rate * 60 });
+      showToast(`💬 Kayma düzeltmesi açık: her 10 dakikada ${subtitleDriftAmount(result.rate)} sn`);
+    }
+    applySubtitleTiming();
+  }
+  // 'cancel' drops a waiting first point; 'clear' removes the correction and keeps the line where it is now.
+  function clearSubtitleDrift(action) {
+    if (remotePresentation) { remoteControl('subtitle-drift', action); return; }
+    if (action === 'clear' && subtitleDrift) {
+      const { video } = findVideoAndPlayer();
+      subtitleOffsetMs = Math.round(subtitleOffsetAt(subtitleOffsetMs, subtitleDrift, video ? video.currentTime : subtitleDrift.anchor));
+      subtitleDrift = null; addDiagnosticLog('INFO', 'SUBTITLE_DRIFT_CLEARED');
+    }
+    subtitleSyncPoint = null;
+    applySubtitleTiming();
+  }
+  function updateSubtitleDriftControls() {
+    const status = document.getElementById('pvc-sub-drift-status');
+    if (!status) return;
+    const rate = subtitleDrift ? subtitleDrift.rate : 0, waiting = !!subtitleSyncPoint;
+    setUiText(status, rate ? `Düzeltme açık: her 10 dakikada ${subtitleDriftAmount(rate)} sn`
+      : waiting ? `1. nokta ${formatCueDelay(subtitleSyncPoint.time)} anında kaydedildi. Altyazı kayınca − / + ile düzeltip 2. noktayı kaydedin.`
+        : 'Altyazı zamanla kayıyorsa: doğruyken 1. noktayı kaydedin, kayınca − / + ile düzeltip 2. noktayı kaydedin.');
+    const mark = document.getElementById('pvc-sub-drift-mark');
+    setUiText(mark, waiting ? '2. noktayı kaydet' : '1. noktayı kaydet');
+    const cancel = document.getElementById('pvc-sub-drift-cancel');
+    setUiText(cancel, rate && !waiting ? 'Düzeltmeyi kaldır' : 'Vazgeç');
+    cancel.hidden = !rate && !waiting;
+    cancel.setAttribute('data-pvc-drift-action', waiting ? 'cancel' : 'clear');
+    scheduleToolbarSync();
   }
 
   // =========================================================================
@@ -5384,7 +5495,11 @@
         subtitleLoaded: customSubtitleCues.length > 0,
         subtitleLoadStatus: diagnosticChoice(subtitleLoadStatus, ['not-loaded', 'loaded', 'empty', 'read-error']),
         subtitleRenderStatus: diagnosticChoice(subtitleRenderStatus,
-          ['not-loaded', 'disabled', 'no-video', 'no-active-cue', 'overlay-requested', 'native-requested', 'video-offscreen'])
+          ['not-loaded', 'disabled', 'no-video', 'no-active-cue', 'overlay-requested', 'native-requested', 'video-offscreen']),
+        // The user's shift (at the second sync point when drift is corrected) and the drift per minute.
+        // Neither reveals a line, the file or where the video is; the report never reads the playback position.
+        subtitleOffsetMs: customSubtitleCues.length > 0 ? diagnosticNumber(subtitleOffsetMs, -3600000, 3600000, 10) : null,
+        subtitleDriftMsPerMinute: customSubtitleCues.length > 0 ? diagnosticNumber(subtitleDrift ? subtitleDrift.rate * 60 : 0, -3000, 3000, 1) : null
       } : null,
       quality: {
         control: qualityControl,
@@ -6054,6 +6169,9 @@
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>− ve + adımı</span></div><div class="pvc-tb-opts">${opts('substep', TOOLBAR_SUBTITLE_STEPS, value => value >= 1000 ? `${value / 1000}s` : `${value}ms`)}</div></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu anki kayma</span><button type="button" id="pvc-tb-sub-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></div>
           <span id="pvc-tb-sub-offset-big" class="pvc-tb-big" data-pvc-i18n-skip>0 ms</span></div>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Zamanla kayma</span></div>
+          <span id="pvc-tb-sub-drift-text" class="pvc-tb-note" data-pvc-i18n-skip></span>
+          <div class="pvc-tb-opts pvc-tb-drift-opts"><button type="button" id="pvc-tb-sub-drift-mark" class="pvc-tb-opt">${uiIcon('pin')}<span id="pvc-tb-sub-drift-mark-val" data-pvc-i18n-skip>1. noktayı kaydet</span></button><button type="button" id="pvc-tb-sub-drift-cancel" class="pvc-tb-opt" hidden><span id="pvc-tb-sub-drift-cancel-val" data-pvc-i18n-skip>Vazgeç</span></button></div></div>
         <div id="pvc-tb-sub-why-card" class="pvc-tb-card" hidden><span id="pvc-tb-sub-why" class="pvc-tb-note" data-pvc-i18n-skip></span></div>
       </div>
       <div id="pvc-tb-pop-sublook" class="pvc-tb-popover" aria-label="Altyazı görünümü" hidden>
@@ -6500,8 +6618,15 @@
     setUiTip(byId('pvc-tb-sub-earlier'), `Altyazıyı ${toolbarSubtitleStep} ms erken göster`);
     setUiTip(byId('pvc-tb-sub-later'), `Altyazıyı ${toolbarSubtitleStep} ms geç göster`);
     shown('pvc-tb-sub-offset-big', offsetText);
-    byId('pvc-tb-sub-offset').hidden = offset === 0; byId('pvc-tb-sub-dot').hidden = offset === 0;
-    if (offset !== 0) setUiText(byId('pvc-tb-sub-offset-val'), `Kayma ${offsetText}`);
+    const drifting = !!subtitleDrift?.rate;
+    byId('pvc-tb-sub-offset').hidden = offset === 0 && !drifting; byId('pvc-tb-sub-dot').hidden = offset === 0 && !drifting;
+    if (offset !== 0 || drifting) setUiText(byId('pvc-tb-sub-offset-val'), drifting ? `Kayma ${offsetText} · zamanla düzeltiliyor` : `Kayma ${offsetText}`);
+    // The drift card mirrors the classic panel's texts, which are already in the panel language.
+    const driftCancel = byId('pvc-sub-drift-cancel');
+    shown('pvc-tb-sub-drift-text', byId('pvc-sub-drift-status')?.textContent.trim() || '');
+    shown('pvc-tb-sub-drift-mark-val', byId('pvc-sub-drift-mark')?.textContent.trim() || '');
+    shown('pvc-tb-sub-drift-cancel-val', driftCancel?.textContent.trim() || '');
+    byId('pvc-tb-sub-drift-cancel').hidden = !driftCancel || driftCancel.hidden;
     const status = byId('pvc-sub-status-text')?.textContent.replace(/^[\p{Extended_Pictographic}️‍]+\s*/u, '').trim() || '';
     // A long file name is shortened, but the cue count stays visible; the whole line is in the tooltip.
     const statusParts = /^(.*?)\s*(\([^()]*\))$/.exec(status);
@@ -6675,6 +6800,7 @@
     on('pvc-tb-sub-earlier', () => { shiftSubtitleSync(-toolbarSubtitleStep); scheduleToolbarSync(); });
     on('pvc-tb-sub-later', () => { shiftSubtitleSync(toolbarSubtitleStep); scheduleToolbarSync(); });
     for (const id of ['pvc-tb-sub-reset', 'pvc-tb-sub-offset-reset']) on(id, () => { byId('pvc-sub-sync-reset')?.click(); scheduleToolbarSync(); });
+    for (const id of ['mark', 'cancel']) on(`pvc-tb-sub-drift-${id}`, () => { byId(`pvc-sub-drift-${id}`)?.click(); scheduleToolbarSync(); });
     toolbar.querySelectorAll('[data-pvc-substep]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); toolbarSubtitleStep = Number(button.getAttribute('data-pvc-substep')); syncToolbar(); }));
     bindToolbarWheel(byId('pvc-tb-sub-step'), direction => { toolbarSubtitleStep = toolbarStepAfter(TOOLBAR_SUBTITLE_STEPS, toolbarSubtitleStep, direction, 100); syncToolbar(); });
     on('pvc-tb-sub-white', () => { setSubtitleAppearance('color', 'white'); scheduleToolbarSync(); });
@@ -7001,6 +7127,13 @@
             <button id="pvc-sub-sync-reset" class="pvc-action-btn" title="Senkron kaymasını sıfırla">0ms Sıfırla</button>
             <button id="pvc-sub-sync-p100" class="pvc-action-btn" title="Altyazıyı 100ms ileri al">${uiLabel('forward', '+100ms')}</button>
           </div>
+          <div class="pvc-sub-drift" aria-label="Zamanla kayma düzeltmesi">
+            <p id="pvc-sub-drift-status" class="pvc-settings-note">Altyazı zamanla kayıyorsa: doğruyken 1. noktayı kaydedin, kayınca − / + ile düzeltip 2. noktayı kaydedin.</p>
+            <div class="pvc-btn-grid-2">
+              <button id="pvc-sub-drift-mark" class="pvc-action-btn">${uiLabel('pin', '1. noktayı kaydet')}</button>
+              <button id="pvc-sub-drift-cancel" class="pvc-action-btn" data-pvc-drift-action="cancel" hidden>Vazgeç</button>
+            </div>
+          </div>
           <details class="pvc-sub-appearance">
             <summary>Altyazı görünümü</summary>
             <label>Yazı boyutu <output id="pvc-sub-fontSize-value">20px</output><input id="pvc-sub-fontSize" type="range" min="12" max="48" value="20" class="pvc-range-slider" /></label>
@@ -7287,9 +7420,9 @@
           subtitleLoadStatus = 'loaded';
           addDiagnosticLog('INFO', 'SUBTITLE_LOADED');
           subtitleFileName = file.name;
-          subtitleOffsetMs = 0;
-          const badge = document.getElementById('pvc-sub-offset-badge');
-          if (badge) setUiText(badge, '0ms');
+          resetSubtitleTiming();
+          setUiText(document.getElementById('pvc-sub-offset-badge'), '0ms');
+          updateSubtitleDriftControls();
           if (subStatusText) {
             setUiText(subStatusText, `✅ ${subtitleFileName} (${customSubtitleCues.length} satır RAM'de)`);
             subStatusText.style.color = 'var(--pvc-success, #34d399)';
@@ -7353,16 +7486,15 @@
     popup.querySelector('#pvc-sub-sync-reset').onclick = (e) => {
       e.stopPropagation();
       if (remotePresentation) { remoteControl('subtitle-offset', 0); return; }
-      subtitleOffsetMs = 0;
-      const badge = document.getElementById('pvc-sub-offset-badge');
-      if (badge) setUiText(badge, '0ms');
-      const { video } = findVideoAndPlayer();
-      if (video) {
-        injectNativeTextTrackCues(video);
-        renderCustomSubtitleCue(video);
-      }
+      resetSubtitleTiming(); applySubtitleTiming();
+      addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: 0 });
       showToast('💬 Altyazı Senkronu Sıfırlandı (0ms)');
     };
+    popup.querySelector('#pvc-sub-drift-mark').onclick = e => { e.stopPropagation(); markSubtitleSyncPoint(); };
+    popup.querySelector('#pvc-sub-drift-cancel').onclick = e => {
+      e.stopPropagation(); clearSubtitleDrift(e.currentTarget.getAttribute('data-pvc-drift-action') === 'cancel' ? 'cancel' : 'clear');
+    };
+    updateSubtitleDriftControls();
 
     // Çözünürlük, Adaptör, DRM ve Footer Butonları
     popup.querySelector('#pvc-refresh-res-btn').onclick = (e) => {

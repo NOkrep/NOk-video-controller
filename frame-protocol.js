@@ -45,7 +45,7 @@
     verification: choice(verification), requestedHeight: num(0, 4320), requestedIndex: num(-1, 127, true),
     decodedMatch: nullable(bool), renditionMatch: nullable(bool), playlistMapping: choice(['unknown', 'shared-playlist', 'distinct-playlists']),
     subtitleLoaded: bool, subtitleEnabled: bool, subtitleStatus: choice(subtitleStatus), subtitleOffset: num(-3600000, 3600000),
-    subtitleBuffering: bool, subtitleNextIn: num(-1, 864000),
+    subtitleBuffering: bool, subtitleNextIn: num(-1, 864000), subtitleDriftRate: num(-50, 50), subtitleSyncPoint: num(-1, 864000),
     appearance, filters, candidates: array(shape({ height: num(0, 8640, true) }), 32), target: num(-1, 31, true), frameLoss: bool
   };
   function cleanState(value) { return record(value, stateSpec) || null; }
@@ -54,6 +54,7 @@
     audio: choice(['stereo', 'mono']), quality: num(0, 127, true), target: num(-1, 31, true),
     adapter: choice(adapters.filter(item => item !== 'unknown')), filters, appearance,
     'subtitle-visible': bool, 'subtitle-offset': choice([-1000, -500, -250, -100, -50, 0, 50, 100, 250, 500, 1000]),
+    'subtitle-drift': choice(['mark', 'cancel', 'clear']),
     'hotkeys': bool, 'presentation-active': bool, 'frame-loss-answered': bool, 'hud-collapsed': bool, 'hud-placement': placement, 'hud-preferences': preferences
   };
   function cleanCues(value) {
@@ -90,7 +91,9 @@
     observedNativeVolumePercent: nullable(num(0, 100)), observedGain: nullable(num(0, 3)),
     audioContextState: choice(['not-created', 'running', 'suspended', 'closed', 'interrupted', 'unknown']), audioSourceCreated: bool,
     audioMode: choice(['stereo', 'mono', 'unknown']), drmDetected: bool, isShadowDom: bool, subtitleLoaded: bool,
-    subtitleLoadStatus: choice(['not-loaded', 'loaded', 'empty', 'read-error', 'unknown']), subtitleRenderStatus: choice([...subtitleStatus, 'unknown'])
+    subtitleLoadStatus: choice(['not-loaded', 'loaded', 'empty', 'read-error', 'unknown']), subtitleRenderStatus: choice([...subtitleStatus, 'unknown']),
+    // Timing numbers only: the shift now and the drift per minute; never a cue, a file name or the video position.
+    subtitleOffsetMs: nullable(num(-3600000, 3600000, true)), subtitleDriftMsPerMinute: nullable(num(-3000, 3000, true))
   };
   const eventFields = {
     IVS_ATTACHED: [], IVS_CREATED: [], STREAM_DETECTED: [], STREAM_REDIRECTED: [], FULLSCREEN_ENTERED: [], FULLSCREEN_EXITED: [],
@@ -101,7 +104,8 @@
     QUALITY_REQUESTED: ['height'], QUALITY_REJECTED: [], KICK_SPEED_SYNC: ['reactInvoked', 'ivsInvoked'],
     KICK_VOLUME_SYNC: ['reactInvoked', 'ivsInvoked'], KICK_SPEED_UI_INVOKED: ['rate'], KICK_SPEED_UI_UNAVAILABLE: [], KICK_SYNC_FAILED: [],
     TRT_RATE_REAPPLIED: ['rate'], TRT_RATE_GAVE_UP: [], TRT_RATE_INTERCEPTED: ['rate'],
-    SUBTITLE_LOADED: [], SUBTITLE_PARSE_EMPTY: [], SUBTITLE_READ_FAILED: []
+    SUBTITLE_LOADED: [], SUBTITLE_PARSE_EMPTY: [], SUBTITLE_READ_FAILED: [],
+    SUBTITLE_OFFSET_CHANGED: ['offsetMs'], SUBTITLE_SYNC_POINT_MARKED: [], SUBTITLE_DRIFT_SET: ['driftMsPerMinute'], SUBTITLE_DRIFT_CLEARED: []
   };
   function cleanEvent(value) {
     if (!value || !Object.hasOwn(eventFields, value.event)) return undefined;
@@ -109,7 +113,8 @@
       level: choice(['INFO', 'WARN', 'ERROR']), event: choice(Object.keys(eventFields)) });
     if (!event || !value.details || typeof value.details !== 'object') return undefined;
     event.details = {};
-    const ranges = { rate: [0.25, 3], percent: [0, 300], mono: [0, 1], delta: [-30, 30], height: [0, 4320], reactInvoked: [0, 1], ivsInvoked: [0, 1] };
+    const ranges = { rate: [0.25, 3], percent: [0, 300], mono: [0, 1], delta: [-30, 30], height: [0, 4320], reactInvoked: [0, 1], ivsInvoked: [0, 1],
+      offsetMs: [-3600000, 3600000], driftMsPerMinute: [-3000, 3000] };
     for (const key of eventFields[event.event]) {
       if (!Object.hasOwn(value.details, key)) continue;
       const safe = num(...ranges[key])(value.details[key]);
