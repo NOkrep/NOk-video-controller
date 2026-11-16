@@ -16,6 +16,16 @@
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
 - **16 Kasım — milestone 0.8 (araç çubuğu) tamam:** kullanıcı karşılaştırmayı bitirdi ve iki gerçek sitede denedi; sürüm `0.8.0`. Sıradaki seçili işler: I-03, I-04, I-05, I-09 ve I-10, D-06.
 
+## Belgeler docs/ altında, kısa README — 16–17 Kasım 2026
+
+Kullanıcı GitHub'da kökte gereğinden fazla dosya olduğunu düşündü; silmek yerine düzenleme önerisini onayladı ("Yes, move them"). Kod ve sürüm değişmedi (v0.8.0).
+
+- **Taşınanlar (`git mv`, geçmiş korunur):** `docs/dev` — devir, ana kılavuz, bu iş kaydı, test, kalite, canlı site doğrulaması, çerçeve sunumu, reklam denetimi, geliştirme durumu, yol haritası; `docs/design` — araç çubuğu, HMI incelemesi, tasarım kaynakları, tema değerlendirmesi, animasyon ayrıntıları; `docs/measurements` — animasyon, filtre, bellek, rapor ölçümleri; `docs/history` — iş geçmişi, eski sürüm notları ve eski README (`README_ARCHIVE.md`).
+- **Kökte kalanlar:** kısa kullanıcı README'si (ne olduğu, özellikler, kurulum, gizlilik, lisans, belge bağlantıları; e-posta adresi yeni README'de yok, eskisi arşivde), LICENSE, THIRD_PARTY_NOTICES, AGENTS.md, CLAUDE.md ve kod.
+- **Güncellenenler:** 47 göreli bağlantı yeni yerlerine göre yeniden yazıldı (AGENTS.md dışındaki tüm bağlantılar çözülüyor); CLAUDE.md, `scripts/set-version.cjs`, `tests/extension-contract.test.cjs`; NOk-Tools `project-profiles/video-controller.json` › `docs` (yedek: `reports/backups/2026-11-17-claude-filmdeck-docs-paths`, `Test-NOkTools.ps1` PASS).
+- **Codex'te:** `AGENTS.md` Codex alanı; içindeki üç bağlantı eski yolları gösteriyor. `D:/NOk-Tools/AGENT_NOTES.md` › N-019 ile bildirildi. Koddaki birkaç yorum belge adını geçirir; adlar değişmediği için aramayla bulunur.
+- **Kanıt:** `npm run check` 289/289 (taşımadan sonra).
+
 ## Milestone 0.8: kompakt araç çubuğu, v0.8.0 — 16 Kasım 2026
 
 Kullanıcı kararı: eski/yeni panel karşılaştırması tamam ("bir sorun gözlemlemedim"), araç çubuğu iki gerçek sitede denendi ("şimdilik yeterli"; site adları kayda geçmedi). Milestone `0.7` → `0.8`; sürüm `0.8.0`. Kullanıcı PR'ı sürüm artışından sonra açmayı tercih etti.
