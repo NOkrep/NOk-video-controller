@@ -1,6 +1,6 @@
 # Araç çubuğu yeniden tasarımı (Model 5)
 
-Durum: tasarım aşaması, kod değişmedi. Tasarım Figma'da (`FilmDeck MEC523 Wireframes`, son sayfa "Model 5 · rev 3" ve sonrası). Kararların tarihli kaydı [ACTIVE_WORK.md](ACTIVE_WORK.md) içinde. Bu dosya, uygulamaya geçerken uyulacak teknik kuralları ve bugünkü panelin (v0.7.18) her özelliğinin yeni tasarımdaki yerini tutar. Bir özellik yeni tasarımda yer bulmadan eski panel kaldırılmaz.
+Durum (16 Kasım): **uygulandı, milestone 0.8 (v0.8.0)** — araç çubuğu varsayılan düzen, eski panel Kolay okunur düzen; uygulama kaydı §6'da. Aşağıdaki ilk bölümler tasarım aşamasından kalan gereksinim kaydıdır. Tasarım Figma'da (`FilmDeck MEC523 Wireframes`, "Model 5 · rev 3" ve sonraki sayfalar). Kararların tarihli kaydı [ACTIVE_WORK.md](ACTIVE_WORK.md) içinde. Bu dosya, uygulamaya geçerken uyulacak teknik kuralları ve bugünkü panelin (v0.7.18) her özelliğinin yeni tasarımdaki yerini tutar. Bir özellik yeni tasarımda yer bulmadan eski panel kaldırılmaz.
 
 ## 1. Yapı
 
@@ -161,3 +161,28 @@ Durum: **yerinde** = tasarımda yeri var; **karar** = yeri henüz belirlenmedi.
 - **Açılış:** kutu 150 ms'lik kısa bir yükselmeyle görünür; "Hareketi azalt" açıkken animasyon yok.
 - **Kaydırıcılar:** v0.7.23'te klasik paneldeki kalın halkalı tutamaca dönülmüştü; B3 modelindeki ince iz ve düz tutamaç seçildiği için bu sürümde ona geçildi.
 - **Grup düğmesi (kullanıcı kararı, 15 Kasım):** tek tıklama hiçbir şey yapmaz; çift tıklama grup listesini açar; fare tekerleği liste açılmadan grupları gezer. Klavyede çift tıklama olmadığı için Enter/Boşluk listeyi açar.
+
+### v0.7.25 — ertelenen anlık durumlar (kullanıcı seçimi, 16 Kasım; Figma "Transient states · models")
+
+- **Oynat/duraklat (1C):** Playing şeridinin başında küçük yuvarlak düğme; simgesi videonun durumunu izler (gömülü oynatıcıda çerçevenin bildirdiği durum). Klasik küçültülmüş çubuk da aynı `togglePlayback` işlevini kullanır; onun simgesini `outerHTML` ile değiştiren eski satır Trusted Types sitelerinde hata verirdi, düzeltildi.
+- **DRM (2B + C, kullanıcının birleşimi):** Playing şeridinin sağ ucunda yalnız kalkan; üzerine gelince solunda "Protected stream" açılır, tıklayınca açıklama penceresi. DRM'nin sınırladığı her denetimde aynı kalkan (bugün yalnız ses); açılır kutularda ayrıca açıklama satırı yok, bilgi şeritteki kalkanda (kullanıcı, 16 Kasım). Yeni sınırlanan denetim `TOOLBAR_DRM_MARKS` listesine eklenir. Kalkan şeridin son öğesidir ve yazı soluna açılır; böylece yazı açılırken kalkan imlecin altından kaymaz.
+- **Kare kaybı sorusu (3A):** cevaplanana kadar grup şeridinin yerini turuncu şerit alır; Evet/Hayır klasik paneldeki düğmelerle cevaplar.
+- **Video bekleniyor ve kaynağı yeniden dene (4A + C):** video bulunamazken her grupta kırmızı şerit (Yeniden tara, Teşhis raporu). Siteye özel 1080p yeniden deneme Quality kutusunda düğme ve açıklama; seçenek varken Quality düğmesinin köşesinde küçük yeniden-dene işareti ve ipucunda not.
+- **Şerit önceliği:** aynı anda tek şerit: video bekleniyor > kare kaybı sorusu > grubun kendi şeridi.
+- **İpucu (ara karar, Claude):** araç çubuğu düzeninde ipucu tıklamayı yakalamaz; çubuğun altına açılan ipucu şeritteki düğmeleri kapatıyordu. Üzerine gelinebilir ipucu klasik (Easy-read) panelde aynen kalır.
+- **DRM penceresi:** şifreleme türü bilinmediğinde gösterilen yedek ad İngilizce arayüzde de çevrilir.
+
+### v0.7.26 — araç çubuğu varsayılan, Easy-read'de kademeli büyütme (milestone adımı)
+
+- **Varsayılan düzen (kullanıcı kararı, 14 Kasım; uygulama 16 Kasım):** panel artık araç çubuğuyla açılır. Klasik panel "Kolay okunur düzen"dir: araç çubuğundaki Accessibility › Easy-read layout anahtarıyla ya da klasik paneldeki Erişilebilirlik bölümünün en üstündeki "Kolay okunur düzen" anahtarıyla geçilir; anahtar kapatılınca araç çubuğuna dönülür. Önizleme anahtarı ("Kompakt araç çubuğu (önizleme)") kaldırıldı. Dar pencerede kendiliğinden klasik panele geçiş aynen sürer.
+- **Kademeli büyütme:** klasik paneldeki açık/kapalı "Büyük yazı ve kontroller" yerine "Yazı ve denetim boyutu: 100% · 125% · 150%". Panelin içeriği kademe oranında büyütülür (CSS `zoom`), panel genişliği de aynı oranda artar (388 → 485 → 582 px); panelin kendi konumu ve yerleşim hesabı değişmez, yükseklik sığmazsa mevcut kaydırma kullanılır. Pencereye sığmayan kademe seçilemez (ipucu: "Pencere bu boyut için dar"); pencere sonradan daralırsa seçim korunur, sığan en büyük kademe gösterilir. Araç çubuğu kademeden etkilenmez; pencereler ve bildirimler kademe 100'ün üstündeyken eskisi gibi büyük yazı kullanır.
+- **Tercih köprüsü:** `largeText` (açık/kapalı) yerini `textScale` (100/125/150) aldı; gömülü oynatıcı çerçevesine bu taşınır, başka değer reddedilir.
+- **Testler:** klasik paneli sınayan tarayıcı testleri paneli açtıktan sonra kullanıcının basacağı anahtarla Kolay okunur düzene geçer (`resource-driver.cjs` › `easyRead`).
+
+### v0.7.27 — Stereo/Mono kayan anahtarı (kullanıcı seçimi, 16 Kasım; Figma "Stereo / Mono · models")
+
+- Ses kutusunun başlığındaki iki parçalı `Stereo | Mono` seçici yerine Model 1: kayan anahtar. Solunda o anki ad ("Stereo"/"Mono") her zaman yazar; durgunken anahtar sade bir topuzdur.
+- Üzerine gelince ya da klavye odağında simgeler belirir: stereo kulak üstü kulaklık, mono iki yana ses yayan tek kaynak (daire). Seçili tarafın simgesi topuzun üstündedir. İpucu: "Stereo: sol ve sağ ayrı kalır · Mono: iki kanal iki kulakta, tek kulakla dinlemeye uygun".
+- Tıklama ve Boşluk çevirir, ← stereo, → mono seçer, fare tekerleği aşağı mono, yukarı stereo. Topuz 150 ms kayar; "Hareketi azalt" açıkken animasyon yok. Ekran okuyucuya "Mono" adlı bir anahtar olarak duyurulur.
+- Simge arayışı: kutu hoparlör, daireler, kulaklık, dalgalar, harfler, tek kapak ve kulak denendi; yerleşik bir mono simgesi bulunamadı (telefon ve Windows "Mono ses"i yalnız yazıyla gösteriyor). Seçim: stereo için 5c'deki kulaklık, mono için 6'daki tek kaynaktan iki yana yayılan ses.
+- Kolay okunur düzendeki eski Stereo/Mono düğmeleri olduğu gibi kaldı.

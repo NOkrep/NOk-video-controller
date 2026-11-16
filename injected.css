@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.7.24
+ * injected.css - FilmDeck by NOk v0.8.0
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1424,12 +1424,15 @@
   transition: opacity 0.125s cubic-bezier(0.23, 1, 0.32, 1), transform 0.125s cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
 #pvc-controller-popup .pvc-tooltip[data-open] { opacity: 1 !important; transform: none !important; }
+/* Toolbar layout: a tooltip below the bar lies over the status strip, so it must not catch the click meant for
+   the strip's buttons (play/pause, shield, Yes/No). The hoverable tooltip stays in the classic (Easy-read) panel. */
+#pvc-controller-popup.pvc-layout-toolbar .pvc-tooltip { pointer-events: none !important; }
 #pvc-controller-popup .pvc-tooltip[data-instant] { transition-duration: 0s !important; }
 #pvc-controller-popup .pvc-tooltip[hidden] { display: none !important; }
 #pvc-controller-popup #pvc-sub-why { margin: 0 0 6px !important; }
 #pvc-controller-popup #pvc-sub-why[hidden] { display: none !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion .pvc-tooltip { transition: none !important; transform: none !important; }
-#pvc-controller-popup.pvc-a11y-large-text .pvc-tooltip { font-size: 14px !important; max-width: min(320px, calc(100vw - 16px)) !important; }
+#pvc-controller-popup:is(.pvc-a11y-scale-125, .pvc-a11y-scale-150):not(.pvc-layout-toolbar) .pvc-tooltip { font-size: 14px !important; max-width: min(320px, calc(100vw - 16px)) !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion .pvc-loading-grid { display: none !important; }
 #pvc-controller-popup .pvc-val-badge,
 #pvc-controller-popup #pvc-active-adapter-badge { background: var(--pvc-surface) !important; }
@@ -1634,3 +1637,59 @@
 #pvc-toolbar .pvc-tb-popover:not([hidden]) { animation: pvc-tb-pop-in 150ms cubic-bezier(0.23, 1, 0.32, 1) both !important; }
 #pvc-toolbar.pvc-tb-above .pvc-tb-popover:not([hidden]) { animation-name: pvc-tb-pop-in-up !important; }
 #pvc-controller-popup.pvc-a11y-reduce-motion #pvc-toolbar .pvc-tb-popover { animation: none !important; }
+
+/* Transient states (user choices, 16 Nov): play/pause and DRM shield in the Playing strip, a shield on every
+   control DRM limits, alert strips for "waiting for a video" and the frame-loss question, a retry mark on Quality. */
+#pvc-toolbar .pvc-tb-play { width: 22px !important; height: 22px !important; justify-content: center !important; border-radius: 50% !important; background: color-mix(in srgb, var(--pvc-accent) 22%, transparent) !important; color: var(--pvc-accent-ink) !important; }
+#pvc-toolbar .pvc-tb-play .pvc-ui-icon { width: 12px !important; height: 12px !important; flex-basis: 12px !important; }
+/* The strip is anchored at its right end and the shield is its last item; the name opens to the shield's left,
+   so the shield stays under the pointer while the strip grows. */
+#pvc-toolbar .pvc-tb-shield { flex-direction: row-reverse !important; gap: 0 !important; padding: 2px 6px !important; border-radius: 8px !important; color: var(--pvc-warning) !important; background: color-mix(in srgb, var(--pvc-warning) 14%, transparent) !important; }
+#pvc-toolbar .pvc-tb-shield .pvc-ui-icon { width: 13px !important; height: 13px !important; flex-basis: 13px !important; }
+#pvc-toolbar .pvc-tb-shield-label { max-width: 0 !important; overflow: hidden !important; white-space: nowrap !important; opacity: 0 !important; font-size: 11px !important; font-weight: 650 !important; transition: max-width 180ms ease-out, opacity 150ms ease-out, margin 180ms ease-out !important; }
+#pvc-toolbar .pvc-tb-shield:hover .pvc-tb-shield-label, #pvc-toolbar .pvc-tb-shield:focus-visible .pvc-tb-shield-label { max-width: 140px !important; opacity: 1 !important; margin-right: 5px !important; }
+#pvc-toolbar .pvc-tb-limit { display: inline-flex !important; color: var(--pvc-warning) !important; }
+#pvc-toolbar .pvc-tb-limit .pvc-ui-icon { width: 12px !important; height: 12px !important; flex-basis: 12px !important; }
+#pvc-toolbar .pvc-tb-limit-note { display: flex !important; align-items: flex-start !important; gap: 6px !important; color: var(--pvc-warning) !important; font-size: 11px !important; line-height: 1.35 !important; }
+#pvc-toolbar .pvc-tb-limit-note .pvc-ui-icon { width: 13px !important; height: 13px !important; flex-basis: 13px !important; margin-top: 1px !important; }
+#pvc-toolbar .pvc-tb-mark { position: absolute !important; top: -3px !important; right: -3px !important; width: 14px !important; height: 14px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; border-radius: 50% !important; background: var(--pvc-accent) !important; color: var(--pvc-accent-on) !important; box-shadow: 0 0 0 2px var(--pvc-bg) !important; }
+#pvc-toolbar .pvc-tb-mark .pvc-ui-icon { width: 9px !important; height: 9px !important; flex-basis: 9px !important; }
+#pvc-toolbar .pvc-tb-wide { width: 100% !important; gap: 6px !important; padding: 6px 10px !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-wide .pvc-ui-icon { width: 13px !important; height: 13px !important; flex-basis: 13px !important; }
+#pvc-toolbar .pvc-tb-alert { white-space: normal !important; }
+#pvc-toolbar .pvc-tb-alert-danger { color: var(--pvc-danger) !important; background: color-mix(in srgb, var(--pvc-danger) 14%, var(--pvc-bg)) !important; border-color: color-mix(in srgb, var(--pvc-danger) 60%, transparent) !important; }
+#pvc-toolbar .pvc-tb-alert-warning { color: var(--pvc-warning) !important; background: color-mix(in srgb, var(--pvc-warning) 14%, var(--pvc-bg)) !important; border-color: color-mix(in srgb, var(--pvc-warning) 60%, transparent) !important; }
+#pvc-toolbar .pvc-tb-alert-text { display: flex !important; flex-direction: column !important; gap: 1px !important; max-width: 360px !important; font-size: 11px !important; line-height: 1.35 !important; }
+#pvc-toolbar .pvc-tb-alert-text > span { font-weight: 500 !important; color: var(--pvc-text) !important; opacity: 0.85 !important; }
+#pvc-toolbar .pvc-tb-alert .pvc-tb-mini { color: var(--pvc-text) !important; flex: 0 0 auto !important; }
+#pvc-toolbar .pvc-tb-mini-strong { background: color-mix(in srgb, currentColor 22%, transparent) !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-alert .pvc-tb-mini-strong { background: color-mix(in srgb, var(--pvc-text) 18%, transparent) !important; }
+
+/* Easy-read stepwise enlargement (user decision, 14 Nov): the classic panel's contents are zoomed by the step and
+   the panel widens by the same step, so its own left/top placement stays exact; the height keeps the existing
+   scroll. The tooltip (fixed) and the toolbar are not zoomed. Widths follow CLASSIC_PANEL_WIDTH in injected.js. */
+#pvc-controller-popup.pvc-a11y-scale-125:not(.pvc-layout-toolbar) { width: 485px !important; }
+#pvc-controller-popup.pvc-a11y-scale-150:not(.pvc-layout-toolbar) { width: 582px !important; }
+#pvc-controller-popup.pvc-collapsed.pvc-a11y-scale-125:not(.pvc-layout-toolbar) { width: 388px !important; }
+#pvc-controller-popup.pvc-collapsed.pvc-a11y-scale-150:not(.pvc-layout-toolbar) { width: 465px !important; }
+#pvc-controller-popup.pvc-a11y-scale-125:not(.pvc-layout-toolbar) > :not(#pvc-tooltip):not(#pvc-toolbar) { zoom: 1.25 !important; }
+#pvc-controller-popup.pvc-a11y-scale-150:not(.pvc-layout-toolbar) > :not(#pvc-tooltip):not(#pvc-toolbar) { zoom: 1.5 !important; }
+#pvc-controller-popup .pvc-scale-row { flex-wrap: wrap !important; gap: 8px !important; }
+#pvc-controller-popup .pvc-scale-options { display: inline-flex !important; gap: 4px !important; }
+#pvc-controller-popup .pvc-scale-btn { min-width: 52px !important; justify-content: center !important; }
+#pvc-controller-popup .pvc-scale-btn:disabled { opacity: 0.45 !important; cursor: not-allowed !important; }
+
+/* Stereo/Mono sliding switch (user choice, 16 Nov; Figma "Stereo / Mono · models"). At rest: the name and a plain
+   knob. On hover or keyboard focus the icons fade in (headphones = stereo, one source sending both ways = mono)
+   and the tooltip explains; the chosen side's icon sits on the knob. */
+#pvc-toolbar .pvc-tb-channel { display: inline-flex !important; align-items: center !important; gap: 7px !important; }
+#pvc-toolbar .pvc-tb-channel-name { min-width: 34px !important; text-align: right !important; color: var(--pvc-accent-ink) !important; font-size: 11px !important; font-weight: 650 !important; }
+#pvc-toolbar .pvc-tb-channel-switch { position: relative !important; display: inline-block !important; width: 58px !important; height: 26px !important; padding: 0 !important; border-radius: 13px !important; background: color-mix(in srgb, var(--pvc-text) 10%, transparent) !important; box-shadow: inset 0 0 0 1px var(--pvc-border) !important; transition: background-color 150ms ease-out, box-shadow 150ms ease-out !important; }
+#pvc-toolbar .pvc-tb-channel-switch:hover, #pvc-toolbar .pvc-tb-channel-switch:focus-visible { background: color-mix(in srgb, var(--pvc-text) 14%, transparent) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pvc-accent) 70%, transparent) !important; }
+#pvc-toolbar .pvc-tb-channel-knob { position: absolute !important; top: 2px !important; left: 2px !important; width: 28px !important; height: 22px !important; border-radius: 11px !important; background: var(--pvc-accent) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important; transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1) !important; }
+#pvc-toolbar .pvc-tb-channel-switch[aria-checked="true"] .pvc-tb-channel-knob { transform: translateX(26px) !important; }
+#pvc-toolbar .pvc-tb-channel-icon { position: absolute !important; top: 5px !important; display: inline-flex !important; color: var(--pvc-muted) !important; opacity: 0 !important; transition: opacity 150ms ease-out !important; pointer-events: none !important; }
+#pvc-toolbar .pvc-tb-channel-stereo { left: 8px !important; }
+#pvc-toolbar .pvc-tb-channel-mono { left: 34px !important; }
+#pvc-toolbar .pvc-tb-channel-switch:is(:hover, :focus-visible) .pvc-tb-channel-icon { opacity: 1 !important; }
+#pvc-toolbar .pvc-tb-channel-switch[aria-checked="false"] .pvc-tb-channel-stereo, #pvc-toolbar .pvc-tb-channel-switch[aria-checked="true"] .pvc-tb-channel-mono { color: var(--pvc-accent-on) !important; }

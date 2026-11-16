@@ -2,7 +2,7 @@
 // node tests/hud-continuity-browser.cjs --engine=firefox|chromium [--report=true]
 // --report prints observations without failing; the default mode asserts the accepted behaviour.
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path');
-const {createDriver,until,delay}=require('./resource-driver.cjs');
+const {createDriver,until,delay,easyRead}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox',reportOnly=args.report==='true';
 const executable=args.browser||(engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe');
@@ -12,7 +12,7 @@ const videoScript=`function startVideo(host){const video=document.createElement(
   video.srcObject=canvas.captureStream(10);host.appendChild(video);video.play().catch(()=>{});return video;}`;
 const hudState=()=>{
   const popup=document.getElementById('pvc-controller-popup'),rect=popup?.getBoundingClientRect(),visible=!!popup&&popup.style.display==='block'&&rect.width>0;
-  return {visible,huds:document.querySelectorAll('#pvc-controller-popup').length,collapsed:popup?.classList.contains('pvc-collapsed')??null,left:visible?Math.round(rect.left):null,top:visible?Math.round(rect.top):null,
+  return {visible,toolbar:!!popup?.classList.contains('pvc-layout-toolbar'),huds:document.querySelectorAll('#pvc-controller-popup').length,collapsed:popup?.classList.contains('pvc-collapsed')??null,left:visible?Math.round(rect.left):null,top:visible?Math.round(rect.top):null,
     rightGap:visible?Math.round(innerWidth-rect.right):null,bottomGap:visible?Math.round(innerHeight-rect.bottom):null,viewport:[innerWidth,innerHeight],noVideoAlert:popup?getComputedStyle(popup.querySelector('#pvc-no-video-alert')).display!=='none':null,
     adapter:popup?.querySelector('#pvc-active-adapter-badge')?.textContent??null,video:!!document.querySelector('video'),engine:window.__NOK_VIDEO_CONTROLLER_INJECTED__===true};
 };
@@ -47,7 +47,8 @@ async function main(){
   const setVolume=async(page,value)=>{const row=await visibleHud(page);await driver.evaluate(row.target,value=>{const input=document.getElementById('pvc-volume-slider');input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));},value);};
   const volumeReached=async(page,value)=>{const deadline=Date.now()+8000;while(Date.now()<deadline){for(const row of await scan(page)){if(row.video&&await driver.evaluate(row.target,value=>Math.abs(document.querySelector('video').volume-value/100)<.01,value))return true;}await delay(150);}return false;};
   const controlCheck=async(page,value)=>{await setVolume(page,value);return volumeReached(page,value);};
-  const openHud=async page=>{await driver.pointerClick(page,'#open');return visibleHud(page);};
+  // Placement here is the classic (Easy-read) panel's; the toolbar's own placement is in toolbar-browser.
+  const openHud=async page=>{await driver.pointerClick(page,'#open');const row=await visibleHud(page);if(row.toolbar)await easyRead(driver,row.target);return visibleHud(page);};
   const keepVisible=async page=>{const row=await visibleHud(page);await driver.evaluate(row.target,()=>{const box=document.getElementById('pvc-a11y-keepVisible');if(box&&!box.checked)box.click();});};
   const inFullscreen=(page,selector)=>driver.pointerClick(page,selector);
   const exitFullscreen=async page=>{for(const {target} of await driver.frames(page)){try{await driver.evaluate(target,()=>document.fullscreenElement&&document.exitFullscreen());}catch(_){}}};

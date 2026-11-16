@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.7.24 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.0 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.7.24';
+  const EXTENSION_VERSION = '0.8.0';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -385,7 +385,8 @@
     'Yenile': 'Refresh',
     'Grup: {0} · çift tıkla: liste · tekerlek: değiştir': 'Group: {0} · double-click: list · wheel: switch',
     'Gruplar': 'Groups',
-    'Kompakt araç çubuğu (önizleme)': 'Compact toolbar (preview)',
+    'Yazı ve denetim boyutu': 'Text and control size',
+    'Pencere bu boyut için dar': 'The window is too narrow for this size',
     'Dosya yükle': 'Load file',
     'Altyazı dosyası yükle · .srt ve .vtt · yalnız bu sayfada tutulur': 'Load a subtitle file · .srt and .vtt · kept only for this page',
     'Görünür': 'Shown',
@@ -418,6 +419,12 @@
     'Gizliliği koruyan teşhis raporu': 'Privacy-focused diagnostic report',
     'Sürüm {0} · MIT': 'Version {0} · MIT',
     'Kaynak kodu': 'Source code',
+    'EME Korumalı (Widevine / FairPlay)': 'EME protected (Widevine / FairPlay)',
+    'Korumalı akış': 'Protected stream',
+    'DRM korumalı akış: kalkanlı ayarlar sınırlı · ayrıntı için tıkla': 'DRM-protected stream: settings with a shield are limited · click for details',
+    'Video kalitesi (Alt+Q) · 1080p kaynağını yeniden deneme seçeneği var': 'Video quality (Alt+Q) · a 1080p source retry is available',
+    'Oynat / duraklat': 'Play / pause',
+    'Stereo: sol ve sağ ayrı kalır · Mono: iki kanal iki kulakta, tek kulakla dinlemeye uygun': 'Stereo: left and right stay separate · Mono: both channels in both ears, good for one ear',
     'Açık tut': 'Keep visible',
     'Kolay okunur düzen': 'Easy-read layout',
     'Hareketi azalt': 'Reduce motion',
@@ -446,6 +453,8 @@
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     eyeOff: '<path d="M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-2.6 3.4M6.6 6.6C3.7 8.4 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/>',
     headphones: '<path d="M4 14v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="12" width="4" height="8" rx="2"/><rect x="17" y="12" width="4" height="8" rx="2"/>',
+    // Mono: one source sending sound to both sides (user choice; echoes the one/two-circle channel convention).
+    monoSource: '<circle cx="12" cy="12" r="3.4"/><path d="M6.8 9a4.2 4.2 0 0 0 0 6M17.2 9a4.2 4.2 0 0 1 0 6M3.8 6.6a7.6 7.6 0 0 0 0 10.8M20.2 6.6a7.6 7.6 0 0 1 0 10.8"/>',
     rewind: '<path d="m11 5-8 7 8 7Zm10 0-8 7 8 7Z"/>',
     forward: '<path d="m3 5 8 7-8 7Zm10 0 8 7-8 7Z"/>',
     play: '<path d="m7 4 14 8-14 8Z"/>',
@@ -881,15 +890,31 @@
 
   // Presentation preferences stay in RAM and reach only the panel's other frame; never added to diagnostics.
   const hudAccessibility = {
-    keepVisible: false, largeText: false, highContrast: false,
+    keepVisible: false, textScale: 100, highContrast: false,
     reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
   };
+  // Easy-read (the classic panel) enlarges in steps; the toolbar keeps its own size. Widths match injected.css.
+  const TEXT_SCALES = [100, 125, 150];
+  const CLASSIC_PANEL_WIDTH = 388;
+  const textScaleButtons = [];
+  function textScaleFits(scale) {
+    return CLASSIC_PANEL_WIDTH * scale / 100 + 24 <= (window.innerWidth || document.documentElement?.clientWidth || 0);
+  }
+  // The chosen step, or the largest smaller one that still fits the window; nothing while the toolbar is shown.
+  function effectiveTextScale() {
+    if (toolbarShown) return 100;
+    return [...TEXT_SCALES].reverse().find(scale => scale <= hudAccessibility.textScale && textScaleFits(scale)) || 100;
+  }
   function applyUiAccessibility(root) {
     if (!root) return;
     applyUiTheme(root);
     for (const [key, className] of Object.entries({
-      largeText: 'pvc-a11y-large-text', highContrast: 'pvc-a11y-contrast', reduceMotion: 'pvc-a11y-reduce-motion'
+      highContrast: 'pvc-a11y-contrast', reduceMotion: 'pvc-a11y-reduce-motion'
     })) root.classList.toggle(className, hudAccessibility[key]);
+    const scale = effectiveTextScale();
+    if (root.id === 'pvc-controller-popup') {
+      root.classList.toggle('pvc-a11y-scale-125', scale === 125); root.classList.toggle('pvc-a11y-scale-150', scale === 150);
+    } else root.classList.toggle('pvc-a11y-large-text', scale > 100); // Dialogs and toasts keep the single larger text size.
     if (root.id === 'pvc-quick-toast') root.style.setProperty('transition', hudAccessibility.reduceMotion
       ? 'none' : 'opacity 0.2s ease, transform 0.2s ease', 'important');
   }
@@ -897,13 +922,21 @@
     for (const id of UI_ROOT_IDS) {
       applyUiAccessibility(document.getElementById(id));
     }
-    updateThemeControls();
+    updateThemeControls(); updateTextScaleControls();
     resetIdleTimer(popup);
     clampPopupToViewport(popup);
   }
-  const HUD_ACCESSIBILITY_KEYS = ['keepVisible', 'largeText', 'highContrast', 'reduceMotion'];
-  // The user's layout choice. 'classic' stays the default until every toolbar group exists.
-  let hudLayout = 'classic';
+  // Step buttons show the chosen size; a step the window cannot hold is disabled and says why.
+  function updateTextScaleControls() {
+    for (const button of textScaleButtons) {
+      const scale = Number(button.getAttribute('data-pvc-scale')), on = scale === hudAccessibility.textScale, fits = textScaleFits(scale);
+      button.classList.toggle('pvc-chip-active', on); button.setAttribute('aria-checked', String(on));
+      button.disabled = !fits; setUiTip(button, fits ? null : 'Pencere bu boyut için dar');
+    }
+  }
+  const HUD_ACCESSIBILITY_KEYS = ['keepVisible', 'textScale', 'highContrast', 'reduceMotion'];
+  // The user's layout choice (user decision, 14 Nov): the toolbar is the default; 'classic' is Easy-read.
+  let hudLayout = 'toolbar';
   // Compact toolbar state (see COMPACT TOOLBAR); declared early because toasts read it.
   let toolbarGroup = 'player', toolbarSeekStep = 10, toolbarSubtitleStep = 100, toolbarShown = false, toolbarWidthCache = 0;
   let toolbarOpenPopover = null, toolbarSyncFrame = 0, toolbarBubbleTimer = null, toolbarBrandHeld = false;
@@ -924,7 +957,7 @@
       if (checkbox) checkbox.checked = next[key];
     }
     for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id));
-    updateThemeControls();
+    updateThemeControls(); updateTextScaleControls();
     const popup = document.getElementById('pvc-controller-popup');
     if (popup && popup.style.display !== 'none') clampPopupToViewport(popup);
   }
@@ -1003,10 +1036,30 @@
     const summary = document.createElement('summary');
     setUiText(summary, 'Erişilebilirlik'); accessibility.appendChild(summary);
     const options = [
-      ['keepVisible', 'Paneli açık tut'], ['largeText', 'Büyük yazı ve kontroller'],
+      ['keepVisible', 'Paneli açık tut'], ['textScale'],
       ['highContrast', 'Yüksek kontrast'], ['reduceMotion', 'Panel animasyonlarını azalt']
     ];
     for (const [key, label] of options) {
+      if (key === 'textScale') {
+        // Stepwise enlargement replaces the old on/off "larger text" switch (user decision, 14 Nov).
+        const row = document.createElement('div'); row.className = 'pvc-setting-row pvc-scale-row';
+        const caption = document.createElement('span'); caption.id = 'pvc-a11y-scale-label'; setUiText(caption, 'Yazı ve denetim boyutu');
+        const group = document.createElement('div'); group.className = 'pvc-scale-options'; group.setAttribute('role', 'radiogroup');
+        group.setAttribute('aria-labelledby', caption.id);
+        for (const scale of TEXT_SCALES) {
+          const button = document.createElement('button'); button.type = 'button'; button.className = 'pvc-chip-btn pvc-scale-btn';
+          button.setAttribute('data-pvc-scale', String(scale)); button.setAttribute('role', 'radio'); button.setAttribute('data-pvc-i18n-skip', '');
+          button.textContent = `${scale}%`;
+          button.addEventListener('click', e => {
+            e.stopPropagation(); if (button.disabled) return;
+            hudAccessibility.textScale = scale; refreshUiAccessibility(popup); syncHudPreferences();
+          });
+          group.appendChild(button); textScaleButtons.push(button);
+        }
+        row.appendChild(caption); row.appendChild(group); accessibility.appendChild(row);
+        updateTextScaleControls();
+        continue;
+      }
       const row = document.createElement('label'); row.className = 'pvc-setting-row';
       const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
       checkbox.id = `pvc-a11y-${key}`; checkbox.checked = hudAccessibility[key];
@@ -1452,11 +1505,14 @@
       const popup = document.getElementById('pvc-controller-popup');
       if (popup) { resumePresentation = popup.__nokLastActivity === true; popup.__nokLastActivity = null; }
     }
+    // A source engine that restarts inside the same session (e.g. the frame navigates) begins from defaults;
+    // the visible top HUD's own choices go to it, or its defaults (toolbar layout, size, theme) would replace them.
+    const newOwner = !first && !!remotePresentation && remotePresentation.owner !== state.owner;
     remotePresentationSession = session; remotePresentation = state;
     // The visible top HUD owns the initial preference; later snapshots carry source/fullscreen changes.
     if (first && state.hudCollapsed !== hudCollapsed) remoteControl('hud-collapsed', hudCollapsed);
     if (first && hudPlacement) remoteControl('hud-placement', hudPlacement);
-    if (first) remoteControl('hud-preferences', currentHudPreferences());
+    if (first || newOwner) remoteControl('hud-preferences', currentHudPreferences());
     renderRemoteHud();
     if (resumePresentation) document.getElementById('pvc-controller-popup')?.__nokActivity?.(true);
     if (leftFullscreen && state.hudPlacement) {
@@ -1508,6 +1564,9 @@
     setNoVideoAlertVisible(!state.hasVideo);
     renderFrameLossNotice();
     renderRemoteQualities(); renderRemoteTargets();
+    // The frame's paused state is not shown anywhere in the classic panel, so the toolbar is told directly.
+    // (The guard lets unit tests run this function on its own.)
+    if (typeof scheduleToolbarSync === 'function') scheduleToolbarSync();
   }
   function renderRemoteQualities() {
     const state = remotePresentation, container = document.getElementById('pvc-dynamic-quality-container');
@@ -4714,6 +4773,16 @@
     }
   }
 
+  // Play/pause for both layouts; returns whether the video is now paused (null when there is nothing to toggle
+  // here, e.g. the request went to an embedded player frame).
+  function togglePlayback() {
+    if (remotePresentation) { remoteControl('play'); return null; }
+    const { video } = findVideoAndPlayer();
+    if (!video) return null;
+    if (video.paused) { video.play().catch(() => {}); return false; }
+    video.pause(); return true;
+  }
+
   function setAudioMode(mode) {
     if (remotePresentation) { remoteControl('audio', mode); return; }
     if (mode !== 'stereo' && mode !== 'mono') return;
@@ -5691,7 +5760,7 @@
         else e.stopPropagation();
       });
     });
-    modal.querySelector('#pvc-drm-key-system').textContent = drm.keySystem;
+    modal.querySelector('#pvc-drm-key-system').textContent = uiText(drm.keySystem); // Our own fallback names are translated; real key-system ids pass through.
     document.getElementById('pvc-close-drm-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
     document.getElementById('pvc-dismiss-drm-btn').onclick = (e) => { e.stopPropagation(); closeUiDialog(modal); };
     activateUiDialog(modal, { initial: '#pvc-dismiss-drm-btn' });
@@ -5919,6 +5988,9 @@
   // END TOOLBAR GEOMETRY
 
   const TOOLBAR_GROUP_IDS = ['player', 'subtitles', 'settings', 'accessibility'];
+  // Shown while the stream is DRM-protected: the strip's shield plus a shield on each control DRM limits.
+  // A control that becomes limited later gets its own mark here.
+  const TOOLBAR_DRM_MARKS = ['pvc-tb-drm', 'pvc-tb-volume-limit'];
   // Accessibility switches: key, label, icon, tooltip. "easyRead" is the classic panel itself (TOOLBAR_REDESIGN.md).
   const TOOLBAR_A11Y = [['keepVisible', 'Açık tut', 'pin', 'Araç çubuğu izlerken solmadan ekranda kalır'],
     ['easyRead', 'Kolay okunur düzen', 'typeface', 'Klasik paneli gösterir; araç çubuğuna oradaki Erişilebilirlik bölümünden dönülür'],
@@ -5945,8 +6017,8 @@
             <button type="button" id="pvc-tb-seek-step" class="pvc-tb-step" data-pvc-popover="seek"><span id="pvc-tb-seek-val" data-pvc-i18n-skip>10s</span></button>
             <button type="button" id="pvc-tb-seek-fwd" class="pvc-tb-icon" aria-label="İleri sar">${uiIcon('forward')}</button>
           </div>
-          <button type="button" id="pvc-tb-volume" class="pvc-tb-chip" data-pvc-popover="volume">${uiIcon('volume')}<span id="pvc-tb-volume-val" data-pvc-i18n-skip>100%</span></button>
-          <button type="button" id="pvc-tb-quality" class="pvc-tb-chip" data-pvc-popover="quality">${uiIcon('video')}<span id="pvc-tb-quality-val">Kalite</span></button>
+          <button type="button" id="pvc-tb-volume" class="pvc-tb-chip" data-pvc-popover="volume">${uiIcon('volume')}<span id="pvc-tb-volume-val" data-pvc-i18n-skip>100%</span><span id="pvc-tb-volume-limit" class="pvc-tb-limit" hidden>${uiIcon('shield')}</span></button>
+          <button type="button" id="pvc-tb-quality" class="pvc-tb-chip" data-pvc-popover="quality">${uiIcon('video')}<span id="pvc-tb-quality-val">Kalite</span><span id="pvc-tb-quality-retry" class="pvc-tb-mark" hidden>${uiIcon('refresh')}</span></button>
         </div>
         <div class="pvc-tb-group" data-pvc-group="subtitles" hidden>
           <button type="button" id="pvc-tb-sub-load" class="pvc-tb-chip">${uiIcon('folder')}<span>Dosya yükle</span></button>
@@ -5970,10 +6042,14 @@
         <span class="pvc-tb-sep"></span>
         <button type="button" id="pvc-tb-mode" class="pvc-tb-mode"><span id="pvc-tb-mode-icon" class="pvc-tb-mode-icon"></span><span id="pvc-tb-mode-label">Oynatıcı</span><span class="pvc-tb-dots"><span></span><span></span><span></span><span></span></span></button>
       </div>
-      <div id="pvc-tb-strip" class="pvc-tb-strip" data-pvc-strip="player">${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button></div>
+      <div id="pvc-tb-strip" class="pvc-tb-strip" data-pvc-strip="player"><button type="button" id="pvc-tb-playpause" class="pvc-tb-play" aria-label="Oynat / duraklat"><span id="pvc-tb-play-icon" class="pvc-tb-iconbox">${uiIcon('play')}</span><span id="pvc-tb-pause-icon" class="pvc-tb-iconbox" hidden>${uiIcon('pause')}</span></button>${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button><button type="button" id="pvc-tb-drm" class="pvc-tb-shield" hidden>${uiIcon('shield')}<span class="pvc-tb-shield-label">Korumalı akış</span></button></div>
       <div id="pvc-tb-sub-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="subtitles" hidden>${uiIcon('subtitles')}<span id="pvc-tb-sub-status" class="pvc-tb-strip-text" data-pvc-i18n-skip><span id="pvc-tb-sub-name" class="pvc-tb-strip-name"></span><span id="pvc-tb-sub-count" class="pvc-tb-strip-count"></span></span>
         <span id="pvc-tb-sub-offset" class="pvc-tb-offset" hidden><span id="pvc-tb-sub-offset-val"></span><button type="button" id="pvc-tb-sub-offset-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></span></div>
       <div id="pvc-tb-a11y-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="accessibility" hidden>${uiIcon('info')}<span>Bu tercihler sayfa yenilenince sıfırlanır · klavye kısayolları: soldaki tuş simgesi</span></div>
+      <div id="pvc-tb-waiting-strip" class="pvc-tb-strip pvc-tb-alert pvc-tb-alert-danger" role="status" hidden>${uiIcon('warning')}<span class="pvc-tb-alert-text"><strong>Aktif Oynatıcı Bekleniyor</strong><span>Sayfadaki video henüz başlamadı veya farklı bir çerçeve içinde.</span></span>
+        <button type="button" id="pvc-tb-rescan" class="pvc-tb-mini pvc-tb-mini-strong">${uiIcon('refresh')}<span>Yeniden Tara</span></button><button type="button" id="pvc-tb-waiting-report" class="pvc-tb-mini">${uiIcon('report')}<span>Teşhis Raporu</span></button></div>
+      <div id="pvc-tb-frameloss-strip" class="pvc-tb-strip pvc-tb-alert pvc-tb-alert-warning" role="status" hidden>${uiIcon('warning')}<span id="pvc-tb-frameloss-text" class="pvc-tb-alert-text" data-pvc-i18n-skip></span>
+        <button type="button" id="pvc-tb-frameloss-yes" class="pvc-tb-mini pvc-tb-mini-strong">Evet</button><button type="button" id="pvc-tb-frameloss-no" class="pvc-tb-mini">Hayır</button></div>
       <div id="pvc-tb-pop-subtiming" class="pvc-tb-popover" aria-label="Altyazı zamanlaması" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>− ve + adımı</span></div><div class="pvc-tb-opts">${opts('substep', TOOLBAR_SUBTITLE_STEPS, value => value >= 1000 ? `${value / 1000}s` : `${value}ms`)}</div></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu anki kayma</span><button type="button" id="pvc-tb-sub-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></div>
@@ -6003,14 +6079,16 @@
       </div>
       <div id="pvc-tb-pop-volume" class="pvc-tb-popover" aria-label="Ses ve kanallar" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Ses ve kanallar</span>
-            <span class="pvc-tb-segment"><button type="button" id="pvc-tb-stereo" class="pvc-tb-seg">Stereo</button><button type="button" id="pvc-tb-mono" class="pvc-tb-seg">Mono</button></span></div>
+            <span class="pvc-tb-channel"><span id="pvc-tb-channel-val" class="pvc-tb-channel-name">Stereo</span><button type="button" id="pvc-tb-channel" class="pvc-tb-channel-switch" role="switch" aria-checked="false" aria-label="Mono"><span class="pvc-tb-channel-knob"></span><span class="pvc-tb-channel-icon pvc-tb-channel-stereo">${uiIcon('headphones')}</span><span class="pvc-tb-channel-icon pvc-tb-channel-mono">${uiIcon('monoSource')}</span></button></span></div>
           <div class="pvc-tb-range"><span>0%</span><input type="range" id="pvc-tb-volume-slider" class="pvc-range-slider" min="0" max="300" step="5" value="100" aria-label="Ses" /><span>300%</span></div>
           <div class="pvc-tb-opts">${opts('vol', [0, 100, 200, 300], value => `${value}%`)}</div></div>
       </div>
       <div id="pvc-tb-pop-quality" class="pvc-tb-popover" aria-label="Video kalitesi" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcının bildirdiği seçenekler</span></div>
           <div id="pvc-tb-quality-list" class="pvc-tb-opts"></div>
-          <span id="pvc-tb-quality-status" class="pvc-tb-note" data-pvc-i18n-skip></span></div>
+          <span id="pvc-tb-quality-status" class="pvc-tb-note" data-pvc-i18n-skip></span>
+          <button type="button" id="pvc-tb-retry-source" class="pvc-tb-opt pvc-tb-wide" hidden>${uiIcon('refresh')}<span>1080p kaynağını yeniden dene</span></button>
+          <span id="pvc-tb-retry-note" class="pvc-tb-note" hidden>Alternatif 1080p kaynağını yeniden dener; gerekirse sayfayı yeniler. Yenileme bellek içi ayarları ve altyazıları sıfırlar.</span></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcı tespiti</span></div>
           <div class="pvc-tb-row"><span class="pvc-tb-muted">Adaptör</span><span class="pvc-tb-row-end"><span id="pvc-tb-adapter" class="pvc-tb-badge" data-pvc-i18n-skip></span><button type="button" id="pvc-tb-adapter-change" class="pvc-tb-mini">Değiştir</button></span></div>
           <div class="pvc-tb-row"><span class="pvc-tb-muted">Video hedefi</span><button type="button" id="pvc-tb-target-btn" class="pvc-tb-select" aria-haspopup="listbox" aria-expanded="false" aria-label="Video hedefi"><span id="pvc-tb-target-val" data-pvc-i18n-skip></span>${uiIcon('chevron')}</button></div>
@@ -6053,6 +6131,21 @@
   function toolbarPopoverAnchor(name) {
     return document.getElementById({ speed: 'pvc-tb-speed', seek: 'pvc-tb-seek-step', volume: 'pvc-tb-volume', quality: 'pvc-tb-quality', groups: 'pvc-tb-mode',
       subtiming: 'pvc-tb-sub-step', sublook: 'pvc-tb-sub-look', language: 'pvc-tb-lang', picture: 'pvc-tb-picture', theme: 'pvc-tb-theme' }[name]);
+  }
+  // One strip at a time under the bar: a pending alert (no video found, then the frame-loss question) takes
+  // the place of the group's own strip until it is resolved, in every group. Alerts mirror the classic panel.
+  function updateToolbarStrips() {
+    const toolbar = document.getElementById('pvc-toolbar');
+    if (!toolbar) return;
+    const waiting = document.getElementById('pvc-no-video-alert')?.style.display === 'block';
+    const frameLoss = !waiting && document.getElementById('pvc-frame-loss-notice')?.style.display === 'block';
+    const alert = waiting ? 'pvc-tb-waiting-strip' : frameLoss ? 'pvc-tb-frameloss-strip' : null;
+    let changed = false;
+    for (const strip of toolbar.querySelectorAll('.pvc-tb-strip')) {
+      const show = alert ? strip.id === alert : strip.getAttribute('data-pvc-strip') === toolbarGroup;
+      if (strip.hidden === show) { strip.hidden = !show; changed = true; }
+    }
+    if (changed) { updateToolbarSide(); placeToolbarPopover(); }
   }
   function visibleToolbarStrip() {
     return [...(document.getElementById('pvc-toolbar')?.querySelectorAll('.pvc-tb-strip') || [])].find(node => !node.hidden) || null;
@@ -6163,7 +6256,7 @@
     const before = toolbarShown && popup && popup.style.display !== 'none' ? popup.getBoundingClientRect() : null;
     if (toolbarOpenPopover?.panel.id !== 'pvc-tb-pop-groups') closeToolbarPopover();
     for (const group of toolbar.querySelectorAll('[data-pvc-group]')) group.hidden = group.getAttribute('data-pvc-group') !== id;
-    for (const strip of toolbar.querySelectorAll('[data-pvc-strip]')) strip.hidden = strip.getAttribute('data-pvc-strip') !== id;
+    updateToolbarStrips();
     const [label, icon] = TOOLBAR_GROUP_INFO[id];
     setUiMarkup(document.getElementById('pvc-tb-mode-icon'), uiIcon(icon));
     setUiText(document.getElementById('pvc-tb-mode-label'), label);
@@ -6196,18 +6289,30 @@
   // Shows the toolbar when the user chose it and the window has room; otherwise the classic panel.
   function applyToolbarLayout() {
     const popup = document.getElementById('pvc-controller-popup'), toolbar = document.getElementById('pvc-toolbar');
-    const toggle = document.getElementById('pvc-layout-toolbar-toggle');
-    if (toggle) toggle.checked = hudLayout === 'toolbar';
+    const toggle = document.getElementById('pvc-layout-easyread-toggle');
+    if (toggle) toggle.checked = hudLayout === 'classic';
     if (!popup || !toolbar) return;
     if (hudLayout === 'toolbar') toolbarWidthCache = measureToolbarWidth(popup, toolbar) || toolbarWidthCache;
     const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
     const show = hudLayout === 'toolbar' && toolbarFitsViewport(toolbarWidthCache, viewportWidth, toolbarShown, EDGE_MARGIN);
     if (show !== toolbarShown || popup.classList.contains('pvc-layout-toolbar') !== show) {
+      // Switching layouts keeps the panel's right edge, as a group change does, so a toolbar near the right edge
+      // becomes a panel near the right edge (and back) instead of leaving it mid-screen.
+      const before = popup.style.display !== 'none' ? popup.getBoundingClientRect() : null;
       toolbarShown = show;
       popup.classList.toggle('pvc-layout-toolbar', show);
       if (!show) { closeToolbarPopover(); hideToolbarBubbleNow(); }
-      if (popup.style.display !== 'none') clampPopupToViewport(popup);
+      for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id)); // The width depends on the size step.
+      const after = before ? popup.getBoundingClientRect() : null;
+      if (after && Math.abs(after.width - before.width) > 0.5) {
+        popup.style.setProperty('left', `${Math.round(before.right - after.width)}px`, 'important');
+        popup.style.setProperty('right', 'auto', 'important');
+      }
     }
+    // Easy-read's size step depends on the layout and the window width, so it is re-applied on every pass.
+    for (const id of UI_ROOT_IDS) applyUiAccessibility(document.getElementById(id));
+    updateTextScaleControls();
+    if (popup.style.display !== 'none') clampPopupToViewport(popup);
     if (show) {
       syncToolbar(); updateToolbarSide(); placeToolbarPopover();
       // A toast shown just before the switch (e.g. "FilmDeck active") moves under the bar too.
@@ -6307,7 +6412,9 @@
     toolbar.querySelectorAll('[data-pvc-vol]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-vol')) === toolbarState.volume));
     toolbar.querySelectorAll('[data-pvc-step]').forEach(button => pressed(button, Number(button.getAttribute('data-pvc-step')) === toolbarSeekStep));
     const mono = byId('pvc-audio-mono-btn')?.classList.contains('pvc-audio-active') === true;
-    pressed(byId('pvc-tb-mono'), mono); pressed(byId('pvc-tb-stereo'), !mono);
+    const channel = byId('pvc-tb-channel');
+    if (channel && channel.getAttribute('aria-checked') !== String(mono)) channel.setAttribute('aria-checked', String(mono));
+    setUiText(byId('pvc-tb-channel-val'), mono ? 'Mono' : 'Stereo');
     const keysOn = byId('pvc-hotkeys-toggle-btn')?.classList.contains('pvc-btn-active') === true;
     pressed(byId('pvc-tb-keys'), keysOn);
     setUiTip(byId('pvc-tb-keys'), keysOn ? 'Klavye kısayolları açık' : 'Klavye kısayolları kapalı');
@@ -6362,6 +6469,24 @@
       shown('pvc-tb-target-val', classicTarget.selectedOptions[0]?.textContent.trim() || '');
     }
     setUiText(byId('pvc-tb-playing'), playing ? `Oynatılıyor ${playing[1]}×${playing[2]}` : 'Çözünürlük bekleniyor');
+    // Play/pause follows the video (or the embedded player's reported state).
+    if (toolbarGroup === 'player') {
+      const playingVideo = controlledVideo?.isConnected ? controlledVideo : findVideoAndPlayer().video; // Sync runs often; reuse the chosen video.
+      const pausedNow = remotePresentation ? remotePresentation.paused !== false : playingVideo?.paused !== false;
+      byId('pvc-tb-play-icon').hidden = !pausedNow; byId('pvc-tb-pause-icon').hidden = pausedNow;
+      setUiTip(byId('pvc-tb-playpause'), pausedNow ? 'Oynat' : 'Duraklat');
+    }
+    // DRM: a shield in the Playing strip (hover names it, a click explains it) and the same shield on every
+    // control the protection limits (today: volume). The explanation lives only behind the strip's shield.
+    const drmOn = byId('pvc-drm-status-badge')?.style.display === 'block';
+    for (const id of TOOLBAR_DRM_MARKS) byId(id).hidden = !drmOn;
+    // Site-specific source retry: a button in the Quality popover, announced by a small mark on the Quality button.
+    const classicRetry = byId('pvc-puhu-retry-source-btn'), retryOn = !!classicRetry && !classicRetry.hidden;
+    for (const id of ['pvc-tb-retry-source', 'pvc-tb-retry-note', 'pvc-tb-quality-retry']) byId(id).hidden = !retryOn;
+    byId('pvc-tb-retry-source').disabled = classicRetry?.disabled === true;
+    setUiTip(byId('pvc-tb-quality'), retryOn ? 'Video kalitesi (Alt+Q) · 1080p kaynağını yeniden deneme seçeneği var' : 'Video kalitesi (Alt+Q)');
+    shown('pvc-tb-frameloss-text', byId('pvc-frame-loss-text')?.textContent.trim() || '');
+    updateToolbarStrips();
 
     // Subtitles: shared state lives in the panel's variables (the embedded-player bridge updates them too).
     const subtitlesOn = subtitleOverlayEnabled !== false;
@@ -6509,10 +6634,30 @@
     on('pvc-tb-keys', () => { byId('pvc-hotkeys-toggle-btn')?.click(); scheduleToolbarSync(); });
     on('pvc-tb-report', () => byId('pvc-report-err-btn')?.click());
     on('pvc-tb-refresh', () => byId('pvc-refresh-res-btn')?.click());
+    on('pvc-tb-playpause', () => { togglePlayback(); scheduleToolbarSync(); });
+    on('pvc-tb-drm', () => showDrmInfoModal());
+    setUiTip(byId('pvc-tb-drm'), 'DRM korumalı akış: kalkanlı ayarlar sınırlı · ayrıntı için tıkla');
+    on('pvc-tb-retry-source', () => { byId('pvc-puhu-retry-source-btn')?.click(); scheduleToolbarSync(); });
+    // Alert strips answer through the classic buttons, so the panel's own logic decides what happens next.
+    on('pvc-tb-rescan', () => byId('pvc-rescan-btn')?.click());
+    on('pvc-tb-waiting-report', () => byId('pvc-quick-report-btn')?.click());
+    on('pvc-tb-frameloss-yes', () => { byId('pvc-frame-loss-yes')?.click(); scheduleToolbarSync(); });
+    on('pvc-tb-frameloss-no', () => { byId('pvc-frame-loss-no')?.click(); scheduleToolbarSync(); });
+    // Media play/pause events do not touch the panel, so they ask for a sync themselves.
+    for (const type of ['play', 'pause']) document.addEventListener(type, () => scheduleToolbarSync(), true);
     on('pvc-tb-seek-back', () => seekBy(-toolbarSeekStep));
     on('pvc-tb-seek-fwd', () => seekBy(toolbarSeekStep));
-    on('pvc-tb-stereo', () => setAudioMode('stereo'));
-    on('pvc-tb-mono', () => setAudioMode('mono'));
+    // Stereo/Mono (user choice, 16 Nov): a sliding switch; its icons and tooltip appear on hover or keyboard focus,
+    // the name beside it always shows the current mode. Click/Space flips it, ←/→ pick a side, the wheel steps.
+    const channel = byId('pvc-tb-channel'), channelMono = () => channel.getAttribute('aria-checked') === 'true';
+    on('pvc-tb-channel', () => setAudioMode(channelMono() ? 'stereo' : 'mono'));
+    channel.addEventListener('keydown', event => {
+      const side = { ArrowLeft: 'stereo', ArrowRight: 'mono' }[event.key];
+      if (!side) return;
+      event.preventDefault(); event.stopPropagation(); if ((side === 'mono') !== channelMono()) setAudioMode(side);
+    });
+    bindToolbarWheel(channel, direction => setAudioMode(direction < 0 ? 'mono' : 'stereo'));
+    setUiTip(channel, 'Stereo: sol ve sağ ayrı kalır · Mono: iki kanal iki kulakta, tek kulakla dinlemeye uygun');
     on('pvc-tb-adapter-change', () => { closeToolbarPopover(); byId('pvc-change-adapter-btn')?.click(); });
     toolbar.querySelectorAll('[data-pvc-speed]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); setSpeed(parseFloat(button.getAttribute('data-pvc-speed'))); }));
     toolbar.querySelectorAll('[data-pvc-vol]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); setAudioVolume(Number(button.getAttribute('data-pvc-vol'))); }));
@@ -6598,7 +6743,7 @@
         setHudLayout('classic');
         byId('pvc-tab-settings')?.click();
         const details = byId('pvc-accessibility'); if (details) details.open = true;
-        byId('pvc-layout-toolbar-toggle')?.focus();
+        byId('pvc-layout-easyread-toggle')?.focus();
       });
     }
     toolbar.addEventListener('keydown', event => {
@@ -6607,23 +6752,23 @@
       else if (!byId('pvc-tb-bubble').hidden) { event.stopPropagation(); hideToolbarBubbleNow(); brand.focus(); }
     });
 
-    // Classic Accessibility gets the preview switch, so either layout can be reached from the other.
+    // Classic Accessibility leads the list with the Easy-read switch: on is this panel, off returns to the toolbar.
     const accessibility = byId('pvc-accessibility');
     if (accessibility) {
       const row = document.createElement('label'); row.className = 'pvc-setting-row';
-      const caption = document.createElement('span'); setUiText(caption, 'Kompakt araç çubuğu (önizleme)');
+      const caption = document.createElement('span'); setUiText(caption, 'Kolay okunur düzen');
       const control = document.createElement('span'); control.className = 'pvc-switch';
-      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = 'pvc-layout-toolbar-toggle'; checkbox.setAttribute('role', 'switch');
+      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = 'pvc-layout-easyread-toggle'; checkbox.setAttribute('role', 'switch');
       const track = document.createElement('span'); track.className = 'pvc-switch-track'; track.setAttribute('aria-hidden', 'true');
       control.appendChild(checkbox); control.appendChild(track); row.appendChild(caption); row.appendChild(control);
-      accessibility.insertBefore(row, accessibility.querySelector('.pvc-settings-note'));
-      checkbox.addEventListener('change', event => { event.stopPropagation(); setHudLayout(checkbox.checked ? 'toolbar' : 'classic'); resetIdleTimer(popup); });
+      accessibility.insertBefore(row, accessibility.querySelector('summary').nextSibling);
+      checkbox.addEventListener('change', event => { event.stopPropagation(); setHudLayout(checkbox.checked ? 'classic' : 'toolbar'); resetIdleTimer(popup); });
     }
 
     new MutationObserver(records => {
       if (records.every(record => toolbar.contains(record.target))) return;
       scheduleToolbarSync();
-    }).observe(popup, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'aria-pressed', 'style'] });
+    }).observe(popup, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'aria-pressed', 'style', 'hidden', 'disabled'] });
     window.addEventListener('resize', () => applyToolbarLayout());
     localizeUi(toolbar);
     setToolbarGroup(toolbarGroup);
@@ -7007,18 +7152,11 @@
     popup.querySelector('#pvc-mini-pip-btn').onclick = (e) => { e.stopPropagation(); togglePictureInPicture(); };
     popup.querySelector('#pvc-mini-play-pause').onclick = (e) => {
       e.stopPropagation();
-      if (remotePresentation) { remoteControl('play'); return; }
-      const { video } = findVideoAndPlayer();
-      if (!video) return;
-      if (video.paused) {
-        video.play().catch(() => {});
-        e.currentTarget.querySelector('svg').outerHTML = uiIcon('pause');
-        setUiText(e.currentTarget, '⏸️ Duraklat');
-      } else {
-        video.pause();
-        e.currentTarget.querySelector('svg').outerHTML = uiIcon('play');
-        setUiText(e.currentTarget, '▶️ Oynat');
-      }
+      const button = e.currentTarget, nowPaused = togglePlayback();
+      if (nowPaused === null) return;
+      // Rebuilt through setUiMarkup: assigning outerHTML is refused on pages with Trusted Types.
+      setUiMarkup(button, uiLabel(nowPaused ? 'play' : 'pause', nowPaused ? 'Oynat' : 'Duraklat'));
+      localizeUi(button);
     };
 
     // Hız Slider + Çift Tıkla Sıfırlama (Madde 8)

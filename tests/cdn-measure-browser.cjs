@@ -1,7 +1,7 @@
 // I-12: the installed extension explains each CDN measurement outcome. Local synthetic servers, isolated profile.
 // node tests/cdn-measure-browser.cjs --engine=firefox|chromium
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path');
-const {createDriver,until,delay}=require('./resource-driver.cjs');
+const {createDriver,until,delay,easyRead}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox';
 const executable=args.browser||(engine==='firefox'?'C:/Program Files/Mozilla Firefox/firefox.exe':'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe');
@@ -37,7 +37,7 @@ async function main(){
     const measure=async(kind,framed=false)=>{
       const page=await driver.open(`http://127.0.0.1:${parent.address().port}/?kind=${kind}&framed=${framed?1:0}`);await driver.activate(page);
       await until(driver,page,()=>window.__NOK_VIDEO_CONTROLLER_INJECTED__===true,'engine');await delay(framed?1500:800);
-      await driver.pointerClick(page,'#open');await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','HUD');
+      await driver.pointerClick(page,'#open');await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','HUD');await easyRead(driver,page);
       await delay(framed?1500:600);
       await driver.evaluate(page,()=>document.getElementById('pvc-tab-settings').click());
       assert.ok(await driver.evaluate(page,()=>document.getElementById('pvc-ping-btn').getBoundingClientRect().width>0),'CDN button is visible');

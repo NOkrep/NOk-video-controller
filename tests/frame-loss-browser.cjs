@@ -1,7 +1,7 @@
 // Sustained frame loss: the notice, its answers and its limits, on a page and through a cross-origin player frame.
 // The browser's frame counters are replaced in the page so the loss is exact; the media itself is a real playing stream.
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path');
-const {createDriver,until,delay}=require('./resource-driver.cjs');
+const {createDriver,until,delay,easyRead}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox';
 const LOSS_MS=20000; // Four 3 s windows, one tick for the baseline and room for a slow runner.
@@ -37,6 +37,7 @@ try{
     await until(driver,owner,()=>document.querySelector('video')?.readyState>=2,'video plays');
     await driver.toolbar(top);
     await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens');
+    await easyRead(driver,top); // The question is answered in the classic (Easy-read) panel here; the toolbar strip is covered by toolbar-browser.
     // The panel starts from the operating system's setting, which a CI machine may have on.
     await driver.evaluate(top,()=>{const box=document.getElementById('pvc-a11y-reduceMotion');if(box.checked)box.click();});
     return{top,owner};

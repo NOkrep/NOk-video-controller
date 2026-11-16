@@ -146,15 +146,21 @@ test('presentation preferences apply locally, respect reduced-motion default, an
   const h = harness(true); assert.equal(h.popup.classList.contains('pvc-a11y-reduce-motion'), true);
   const motion = h.find('pvc-a11y-reduceMotion'); motion.checked = false; motion.emit('change');
   assert.equal(h.popup.classList.contains('pvc-a11y-reduce-motion'), false);
-  for (const [key, cls] of [['largeText', 'pvc-a11y-large-text'], ['highContrast', 'pvc-a11y-contrast']]) {
-    const checkbox = h.find('pvc-a11y-' + key); checkbox.checked = true; checkbox.emit('change');
-    assert.equal(h.popup.classList.contains(cls), true);
-    checkbox.checked = false; checkbox.emit('change'); assert.equal(h.popup.classList.contains(cls), false);
-  }
+  const contrast = h.find('pvc-a11y-highContrast'); contrast.checked = true; contrast.emit('change');
+  assert.equal(h.popup.classList.contains('pvc-a11y-contrast'), true);
+  contrast.checked = false; contrast.emit('change'); assert.equal(h.popup.classList.contains('pvc-a11y-contrast'), false);
   const modal = new Element(); h.context.modal = modal;
   h.run('hudAccessibility.highContrast = true; applyUiAccessibility(modal)');
   assert.equal(modal.classList.contains('pvc-a11y-contrast'), true);
-  const fresh = harness(); assert.equal(fresh.run('hudAccessibility.largeText'), false);
+  // Stepwise size: the panel takes a step class, dialogs take the larger text; a step the window cannot hold is skipped.
+  h.context.window.innerWidth = 1280;
+  h.run('hudAccessibility.textScale = 150; applyUiAccessibility(popup); applyUiAccessibility(modal)');
+  assert.equal(h.popup.classList.contains('pvc-a11y-scale-150'), true); assert.equal(modal.classList.contains('pvc-a11y-large-text'), true);
+  h.context.window.innerWidth = 560; // 150% needs 606 px, 125% needs 509 px.
+  h.run('applyUiAccessibility(popup)');
+  assert.equal(h.popup.classList.contains('pvc-a11y-scale-150'), false); assert.equal(h.popup.classList.contains('pvc-a11y-scale-125'), true);
+  assert.equal(h.run('hudAccessibility.textScale'), 150, 'the chosen step is kept for a wider window');
+  const fresh = harness(); assert.equal(fresh.run('hudAccessibility.textScale'), 100);
   assert.equal(fresh.run('hudAccessibility.keepVisible'), false); assert.equal(fresh.run('uiLanguage'), 'en');
 });
 

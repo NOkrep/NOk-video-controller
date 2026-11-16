@@ -1,6 +1,6 @@
 // The panel tooltip with a real pointer and keyboard; touch uses synthetic pointer events, on a page and through a cross-origin player frame.
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path');
-const {createDriver,until,delay}=require('./resource-driver.cjs');
+const {createDriver,until,delay,easyRead}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox';
 const mediaHtml=`<!doctype html><meta charset="utf-8"><style>video{width:640px;height:360px}</style><video autoplay muted playsinline></video><script>
@@ -25,6 +25,7 @@ try{
   await until(driver,page,()=>document.querySelector('video')?.readyState>=2,'video plays');
   await driver.toolbar(page);
   await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens');
+  await easyRead(driver,page); // Tooltips of the classic (Easy-read) panel; toolbar tooltips are in toolbar-browser.
   await driver.evaluate(page,()=>document.getElementById('pvc-a11y-keepVisible').click());
   await until(driver,page,()=>!!document.getElementById('pvc-active-adapter-badge')?.getAttribute('data-pvc-tip'),'adapter has its explanation');
 
@@ -117,6 +118,7 @@ try{
   await delay(1500);
   await driver.toolbar(top);
   await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','embedded panel opens');
+  await easyRead(driver,top);
   await until(driver,top,()=>!!document.getElementById('pvc-active-adapter-badge')?.getAttribute('data-pvc-tip'),'the frame state explains the adapter');
   await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-active-adapter-badge').focus();});
   await opened(driver,top,'embedded focus opens it');

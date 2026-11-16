@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.7.24**, `claude/workTogether` dalında; `main` de `0.7.18` (#119). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.0**, `claude/workTogether` dalında; `main` de `0.7.24` (#124); v0.7.25–v0.8.0 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -14,6 +14,60 @@
 - **Askıda:** I-07.
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
+- **16 Kasım — milestone 0.8 (araç çubuğu) tamam:** kullanıcı karşılaştırmayı bitirdi ve iki gerçek sitede denedi; sürüm `0.8.0`. Sıradaki seçili işler: I-03, I-04, I-05, I-09 ve I-10, D-06.
+
+## Milestone 0.8: kompakt araç çubuğu, v0.8.0 — 16 Kasım 2026
+
+Kullanıcı kararı: eski/yeni panel karşılaştırması tamam ("bir sorun gözlemlemedim"), araç çubuğu iki gerçek sitede denendi ("şimdilik yeterli"; site adları kayda geçmedi). Milestone `0.7` → `0.8`; sürüm `0.8.0`. Kullanıcı PR'ı sürüm artışından sonra açmayı tercih etti.
+
+- **Milestone kapsamı (v0.7.19–v0.7.27):** Model 5 araç çubuğu ve dört grubu (Player, Subtitles, Settings, Accessibility); B3 açılır kutu stili; ertelenen anlık durumlar (oynat/duraklat, DRM kalkanı, kare kaybı ve video bekleniyor şeritleri, 1080p yeniden deneme); Stereo/Mono kayan anahtarı; araç çubuğu varsayılan, eski panel Kolay okunur düzen ve 100/125/150 kademeleri; yolda bulunan hatalar (Trusted Types, UTF-8 dışı sayfalarda kodlama, düzen değişiminde konum, çerçeve yenilenince tercihin ezilmesi). Ayrıntı: TOOLBAR_REDESIGN.md §6.
+- **Kanıt (0.8.0 üzerinde):** `npm run check` 289/289. Tarayıcı: `toolbar`, `hud-state`, `hud-continuity`, `dialog-keyboard`, `volume-mirror`, `cdn-measure`, `pip`, `startup`, `report`, `frame-loss`, `tooltip`, `subtitle`, `quality-mapping`, `hls-early-attach`, `ad-lifecycle`, `ui-smoke` (geniş ve dar) Edge 152 ve Firefox 160'ta geçti.
+- **Açık:** B5 kesin sürüm kuralı kullanıcıda. Gerçek site kabulü kullanıcının iki sitesiyle sınırlı; DRM'li ve 1080p yeniden deneme siteleri ayrıca denenmedi.
+
+## Stereo/Mono kayan anahtarı, v0.7.27 — 16 Kasım 2026
+
+Kullanıcı seçti: Model 1 kayan anahtar, simgeler "5c stereo + 6 mono" (kulaklık / tek kaynaktan iki yana yayılan ses). Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** ses kutusundaki iki parçalı seçici yerine anahtar; ad her zaman görünür, simgeler ve ipucu üzerine gelince ya da klavye odağında; tıklama, Boşluk, ←/→ ve fare tekerleğiyle değişir.
+- **Test:** `toolbar-browser` durgunken simgelerin gizli, üzerine gelince görünür olduğunu, tıklama, ← ve tekerlekle değişimi ve klasik paneldeki ortak durumu sınar. Firefox sürücüsüne (`resource-driver.cjs`) ok tuşlarının WebDriver karşılıkları eklendi.
+- **Kanıt:** `npm run check` (289/289); `toolbar`, `hud-state`, `tooltip`, `dialog-keyboard`, `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle durgun/üzerine gelinmiş, Stereo/Mono kontrolü.
+- **Sınır:** gerçek site denenmedi.
+
+## Araç çubuğu varsayılan, Easy-read'de kademeli büyütme, v0.7.26 — 16 Kasım 2026
+
+Kullanıcı istedi: araç çubuğunu varsayılan yap, ardından kademeli büyütmeyi ekle. Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Kapsam:** panel araç çubuğuyla açılır; klasik panel "Kolay okunur düzen" (iki yönlü anahtar: araç çubuğu Accessibility'de ve klasik Erişilebilirlik'in başında). "Büyük yazı" yerine 100/125/150 kademeleri (CSS `zoom` + genişlik; sığmayan kademe seçilemez, daralan pencerede sığan en büyük kademe). Tercih köprüsünde `largeText` → `textScale`.
+- **Yolda bulunan ve düzeltilen:** düzen değişince panel sol kenarını koruyup ekranın ortasında kalıyordu; artık sağ kenarını korur. Gömülü oynatıcı çerçevesi aynı oturumda yenilenince (sayfa içi gezinme) yeni kaynak varsayılan tercihlerle geliyor ve üstteki kullanıcı seçimini eziyordu; üst panel artık yeni kaynağa kendi tercihlerini gönderir. Eski varsayılan "klasik" olduğu için bu hata görünmüyordu.
+- **Testler:** klasik paneli sınayan tarayıcı testleri açılıştan sonra `easyRead` yardımcısıyla Kolay okunur düzene geçer; araç çubuğu testi varsayılanı, iki yönlü anahtarı, 125% kademesini ve araç çubuğunun büyümediğini sınar; birim testi kademe sınıflarını ve dar pencerede küçük kademeye düşmeyi, çerçeve testi yeni sahibe tercih gönderimini sınar. `hud-continuity` Edge'de artık geçiyor (önceki 31 px sağ boşluk sorunu düzen geçişindeki sağ kenar korumasıyla çözüldü).
+- **Stereo/Mono:** kullanıcı uiverse.io'dan beş örnek önerdi (topuzda simge taşıyan kayan anahtarlar, üstü çizilen etiket, dolan hap düğme). Claude görüşü: üstü çizilen etiket olumsuzu gösterdiği için önerilmedi. Kullanıcı isteğiyle iki model Figma'da çizildi ("Stereo / Mono · models"): Model 1 kayan anahtar (iki simge yolda hep görünür, topuz seçilenin altına kayar, yanında o anki ad), Model 2 tek "Mono" hap düğme; karşılaştırma için bugünkü iki parçalı seçici. Her biri Stereo ve Mono hâlinde, B3 ses kutusunda ve 2× yakın çekimde. Kullanıcı Model 1'i seçti ama hoparlör kutusu simgelerini beğenmedi; internetteki örnekler arandı (en yerleşik gösterim Logic Pro: tek daire mono, iç içe iki daire stereo; IconPark/FontAudio gibi setlerde hazır ikonlar var ama lisans incelemesi gerekir). Aynı sayfaya dört simge çifti çizildi: A daireler (Claude önerisi), B kulaklık (küçükte harita iğnesine benziyor), C dalgalar, D harfler ("L R" / "M"). Kullanıcı bunları zayıf buldu; stereo için kulak üstü kulaklığı biliyor, mono için yerleşik simge aradı. Araştırma: iPhone, Android ve Windows "Mono ses"i yalnız yazıyla gösteriyor, yerleşik bir mono simgesi yok. Kulaklıktan türeyen dört öneri çizildi: 1 tek kapaklı başlık (Claude önerisi), 2 kapaklar arasında birleşen oklar, 3 farklı/aynı kapaklar (küçük boyutta fark zor seçiliyor), 4 kulak. Kullanıcının fikriyle anahtar durgunken yalnız ad ve sade topuz; üzerine gelince ya da klavye odağında simgeler ve ipucu çıkar; ad dokunmatik ve klavye için hep kalır. Kullanıcı 1 ile 4 arasında kaldı ama ikisini de garip buldu; üç inceltilmiş çeşit çizildi: 1b ikinci kapak silik ve kesik çizgili (16 px'de stereodan zor ayrılıyor), 4b kulağa giren ses dalgaları, 5 tek kapaktan çıkan ses dalgaları. Kullanıcı fikri: mono, tek daireden yayılan ses dalgaları olsun (tek kaynak, tek/çift daire gösterimini de andırır). Çizildi: 5c stereo kulaklık + mono tek daireden dalgalar; 6 daire ailesi (stereo iki daire kendi taraflarına, mono tek daire iki yana; küçük boyutta iki durum birbirine benziyor). Karar bekliyor.
+
+## UTF-8 bildirmeyen sayfalarda bozuk Türkçe ve çeviri, v0.7.25.1 — 16 Kasım 2026
+
+Kullanıcı istedi ("Yes, fix it"). v0.7.25 sırasında bulunan açık bulgunun düzeltmesi.
+
+- **Kök neden:** `content.js` motoru (`injected.js`) sayfaya `<script src>` ile ekliyor; eklenti dosyası karakter kodlaması bildirmeden sunulduğu için tarayıcı betiği sayfanın kodlamasıyla çözüyordu. Eski Türkçe kodlamalı (windows-1254) ya da kodlama bildirmeyen sayfalarda Türkçe metinler bozuluyor ("OynatÄ±cÄ±", "1.0Ã—") ve çeviri anahtarları eşleşmediği için İngilizce arayüz Türkçe/bozuk kalıyordu.
+- **Düzeltme:** eklenen iki betiğe `charset = 'utf-8'`; HTML'de bu öznitelik betiğin kodlamasını sayfanınkinden önce belirler. Arka plandaki `executeScript` yolu ve `content.js`'in kendisi zaten UTF-8 okunuyordu.
+- **Kanıt:** `toolbar-browser` artık videosuz sayfayı windows-1254 olarak sunuyor; düzeltmeden önce iki motorda başarısız oldu ("translations still found on a windows-1254 page"), sonra geçti. `content-startup.test.cjs` iki betiğin `charset` değerini denetliyor. `npm run check` (289/289); `toolbar`, `startup`, `subtitle`, `hud-state`, `tooltip`, `dialog-keyboard`, `frame-loss`, `ui-smoke` Edge ve Firefox'ta geçti.
+- **Sınır:** gerçek eski kodlamalı bir sitede denenmedi.
+
+## Ertelenen anlık durumlar araç çubuğunda, v0.7.25 — 16 Kasım 2026
+
+Kullanıcı seçti: 1C, 2B+C (şeritte yalnız kalkan, üzerine gelince "Protected stream"; sınırlanan her denetimde kalkan, kutuda açıklama satırı yok), 3A, 4A+C (kırmızı bekleme şeridi; yeniden deneme Quality kutusunda, Quality düğmesinde işaret). Ayrıntı: TOOLBAR_REDESIGN.md §6.
+
+- **Yolda bulunan ve düzeltilen:** klasik küçültülmüş çubuktaki oynat düğmesi `outerHTML` kullanıyordu (Trusted Types sitelerinde hata); ipucu çubuğun altında şeridin üstüne binip tıklamayı yakalıyordu; kalkan yazısı açılırken kalkan imlecin altından kayabiliyordu; DRM penceresindeki yedek şifreleme adı çevrilmiyordu. Önceki kayıttaki "Yok" bulgusu yalnız rozet elle açıldığında görülüyor, gerçek DRM'de çıkmıyor.
+- **Açık bulgu (ayrı iş, kullanıcıya önerildi):** `content.js` `injected.js`'i `<script src>` ile ekliyor; UTF-8 bildirmeyen bir sayfada betik sayfanın kodlamasıyla çözülüyor, Türkçe metinler bozuluyor ve çeviriler bulunamıyor (karakter kodlaması bildirmeyen yerel test sayfasında görüldü). Bu işten önce de vardı.
+- **Kanıt:** `npm run check` (289/289). `toolbar-browser` (oynat/duraklat, DRM kalkanı gerçek algılayıcıyla, üzerine gelince yazının açık kalması, ses düğmesinde kalkan, yeniden dene işareti ve düğmesi, kare kaybı şeridi ve Hayır, videosuz sayfada kırmızı şerit ve her grupta kalması), `subtitle`, `hud-state`, `tooltip`, `dialog-keyboard`, `frame-loss`, `ui-smoke` Edge ve Firefox'ta geçti. Ekran görüntüsüyle kontrol.
+- **Sınır:** gerçek DRM'li site ve gerçek 1080p yeniden deneme sitesi denenmedi.
+
+## Ertelenen anlık durumlar için modeller (Figma) — 16 Kasım 2026
+
+Kod değişmedi. Kullanıcı ertelenen dört kararı (oynat/duraklat, DRM, kare kaybı sorusu, "video bekleniyor" ve "kaynağı yeniden dene") eski panel görüntüleriyle karşılaştırıp seçmek istedi. Sayfa: `FilmDeck MEC523 Wireframes` › "Transient states · models".
+
+- **Eski hal:** gerçek eklentiden (v0.7.24 klasik panel, Edge, yerel test sayfası) alınmış ekran görüntüleri: küçültülmüş çubuk, DRM rozeti ve penceresi, kare kaybı sorusu, "Waiting for a video", "Retry 1080p source". Bekleme uyarısı ve yeniden dene düğmesi panelin kendi taraması onları hemen gizlediği için yalnız test sayfasında geçici bir stille açık tutuldu.
+- **Öneriler (her satırda üç, B3 tarzında):** oynat/duraklat — A yok, B Player grubunun başında, C Playing şeridinde; DRM — A soldaki sabit simgeler arasında kalkan + açılır kutu, B Playing şeridinde etiket, C ses düğmesinde kalkan ve ses kutusunda açıklama; kare kaybı — A şerit (Claude'un önceki önerisi), B çubuğun sonunda sessiz çip + kutu, C cevap bekleyen kart; bekleme/yeniden dene — A kırmızı şerit + Playing şeridinde "Retry 1080p", B çubuğun kendisi "bekleniyor" der, C kısa şerit + Quality kutusunda düğme.
+- **Bulunan küçük hata:** İngilizce DRM penceresinde şifreleme türü bilinmeyince Türkçe "Yok" kelimesi çevrilmeden görünüyor ("uses **Yok** encryption"). Henüz düzeltilmedi.
+- **Karar bekliyor:** kullanıcı her satır için bir öneri seçecek; satırlar karıştırılabilir.
 
 ## Karşılaştırma 3. tur: B3 açılır kutu stili ve grup düğmesi, v0.7.24 — 15 Kasım 2026
 

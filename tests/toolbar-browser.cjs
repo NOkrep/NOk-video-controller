@@ -21,7 +21,11 @@ const dblclickMode=()=>{const mode=document.getElementById('pvc-tb-mode');for(co
 const wheel=(id,deltaY)=>document.getElementById(id).dispatchEvent(new WheelEvent('wheel',{deltaY,deltaMode:0,bubbles:true,cancelable:true}));
 (async()=>{let driver;
 // The player page enforces Trusted Types, as some video sites do: the toolbar must not build UI from HTML strings at run time.
-const media=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"require-trusted-types-for 'script'"});res.end(mediaHtml);});
+// /empty is a page without any video, for the "waiting for a video" strip. It is also served in a legacy
+// Turkish encoding (windows-1254), so the injected engine must still be read as UTF-8.
+const media=http.createServer((req,res)=>{const empty=req.url==='/empty';
+  res.writeHead(200,{'Content-Type':`text/html; charset=${empty?'windows-1254':'utf-8'}`,'Content-Security-Policy':"require-trusted-types-for 'script'"});
+  res.end(empty?'<!doctype html><body style="margin:0;background:#111;height:600px"><p style="color:#888">No video here.</p></body>':mediaHtml);});
 const parent=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
   res.end(`<!doctype html><body style="margin:0"><iframe style="width:700px;height:420px" allow="autoplay" src="http://127.0.0.1:${media.address().port}/"></iframe></body>`);});
 try{
@@ -35,10 +39,8 @@ try{
   await until(driver,page,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens');
   await driver.evaluate(page,()=>document.getElementById('pvc-a11y-keepVisible').click());
 
-  // The classic panel stays the default; the preview switch turns the toolbar on.
-  assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar')),false,'classic by default');
-  await driver.evaluate(page,()=>document.getElementById('pvc-layout-toolbar-toggle').click());
-  await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'toolbar layout');
+  // The toolbar is the default layout (user decision, 14 Nov); the classic panel is Easy-read.
+  await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'toolbar by default');
   assert.equal(await driver.evaluate(page,visible,'pvc-tb-mode'),true,'the toolbar is shown');
   assert.equal(await driver.evaluate(page,visible,'pvc-drag-header'),false,'the classic header is hidden');
   assert.equal(await driver.evaluate(page,()=>document.getElementById('pvc-tb-mode-label').textContent),'Player');
@@ -62,10 +64,21 @@ try{
   await until(driver,page,()=>document.querySelector('video').muted===true&&document.getElementById('pvc-tb-volume-val').textContent==='0%','volume 0 mutes');
   await driver.pointerClick(page,'[data-pvc-vol="100"]');
   await until(driver,page,()=>document.querySelector('video').muted===false&&document.getElementById('pvc-tb-volume-val').textContent==='100%','volume back to 100');
-  await driver.pointerClick(page,'#pvc-tb-mono');
+  // Stereo/Mono switch: icons only on hover or focus, the name always; click, arrow keys and the wheel switch it.
+  const channelIcons=()=>getComputedStyle(document.querySelector('#pvc-tb-channel .pvc-tb-channel-mono')).opacity;
+  await driver.hover(page,'#pvc-tb-volume-slider');await delay(250);
+  assert.equal(await driver.evaluate(page,channelIcons),'0','icons hidden at rest');
+  await driver.hover(page,'#pvc-tb-channel');
+  await until(driver,page,()=>getComputedStyle(document.querySelector('#pvc-tb-channel .pvc-tb-channel-mono')).opacity==='1','icons on hover');
+  await driver.pointerClick(page,'#pvc-tb-channel');
   await until(driver,page,()=>document.getElementById('pvc-audio-mono-btn').classList.contains('pvc-audio-active')
-    &&document.getElementById('pvc-tb-mono').getAttribute('aria-pressed')==='true','mono reaches the shared state');
-  await driver.pointerClick(page,'#pvc-tb-stereo');
+    &&document.getElementById('pvc-tb-channel').getAttribute('aria-checked')==='true'&&document.getElementById('pvc-tb-channel-val').textContent==='Mono','mono reaches the shared state and the name');
+  await driver.press(page,'ArrowLeft');
+  await until(driver,page,()=>!document.getElementById('pvc-audio-mono-btn').classList.contains('pvc-audio-active')&&document.getElementById('pvc-tb-channel-val').textContent==='Stereo','← chooses stereo');
+  await driver.evaluate(page,wheel,'pvc-tb-channel',100);
+  await until(driver,page,()=>document.getElementById('pvc-tb-channel').getAttribute('aria-checked')==='true','wheel down chooses mono');
+  await driver.press(page,'ArrowLeft');
+  await until(driver,page,()=>document.getElementById('pvc-tb-channel').getAttribute('aria-checked')==='false','back to stereo');
 
   // Seek step: popover choice, wheel stepping and the arrows' label.
   await driver.pointerClick(page,'#pvc-tb-seek-step');
@@ -87,10 +100,37 @@ try{
     await driver.evaluate(page,()=>document.getElementById('pvc-video-target').options.length),'video targets mirrored in our own list');
   // B3 link: the open button is marked and the popover carries the accent line under it; no arrows on the bar.
   assert.ok(await driver.evaluate(page,()=>document.getElementById('pvc-tb-quality').getAttribute('aria-expanded')==='true'&&document.getElementById('pvc-tb-pop-quality').hasAttribute('data-pvc-linked')),'popover linked to its button');
-  assert.equal(await driver.evaluate(page,()=>[...document.querySelectorAll('#pvc-toolbar .pvc-tb-bar [data-pvc-popover]')].every(button=>button.querySelectorAll('svg').length<=1)),true,'no arrow icons on the bar buttons');
+  assert.equal(await driver.evaluate(page,()=>[...document.querySelectorAll('#pvc-toolbar .pvc-tb-bar [data-pvc-popover]')].every(button=>button.querySelectorAll(':scope > svg').length<=1)),true,'no arrow icons on the bar buttons (status marks such as the DRM shield sit in their own spans)');
   await driver.pointerClick(page,'#pvc-tb-target-btn');
   await until(driver,page,visible,'our own target list opens','pvc-tb-target-list');
   await driver.press(page,'Escape');
+
+  // Transient states (16 Nov): play/pause and the DRM shield in the Playing strip, the retry mark, the frame-loss strip.
+  await driver.pointerClick(page,'#pvc-tb-playpause');
+  await until(driver,page,()=>document.querySelector('video').paused&&!document.getElementById('pvc-tb-play-icon').hidden&&document.getElementById('pvc-tb-pause-icon').hidden,'pause from the strip');
+  await driver.pointerClick(page,'#pvc-tb-playpause');
+  await until(driver,page,()=>!document.querySelector('video').paused&&!document.getElementById('pvc-tb-pause-icon').hidden,'play again from the strip');
+  // The panel's own detector decides DRM: the video gets the mark the extension sets when a page attaches media keys.
+  await driver.evaluate(page,()=>{document.querySelector('video').__nokHasMediaKeys=true;});
+  await until(driver,page,()=>{const on=id=>document.getElementById(id).getClientRects().length>0;return on('pvc-tb-drm')&&on('pvc-tb-volume-limit');},'DRM shield in the strip and on the limited volume control');
+  assert.equal(await driver.evaluate(page,()=>document.querySelector('#pvc-tb-drm .pvc-tb-shield-label').getBoundingClientRect().width<2),true,'only the shield shows until hovered');
+  await driver.hover(page,'#pvc-tb-drm');
+  await until(driver,page,()=>document.querySelector('#pvc-tb-drm .pvc-tb-shield-label').getBoundingClientRect().width>40,'hover reveals "Protected stream"');
+  await delay(400);
+  assert.ok(await driver.evaluate(page,()=>document.querySelector('#pvc-tb-drm .pvc-tb-shield-label').getBoundingClientRect().width>40),'the name stays open under a still pointer (the shield does not slide away)');
+  await driver.pointerClick(page,'#pvc-tb-drm');
+  await until(driver,page,()=>!!document.getElementById('pvc-drm-modal'),'the shield opens the DRM explanation');
+  await driver.press(page,'Escape');
+  await until(driver,page,()=>!document.getElementById('pvc-drm-modal')||!document.getElementById('pvc-drm-modal').getClientRects().length,'explanation closes');
+  await driver.evaluate(page,()=>{delete document.querySelector('video').__nokHasMediaKeys;});
+  await until(driver,page,()=>!document.getElementById('pvc-tb-drm').getClientRects().length&&!document.getElementById('pvc-tb-volume-limit').getClientRects().length,'shields leave with the protection');
+  assert.deepEqual(await driver.evaluate(page,async()=>{const classic=document.getElementById('pvc-puhu-retry-source-btn'),frames=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    classic.hidden=false;await frames();const shown=[document.getElementById('pvc-tb-quality-retry').hidden,document.getElementById('pvc-tb-retry-source').hidden];classic.hidden=true;await frames();
+    return [...shown,document.getElementById('pvc-tb-quality-retry').hidden];}),[false,false,true],'the retry button and its mark follow the classic retry option');
+  await driver.evaluate(page,()=>{document.getElementById('pvc-frame-loss-text').textContent='The video is dropping frames. Turn off panel animations?';document.getElementById('pvc-frame-loss-notice').style.display='block';});
+  await until(driver,page,()=>{const on=id=>document.getElementById(id).getClientRects().length>0;return on('pvc-tb-frameloss-strip')&&!on('pvc-tb-strip')&&/dropping frames/.test(document.getElementById('pvc-tb-frameloss-text').textContent);},'the frame-loss question takes the strip\'s place');
+  await driver.pointerClick(page,'#pvc-tb-frameloss-no');
+  await until(driver,page,()=>{const on=id=>document.getElementById(id).getClientRects().length>0;return !on('pvc-tb-frameloss-strip')&&on('pvc-tb-strip')&&document.getElementById('pvc-frame-loss-notice').style.display==='none';},'No answers through the classic panel and the Playing strip returns');
 
   // Lower half of the screen: the strip and popovers open above the bar.
   await driver.evaluate(page,()=>{const p=document.getElementById('pvc-controller-popup');p.style.setProperty('top',`${innerHeight-70}px`,'important');window.dispatchEvent(new Event('resize'));});
@@ -237,9 +277,18 @@ try{
   await driver.pointerClick(page,'#pvc-tb-a11y-reduceMotion');
   await until(driver,page,previous=>document.getElementById('pvc-a11y-reduceMotion').checked===previous,'and back',motion);
   await driver.pointerClick(page,'#pvc-tb-a11y-easyRead');
-  await until(driver,page,()=>{const p=document.getElementById('pvc-controller-popup');return !p.classList.contains('pvc-layout-toolbar')&&!document.getElementById('pvc-layout-toolbar-toggle').checked&&document.getElementById('pvc-accessibility').open;},'easy-read shows the classic panel with the way back open');
-  await driver.evaluate(page,()=>document.getElementById('pvc-layout-toolbar-toggle').click());
+  await until(driver,page,()=>{const p=document.getElementById('pvc-controller-popup');return !p.classList.contains('pvc-layout-toolbar')&&document.getElementById('pvc-layout-easyread-toggle').checked&&document.getElementById('pvc-accessibility').open;},'easy-read shows the classic panel with the way back open');
+  // Stepwise enlargement lives in Easy-read: 125% widens the panel and zooms its contents; the toolbar ignores it.
+  const panelWidth=()=>Math.round(document.getElementById('pvc-controller-popup').getBoundingClientRect().width);
+  const baseWidth=await driver.evaluate(page,panelWidth);
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="125"]').click());
+  await until(driver,page,base=>{const p=document.getElementById('pvc-controller-popup');return p.classList.contains('pvc-a11y-scale-125')&&p.getBoundingClientRect().width>base*1.2;},'125% enlarges the Easy-read panel',baseWidth);
+  assert.equal(await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="125"]').getAttribute('aria-checked')),'true');
+  assert.equal(await driver.evaluate(page,()=>{const r=document.getElementById('pvc-controller-popup').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;}),true,'the enlarged panel stays inside the window');
+  await driver.evaluate(page,()=>document.getElementById('pvc-layout-easyread-toggle').click());
   await until(driver,page,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar')&&document.getElementById('pvc-tb-a11y-easyRead').getAttribute('aria-checked')==='false','back to the toolbar');
+  assert.equal(await driver.evaluate(page,()=>{const p=document.getElementById('pvc-controller-popup');return getComputedStyle(p.querySelector('#pvc-toolbar')).zoom;}),'1','the toolbar keeps its own size');
+  await driver.evaluate(page,()=>document.querySelector('[data-pvc-scale="100"]').click());
   await driver.evaluate(page,()=>document.querySelector('[data-pvc-goto="player"]').click());
   await until(driver,page,()=>document.getElementById('pvc-tb-mode-label').textContent==='Player'&&!document.getElementById('pvc-tb-a11y-strip').getClientRects().length,'back to Player');
 
@@ -255,11 +304,25 @@ try{
     brand.dispatchEvent(new MouseEvent('mousedown',at));brand.dispatchEvent(new MouseEvent('mouseleave',at));brand.dispatchEvent(new MouseEvent('mouseenter',at));brand.dispatchEvent(new FocusEvent('focus'));
     const shownWhileHeld=!bubble.hidden;window.dispatchEvent(new MouseEvent('mouseup',{...at,buttons:0}));return shownWhileHeld;}),false,'no bubble while the name is held');
   // Close bubble: shown beside the name on hover, to its left, and it closes FilmDeck.
+  // The bar resizes when the group changes, so the name may have slid under a still pointer: start from the video.
+  await driver.hover(page,'video');
   await driver.hover(page,'#pvc-tb-brand');
   await until(driver,page,visible,'bubble on hover','pvc-tb-bubble');
   assert.ok((await driver.evaluate(page,rect,'pvc-tb-bubble')).right<=(await driver.evaluate(page,()=>document.querySelector('#pvc-toolbar .pvc-tb-bar').getBoundingClientRect().left))+1,'bubble opens to the left');
   await driver.pointerClick(page,'#pvc-tb-close');
   await until(driver,page,()=>document.getElementById('pvc-controller-popup').style.display==='none','close button closes FilmDeck');
+
+  // A page without any video: the red "waiting" strip replaces the group strip, with Scan again and the report.
+  const empty=await driver.open(`http://127.0.0.1:${media.address().port}/empty`);
+  await driver.toolbar(empty);
+  await until(driver,empty,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','panel opens without a video');
+  await driver.evaluate(empty,()=>{document.getElementById('pvc-a11y-keepVisible').click();});
+  await until(driver,empty,()=>{const on=id=>document.getElementById(id).getClientRects().length>0;return on('pvc-tb-waiting-strip')&&!on('pvc-tb-strip')&&on('pvc-tb-rescan')&&on('pvc-tb-waiting-report');},'waiting strip with its actions');
+  assert.match(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-waiting-strip').textContent),/Waiting for a video/,'translations still found on a windows-1254 page');
+  assert.equal(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-speed-val').textContent),'1.0×','non-ASCII text intact on a windows-1254 page');
+  assert.equal(await driver.evaluate(empty,()=>document.characterSet.toLowerCase()),'windows-1254','the page really uses the legacy encoding');
+  await driver.evaluate(empty,()=>document.querySelector('[data-pvc-goto="settings"]').click());
+  assert.equal(await driver.evaluate(empty,()=>document.getElementById('pvc-tb-waiting-strip').getClientRects().length>0),true,'the alert stays in every group');
 
   // Cross-origin player frame: the top toolbar drives the frame's video.
   const top=await driver.open(`http://127.0.0.1:${parent.address().port}/`);
@@ -268,7 +331,7 @@ try{
   assert.ok(owner,'frame video plays');
   await driver.toolbar(top);
   await until(driver,top,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','top panel opens');
-  await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();document.getElementById('pvc-layout-toolbar-toggle').click();});
+  await driver.evaluate(top,()=>{document.getElementById('pvc-a11y-keepVisible').click();});
   await until(driver,top,()=>document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),'top toolbar layout');
   // The frame's state can still re-place the panel just after the switch; click once the bar has settled.
   await driver.evaluate(top,async()=>{let last='';for(let i=0;i<20;i++){const r=JSON.stringify(document.getElementById('pvc-tb-speed').getBoundingClientRect());if(r===last)return;last=r;await new Promise(f=>setTimeout(f,150));}});
