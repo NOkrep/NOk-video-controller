@@ -2,9 +2,9 @@
 
 ## Güncel durum
 
-5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](WORK_HISTORY.md) içindedir.
+5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.0**, `claude/workTogether` dalında; `main` de `0.7.24` (#124); v0.7.25–v0.8.0 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3**, `claude/workTogether` dalında; `main` de `0.8.0` (#125); belge taşıması ve v0.8.1 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -15,6 +15,58 @@
 - **Araç sistemi:** `D:/NOk-Tools` açık iş notu yok; beceri onayları 11 Kasım akşamı dolar. Yeni adaylar için dört aşamalı inceleme kuruldu (aşağıda).
 - **13 Kasım:** Kullanıcı C araç çubuğunu (MEC523 Alternatif C, B'nin sekme mantığıyla) sıradaki iş seçti; önce görsel model örnekleri. I-03'ün kullanıcı denemesi aşağıda, kök neden incelenmedi.
 - **16 Kasım — milestone 0.8 (araç çubuğu) tamam:** kullanıcı karşılaştırmayı bitirdi ve iki gerçek sitede denedi; sürüm `0.8.0`. Sıradaki seçili işler: I-03, I-04, I-05, I-09 ve I-10, D-06.
+- **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
+- **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
+- **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
+
+## Bekleyen izinler — kullanıcı dönünce (19 Kasım 2026)
+
+1. **Beceri onaylarının yenilenmesi (NOk-Tools, N-032) — tamamlandı (19 Kasım, kullanıcı onayıyla).** On bir bağlı kapsamın hepsi `approved: true`, 26 Kasım'a kadar; `superpowers/nok-reviewed` kullanıcı kararıyla kaydedildi; `Test-NOkTools.ps1` PASS. Önceki durum: altı bağlı kapsam yeniden taramada inceleme kararı istiyor ve şu an onaysız: `prototype`, `superpowers/verification`, `superpowers/nok-reviewed` (systematic-debugging), `i-have-adhd-skill`, `anthropic-skills/frontend-design`, `anthropic-skills/doc-coauthoring`. Kaynak baytları, bulgu parmak izleri ve eksik kimlikleri 13 Kasım'la birebir aynı. Beşi için 13 Kasım'daki ajan gerekçesiyle `record-review` kaydı hazır ama otomatik izin denetiminde durduruldu; `superpowers/nok-reviewed` için kullanıcı kararı gerekiyor (13 Kasım'da da kullanıcı onaylamıştı). Onaylanana kadar bu altı beceri kullanılmıyor.
+2. **PR:** `claude/workTogether` → `main` (belge taşıması, v0.8.1, v0.8.1.1, v0.8.2, v0.8.3). PR ve merge kullanıcıda.
+
+## Kullanıcı uzaktayken beş hedef, v0.8.3 — 19 Kasım 2026
+
+Kullanıcı: "sıradaki 5 işi belirle … sen çalışa dur"; izinler biriktirilecek. Gerçek site veya bot doğrulaması gerektiren işler (I-03, I-04, I-05, I-09/I-10) kullanıcı dönene kadar bekletildi.
+
+- **1. Beceri onayları:** kullanıcı onayıyla tamamlandı (yukarıda). Beş kapsam (`nok-release`, `emil-design-eng`, `mobile-native`, `karpathy-guidelines`, `ponytail`) yeniden taramada doğrudan PASS aldı ve 26 Kasım'a kadar geçerli.
+- **2. Araç çubuğu ve kaydırma çubuğu:** v0.8.1.1'de kalan iş. Sürükleme, araç çubuğunun aşağı/yukarı açılma kararı, açılır kutu ve Help yerleşimi, sığma denetimi ve bildirim konumu artık `visibleViewport()` kullanıyor. `hud-continuity-browser` yeni adımı: Edge'de 15 px kaydırma çubuğuyla kalite açılır kutusu görünür kenarın tam 12 px içinde (1173 / 1185); eski hesapla çubuğun üstüne taşardı. Firefox'ta kaydırma çubuğu 0 px, adım yine geçti. Kolay okunur düzenin boyut sığma denetimi (`textScaleFits`) birim testlerinin sahte DOM'u yüzünden `innerWidth`'te bırakıldı (en fazla 15 px).
+- **3. Firefox `hud-continuity`:** rapor kipinde 5/5 ve öncesinde 2/2 temiz (toplam 7). İki düşüş yalnız iki motorun arka arkaya çalıştığı toplu koşularda görüldü ve yeniden üretilemedi; kök neden bulunmadan test değiştirilmedi. Test düşünce tüm ölçümleri zaten yazdırıyor; toplu koşularda çıktı artık dosyaya kaydediliyor.
+- **4–5. D-06, videonun kendi ses ve altyazı parçaları:** kaynak sırası Hls.js → Shaka → Video.js → tarayıcının kendi listeleri. Araç çubuğu: Altyazılar grubunda "Videonun altyazısı" düğmesi (yalnız parça varsa görünür; Kapalı + parçalar), Oynatıcı grubundaki ses açılır kutusunda "Ses parçası" kartı (yalnız birden çok ses parçası varsa). Kolay okunur düzen: aynı seçimler iki seçim kutusunda. Etiket: parçanın adı, yoksa dil adı (panel dilinde), yoksa "Parça N"; FilmDeck'in yüklenen dosya için eklediği iz listelenmez ve kendi kipini korur. Gömülü oynatıcıda liste çerçeve durumuyla gelir, seçim `media-track` komutuyla medya çerçevesinde uygulanır; anahtar canlı listeye karşı yeniden denetlenir. Listeler yalnız panelde, metin olarak; rapora girmez. Tasarım B3 kalıbını izliyor; kullanıcının görsel onayı açık.
+- **Fikstür:** `tests/fixtures/hls-tracks` (167 KB; `prepare-browser-fixtures.cjs --committed-track-hls`): mevcut 480p video, TR/EN iki ses (440/880 Hz) ve iki WebVTT altyazı.
+- **Kanıt:** `npm run check` 308/308 (yeni `media-tracks.test.cjs` 6 test, Shaka sahte nesnelerle). Toplu koşu, iki motorda hepsi geçti: `toolbar`, `subtitle`, `hud-state`, `report`, `quality-mapping`, `hls-early-attach`, `dialog-keyboard`, `hud-continuity` (Firefox bu toplu koşuda da geçti), `ui-smoke` (geniş ve dar). `media-tracks-browser` Edge 152 ve Firefox 160.0.1'de geçti: gerçek Hls.js'te ses ve altyazı seçimi, Kapalı, Kolay okunur seçim kutuları; `<track>`'lı yerel video ve FilmDeck izinin dışarıda kalması; gerçek Video.js/VHS'te ses ve metin parçası; ayrı kökenli iframe'de üst panelin seçimi çerçeveye uygulaması.
+- **Açık:** gerçek sitede deneme (dublaj/orijinal ses ve hazır altyazılı bir site); Shaka yalnız birim testinde; görsel onay.
+
+## Büyük kayma: kaymayı yaz ve "Şu an bu satır", v0.8.2 — 17 Kasım 2026
+
+Kullanıcının altyazı dosyası iki bölümün birleşimiydi (başka sitelerdeki dosyalarda da aynı); ~40 dakika kaydırmak gerekti. Dosyayı şimdilik kendisi düzenleyecek. Önerilen dört yoldan kullanıcı "Şu an bu satır" ile kaymayı elle yazmayı seçti.
+
+- **Kaymayı yaz:** Altyazı zamanlaması kutusunda "Şu anki kayma" altında, Kolay okunur düzende "Kaymayı yaz veya satır seç" içinde. `-41:35`, `1:02:03.5`, `+2.5` / `+2,5` (sn), `-2500ms`; tipografik eksi de olur. Yanlış değer kırmızı çerçeveyle işaretlenir, hiçbir şey değişmez. Yazılan kayma zamanla kayma düzeltmesini ve bekleyen noktayı kaldırır (o doğru eski kaymaya aitti).
+- **Şu an bu satır:** Arama kutusu ve liste. Kelime yazılınca tüm dosyada büyük/küçük harf ve Türkçe işaretler gözetmeden arar (en fazla 40 satır); boşken o anki konumun çevresindeki 10 satırı gösterir. Seçilen satır videonun şu anki zamanında başlar. Gömülü oynatıcıda üst panel satırın başlangıç zamanını gönderir, kaymayı medya çerçevesi kendi video saatiyle hesaplar.
+- **Sınır ve gösterim:** kayma sınırı 1 saatten 6 saate çıktı (birden çok bölümü birleştiren dosyalar). 1 dakikanın üstündeki kayma `-41:35.0` biçiminde gösterilir.
+- **Gizlilik:** satır metinleri yalnız panelde, metin olarak gösterilir; rapora, ipucuna ve çerçeve durumuna girmez. Rapora yalnız `SUBTITLE_LINE_ALIGNED` olayı ve kaymanın sayısı girer. Satır kodu, satır metnine hiç dokunmayan altyazı açıklama bölümünden ayrı tutuldu.
+- **Reddedilen öneri — bölüm seçici:** dosya yüklenince büyük boşluklardan ya da 00:00'a dönen zamandan bölümleri bulup "hangi bölüm?" diye sormak. Kullanıcı "mantıksız" buldu; yapılmadı. Bilinen sınır kayıtta: zamanı 00:00'dan yeniden başlayan birleşik dosyalar gömülü oynatıcıya aktarılamıyor (`cleanCues` sıralı başlangıç ister), üst sayfada ilk bölümün satırı gösterilir. Gerekirse yeniden sorulur.
+- **Kanıt:** `npm run check` 302/302 (yeni `subtitle-jump.test.cjs` 5 test). `toolbar-browser` Edge 152 ve Firefox 160'ta geçti: gerçek tuşlarla `-41:35` (alandaki `-` hız kısayolunu tetiklemedi), yanlış değer, arama, satır seçimi ve katman, Kolay okunur düzen; ayrı kökenli iframe'de yazılan kayma ve satır hizalama. `subtitle`, `hud-state`, `report`, `dialog-keyboard`, `hud-continuity`, `ui-smoke` (geniş ve dar) iki motorda geçti. Firefox `hud-continuity` bir koşuda "spa: iframe becomes top video: vertical position" adımında düştü, sonraki iki koşu geçti; ekrana sığmayan Firefox penceresinde (1408×663) zamanlamaya bağlı görünüyor, incelenmedi.
+
+## Altyazı zamanla kayma düzeltmesi ve raporda kayma, v0.8.1 — 17 Kasım 2026
+
+Kullanıcı raporu (Firefox, iframe, Generic, harici SRT; site adı kayda geçmedi): altyazı başta doğruydu, bölüm boyunca her 10–15 dakikada ~3 sn ileri almak gerekti, sonunda ~9 sn. Kök neden: motor sabit kaymayı videonun gerçek saatine uyguluyor ve zaman ayrıştırma doğru; dosya başka kurgu/kare hızına göre zamanlanmış. Rapor sorunu gösteremedi, çünkü kayma değeri ve kaydırma olayı rapora girmiyordu. Kullanıcı ikisini de seçti.
+
+- **İki noktalı düzeltme:** Altyazı zamanlaması kutusunda (araç çubuğu) ve klasik Altyazı bölümünde "1. noktayı kaydet / 2. noktayı kaydet", "Vazgeç", "Düzeltmeyi kaldır". Kaldırınca altyazı o anki yerinde kalır; Sıfırla ve yeni dosya her şeyi sıfırlar. Şerit "Kayma … · zamanla düzeltiliyor" der. Gömülü oynatıcıda düzeltme medya çerçevesinde hesaplanır. Ayrıntı: PROJECT_MASTER_GUIDE.md (altyazı gizliliği bölümü).
+- **Rapor:** `videoState.subtitleOffsetMs`, `videoState.subtitleDriftMsPerMinute` ve dört altyazı zamanlama olayı; art arda − / + basışları tek olay. Oynatma konumu yine rapora girmez.
+- **Küçük düzeltme:** sıfır kayma rozeti `+0ms` yerine `0ms`.
+- **Kanıt:** `npm run check` 297/297 (yeni `subtitle-drift.test.cjs` 8 test). `toolbar-browser` Edge 152 ve Firefox 160'ta geçti; kayma adımları sahte video saatiyle (canvas akışı sarılamaz) üst sayfada ve ayrı kökenli iframe'de, tarayıcı izi, katman ve rapor dahil sınandı.
+- **Yan bulgu (v0.8.1.1'de çözüldü):** `hud-continuity-browser` Edge'de "close and reopen: default corner", Firefox'ta bir kez "iframe: normal position returns after exit" adımında düştü; 0.8.0 kodunda da aynıydı. Kök neden: görünür test penceresinde Edge artık klasik (her zaman görünen, 15 px) kaydırma çubuğu gösteriyor. Panel `right: 16px` ile sayfa kenarına doğru yerleşiyordu, ama kenara yapıştırma ve konum oranı `innerWidth` (kaydırma çubuğu dahil) kullanıyordu; panel kaydırma çubuğunun altına kayabiliyordu. Test de boşluğu `innerWidth`'ten ölçtüğü için 31 px gördü. Düzeltme: `visibleViewport()` (kaydırma çubuğu hariç, quirks sayfada `body`) yapıştırma ve oran hesabında; test boşlukları görünür kenardan ölçüyor. Firefox'taki tek düşüş sonraki dört koşuda tekrarlanmadı (zamanlama). Araç çubuğunun kendi açılır kutu yerleşimi hâlâ `innerWidth` kullanıyor; kaydırma çubuklu sayfada en fazla 15 px fark, ayrıca ele alınmadı.
+- **Açık:** gerçek dosyayla kullanıcı denemesi. Kurgu farkında (bir noktada birden atlama) düz çizgi uymaz; o durumda − / + yeter.
+
+## Belgeler docs/ altında, kısa README — 16–17 Kasım 2026
+
+Kullanıcı GitHub'da kökte gereğinden fazla dosya olduğunu düşündü; silmek yerine düzenleme önerisini onayladı ("Yes, move them"). Kod ve sürüm değişmedi (v0.8.0).
+
+- **Taşınanlar (`git mv`, geçmiş korunur):** `docs/dev` — devir, ana kılavuz, bu iş kaydı, test, kalite, canlı site doğrulaması, çerçeve sunumu, reklam denetimi, geliştirme durumu, yol haritası; `docs/design` — araç çubuğu, HMI incelemesi, tasarım kaynakları, tema değerlendirmesi, animasyon ayrıntıları; `docs/measurements` — animasyon, filtre, bellek, rapor ölçümleri; `docs/history` — iş geçmişi, eski sürüm notları ve eski README (`README_ARCHIVE.md`).
+- **Kökte kalanlar:** kısa kullanıcı README'si (ne olduğu, özellikler, kurulum, gizlilik, lisans, belge bağlantıları; e-posta adresi yeni README'de yok, eskisi arşivde), LICENSE, THIRD_PARTY_NOTICES, AGENTS.md, CLAUDE.md ve kod.
+- **Güncellenenler:** 47 göreli bağlantı yeni yerlerine göre yeniden yazıldı (AGENTS.md dışındaki tüm bağlantılar çözülüyor); CLAUDE.md, `scripts/set-version.cjs`, `tests/extension-contract.test.cjs`; NOk-Tools `project-profiles/video-controller.json` › `docs` (yedek: `reports/backups/2026-11-17-claude-filmdeck-docs-paths`, `Test-NOkTools.ps1` PASS).
+- **Codex'te:** `AGENTS.md` Codex alanı; içindeki üç bağlantı eski yolları gösteriyor. `D:/NOk-Tools/AGENT_NOTES.md` › N-019 ile bildirildi. Koddaki birkaç yorum belge adını geçirir; adlar değişmediği için aramayla bulunur.
+- **Kanıt:** `npm run check` 289/289 (taşımadan sonra).
 
 ## Milestone 0.8: kompakt araç çubuğu, v0.8.0 — 16 Kasım 2026
 
@@ -172,7 +224,7 @@ Kod değişmedi; tasarım Figma'da (`FilmDeck MEC523 Wireframes`, sayfalar "C + 
   - Subtitles aç/kapa göz simgesiyle kalır; yeri Load file'ın hemen sağı.
   - Açılır kutuların içi eski paneldeki gibi biraz daha açık renkli kutulara bölünür, alanların sınırı belli olur.
   - Settings: Picture ve Night mode birlikte (ikisi de video filtresi). Tema düğmesinde o anki tema adı yazar (ör. "Aurora"). Klavye kısayolu aç/kapa Settings'te yok; Help'te yalnız bilgi rehberi. Settings grubuna geçince Help kutusu kendiliğinden açık durur.
-  - **rev 4 (14 Kasım):** grup düğmesi o anki adın genişliğinde (sabit genişlik kaldırıldı), liste en uzun ada göre; rapor simgesi her grupta solda; dil kutusu kendi içeriği kadar; Reset all "Picture & night mode" başlığının sağında; tema adı "Theme" başlığının sağında; Help maddelerinde simgeler. Teknik kurallar ve bugünkü özelliklerin yeni yerleri [TOOLBAR_REDESIGN.md](TOOLBAR_REDESIGN.md) içinde; açılır kutular araç çubuğu ekranın üst yarısındaysa altta, alt yarısındaysa üstte açılır.
+  - **rev 4 (14 Kasım):** grup düğmesi o anki adın genişliğinde (sabit genişlik kaldırıldı), liste en uzun ada göre; rapor simgesi her grupta solda; dil kutusu kendi içeriği kadar; Reset all "Picture & night mode" başlığının sağında; tema adı "Theme" başlığının sağında; Help maddelerinde simgeler. Teknik kurallar ve bugünkü özelliklerin yeni yerleri [TOOLBAR_REDESIGN.md](../design/TOOLBAR_REDESIGN.md) içinde; açılır kutular araç çubuğu ekranın üst yarısındaysa altta, alt yarısındaysa üstte açılır.
   - Settings/Accessibility ayrımı Claude'a bırakıldı: Settings = dil, görüntü ve gece filtresi, tema, Help; Accessibility = paneli açık tut, büyük yazı, yüksek kontrast, hareketi azalt (her biri araç çubuğunda tek tıkla açılıp kapanan düğme). Kısayol aç/kapa her grupta solda duran simgede kalır, Accessibility'de ikinci kez yer almaz.
 
 ## I-03 kullanıcı denemesi, Kick — 13 Kasım 2026

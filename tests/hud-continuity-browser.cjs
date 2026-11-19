@@ -10,10 +10,12 @@ const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const videoScript=`function startVideo(host){const video=document.createElement('video');video.muted=true;video.autoplay=true;video.playsInline=true;video.style.cssText='width:640px;height:360px;display:block';
   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;const ctx=canvas.getContext('2d');setInterval(()=>{ctx.fillStyle='#213847';ctx.fillRect(0,0,640,360);},100);
   video.srcObject=canvas.captureStream(10);host.appendChild(video);video.play().catch(()=>{});return video;}`;
+// Gaps are measured from the visible page edge: a visible window can show classic scroll bars (15 px in Edge).
 const hudState=()=>{
   const popup=document.getElementById('pvc-controller-popup'),rect=popup?.getBoundingClientRect(),visible=!!popup&&popup.style.display==='block'&&rect.width>0;
+  const vw=document.documentElement.clientWidth||innerWidth,vh=document.documentElement.clientHeight||innerHeight;
   return {visible,toolbar:!!popup?.classList.contains('pvc-layout-toolbar'),huds:document.querySelectorAll('#pvc-controller-popup').length,collapsed:popup?.classList.contains('pvc-collapsed')??null,left:visible?Math.round(rect.left):null,top:visible?Math.round(rect.top):null,
-    rightGap:visible?Math.round(innerWidth-rect.right):null,bottomGap:visible?Math.round(innerHeight-rect.bottom):null,viewport:[innerWidth,innerHeight],noVideoAlert:popup?getComputedStyle(popup.querySelector('#pvc-no-video-alert')).display!=='none':null,
+    rightGap:visible?Math.round(vw-rect.right):null,bottomGap:visible?Math.round(vh-rect.bottom):null,viewport:[vw,vh],scrollbar:innerWidth-vw,noVideoAlert:popup?getComputedStyle(popup.querySelector('#pvc-no-video-alert')).display!=='none':null,
     adapter:popup?.querySelector('#pvc-active-adapter-badge')?.textContent??null,video:!!document.querySelector('video'),engine:window.__NOK_VIDEO_CONTROLLER_INJECTED__===true};
 };
 const dragBy=(dx,dy)=>{
@@ -95,6 +97,15 @@ async function main(){
       results[name]={draggedPlace:place(dragged),afterPlace:place(after),timeline,after:clean(after),control:after?await controlCheck(page,55):false};
     }
 
+    // The toolbar and its popovers stay off a classic scroll bar (Edge shows a 15 px one in a visible window).
+    {const page=await open('top');await delay(800);await driver.pointerClick(page,'#open');const row=await visibleHud(page);
+      const edges=async()=>driver.evaluate(row.target,()=>{const vw=document.documentElement.clientWidth,right=node=>node&&!node.hidden&&node.getClientRects().length?Math.round(node.getBoundingClientRect().right):null;
+        return {toolbar:document.getElementById('pvc-controller-popup').classList.contains('pvc-layout-toolbar'),scrollbar:innerWidth-vw,vw,bar:right(document.querySelector('#pvc-toolbar .pvc-tb-bar')),quality:right(document.getElementById('pvc-tb-pop-quality')),help:right(document.getElementById('pvc-tb-pop-help'))};});
+      await driver.evaluate(row.target,()=>document.getElementById('pvc-tb-quality').click());await delay(300);const quality=await edges();
+      await driver.evaluate(row.target,()=>{document.getElementById('pvc-tb-quality').click();document.querySelector('[data-pvc-goto="settings"]').click();});await delay(300);
+      results['toolbar beside a scroll bar']={quality,settings:await edges()};
+      await driver.pointerClick(page,'#open');}
+
     // Close and reopen is documented to start at the default corner.
     {const page=await open('top');await delay(800);await openHud(page);const first=await visibleHud(page);await driver.evaluate(first.target,dragBy,-300,200);await delay(200);
       await driver.pointerClick(page,'#open');await delay(400);await driver.pointerClick(page,'#open');await delay(400);
@@ -111,6 +122,10 @@ async function main(){
             assert.ok(Math.abs(ratio(row.inFullscreen.left,row.inFullscreen.rightGap)-ratio(row.dragged.left,row.dragged.rightGap))<.03,name+': horizontal place carries into fullscreen');
             assert.ok(Math.abs(ratio(row.inFullscreen.top,row.inFullscreen.bottomGap)-ratio(row.dragged.top,row.dragged.bottomGap))<.03,name+': vertical place carries into fullscreen');
           }else assert.ok(near(row.inFullscreen.left,row.dragged.left)&&near(row.inFullscreen.top,row.dragged.top),name+': same element keeps its place');
+        }else if(name==='toolbar beside a scroll bar'){
+          assert.ok(row.quality.toolbar,name+': toolbar layout');
+          for(const [key,value] of [['bar',row.quality.bar],['quality popover',row.quality.quality],['bar in Settings',row.settings.bar],['Help',row.settings.help]])
+            assert.ok(value!==null&&value<=row.quality.vw-12+1,`${name}: ${key} right edge ${value} within the visible page (${row.quality.vw}, scroll bar ${row.quality.scrollbar})`);
         }else if(name==='close and reopen')assert.ok(near(row.reopened.rightGap,16,4)&&near(row.reopened.top,16,4),name+': default corner');
         else{
           assert.ok(row.timeline.maxVisible<=1,name+': never two visible HUDs');assert.equal(row.timeline.hiddenSamples,0,name+': HUD stays open');

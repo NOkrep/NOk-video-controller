@@ -2,7 +2,7 @@
 <!-- filmdeck-agent-handoff-2026-11-04 -->
 ## FilmDeck ortak ajan devri
 
-- Önce [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md), ardından [PROJECT_MASTER_GUIDE.md](PROJECT_MASTER_GUIDE.md) ve [ACTIVE_WORK.md](ACTIVE_WORK.md) başındaki en yeni kayıtları oku.
+- Önce [PROJECT_HANDOFF.md](docs/dev/PROJECT_HANDOFF.md), ardından [PROJECT_MASTER_GUIDE.md](docs/dev/PROJECT_MASTER_GUIDE.md) ve [ACTIVE_WORK.md](docs/dev/ACTIVE_WORK.md) başındaki en yeni kayıtları oku.
 - Yerelde varsa [LOCAL_AGENT_PROCEDURE.md](LOCAL_AGENT_PROCEDURE.md) ortak NOk/Codex/Claude kararlarını oku. Bu Git dışı dosya başka checkout'ta olmayabilir; yoksa mevcut proje/ortam kuralları ve aşağıdaki merkez yönlendirmesi geçerlidir.
 - Branch/HEAD/dirty kapsamı, sürüm ve son kanıtı kendin doğrula. Codex sohbetine, özel belleğine, araçlarına veya kotasına eriştiğini varsayma. Öneri ile kullanıcı tarafından etkinleştirilmiş hedefi ayır.
 - Kısa başlangıç özeti ver: mevcut sürüm/dal, tamamlanan son iş, açık hedef, korunacak sınırlar ve ilk güvenli adım. Aynı dosyayı iki ajan eşzamanlı düzenlemeden sahipliği belirle.

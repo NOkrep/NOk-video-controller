@@ -188,6 +188,75 @@ try{
   await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
   await until(driver,page,()=>{const shown=id=>document.getElementById(id).getClientRects().length>0;
     return document.getElementById('pvc-sub-offset-badge').textContent==='0ms'&&!shown('pvc-tb-sub-offset')&&!shown('pvc-tb-sub-dot');},'reset from the strip');
+  // Drift: in sync at 0:30, 3 s off at 13:00 (the reported case). The page fakes the video clock, which the
+  // engine reads from the element like a real seek; the canvas stream itself cannot seek.
+  await driver.evaluate(page,()=>{const video=document.querySelector('video'),real=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,'currentTime');
+    Object.defineProperty(video,'currentTime',{configurable:true,get(){return window.fakeTime??real.get.call(this);},set(value){real.set.call(this,value);}});window.fakeTime=30;});
+  await driver.pointerClick(page,'#pvc-tb-sub-step');
+  await until(driver,page,visible,'timing popover with the drift card','pvc-tb-sub-drift-mark');
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-drift-text').textContent),/save point 1 while they match/,'the card explains the two points');
+  await driver.pointerClick(page,'#pvc-tb-sub-drift-mark');
+  await until(driver,page,()=>/Point 1 saved at 0:30/.test(document.getElementById('pvc-tb-sub-drift-text').textContent)
+    &&document.getElementById('pvc-tb-sub-drift-mark-val').textContent==='Save point 2'&&document.getElementById('pvc-tb-sub-drift-cancel').getClientRects().length>0,'point 1 is waiting for point 2');
+  await driver.pointerClick(page,'[data-pvc-substep="1000"]');
+  await driver.press(page,'Escape');
+  await driver.evaluate(page,()=>{window.fakeTime=780;});
+  for(const expected of ['+1000ms','+2000ms','+3000ms']){await driver.pointerClick(page,'#pvc-tb-sub-later');await until(driver,page,text=>document.getElementById('pvc-sub-offset-badge').textContent===text,`later to ${expected}`,expected);}
+  await driver.pointerClick(page,'#pvc-tb-sub-step');
+  await until(driver,page,visible,'timing popover again','pvc-tb-sub-drift-mark');
+  await driver.pointerClick(page,'#pvc-tb-sub-drift-mark');
+  await until(driver,page,()=>/Correction on: \+2\.4 s every 10 minutes/.test(document.getElementById('pvc-tb-sub-drift-text').textContent)
+    &&document.getElementById('pvc-tb-sub-drift-cancel-val').textContent==='Remove correction','4 ms a second is 2.4 s every 10 minutes');
+  await driver.press(page,'Escape');
+  await until(driver,page,()=>/\+3000 ms · drift corrected/.test(document.getElementById('pvc-tb-sub-offset-val').textContent),'the strip says the drift is corrected');
+  // The browser's own track follows the line: the 1 s cue now starts at (1 - 0.12) / 0.996 s of video.
+  assert.ok(Math.abs(await driver.evaluate(page,()=>document.querySelector('video').textTracks[0].cues[0].startTime)-0.88/0.996)<0.001,'native cue times use the drift line');
+  await driver.evaluate(page,()=>{window.fakeTime=2;document.querySelector('video').dispatchEvent(new Event('timeupdate'));});
+  await until(driver,page,()=>document.getElementById('pvc-subtitle-overlay')?.textContent==='First'&&getComputedStyle(document.getElementById('pvc-subtitle-overlay')).display==='block','the overlay uses the same line');
+  // The report carries the shift and the drift, not where the video is.
+  await driver.evaluate(page,()=>document.getElementById('pvc-report-err-btn').click());
+  await until(driver,page,()=>!!document.getElementById('pvc-modal-code-block'),'report preview');
+  const drifted=await driver.evaluate(page,()=>JSON.parse(document.getElementById('pvc-modal-code-block').textContent));
+  assert.equal(drifted.videoState.subtitleOffsetMs,3000);assert.equal(drifted.videoState.subtitleDriftMsPerMinute,240);
+  assert.ok(drifted.recentEvents.some(item=>item.event==='SUBTITLE_DRIFT_SET'&&item.details.driftMsPerMinute===240),'drift event');
+  const shifts=drifted.recentEvents.filter(item=>item.event==='SUBTITLE_OFFSET_CHANGED').map(item=>item.details.offsetMs);
+  assert.equal(shifts.at(-1),3000,'the last shift is in the report');assert.ok(!shifts.includes(1000)&&!shifts.includes(2000),'three quick presses are one event');
+  await driver.press(page,'Escape');
+  await until(driver,page,()=>!document.getElementById('pvc-modal-code-block'),'report closed');
+  // Removing the correction keeps the line where it is now; reset clears everything.
+  await driver.evaluate(page,()=>{window.fakeTime=1530;});
+  await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-drift-cancel').click());
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+6000ms'&&/save point 1 while they match/.test(document.getElementById('pvc-tb-sub-drift-text').textContent),'removal keeps the current shift');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='0ms'&&document.getElementById('pvc-tb-sub-offset').getClientRects().length===0,'reset after the drift');
+  // Large shifts: a typed value (real keys, which must not reach FilmDeck's or the site's shortcuts) and "now this line".
+  const ratesBefore=await driver.evaluate(page,()=>window.rates.length);
+  await driver.pointerClick(page,'#pvc-tb-sub-step');
+  await until(driver,page,visible,'timing popover for a typed shift','pvc-tb-sub-offset-input');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-input');
+  await driver.type(page,'-41:35');await driver.press(page,'Enter');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-41:35.0'&&document.getElementById('pvc-tb-sub-offset-big').textContent==='-41:35.0','typed -41:35 applies as a clock value');
+  assert.equal(await driver.evaluate(page,()=>window.rates.length),ratesBefore,'typing "-" in the field is not the speed shortcut');
+  assert.equal(await driver.evaluate(page,visible,'pvc-tb-pop-subtiming'),true,'Enter keeps the popover open');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-input');await driver.type(page,'abc');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-apply');
+  await until(driver,page,()=>document.getElementById('pvc-tb-sub-offset-input').getAttribute('aria-invalid')==='true'&&document.getElementById('pvc-sub-offset-badge').textContent==='-41:35.0','a wrong value is marked and changes nothing');
+  await driver.evaluate(page,()=>{document.getElementById('pvc-tb-sub-offset-input').value='';});
+  await driver.evaluate(page,()=>{window.fakeTime=100;});
+  await driver.pointerClick(page,'#pvc-tb-sub-line-search');await driver.type(page,'seco');
+  await until(driver,page,()=>{const lines=[...document.querySelectorAll('#pvc-tb-sub-lines [data-pvc-cue-start]')];return lines.length===1&&lines[0].textContent==='0:04Second';},'the search finds the line');
+  await driver.pointerClick(page,'#pvc-tb-sub-lines [data-pvc-cue-start]');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+1:36.0','the chosen line starts now: 100 s - 4 s');
+  await driver.evaluate(page,()=>{window.fakeTime=101;document.querySelector('video').dispatchEvent(new Event('timeupdate'));});
+  await until(driver,page,()=>document.getElementById('pvc-subtitle-overlay')?.textContent==='Second','the overlay continues from that line');
+  await until(driver,page,()=>document.querySelectorAll('#pvc-tb-sub-lines [data-pvc-cue-start]').length===2&&document.getElementById('pvc-tb-sub-line-search').value==='','after a choice the list shows the lines around now again');
+  await driver.press(page,'Escape');
+  // The Easy-read panel has the same two controls.
+  await driver.evaluate(page,()=>{document.getElementById('pvc-sub-jump').open=true;const input=document.getElementById('pvc-sub-offset-input');input.value='+2.5';input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));});
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+2500ms'&&document.querySelectorAll('#pvc-sub-lines [data-pvc-cue-start]').length===2,'classic typed shift and line list');
+  await driver.pointerClick(page,'#pvc-tb-sub-offset-reset');
+  await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='0ms','reset after the large shifts');
+  await driver.evaluate(page,()=>{delete document.querySelector('video').currentTime;window.fakeTime=undefined;document.querySelector('[data-pvc-substep="250"]').click();});
   assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-count').textContent),/\(2 /,'the cue count stays visible beside a long name');
   assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').getAttribute('data-pvc-tip')),/sample\.srt.*2/,'the whole line is in the tooltip');
   const eyes=()=>[document.getElementById('pvc-tb-sub-eye'),document.getElementById('pvc-tb-sub-eye-off')].map(node=>node.getClientRects().length>0&&!!node.querySelector('svg'));
@@ -347,6 +416,26 @@ try{
   await driver.evaluate(top,()=>document.querySelector('[data-pvc-substep="250"]').click());
   await driver.pointerClick(top,'#pvc-tb-sub-earlier');
   await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-250ms'&&/-250 ms/.test(document.getElementById('pvc-tb-sub-offset-val').textContent),'frame offset comes back');
+  // Drift through the bridge: the frame keeps the points and the line; the top panel only shows them.
+  await driver.evaluate(owner,()=>{const video=document.querySelector('video');Object.defineProperty(video,'currentTime',{configurable:true,get(){return window.fakeTime;}});window.fakeTime=100;});
+  await driver.evaluate(top,()=>document.getElementById('pvc-tb-sub-drift-mark').click());
+  await until(driver,top,()=>/Point 1 saved at 1:40/.test(document.getElementById('pvc-sub-drift-status').textContent),'the frame reports point 1');
+  await driver.evaluate(owner,()=>{window.fakeTime=700;});
+  for(const expected of ['-500ms','-750ms','-1000ms','-1250ms']){await driver.pointerClick(top,'#pvc-tb-sub-earlier');await until(driver,top,text=>document.getElementById('pvc-sub-offset-badge').textContent===text,`frame earlier to ${expected}`,expected);}
+  await driver.evaluate(top,()=>document.getElementById('pvc-tb-sub-drift-mark').click());
+  await until(driver,top,()=>/Correction on: -1\.0 s every 10 minutes/.test(document.getElementById('pvc-sub-drift-status').textContent)
+    &&/drift corrected/.test(document.getElementById('pvc-tb-sub-offset-val').textContent),'the frame computes the line and the top shows it');
+  assert.ok(Math.abs(await driver.evaluate(owner,()=>document.querySelector('video').textTracks[0].cues[0].startTime)-(1+(-1250+1000*700/600)/1000)/(1+1/600))<0.001,'the frame video track follows the line');
+  await driver.evaluate(top,()=>document.getElementById('pvc-tb-sub-drift-cancel').click());
+  await until(driver,top,()=>/save point 1 while they match/.test(document.getElementById('pvc-sub-drift-status').textContent),'removal crosses the bridge');
+  // A typed shift and a chosen line cross the bridge; the frame computes the line from its own video time.
+  await driver.evaluate(top,()=>{const input=document.getElementById('pvc-tb-sub-offset-input');input.value='-41:35';document.getElementById('pvc-tb-sub-offset-apply').click();});
+  await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='-41:35.0','the frame applies a typed shift');
+  await driver.evaluate(owner,()=>{window.fakeTime=300;});
+  await driver.evaluate(top,()=>{const search=document.getElementById('pvc-tb-sub-line-search');search.value='first';search.dispatchEvent(new Event('input',{bubbles:true}));});
+  await until(driver,top,()=>document.querySelectorAll('#pvc-tb-sub-lines [data-pvc-cue-start]').length===1,'the top panel lists the file it sent');
+  await driver.evaluate(top,()=>document.querySelector('#pvc-tb-sub-lines [data-pvc-cue-start]').click());
+  await until(driver,top,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+4:59.0','the frame aligns the line to its video time: 300 s - 1 s');
   // Night mode from the top toolbar filters the frame's video.
   await driver.evaluate(top,()=>document.querySelector('[data-pvc-goto="settings"]').click());
   await driver.pointerClick(top,'#pvc-tb-picture');

@@ -21,6 +21,22 @@ function digest(data){return crypto.createHash('sha256').update(data).digest('he
     fs.writeFileSync(path.join(committed,'master.m3u8'),'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=600000,RESOLUTION=854x480\n480.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=1500000,RESOLUTION=1280x720\n720.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=3000000,RESOLUTION=1920x1080\n1080.m3u8\n');
     return;
   }
+  if(process.argv.includes('--committed-track-hls')){ // D-06: the 480p video above with two audio and two subtitle renditions.
+    const tracks=path.join(__dirname,'fixtures','hls-tracks');fs.mkdirSync(tracks,{recursive:true});
+    for(const [lang,frequency] of [['tr',440],['en',880]])run(['-f','lavfi','-i',`sine=frequency=${frequency}:sample_rate=44100:duration=12`,'-c:a','aac','-b:a','32k','-ac','1',
+      '-hls_time','2','-hls_playlist_type','vod','-hls_segment_filename',path.join(tracks,`audio-${lang}-%03d.ts`),'-y',path.join(tracks,`audio-${lang}.m3u8`)]);
+    for(const [lang,first,second] of [['tr','Birinci satır','İkinci satır'],['en','First line','Second line']]){
+      fs.writeFileSync(path.join(tracks,`sub-${lang}.vtt`),`WEBVTT\nX-TIMESTAMP-MAP=MPEGTS:126000,LOCAL:00:00:00.000\n\n00:00:00.500 --> 00:00:05.500\n${first}\n\n00:00:06.000 --> 00:00:11.500\n${second}\n`);
+      fs.writeFileSync(path.join(tracks,`sub-${lang}.m3u8`),`#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:12\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXTINF:12.000000,\nsub-${lang}.vtt\n#EXT-X-ENDLIST\n`);
+    }
+    fs.writeFileSync(path.join(tracks,'master.m3u8'),'#EXTM3U\n'
+      +'#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="aud",NAME="Türkçe",LANGUAGE="tr",DEFAULT=YES,AUTOSELECT=YES,URI="audio-tr.m3u8"\n'
+      +'#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="aud",NAME="English",LANGUAGE="en",DEFAULT=NO,AUTOSELECT=YES,URI="audio-en.m3u8"\n'
+      +'#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="Türkçe",LANGUAGE="tr",DEFAULT=NO,AUTOSELECT=NO,URI="sub-tr.m3u8"\n'
+      +'#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="English",LANGUAGE="en",DEFAULT=NO,AUTOSELECT=NO,URI="sub-en.m3u8"\n'
+      +'#EXT-X-STREAM-INF:BANDWIDTH=700000,RESOLUTION=854x480,AUDIO="aud",SUBTITLES="subs"\n../hls/480.m3u8\n');
+    return;
+  }
   const media=path.join(mediaDir,'synthetic-720p.webm');
   if(!runtimesOnly&&(force||!fs.existsSync(media)))run(['-f','lavfi','-i','testsrc2=size=1280x720:rate=30','-t','30','-an','-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','700k','-y',media]);
   if(process.argv.includes('--audio-fixture')){

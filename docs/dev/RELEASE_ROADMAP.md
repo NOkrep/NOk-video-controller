@@ -1,6 +1,6 @@
 # v0.6.0 → v0.7.0 çalışma planı
 
-> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](./RELEASE_NOTES_v0.7.0.1.md).
+> 22 Ekim 2026 paket durumu: **v0.7.0.1 düzeltme adayı**, 142 Node testi. Firefox kurulu geçici eklentide sürekli iframe filtresi ve en son değer koruması geçti; Firefox/Edge yerel gerçek HLS ve Video.js kalite geçişleri doğrulandı. Özel test sitesi dahil gerçek site kabulü açıktır. Güncel kanıt: [RELEASE_NOTES_v0.7.0.1.md](../history/RELEASE_NOTES_v0.7.0.1.md).
 
 20 Ekim 2026. Kullanıcı “adım adım” ilerlemek istiyor. Mevcut **v0.7.0 test adayı** kaynak ve sentetik regresyon aşamasına ulaştı; tüm gerçek site issue'larının çözüldüğü iddiası yoktur. 20 tema korunur; finalist seçilmedi. Kaynak raporlar yeniden yayımlanmaz; aşağıda yalnızca teknik bulgular tutulur.
 

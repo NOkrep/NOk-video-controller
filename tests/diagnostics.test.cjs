@@ -77,7 +77,7 @@ function harness(options = {}) {
     audioGainNodeInstance: { gain: { value: 2 } },
     audioContextInstance: { state: 'running' },
     audioSourceElementMap: new WeakMap(),
-    customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleLoadStatus: 'loaded', subtitleRenderStatus: 'no-active-cue', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
+    customSubtitleCues: [{ text: 'PRIVATE_SUBTITLE' }], subtitleOffsetMs: 0, subtitleDrift: null, subtitleLoadStatus: 'loaded', subtitleRenderStatus: 'no-active-cue', lastPingStatus: 'not-tested', isMediaInShadowDom: false,
     findLibraryPlayer: () => options.hls || null,
     observedHlsPlayers: new WeakMap(options.hls ? [[options.hls, { manifestObserved: true, declaredLevelCount: options.hls.levels.length }]] : []),
     EXTENSION_VERSION: '0.6.1', HOSTNAME: options.hostname || 'personal.192-0-2-1.sslip.io',

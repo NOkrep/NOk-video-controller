@@ -1,6 +1,6 @@
 # Araç çubuğu yeniden tasarımı (Model 5)
 
-Durum (16 Kasım): **uygulandı, milestone 0.8 (v0.8.0)** — araç çubuğu varsayılan düzen, eski panel Kolay okunur düzen; uygulama kaydı §6'da. Aşağıdaki ilk bölümler tasarım aşamasından kalan gereksinim kaydıdır. Tasarım Figma'da (`FilmDeck MEC523 Wireframes`, "Model 5 · rev 3" ve sonraki sayfalar). Kararların tarihli kaydı [ACTIVE_WORK.md](ACTIVE_WORK.md) içinde. Bu dosya, uygulamaya geçerken uyulacak teknik kuralları ve bugünkü panelin (v0.7.18) her özelliğinin yeni tasarımdaki yerini tutar. Bir özellik yeni tasarımda yer bulmadan eski panel kaldırılmaz.
+Durum (16 Kasım): **uygulandı, milestone 0.8 (v0.8.0)** — araç çubuğu varsayılan düzen, eski panel Kolay okunur düzen; uygulama kaydı §6'da. Aşağıdaki ilk bölümler tasarım aşamasından kalan gereksinim kaydıdır. Tasarım Figma'da (`FilmDeck MEC523 Wireframes`, "Model 5 · rev 3" ve sonraki sayfalar). Kararların tarihli kaydı [ACTIVE_WORK.md](../dev/ACTIVE_WORK.md) içinde. Bu dosya, uygulamaya geçerken uyulacak teknik kuralları ve bugünkü panelin (v0.7.18) her özelliğinin yeni tasarımdaki yerini tutar. Bir özellik yeni tasarımda yer bulmadan eski panel kaldırılmaz.
 
 ## 1. Yapı
 
