@@ -117,7 +117,7 @@ Kullanıcının “hareketsizlikten sonra panel hiç geri gelmiyor” gözlemi d
 | D-03 | Ekran okuyucu ve gerçek %200 zoom | CSS ölçeği/otomatik test bunun yerine geçmez. Uzun metin, hedef boyutu ve duyurular açık. |
 | D-04 | Fullscreen tema/erişilebilirlik tutarlılığı | **Yerel kapsam tamam (v0.7.9.2):** tema ve dört erişilebilirlik anahtarı iframe tam ekranına geçer, oradaki değişiklik çıkınca korunur; iki motorda sınandı. Gerçek sitede kabul açık. |
 | D-05 | İstenen ve gerçekleşen ses/hız geri bildirimi | Raporlarda ayrım var; ana UI'da ayrışmayı anlaşılır gösterme açık. |
-| D-06 | Mevcut ses ve altyazı parçalarını seçme | Kullanıcının gelecek özellik talebi; orijinal/dublaj ve hazır altyazılar. Harici SRT'den ayrı; henüz uygulanmadı. |
+| D-06 | Mevcut ses ve altyazı parçalarını seçme | **Uygulandı (v0.8.3, 19 Kasım):** Hls.js, Shaka, Video.js ve tarayıcının kendi listelerinden ses ve altyazı parçası seçimi; araç çubuğu, Kolay okunur düzen ve gömülü oynatıcı. Yerel fikstürle iki motorda sınandı (ACTIVE_WORK.md). Açık: gerçek site denemesi, Shaka yalnız birim testinde, kullanıcının görsel onayı. |
 | D-07 | Finalist beş tema | **Kapandı (kullanıcı, 5 Kasım):** finalist seçilmeyecek; kullanıcıların seçebilmesi için 20 tema kalıyor. |
 | D-08 | Ek Uiverse animasyonları | **Rapor kapsamı tamam (v0.7.15):** checkbox gecikmesi/halo, textarea çizgileri; ölçüm ve kare kaybı bildirimi eklendi (ANIMATION_PERFORMANCE.md). Anahtar parıltısı ve düğme iç kapağı uygulanmadı. |
 | D-09 | Form/tooltip referansları | **Tooltip tamam (v0.7.16):** Adaptör, CDN ve kalite durumları; fare, klavye, dokunmatik; kendi kodumuz (ANIMATION_DETAILS.md). Form bekliyor: sırf referans var diye eklenmez. |

@@ -67,6 +67,15 @@ node tests/toolbar-browser.cjs --engine=firefox
 node tests/toolbar-browser.cjs --engine=chromium
 ```
 
+`media-tracks-browser.cjs` (D-06) videonun kendi ses ve altyazı parçalarını sınar: depodaki `tests/fixtures/hls-tracks` akışını (480p video, TR/EN iki ses ve iki WebVTT altyazı; `prepare-browser-fixtures.cjs --committed-track-hls` üretir) gerçek Hls.js ve gerçek Video.js/VHS ile oynatır; araç çubuğundan ve Kolay okunur seçim kutularından ses/altyazı seçimini, Kapalı'yı, iki `<track>` öğeli yerel videoda tarayıcı listesini ve FilmDeck'in yüklenen dosya izinin listede olmamasını, ayrı kökenli iframe'de üst panelin seçimi çerçeveye uygulamasını sınar. Hls.js ve Video.js çalışma dosyaları `tests/artifacts/runtime` altında olmalıdır (`prepare-browser-fixtures.cjs --runtimes-only --download-runtimes`, SHA-256 denetimli). Shaka için yerel çalışma dosyası yok; Shaka yolu `media-tracks.test.cjs` içinde sahte nesnelerle sınanır. Gerçek site kabulü değildir.
+
+```powershell
+node tests/media-tracks-browser.cjs --engine=firefox
+node tests/media-tracks-browser.cjs --engine=chromium
+```
+
+`hud-continuity-browser.cjs` görünür pencerede çalışır; Edge orada klasik (15 px) kaydırma çubuğu gösterebilir. Boşluklar görünür sayfa kenarından ölçülür ve araç çubuğu ile açılır kutuların kaydırma çubuğunun üstüne taşmadığı da sınanır. Toplu koşularda çıktıyı dosyaya kaydedin: düşüşte test bütün ölçümleri yazdırır.
+
 `subtitle-browser.cjs`, Altyazı sekmesindeki açıklamayı üst sayfada ve ayrı kökenli iframe'de sınar: boş aralık ve sıradaki satır, dil, duran ve duraklatılmış video ayrımı, gizli, dosya sonu, satır görünürken sessizlik, satır metninin açıklamaya girmemesi. Panel kapalıyken video öğesi değişince altyazının yeni videoyu izlemesini ve video kalkınca satırın kalmamasını da sınar. Sentetik akış ve dosya kullanır; gerçek site görsel kontrolü değildir.
 
 Panel "hareket azaltma" ayarını başlangıçta işletim sisteminden alır ve CI'daki Windows Server'da Firefox bunu açık görebilir. Bu yüzden animasyon sınayan testler önce ayarı kapatır. `--os-reduced-motion=true` Firefox test profilinde aynı durumu yerelde kurar.

@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.8.2 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.3 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.8.2';
+  const EXTENSION_VERSION = '0.8.3';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -404,6 +404,15 @@
     'Kayma {0} · zamanla düzeltiliyor': 'Offset {0} · drift corrected',
     'Kayma {0}': 'Offset {0}',
     'Zamanla kayma': 'Drift over time',
+    'Ses parçası': 'Audio track',
+    'Videonun kendi altyazısı': "The video's own subtitles",
+    'Videonun altyazısı': 'Video subtitles',
+    'Kapalı': 'Off',
+    'Parça {0}': 'Track {0}',
+    'Oynatıcının sunduğu parçalar; yüklediğiniz dosyadan ayrıdır.': 'Tracks offered by the player; separate from a file you load.',
+    'Ses parçası: {0}': 'Audio track: {0}',
+    'Videonun altyazısı: {0}': 'Video subtitles: {0}',
+    'Bu parça seçilemedi.': 'This track could not be selected.',
     'Uygula': 'Apply',
     'Kaymayı yaz (− erken, + geç)': 'Type the offset (− earlier, + later)',
     'örn. -41:35 veya +2.5': 'e.g. -41:35 or +2.5',
@@ -1366,6 +1375,7 @@
       subtitleDriftRate: subtitleDrift ? subtitleDrift.rate : 0, subtitleSyncPoint: subtitleSyncPoint ? bounded(subtitleSyncPoint.time, 0, 864000) : -1,
       // The file's clock now, for the top panel's "now this line" list; frame bridge only, never a report.
       subtitleClock: video && customSubtitleCues.length ? bounded(subtitleClockAt(subtitleOffsetMs, subtitleDrift, video.currentTime), -1, 864000, -1) : -1,
+      mediaTracks: readMediaTracks(video, player),
       appearance: { ...subtitleAppearance }, filters: { ...videoFilterState },
       candidates: candidates.map(item => ({ height: Math.round(bounded(item.videoHeight, 0, 8640)) })), target: candidates.indexOf(controlledVideo),
       frameLoss: frameLossState()
@@ -1503,6 +1513,7 @@
           case 'subtitle-drift': if (value === 'mark') markSubtitleSyncPoint(); else clearSubtitleDrift(value); break;
           case 'subtitle-offset-set': setSubtitleOffset(value); break;
           case 'subtitle-align': alignSubtitleCueNow(value); break;
+          case 'media-track': if (!selectMediaTrack(video, player, value)) throw new Error('media-track'); break;
           case 'hotkeys': hotkeysEnabled = value; break;
           case 'presentation-active': remoteSourceActive = value; break;
           case 'frame-loss-answered': frameLossAnswered = value; clearFrameLossOffer(); break;
@@ -1596,7 +1607,7 @@
     updatePipButtonsState(state.pipActive);
     text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
     text('pvc-sub-offset-badge', subtitleOffsetText(state.subtitleOffset, false));
-    updateSubtitleDriftControls();
+    updateSubtitleDriftControls(); updateMediaTrackControls();
     text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
     document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
     text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
@@ -3314,6 +3325,146 @@
     applyQuality(item, video) { return applyNativeQualityMenu(item, video); }
   };
 
+  // MEDIA TRACKS (D-06): the video's own audio and subtitle tracks, from its player library or the browser.
+  // A key names the source, the kind and the index ("hls:a:1", "native:t:-1" is subtitles off); a choice is
+  // checked against the live list again before it is applied. Labels are short plain text for the panel only.
+  const MEDIA_TRACK_KEY = /^(hls|shaka|vjs|native):([at]):(-1|\d{1,3})$/;
+  function mediaTrackLanguageName(lang) {
+    if (!lang || typeof lang !== 'string') return '';
+    try { return new Intl.DisplayNames([uiLanguage === 'en' ? 'en' : 'tr'], { type: 'language' }).of(lang) || lang; } catch (_) { return lang; }
+  }
+  function mediaTrackLabel(name, lang, index) {
+    const clean = value => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    return clean(name) || clean(mediaTrackLanguageName(lang)) || uiText(`Parça ${index + 1}`);
+  }
+  // Subtitle and caption tracks of the element or library, without FilmDeck's own track for a loaded file.
+  function isOwnSubtitleTrack(track, video) {
+    return ['subtitles', 'captions'].includes(track?.kind) && track !== video.__nokSubtitleTrack && track.label !== 'NOk Harici Altyazı';
+  }
+  function mediaTrackSources(video, player) {
+    const hls = findLibraryPlayer(video, 'hls', player);
+    if (hls && (hls.audioTracks?.length > 1 || hls.subtitleTracks?.length > 0)) return { source: 'hls', hls };
+    const shaka = findLibraryPlayer(video, 'shaka', player);
+    if (shaka) return { source: 'shaka', shaka };
+    const vjs = findVideoJsPlayer(video, player);
+    if (vjs && (typeof vjs.audioTracks === 'function' || typeof vjs.textTracks === 'function')) {
+      const audio = Array.from(vjs.audioTracks?.() || []), text = Array.from(vjs.textTracks?.() || []).filter(track => isOwnSubtitleTrack(track, video));
+      if (audio.length > 1 || text.length > 0) return { source: 'vjs', audio, text };
+    }
+    return { source: 'native', audio: Array.from(video.audioTracks || []), text: Array.from(video.textTracks || []).filter(track => isOwnSubtitleTrack(track, video)) };
+  }
+  function readMediaTracks(video, player) {
+    const none = { source: 'none', audio: [], text: [] };
+    if (!video) return none;
+    try {
+      const found = mediaTrackSources(video, player);
+      let audio = [], text = [];
+      if (found.source === 'hls') {
+        const hls = found.hls;
+        audio = (hls.audioTracks || []).map((track, i) => ({ label: mediaTrackLabel(track.name, track.lang, i), active: hls.audioTrack === i }));
+        text = (hls.subtitleTracks || []).map((track, i) => ({ label: mediaTrackLabel(track.name, track.lang, i), active: hls.subtitleTrack === i && hls.subtitleDisplay !== false }));
+      } else if (found.source === 'shaka') {
+        const shaka = found.shaka, current = (shaka.getVariantTracks?.() || []).find(track => track.active);
+        const roles = current ? [...(current.audioRoles || []), ...(current.roles || [])] : [];
+        audio = (shaka.getAudioLanguagesAndRoles?.() || []).map((track, i) => ({
+          label: mediaTrackLabel(track.label, track.language, i) + (track.role ? ` (${String(track.role).slice(0, 20)})` : ''),
+          active: !!current && current.language === track.language && (!track.role || roles.includes(track.role)) }));
+        const visible = shaka.isTextTrackVisible?.() === true;
+        text = (shaka.getTextTracks?.() || []).map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: visible && track.active === true }));
+      } else {
+        audio = found.audio.map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: track.enabled === true }));
+        text = found.text.map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: track.mode === 'showing' }));
+      }
+      const keyed = (list, kind) => list.slice(0, kind === 'a' ? 16 : 32).map((item, i) => ({ key: `${found.source}:${kind}:${i}`, ...item }));
+      return { source: found.source, audio: audio.length > 1 ? keyed(audio, 'a') : [], text: keyed(text, 't') };
+    } catch (_) { return none; }
+  }
+  function selectMediaTrack(video, player, key) {
+    const match = MEDIA_TRACK_KEY.exec(String(key));
+    if (!video || !match) return false;
+    const [, source, kind, raw] = match, index = Number(raw);
+    const live = readMediaTracks(video, player);
+    if (live.source !== source || (kind === 'a' && !live.audio[index]) || (kind === 't' && index >= 0 && !live.text[index])) return false;
+    try {
+      const found = mediaTrackSources(video, player);
+      if (source === 'hls') {
+        if (kind === 'a') found.hls.audioTrack = index;
+        else { found.hls.subtitleTrack = index; if (index >= 0) found.hls.subtitleDisplay = true; }
+      } else if (source === 'shaka') {
+        if (kind === 'a') { const track = found.shaka.getAudioLanguagesAndRoles()[index]; found.shaka.selectAudioLanguage(track.language, track.role || undefined); }
+        else if (index < 0) found.shaka.setTextTrackVisibility(false);
+        else { found.shaka.selectTextTrack(found.shaka.getTextTracks()[index]); found.shaka.setTextTrackVisibility(true); }
+      } else if (kind === 'a') found.audio.forEach((track, i) => { track.enabled = i === index; });
+      else found.text.forEach((track, i) => { track.mode = i === index ? 'showing' : 'disabled'; });
+      return true;
+    } catch (_) { return false; }
+  }
+  // END MEDIA TRACKS
+
+  let mediaTrackSignature = '';
+  function currentMediaTracks() {
+    if (remotePresentation) return remotePresentation.mediaTracks || { source: 'none', audio: [], text: [] };
+    const { video, player } = findVideoAndPlayer();
+    return readMediaTracks(video, player);
+  }
+  function chooseMediaTrack(key) {
+    const match = MEDIA_TRACK_KEY.exec(String(key));
+    if (!match) return;
+    const tracks = currentMediaTracks(), kind = match[2], index = Number(match[3]);
+    const label = index < 0 ? uiText('Kapalı') : (kind === 'a' ? tracks.audio : tracks.text)[index]?.label || '';
+    const done = ok => {
+      if (!ok) { showToast('Bu parça seçilemedi.'); return; }
+      showToast(kind === 'a' ? `Ses parçası: ${label}` : `Videonun altyazısı: ${label}`);
+      mediaTrackSignature = ''; updateMediaTrackControls();
+    };
+    if (remotePresentation) { remoteControl('media-track', key).then(reply => done(reply?.ok === true)); return; }
+    const { video, player } = findVideoAndPlayer();
+    done(selectMediaTrack(video, player, key));
+  }
+  // Rebuilds the lists only when the tracks, the choice or the panel language changed.
+  function updateMediaTrackControls() {
+    const tracks = currentMediaTracks(), signature = JSON.stringify(tracks) + uiLanguage;
+    if (signature === mediaTrackSignature) return;
+    mediaTrackSignature = signature;
+    const offKey = `${tracks.source}:t:-1`, activeText = tracks.text.find(item => item.active), activeAudio = tracks.audio.find(item => item.active);
+    const textItems = tracks.text.length ? [{ value: offKey, label: uiText('Kapalı') }, ...tracks.text.map(item => ({ value: item.key, label: item.label }))] : [];
+    const audioItems = tracks.audio.map(item => ({ value: item.key, label: item.label }));
+    const fillSelect = (select, row, items, value) => {
+      if (!select || !row) return;
+      row.hidden = items.length === 0;
+      setUiMarkup(select, '');
+      for (const item of items) { const option = document.createElement('option'); option.value = item.value; option.textContent = item.label; select.appendChild(option); }
+      if (items.length) select.value = value;
+    };
+    fillSelect(document.getElementById('pvc-sub-tracks-select'), document.getElementById('pvc-sub-tracks-row'), textItems, activeText?.key || offKey);
+    fillSelect(document.getElementById('pvc-audio-tracks-select'), document.getElementById('pvc-audio-tracks-row'), audioItems, activeAudio?.key || '');
+    const chip = document.getElementById('pvc-tb-sub-tracks');
+    if (chip) {
+      chip.hidden = textItems.length === 0;
+      const value = document.getElementById('pvc-tb-sub-tracks-val');
+      if (value) value.textContent = activeText ? activeText.label : uiText('Videonun altyazısı');
+      setUiTip(chip, 'Videonun kendi altyazısı');
+    }
+    const subList = document.getElementById('pvc-tb-subtracks-list');
+    fillToolbarList(subList, textItems); markToolbarList(subList, activeText?.key || offKey);
+    const audioCard = document.getElementById('pvc-tb-audiotracks-card'), audioList = document.getElementById('pvc-tb-audiotracks-list');
+    if (audioCard) audioCard.hidden = audioItems.length === 0;
+    fillToolbarList(audioList, audioItems); markToolbarList(audioList, activeAudio?.key || '');
+    if (textItems.length === 0 && toolbarOpenPopover?.panel?.id === 'pvc-tb-pop-subtracks') closeToolbarPopover();
+  }
+  function bindMediaTrackControls(root) {
+    for (const id of ['pvc-sub-tracks-select', 'pvc-audio-tracks-select']) {
+      root.querySelector(`#${id}`)?.addEventListener('change', event => { event.stopPropagation(); chooseMediaTrack(event.target.value); });
+    }
+    for (const id of ['pvc-tb-subtracks-list', 'pvc-tb-audiotracks-list']) {
+      root.querySelector(`#${id}`)?.addEventListener('click', event => {
+        const option = event.target.closest?.('[data-pvc-value]');
+        if (!option) return;
+        event.stopPropagation(); chooseMediaTrack(option.getAttribute('data-pvc-value'));
+      });
+    }
+  }
+
   PuhuTvAdapter.tier = 1; PuhuTvAdapter.displayName = 'PuhuTV (Tier 1)';
   KickAdapter.tier = 1; KickAdapter.displayName = 'Kick.com (Tier 1)';
   NowTvAdapter.tier = 1; NowTvAdapter.displayName = 'Now TV / Fox (Tier 1)';
@@ -3952,6 +4103,10 @@
         updateRealtimeResolutionBadge();
       }
       renderCustomSubtitleCue(video);
+      // A player adds its audio and subtitle tracks after the manifest loads; the lists follow, at most once a second.
+      if (popup && popup.style.display !== 'none' && !remotePresentation && performance.now() - (video.__nokTrackCheck || 0) > 1000) {
+        video.__nokTrackCheck = performance.now(); updateMediaTrackControls();
+      }
     });
     video.addEventListener('enterpictureinpicture', () => {
       updatePipButtonsState(true);
@@ -6153,8 +6308,7 @@
         if (moveEvent.buttons === 0) { endDrag(); return; }
         resetIdleTimer(popup);
 
-        const vw = window.innerWidth || document.documentElement.clientWidth;
-        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const { width: vw, height: vh } = visibleViewport();
         const w = popup.offsetWidth || 320;
         const h = popup.offsetHeight || 200;
 
@@ -6290,6 +6444,7 @@
             <span id="pvc-tb-sub-dot" class="pvc-tb-dot" hidden></span>
           </div>
           <button type="button" id="pvc-tb-sub-look" class="pvc-tb-chip" data-pvc-popover="sublook">${uiIcon('typeface')}<span>Görünüm</span></button>
+          <button type="button" id="pvc-tb-sub-tracks" class="pvc-tb-chip" data-pvc-popover="subtracks" hidden>${uiIcon('subtitles')}<span id="pvc-tb-sub-tracks-val" data-pvc-i18n-skip></span></button>
         </div>
         <div class="pvc-tb-group" data-pvc-group="settings" hidden>
           <button type="button" id="pvc-tb-lang" class="pvc-tb-chip" data-pvc-popover="language">${uiIcon('globe')}<span id="pvc-tb-lang-val" data-pvc-i18n-skip>Türkçe</span></button>
@@ -6350,6 +6505,13 @@
             <span class="pvc-tb-channel"><span id="pvc-tb-channel-val" class="pvc-tb-channel-name">Stereo</span><button type="button" id="pvc-tb-channel" class="pvc-tb-channel-switch" role="switch" aria-checked="false" aria-label="Mono"><span class="pvc-tb-channel-knob"></span><span class="pvc-tb-channel-icon pvc-tb-channel-stereo">${uiIcon('headphones')}</span><span class="pvc-tb-channel-icon pvc-tb-channel-mono">${uiIcon('monoSource')}</span></button></span></div>
           <div class="pvc-tb-range"><span>0%</span><input type="range" id="pvc-tb-volume-slider" class="pvc-range-slider" min="0" max="300" step="5" value="100" aria-label="Ses" /><span>300%</span></div>
           <div class="pvc-tb-opts">${opts('vol', [0, 100, 200, 300], value => `${value}%`)}</div></div>
+        <div id="pvc-tb-audiotracks-card" class="pvc-tb-card" hidden><div class="pvc-tb-card-head"><span>Ses parçası</span></div>
+          <div id="pvc-tb-audiotracks-list" class="pvc-tb-list" role="listbox" aria-label="Ses parçası"></div></div>
+      </div>
+      <div id="pvc-tb-pop-subtracks" class="pvc-tb-popover" aria-label="Videonun kendi altyazısı" hidden>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Videonun kendi altyazısı</span></div>
+          <div id="pvc-tb-subtracks-list" class="pvc-tb-list" role="listbox" aria-label="Videonun kendi altyazısı"></div>
+          <span class="pvc-tb-note">Oynatıcının sunduğu parçalar; yüklediğiniz dosyadan ayrıdır.</span></div>
       </div>
       <div id="pvc-tb-pop-quality" class="pvc-tb-popover" aria-label="Video kalitesi" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Oynatıcının bildirdiği seçenekler</span></div>
@@ -6398,7 +6560,7 @@
 
   function toolbarPopoverAnchor(name) {
     return document.getElementById({ speed: 'pvc-tb-speed', seek: 'pvc-tb-seek-step', volume: 'pvc-tb-volume', quality: 'pvc-tb-quality', groups: 'pvc-tb-mode',
-      subtiming: 'pvc-tb-sub-step', sublook: 'pvc-tb-sub-look', language: 'pvc-tb-lang', picture: 'pvc-tb-picture', theme: 'pvc-tb-theme' }[name]);
+      subtiming: 'pvc-tb-sub-step', sublook: 'pvc-tb-sub-look', subtracks: 'pvc-tb-sub-tracks', language: 'pvc-tb-lang', picture: 'pvc-tb-picture', theme: 'pvc-tb-theme' }[name]);
   }
   // One strip at a time under the bar: a pending alert (no video found, then the frame-loss question) takes
   // the place of the group's own strip until it is resolved, in every group. Alerts mirror the classic panel.
@@ -6425,7 +6587,7 @@
   function updateToolbarSide() {
     const popup = document.getElementById('pvc-controller-popup'), toolbar = document.getElementById('pvc-toolbar');
     if (!popup || !toolbar || !toolbarShown) return;
-    const below = toolbarOpensBelow(popup.getBoundingClientRect(), window.innerHeight || document.documentElement.clientHeight);
+    const below = toolbarOpensBelow(popup.getBoundingClientRect(), visibleViewport().height);
     toolbar.classList.toggle('pvc-tb-above', !below);
     const bar = toolbar.querySelector('.pvc-tb-bar'), strip = visibleToolbarStrip();
     const gap = 8, barHeight = bar.offsetHeight;
@@ -6443,7 +6605,7 @@
       help.hidden = toolbarGroup !== 'settings' || toolbarOpenPopover?.panel.id === 'pvc-tb-pop-groups';
       if (!help.hidden) {
         const root = toolbar.getBoundingClientRect(), barRight = bar.getBoundingClientRect().right;
-        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        const viewportWidth = visibleViewport().width;
         help.style.setProperty('left', `${toolbarPopoverLeft(barRight - help.offsetWidth, help.offsetWidth, root.left, viewportWidth, EDGE_MARGIN)}px`, 'important');
       }
     }
@@ -6453,7 +6615,7 @@
     updateToolbarSide();
     const { panel, anchor } = toolbarOpenPopover;
     const root = document.getElementById('pvc-toolbar').getBoundingClientRect(), at = anchor.getBoundingClientRect();
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const viewportWidth = visibleViewport().width;
     let start = panel.id === 'pvc-tb-pop-groups' ? at.right - panel.offsetWidth : at.left;
     // In Settings the open popover sits beside Help instead of covering it (TOOLBAR_REDESIGN.md).
     const help = document.getElementById('pvc-tb-pop-help');
@@ -6562,7 +6724,7 @@
     if (toggle) toggle.checked = hudLayout === 'classic';
     if (!popup || !toolbar) return;
     if (hudLayout === 'toolbar') toolbarWidthCache = measureToolbarWidth(popup, toolbar) || toolbarWidthCache;
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const viewportWidth = visibleViewport().width;
     const show = hudLayout === 'toolbar' && toolbarFitsViewport(toolbarWidthCache, viewportWidth, toolbarShown, EDGE_MARGIN);
     if (show !== toolbarShown || popup.classList.contains('pvc-layout-toolbar') !== show) {
       // Switching layouts keeps the panel's right edge, as a group change does, so a toolbar near the right edge
@@ -6651,7 +6813,7 @@
     if (!bar || bar.top > 80) return null;
     // Strips and open popovers (Help in Settings too) hang below the bar; the toast goes under those
     // that reach the top centre, where it appears.
-    const centre = (window.innerWidth || document.documentElement.clientWidth) / 2;
+    const centre = visibleViewport().width / 2;
     const below = [...popup.querySelectorAll('#pvc-toolbar .pvc-tb-strip, #pvc-toolbar .pvc-tb-popover')].filter(node => !node.hidden)
       .map(node => node.getBoundingClientRect()).filter(rect => rect.right > centre - 180 && rect.left < centre + 180).map(rect => rect.bottom);
     return Math.round(Math.max(bar.bottom, ...below) + 10);
@@ -6785,6 +6947,7 @@
     setUiTip(byId('pvc-tb-sub-status'), status || null);
     const loaded = remotePresentation ? remotePresentation.subtitleLoaded === true : customSubtitleCues.length > 0;
     byId('pvc-tb-sub-strip').classList.toggle('pvc-tb-strip-muted', !loaded);
+    updateMediaTrackControls();
     const why = byId('pvc-sub-why');
     byId('pvc-tb-sub-why-card').hidden = !why || why.hidden;
     shown('pvc-tb-sub-why', why && !why.hidden ? why.textContent.trim() : '');
@@ -6833,7 +6996,7 @@
     const width = toolbar.querySelector('.pvc-tb-bar').offsetWidth;
     if (width && width !== toolbarWidthCache) {
       toolbarWidthCache = width;
-      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportWidth = visibleViewport().width;
       if (!toolbarFitsViewport(width, viewportWidth, true, EDGE_MARGIN)) applyToolbarLayout();
       else if (popup.getBoundingClientRect().right > viewportWidth - EDGE_MARGIN) { clampPopupToViewport(popup); updateToolbarSide(); placeToolbarPopover(); }
     }
@@ -7204,6 +7367,7 @@
               <button id="pvc-audio-mono-btn" class="pvc-audio-mode-btn" title="Mono (M)">${uiLabel('sliders', 'Mono')}</button>
             </div>
           </div>
+          <label id="pvc-audio-tracks-row" class="pvc-video-target-row pvc-media-track-row" hidden><span>Ses parçası</span><select id="pvc-audio-tracks-select" aria-label="Ses parçası"></select></label>
         </div>
       </div>
 
@@ -7271,6 +7435,7 @@
             <button id="pvc-sub-load-btn" class="pvc-action-btn" title="RAM üzerinden .srt veya .vtt dosyası yükle">${uiLabel('folder', '.SRT / .VTT Yükle')}</button>
             <button id="pvc-sub-toggle-btn" class="pvc-action-btn pvc-active" title="Altyazı katmanını göster/gizle">${uiLabel('eye', 'Altyazı: Açık')}</button>
           </div>
+          <label id="pvc-sub-tracks-row" class="pvc-video-target-row pvc-media-track-row" hidden><span>Videonun kendi altyazısı</span><select id="pvc-sub-tracks-select" aria-label="Videonun kendi altyazısı"></select></label>
           <div id="pvc-sub-status-text" style="font-size: 10px; color: var(--pvc-muted, #a2b6c0); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             Yüklü altyazı yok (Sıfır Depolama RAM Modu)
           </div>
@@ -7760,6 +7925,7 @@
     startQualityWatch();
     renderDynamicQualityButtons();
     updateCollapsedSummaryBar();
+    bindMediaTrackControls(popup); mediaTrackSignature = ''; updateMediaTrackControls();
     return popup;
   }
 
