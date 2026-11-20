@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.8.3 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.3.1 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.8.3';
+  const EXTENSION_VERSION = '0.8.3.1';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -313,6 +313,7 @@
     'Bu ölçüm için ayrı bir HEAD isteği gönderildi. Ağ pingi değildir.': 'A separate HEAD request was sent for this measurement. Not a network ping.',
     '⌨️ Klavye Kısayolları Aktif': '⌨️ Keyboard shortcuts on',
     '🔇 Klavye Kısayolları Devre Dışı': '🔇 Keyboard shortcuts off',
+    'Klavye Kısayolları Devre Dışı': 'Keyboard shortcuts off',
     '🎨 Filtre %100 değerine sıfırlandı': '🎨 Filter reset to 100%',
     '🌙 Gece Kalkanı Aktif': '🌙 Night mode on',
     '☀️ Gece Kalkanı Kapatıldı': '☀️ Night mode off',
@@ -479,6 +480,8 @@
     if (plain !== key && !Object.hasOwn(UI_MESSAGES, plain)) UI_MESSAGES[plain] = plainUiLabel(value);
   }
   const UI_ICON_PATHS = {
+    // GitHub Octicons mark; MIT notice and source are in THIRD_PARTY_NOTICES.md.
+    github: '<path fill="currentColor" stroke="none" d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943"/>',
     pip: '<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="7" height="5" rx="1"/>',
     minus: '<path d="M5 12h14"/>', plus: '<path d="M5 12h14M12 5v14"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>',
     speed: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -486,7 +489,10 @@
     video: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/>',
     subtitles: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4m2 0h4M7 14h7m2 0h1"/>',
     sliders: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
-    refresh: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/>',
+    refresh: '<path d="M5 8a7.5 7.5 0 0 1 12.6-3L20 8M20 3v5h-5M19 16a7.5 7.5 0 0 1-12.6 3L4 16M4 21v-5h5"/>',
+    reset: '<path d="M4 9a8.5 8.5 0 1 1-.5 7M4 4v5h5"/>',
+    lockKeyhole: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/><path d="M12 16.2V18"/>',
+    puzzle: '<path d="M8 3h4v2a2 2 0 1 0 4 0V3h5v5h-2a2 2 0 1 0 0 4h2v9h-7v-2a2 2 0 1 0-4 0v2H3v-7h2a2 2 0 1 0 0-4H3V3h5Z"/>',
     folder: '<path d="M3 7V5h6l2 2h10v13H3Z"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     eyeOff: '<path d="M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-2.6 3.4M6.6 6.6C3.7 8.4 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/>',
@@ -517,7 +523,7 @@
   };
   function uiIcon(name) {
     if (!Object.hasOwn(UI_ICON_PATHS, name)) return '';
-    return `<svg class="pvc-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" data-pvc-i18n-skip>${UI_ICON_PATHS[name]}</svg>`;
+    return `<svg class="pvc-ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" data-pvc-i18n-skip>${UI_ICON_PATHS[name]}</svg>`;
   }
   // Called only with fixed product labels, never page, report or subtitle content.
   function uiLabel(icon, text) {
@@ -5933,7 +5939,7 @@
         <div class="pvc-modal-footer">
           <button id="pvc-copy-payload-btn" class="pvc-modal-btn-secondary">📋 JSON Kopyala</button>
           <a id="pvc-send-mail-link" href="#" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">✉️ E-posta</a>
-          <a id="pvc-open-github-link" href="#" target="_blank" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">🐙 GitHub Issue</a>
+          <a id="pvc-open-github-link" href="#" target="_blank" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">${uiLabel('github', 'GitHub Issue')}</a>
         </div>
       </div>
     `);
@@ -6015,7 +6021,7 @@
     setUiMarkup(modal, `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>🔐 İzinler & Klavye Kısayolları Rehberi (v${EXTENSION_VERSION})</span>
+          <span>${uiLabel('lockKeyhole', `İzinler & Klavye Kısayolları Rehberi (v${EXTENSION_VERSION})`)}</span>
           <button id="pvc-close-perms-btn" aria-label="Kapat">✕</button>
         </div>
         <div class="pvc-modal-body">
@@ -6089,7 +6095,7 @@
     setUiMarkup(modal, `
       <div class="pvc-modal-card" style="max-height: 85vh; display: flex; flex-direction: column;">
         <div class="pvc-modal-header">
-          <span>🧩 Oynatıcı Adaptörü Seçimi (Basamaklı Hat)</span>
+          <span>${uiLabel('puzzle', 'Oynatıcı Adaptörü Seçimi (Basamaklı Hat)')}</span>
           <button id="pvc-close-adapter-btn" aria-label="Kapat">✕</button>
         </div>
         <div class="pvc-modal-body" style="overflow-y: auto; flex: 1;">
@@ -6531,7 +6537,7 @@
           <span class="pvc-tb-note">Dil seçimi yalnızca bu sayfa açıkken tutulur.</span></div>
       </div>
       <div id="pvc-tb-pop-picture" class="pvc-tb-popover" aria-label="Görüntü ve gece modu" hidden>
-        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Görüntü ve gece modu</span><button type="button" id="pvc-tb-filter-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Tümünü sıfırla</span></button></div>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Görüntü ve gece modu</span><button type="button" id="pvc-tb-filter-reset" class="pvc-tb-mini">${uiIcon('reset')}<span>Tümünü sıfırla</span></button></div>
           ${TOOLBAR_FILTERS.map(([key, label, icon, min, max, step]) => `<div class="pvc-tb-filter"><span class="pvc-tb-filter-name">${uiIcon(icon)}<span>${label}</span></span>
             <input type="range" id="pvc-tb-filter-${key}" class="pvc-range-slider" min="${min}" max="${max}" step="${step}" value="100" aria-label="${label}" /><span id="pvc-tb-filter-${key}-value" class="pvc-tb-muted" data-pvc-i18n-skip>100%</span></div>`).join('')}</div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Filtreler</span></div>
@@ -7364,7 +7370,7 @@
             </div>
             <div style="display: flex; gap: 3px;">
               <button id="pvc-audio-stereo-btn" class="pvc-audio-mode-btn pvc-audio-active" title="Stereo (M)">${uiLabel('headphones', 'Stereo')}</button>
-              <button id="pvc-audio-mono-btn" class="pvc-audio-mode-btn" title="Mono (M)">${uiLabel('sliders', 'Mono')}</button>
+              <button id="pvc-audio-mono-btn" class="pvc-audio-mode-btn" title="Mono (M)">${uiLabel('monoSource', 'Mono')}</button>
             </div>
           </div>
           <label id="pvc-audio-tracks-row" class="pvc-video-target-row pvc-media-track-row" hidden><span>Ses parçası</span><select id="pvc-audio-tracks-select" aria-label="Ses parçası"></select></label>
@@ -7415,7 +7421,7 @@
           <div class="pvc-btn-grid-3">
             <button id="pvc-btn-night-shield" class="pvc-action-btn" title="Mavi ışığı azaltan sıcak Gece Kalkanı">${uiLabel('moon', 'Gece Modu')}</button>
             <button id="pvc-btn-invert-color" class="pvc-action-btn" title="Renkleri ters çevir">${uiLabel('contrast', 'Ters Renk')}</button>
-            <button id="pvc-btn-reset-filters" class="pvc-action-btn" title="Tüm filtreleri sıfırla">${uiLabel('refresh', 'Sıfırla')}</button>
+            <button id="pvc-btn-reset-filters" class="pvc-action-btn" title="Tüm filtreleri sıfırla">${uiLabel('reset', 'Sıfırla')}</button>
           </div>
         </div>
       </div>
@@ -7603,7 +7609,7 @@
       hkBtn.setAttribute('aria-pressed', String(hotkeysEnabled));
       setUiAttribute(hkBtn, 'title', hotkeysEnabled ? 'Klavye Kısayolları Aktif (Kapatmak için tıklayın)'
         : 'Klavye Kısayolları Devre Dışı (Açmak için tıklayın)');
-      showToast(hotkeysEnabled ? '⌨️ Klavye Kısayolları Aktif' : '🔇 Klavye Kısayolları Devre Dışı');
+      showToast(hotkeysEnabled ? '⌨️ Klavye Kısayolları Aktif' : 'Klavye Kısayolları Devre Dışı');
     };
 
     // Küçültülmüş Mini-Bar Hızlı Butonları (Madde 6)

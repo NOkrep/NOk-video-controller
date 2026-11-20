@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3**, `claude/workTogether` dalında; `main` de `0.8.0` (#125); belge taşıması ve v0.8.1 dalda, PR kullanıcı tarafından açılacak. PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.1**, `codex/filmdeck-cassette-icon` dalında; `main` `0.8.3` (#127, `9fb37ea`). I-13 seçili simge güncellemesi Codex'te; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -18,6 +18,19 @@
 - **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
 - **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
 - **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
+
+## I-13 seçili simgeler, v0.8.3.1 — 21 Kasım 2026
+
+Kullanıcı, karşılaştırmada seçtiği simgelerin uygulanmasını istedi. Codex'in
+inceleme/devir işi tamam; N-035'te Claude'a bırakılan dört bulgu hâlâ açık.
+Kullanıcı bu simge işini önce yapmaya izin verdi; dosya sahipliği N-036'ya
+uygulama başlamadan kaydedildi.
+
+- **Uygulanan seçimler:** 4A GitHub işareti, 6A rehber başlığında anahtar delikli kilit, 10B adaptör başlığında yapboz, 16A ortak yenileme çiziminde dengeli oklar, 17A Kolay okunur Mono düğmesinde `monoSource`, 30A filtre sıfırlamada ayrı dönüş oku. Mevcut düğme adları korunur; etiket değiştirme önerisi ayrıca kabul edilmiş sayılmaz.
+- **Geçici tercihler:** 8A kısayollar kapalı bildiriminde yalnız metin (TR/EN); 45A mevcut hareket dalgası korunur. İkisi daha sonra yeniden değerlendirilecek. Diğer envanter satırları henüz topluca onaylanmadı; I-13'ün tamamı kapanmış sayılmaz.
+- **Güvenlik ve görünüm:** yeni başlıklar mevcut `uiLabel` ve güvenli `setUiMarkup` yolunu kullanır; yeni HTML dizesi atama yöntemi, depolama, izin veya ağ isteği eklenmedi. GitHub yolu yerelde; MIT kaynak/telif bildirimi THIRD_PARTY_NOTICES.md içinde. HUD dışında da SVG boyutu 18 px; Mono/Stereo düğmelerinde çizim ve metin boşluğu uygulanır. Altyazı, dosya adı ve kullanıcı yorumuna dokunulmadı.
+- **Yerel kanıt:** `npm run check` 308/308; `toolbar-browser`, `ui-smoke` geniş/dar, `dialog-keyboard-browser`, `tooltip-browser` Edge 152.0.4191.53 ve Firefox 160.0.1 ile 10/10. Ek kurulu eklenti kontrolü: Edge'de Trusted Types zorunlu sentetik sayfada gerçek SVG geometrileri, görünür boyut, erişilebilir başlık, GitHub dolgusu ve TR/EN simgesiz bildirim; 3 kabul akışı (önce EN, sonra EN/TR). Günlükler ve önce/sonra görüntüleri Git dışı `tests/artifacts/i13-v0831-*` altında.
+- **Sınır:** yeni gerçek site kabulü veya uzak CI sonucu bu kanıta dahil değil. Parça seçimi, altyazı matematiği, klavye motoru ve frame-protocol.js değiştirilmedi; N-035'in düzeltmeleri Claude'da. Tag, ZIP veya release oluşturulmadı; PR/merge kullanıcıda.
 
 ## Bekleyen izinler — kullanıcı dönünce (19 Kasım 2026)
 
