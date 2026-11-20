@@ -95,6 +95,26 @@ test('changing language preserves live inputs, node identity, diagnostic JSON an
   assert.ok(h.signals.every(message => Object.keys(message).join() === 'type'));
 });
 
+test('plain notifications translate suffixes and preserve emoji belonging to a subtitle filename', () => {
+  const h = harness();
+  for (const [tr, en] of [
+    ['Ses: %200 (+100% Booster)', 'Volume: 200% (+100% boost)'],
+    ['Ses: %100 (DRM: Yerel %100 Limiti)', 'Volume: 100% (DRM: native 100% limit)'],
+    ['Ses Modu: Mono (Birleşik Kanal)', 'Audio mode: Mono (combined channels)'],
+    ['Ses Modu: Stereo (Çift Kanal)', 'Audio mode: Stereo (two channels)'],
+    ['Altyazı Yüklendi: 2 satır', 'Subtitles loaded: 2 cues'],
+    ['Kayma düzeltmesi açık: her 10 dakikada +2.4 sn', 'Drift correction on: +2.4 s every 10 minutes'],
+    ["🎬✅ sample.srt (2 satır RAM'de)", '🎬✅ sample.srt (2 subtitle cues)'],
+    ["Kayma $& {0}.srt (2 satır RAM'de)", 'Kayma $& {0}.srt (2 subtitle cues)']
+  ]) {
+    h.context.message = tr;
+    assert.equal(h.run('uiText(message)'), en);
+    h.run('setUiLanguage("tr", false)');
+    assert.equal(h.run('uiText(message)'), tr);
+    h.run('setUiLanguage("en", false)');
+  }
+});
+
 test('dynamic labels retain their current source across repeated language switches', () => {
   const root = new Element(); const h = harness('tr', { 'pvc-controller-popup': root });
   h.context.label = root;

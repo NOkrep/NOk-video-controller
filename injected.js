@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.8.3.2 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.3.3 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.8.3.2';
+  const EXTENSION_VERSION = '0.8.3.3';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -64,6 +64,8 @@
   // UI-only gettext catalogue. No page content, subtitle cues or report JSON is translated.
   // Language and original DOM text live only in this frame's RAM.
   const UI_MESSAGES = {
+    // Match the fixed suffix before generic patterns; the filename capture is user data.
+    '{0} ({1} satır RAM\'de)': '{0} ({1} subtitle cues)',
     'Farklı kalite etiketleri aynı oynatma listesine bağlı. Gerçek görüntü kalitesi etiketlerden farklı olabilir.': 'Different quality labels share the same playlist. Actual image quality may differ from the labels.',
     'PiP için bu videoda onay gerekli.': 'Confirm PiP in this video frame.',
     'PiP Aç': 'Open PiP',
@@ -267,10 +269,14 @@
     'Video elementi bulunamadı': 'No video element found',
     'TRT hız kilidi açık. Panelden 1x seçerek veya hız çubuğuna çift tıklayarak kapatın.': 'TRT speed lock is on. Select 1x in the panel or double-click the speed slider to release it.',
     '⚡ Hız: {0}x': '⚡ Speed: {0}x',
+    'Ses: %{0} (DRM: Yerel %100 Limiti)': 'Volume: {0}% (DRM: native 100% limit)',
+    'Ses: %{0} (+{1}% Booster)': 'Volume: {0}% (+{1}% boost)',
     '(🛡️ DRM: Yerel %100 Limiti)': '(🛡️ DRM: native 100% limit)',
     '🔊 Ses: %{0} (🛡️ DRM: Yerel %100 Limiti)': '🔊 Volume: {0}% (🛡️ DRM: native 100% limit)',
     '🔊 Ses: %{0} (🚀 +{1}% Booster)': '🔊 Volume: {0}% (🚀 +{1}% boost)',
     '🔊 Ses: %{0}': '🔊 Volume: {0}%',
+    'Ses Modu: Mono (Birleşik Kanal)': 'Audio mode: Mono (combined channels)',
+    'Ses Modu: Stereo (Çift Kanal)': 'Audio mode: Stereo (two channels)',
     'Ses Modu: 🎛️ Mono (Birleşik Kanal)': 'Audio mode: 🎛️ Mono (combined channels)',
     'Ses Modu: 🎧 Stereo (Çift Kanal)': 'Audio mode: 🎧 Stereo (two channels)',
     '🎛️ Mono (Birleşik Kanal)': '🎛️ Mono (combined channels)',
@@ -402,6 +408,7 @@
     'Zamanlama adımı (fare tekerleği)': 'Timing step (mouse wheel)',
     '− ve + adımı': 'Step for − and +',
     'Şu anki kayma': 'Current offset',
+    'Kayma düzeltmesi açık: her 10 dakikada {0} sn': 'Drift correction on: {0} s every 10 minutes',
     'Kayma {0} · zamanla düzeltiliyor': 'Offset {0} · drift corrected',
     'Kayma {0}': 'Offset {0}',
     'Zamanla kayma': 'Drift over time',
@@ -480,7 +487,7 @@
     if (plain !== key && !Object.hasOwn(UI_MESSAGES, plain)) UI_MESSAGES[plain] = plainUiLabel(value);
   }
   const UI_ICON_PATHS = {
-    // GitHub Octicons mark; MIT notice and source are in THIRD_PARTY_NOTICES.md.
+    // GitHub mark: logo usage guidelines and source are in THIRD_PARTY_NOTICES.md.
     github: '<path fill="currentColor" stroke="none" d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943"/>',
     pip: '<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="7" height="5" rx="1"/>',
     minus: '<path d="M5 12h14"/>', plus: '<path d="M5 12h14M12 5v14"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>',
@@ -506,6 +513,8 @@
     keyboard: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h1m4 0h1m4 0h1M6 13h1m4 0h1m4 0h1M7 16h10"/>',
     globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
     report: '<path d="M5 3h10l4 4v14H5Z"/><path d="M14 3v5h5M9 12h6m-6 4h6"/>',
+    copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
     signal: '<path d="M4 19h1M8 15v4m4-8v8m4-12v12m4-16v16"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/>',
     contrast: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 7h6m-6 5h9m-9 5h6"/>',
@@ -523,7 +532,7 @@
   };
   function uiIcon(name) {
     if (!Object.hasOwn(UI_ICON_PATHS, name)) return '';
-    return `<svg class="pvc-ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" data-pvc-i18n-skip>${UI_ICON_PATHS[name]}</svg>`;
+    return `<svg class="pvc-ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" data-pvc-icon="${name}" data-pvc-i18n-skip>${UI_ICON_PATHS[name]}</svg>`;
   }
   // Called only with fixed product labels, never page, report or subtitle content.
   function uiLabel(icon, text) {
@@ -562,8 +571,14 @@
     if (typeof element.setHTML === 'function') element.setHTML(markup, { sanitizer: {} });
     else element.innerHTML = markup; // Legacy browsers without the Sanitizer API keep their existing UI path.
   }
-  function setUiText(element, source) {
+  function setUiText(element, source, iconName) {
     if (!element) return;
+    const icon = iconName && element.querySelector?.('.pvc-ui-icon');
+    if (icon && Object.hasOwn(UI_ICON_PATHS, iconName) && icon.getAttribute('data-pvc-icon') !== iconName) {
+      const replacement = document.createElement('span');
+      setUiMarkup(replacement, uiIcon(iconName));
+      icon.replaceWith(replacement.firstElementChild);
+    }
     const label = element.querySelector?.('[data-pvc-ui-label]');
     const target = label || element;
     const original = label ? plainUiLabel(source) : String(source);
@@ -1605,16 +1620,17 @@
     }
     userForcedAdapterName = state.forcedAdapter === 'none' ? '' : state.forcedAdapter;
     lastObservedResolution = state.hasVideo ? `${state.width}x${state.height} (${state.height}p)` : '—';
-    text('pvc-realtime-res-badge', `🎬 Gerçek: ${lastObservedResolution}`); text('pvc-mini-res-val', `🎬 ${state.height || '—'}p`);
-    text('pvc-hdr-speed-badge', `${state.requestedRate}x`); text('pvc-mini-speed-val', `⚡ ${state.rate}x`);
-    text('pvc-hdr-volume-badge', `${state.requestedVolume}%`); text('pvc-mini-vol-val', `🔊 ${state.volume}% (${state.audioMode === 'mono' ? 'M' : 'S'})`);
+    text('pvc-realtime-res-badge', `Gerçek: ${lastObservedResolution}`); text('pvc-mini-res-val', `${state.height || '—'}p`);
+    text('pvc-hdr-speed-badge', `${state.requestedRate}x`); text('pvc-mini-speed-val', `${state.rate}x`);
+    text('pvc-hdr-volume-badge', `${state.requestedVolume}%`); text('pvc-mini-vol-val', `${state.volume}% (${state.audioMode === 'mono' ? 'M' : 'S'})`);
     text('pvc-hdr-audio-badge', state.audioMode.toUpperCase()); text('pvc-active-adapter-badge', state.adapter);
     setUiTipStop(document.getElementById('pvc-active-adapter-badge'), adapterTip(state.adapter));
     updatePipButtonsState(state.pipActive);
     text('pvc-mini-adapter-val', state.adapter.replace('Adapter', ''));
+    const miniDrm = document.getElementById('pvc-mini-drm-icon'); if (miniDrm) miniDrm.style.display = state.drm ? 'inline-flex' : 'none';
     text('pvc-sub-offset-badge', subtitleOffsetText(state.subtitleOffset, false));
     updateSubtitleDriftControls(); updateMediaTrackControls();
-    text('pvc-sub-toggle-btn', state.subtitleEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
+    setUiText(document.getElementById('pvc-sub-toggle-btn'), state.subtitleEnabled ? 'Altyazı: Açık' : 'Altyazı: Gizli', state.subtitleEnabled ? 'eye' : 'eyeOff');
     document.getElementById('pvc-sub-toggle-btn')?.classList.toggle('pvc-active', state.subtitleEnabled);
     text('pvc-sub-status-text', state.subtitleLoaded ? 'Altyazı yüklü (oynatıcı çerçevesinde).' : 'Yüklü altyazı yok (Sıfır Depolama RAM Modu)');
     updateSubtitleExplanation(null);
@@ -1703,8 +1719,8 @@
     setUiText(document.getElementById('pvc-hdr-volume-badge'), `${currentAudioVolumePercent}%`);
     syncAudioModeUi(currentAudioMode); setHudCollapsed(hudCollapsed);
     const toggle = document.getElementById('pvc-sub-toggle-btn');
-    setUiText(toggle, subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli'); toggle?.classList.toggle('pvc-active', subtitleOverlayEnabled);
-    if (customSubtitleCues.length) setUiText(document.getElementById('pvc-sub-status-text'), `💬 Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
+    setUiText(toggle, subtitleOverlayEnabled ? 'Altyazı: Açık' : 'Altyazı: Gizli', subtitleOverlayEnabled ? 'eye' : 'eyeOff'); toggle?.classList.toggle('pvc-active', subtitleOverlayEnabled);
+    if (customSubtitleCues.length) setUiText(document.getElementById('pvc-sub-status-text'), `Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
     setUiText(document.getElementById('pvc-sub-offset-badge'), subtitleOffsetText(subtitleOffsetMs, false));
     updateSubtitleDriftControls();
     updateFilterUiBadges(); updateSubtitleAppearanceControls(); updateRealtimeResolutionBadge();
@@ -2220,7 +2236,7 @@
     const state = {
       isDrm,
       keySystem,
-      label: isDrm ? '🛡️ DRM Korumalı Akış' : 'Standart Akış'
+      label: isDrm ? 'DRM Korumalı Akış' : 'Standart Akış'
     };
     activeDrmState = state;
     return state;
@@ -2232,7 +2248,7 @@
     if (!drmBadge) return;
     if (drmStatus.isDrm) {
       drmBadge.style.display = 'block';
-      setUiText(drmBadge, `🛡️ DRM Korumalı Akış (${drmStatus.keySystem})`);
+      setUiText(drmBadge, `DRM Korumalı Akış (${drmStatus.keySystem})`);
     } else {
       drmBadge.style.display = 'none';
     }
@@ -2456,7 +2472,7 @@
     if (video && !wasPaused) {
       video.pause();
     }
-    showToast(`🎬 ${label}: Tampon dolduruluyor...`);
+    showToast(`${label}: Tampon dolduruluyor...`);
     addDiagnosticLog('INFO', 'SOURCE_SWITCH_STARTED');
 
     if (player.tech_ && player.tech_.vhs) {
@@ -2482,7 +2498,7 @@
       if (!wasPaused && typeof player.play === 'function') {
         player.play().catch(() => {});
       }
-      showToast(`✅ ${label} Kilitlendi (Akıcı Oynatılıyor)`);
+      showToast(`${label} Kilitlendi (Akıcı Oynatılıyor)`);
       addDiagnosticLog('INFO', 'SOURCE_SWITCH_COMPLETED');
     };
 
@@ -3012,9 +3028,9 @@
     getQualities(video) {
       const currentHeight = video && video.videoHeight ? video.videoHeight : 360;
       return [
-        { id: 'now_bvr_max', label: '🚀 Max Bitrate (ErCDN Boost)', height: 1080, bitrate: 12000000, isBoost: true },
-        { id: 'now_bvr_hd', label: '⚡ Yüksek Bitrate (HD Zorla)', height: 720, bitrate: 5500000, isBoost: true },
-        { id: 'now_current', label: `🎬 Doğal Akış (${currentHeight}p)`, height: currentHeight, bitrate: 0, isBoost: false }
+        { id: 'now_bvr_max', label: 'Max Bitrate (ErCDN Boost)', height: 1080, bitrate: 12000000, isBoost: true },
+        { id: 'now_bvr_hd', label: 'Yüksek Bitrate (HD Zorla)', height: 720, bitrate: 5500000, isBoost: true },
+        { id: 'now_current', label: `Doğal Akış (${currentHeight}p)`, height: currentHeight, bitrate: 0, isBoost: false }
       ];
     },
     applyQuality(targetItem) {
@@ -4041,12 +4057,12 @@
 
     const { video } = findVideoAndPlayer();
     const shortRes = (video && video.videoHeight > 0) ? `${video.videoHeight}p` : '---';
-    if (miniRes) setUiText(miniRes, `🎬 ${shortRes}`);
-    if (miniSpeed) setUiText(miniSpeed, `⚡ ${targetEnforcedPlaybackRate}x`);
-    if (miniVol) setUiText(miniVol, `🔊 ${currentAudioVolumePercent}% (${currentAudioMode === 'mono' ? 'M' : 'S'})`);
+    if (miniRes) setUiText(miniRes, `${shortRes}`);
+    if (miniSpeed) setUiText(miniSpeed, `${targetEnforcedPlaybackRate}x`);
+    if (miniVol) setUiText(miniVol, `${currentAudioVolumePercent}% (${currentAudioMode === 'mono' ? 'M' : 'S'})`);
     if (miniAdapter) {
-      const drmPrefix = activeDrmState.isDrm ? '🛡️ ' : '';
-      setUiText(miniAdapter, `${drmPrefix}${currentActiveAdapterName.replace('Adapter', '')}`);
+      setUiText(miniAdapter, currentActiveAdapterName.replace('Adapter', ''));
+      const miniDrm = document.getElementById('pvc-mini-drm-icon'); if (miniDrm) miniDrm.style.display = activeDrmState.isDrm ? 'inline-flex' : 'none';
     }
   }
 
@@ -4083,10 +4099,10 @@
 
       lastObservedResolution = `${w}x${h} (${label})`;
 
-      setUiText(badge, `🎬 Gerçek: ${lastObservedResolution}`);
+      setUiText(badge, `Gerçek: ${lastObservedResolution}`);
       badge.style.color = 'var(--pvc-accent-ink, #92bfd5)';
     } else {
-      setUiText(badge, '🎬 Çözünürlük: Bekleniyor...');
+      setUiText(badge, 'Çözünürlük: Bekleniyor...');
       badge.style.color = 'var(--pvc-muted, #a2b6c0)';
     }
 
@@ -4217,7 +4233,7 @@
       if (ownerDocument.pictureInPictureElement) {
         await ownerDocument.exitPictureInPicture();
         updatePipButtonsState(false);
-        showToast('🖼️ PiP Modundan Çıkıldı');
+        showToast('PiP Modundan Çıkıldı');
       } else if (typeof video.requestPictureInPicture === 'function') {
         if (video.disablePictureInPicture) {
           video.disablePictureInPicture = false;
@@ -4225,11 +4241,11 @@
         }
         await video.requestPictureInPicture();
         updatePipButtonsState(true);
-        showToast('🖼️ Resim İçinde Resim (PiP) Aktif');
+        showToast('Resim İçinde Resim (PiP) Aktif');
       } else if (typeof video.webkitSetPresentationMode === 'function') {
         const mode = video.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture';
         video.webkitSetPresentationMode(mode);
-        showToast(`🖼️ PiP Modu: ${mode}`);
+        showToast(`PiP Modu: ${mode}`);
       } else {
         addDiagnosticLog('WARN', 'PIP_UNSUPPORTED'); showToast(pipFailureMessage('unsupported'));
         return { ok: false, code: 'unsupported' };
@@ -4376,14 +4392,14 @@
 
     if (hdrBadge) {
       const isCustom = videoFilterState.brightness !== 100 || videoFilterState.contrast !== 100 || videoFilterState.saturate !== 100 || videoFilterState.nightShield || videoFilterState.invert;
-      setUiText(hdrBadge, videoFilterState.nightShield ? '🌙 Gece' : (isCustom ? 'Özel' : 'Standart'));
+      setUiText(hdrBadge, videoFilterState.nightShield ? 'Gece' : (isCustom ? 'Özel' : 'Standart'));
     }
   }
 
   function resetVideoFilters() {
     videoFilterState = { brightness: 100, contrast: 100, saturate: 100, nightShield: false, invert: false };
     scheduleVideoFilterUpdate();
-    showToast('🎨 Görüntü Filtreleri Sıfırlandı');
+    showToast('Görüntü Filtreleri Sıfırlandı');
   }
 
   // =========================================================================
@@ -4696,7 +4712,7 @@
     subtitleOffsetMs = clampSubtitleOffset(subtitleOffsetMs + deltaMs);
     applySubtitleTiming();
     addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: subtitleOffsetMs });
-    showToast(`💬 Altyazı Senkronu: ${subtitleOffsetText(subtitleOffsetMs, false)}`);
+    showToast(`Altyazı Senkronu: ${subtitleOffsetText(subtitleOffsetMs, false)}`);
   }
   // A typed or line-based shift replaces the timing: any drift line belonged to the old shift.
   function setSubtitleOffset(ms) {
@@ -4705,7 +4721,7 @@
     subtitleOffsetMs = clampSubtitleOffset(Math.round(ms)); subtitleDrift = null; subtitleSyncPoint = null;
     applySubtitleTiming();
     addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: subtitleOffsetMs });
-    showToast(`💬 Altyazı Senkronu: ${subtitleOffsetText(subtitleOffsetMs, false)}`);
+    showToast(`Altyazı Senkronu: ${subtitleOffsetText(subtitleOffsetMs, false)}`);
   }
   // "Now this line": the chosen line starts at the video's current time.
   function alignSubtitleCueNow(start) {
@@ -4790,7 +4806,7 @@
     } else {
       subtitleDrift = { rate: result.rate, anchor: result.anchor }; subtitleOffsetMs = result.base;
       addDiagnosticLog('INFO', 'SUBTITLE_DRIFT_SET', { driftMsPerMinute: result.rate * 60 });
-      showToast(`💬 Kayma düzeltmesi açık: her 10 dakikada ${subtitleDriftAmount(result.rate)} sn`);
+      showToast(`Kayma düzeltmesi açık: her 10 dakikada ${subtitleDriftAmount(result.rate)} sn`);
     }
     applySubtitleTiming();
   }
@@ -4941,7 +4957,7 @@
       }
 
       updateCollapsedSummaryBar();
-      showToast(`⚡ Hız: ${validRate}x`);
+      showToast(`Hız: ${validRate}x`);
       return true;
     } catch (err) {
       addDiagnosticLog('WARN', 'SPEED_FAILED');
@@ -5201,11 +5217,11 @@
 
       let boostMsg = '';
       if (isDrm && validPercent > 100) {
-        boostMsg = ' (🛡️ DRM: Yerel %100 Limiti)';
+        boostMsg = ' (DRM: Yerel %100 Limiti)';
       } else if (validPercent > 100) {
-        boostMsg = ` (🚀 +${validPercent - 100}% Booster)`;
+        boostMsg = ` (+${validPercent - 100}% Booster)`;
       }
-      showToast(`🔊 Ses: %${validPercent}${boostMsg}`);
+      showToast(`Ses: %${validPercent}${boostMsg}`);
     } finally {
       isInternalVolumeUpdating = false;
     }
@@ -5234,7 +5250,7 @@
     syncAudioModeUi(mode);
 
     updateCollapsedSummaryBar();
-    showToast(`Ses Modu: ${mode === 'mono' ? '🎛️ Mono (Birleşik Kanal)' : '🎧 Stereo (Çift Kanal)'}`);
+    showToast(`Ses Modu: ${mode === 'mono' ? 'Mono (Birleşik Kanal)' : 'Stereo (Çift Kanal)'}`);
   }
 
   function seekBy(seconds) {
@@ -5569,7 +5585,7 @@
     const source = getQualitySourceKey(video, player);
     const current = () => canRetryPuhuSource(video, player) && findVideoAndPlayer().video === video
       && getQualitySourceKey(video, player) === source;
-    showToast('🚀 1080p FHD MNCDN akışı aranıyor...');
+    showToast('1080p FHD MNCDN akışı aranıyor...');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
@@ -5617,15 +5633,15 @@
   const CDN_BUTTON_HEAD_TITLE = 'Bu ölçüm için ayrı bir HEAD isteği gönderildi. Ağ pingi değildir.';
 
   function cdnResultMessage({ ms, method, ageMinutes = 0 }) {
-    if (method === 'head') return `📡 Medya HTTP yanıtı: ${ms} ms (HEAD)`;
-    return ageMinutes > 0 ? `📡 Medya HTTP yanıtı: ${ms} ms (${ageMinutes} dk önceki istek)` : `📡 Medya HTTP yanıtı: ${ms} ms (son istek)`;
+    if (method === 'head') return `Medya HTTP yanıtı: ${ms} ms (HEAD)`;
+    return ageMinutes > 0 ? `Medya HTTP yanıtı: ${ms} ms (${ageMinutes} dk önceki istek)` : `Medya HTTP yanıtı: ${ms} ms (son istek)`;
   }
   function renderCdnButton(result) {
     const button = document.getElementById('pvc-ping-btn');
     if (!button || button.getAttribute('aria-busy') === 'true') return;
     const measured = result?.ms !== undefined;
     cdnButtonPassive = measured && result.method === 'resource-timing';
-    setUiText(button, measured ? `📡 ${result.ms} ms` : '📡 Sonuç yok');
+    setUiText(button, measured ? `${result.ms} ms` : 'Sonuç yok');
     button.style.color = !measured ? 'var(--pvc-muted, #a2b6c0)' : result.ms <= 50 ? 'var(--pvc-success, #34d399)' : (result.ms <= 120 ? 'var(--pvc-accent-ink, #92bfd5)' : 'var(--pvc-warning, #f59e0b)');
     setUiAttribute(button, 'data-pvc-tip', !measured ? (CDN_STATUS_MESSAGES[lastPingStatus] || CDN_UNAVAILABLE_MESSAGE)
       : result.method === 'head' ? CDN_BUTTON_HEAD_TITLE : result.method === 'resource-timing' ? CDN_BUTTON_PASSIVE_TITLE : CDN_BUTTON_DEFAULT_TITLE);
@@ -5635,7 +5651,7 @@
     const button = document.getElementById('pvc-ping-btn');
     if (!cdnButtonPassive || !button || button.getAttribute('aria-busy') === 'true') return;
     cdnButtonPassive = false;
-    setUiText(button, '📡 CDN yanıtı');
+    setUiText(button, 'CDN yanıtı');
     button.style.color = '';
     setUiAttribute(button, 'data-pvc-tip', CDN_BUTTON_DEFAULT_TITLE);
   }
@@ -5933,8 +5949,8 @@
     setUiMarkup(modal, `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span>⚠️ Gizlilik Odaklı Teşhis Raporu (v${EXTENSION_VERSION})</span>
-          <button id="pvc-close-modal-btn" aria-label="Raporu Kapat">✕</button>
+          <span>${uiLabel('report', `Gizlilik Odaklı Teşhis Raporu (v${EXTENSION_VERSION})`)}</span>
+          <button id="pvc-close-modal-btn" aria-label="Raporu Kapat">${uiIcon('close')}</button>
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
@@ -5965,8 +5981,8 @@
           <pre id="pvc-modal-code-block" class="pvc-modal-code"></pre>
         </div>
         <div class="pvc-modal-footer">
-          <button id="pvc-copy-payload-btn" class="pvc-modal-btn-secondary">📋 JSON Kopyala</button>
-          <a id="pvc-send-mail-link" href="#" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">✉️ E-posta</a>
+          <button id="pvc-copy-payload-btn" class="pvc-modal-btn-secondary">${uiLabel('copy', 'JSON Kopyala')}</button>
+          <a id="pvc-send-mail-link" href="#" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">${uiLabel('mail', 'E-posta')}</a>
           <a id="pvc-open-github-link" href="#" target="_blank" rel="noopener noreferrer" class="pvc-modal-btn-primary" style="background:var(--pvc-elevated, #1b2a33);">${uiLabel('github', 'GitHub Issue')}</a>
         </div>
       </div>
@@ -6050,11 +6066,11 @@
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
           <span>${uiLabel('lockKeyhole', `İzinler & Klavye Kısayolları Rehberi (v${EXTENSION_VERSION})`)}</span>
-          <button id="pvc-close-perms-btn" aria-label="Kapat">✕</button>
+          <button id="pvc-close-perms-btn" aria-label="Kapat">${uiIcon('close')}</button>
         </div>
         <div class="pvc-modal-body">
           <div class="pvc-perm-card">
-            <div class="pvc-perm-title">⌨️ Aktif Klavye Kısayolları</div>
+            <div class="pvc-perm-title">${uiLabel('keyboard', 'Aktif Klavye Kısayolları')}</div>
             <div class="pvc-perm-step">• <strong>[</strong> ve <strong>]</strong> : Oynatma hızını 0.25x azalt / artır</div>
             <div class="pvc-perm-step">• <strong>R</strong> : Oynatma hızını 1.0x değerine sıfırla</div>
             <div class="pvc-perm-step">• <strong>M</strong> : Stereo / Mono ses kanalı geçişi</div>
@@ -6065,7 +6081,7 @@
             <div class="pvc-perm-step">• <strong>Çift Tıklama</strong> : Herhangi bir slider'a çift tıklayarak sıfırlayın</div>
           </div>
           <div class="pvc-perm-card">
-            <div class="pvc-perm-title">🌐 Tarayıcı Site Erişimi (${HOSTNAME})</div>
+            <div class="pvc-perm-title">${uiLabel('globe', `Tarayıcı Site Erişimi (${HOSTNAME})`)}</div>
             <div class="pvc-perm-step">Araç çubuğundaki NOk simgesine tıklayarak veya sağ tıklayıp "Bu Siteye Erişebilir" seçeneğini aktif ederek tüm oynatıcı kancalarını çalıştırabilirsiniz.</div>
           </div>
         </div>
@@ -6100,7 +6116,7 @@
     modal.id = 'pvc-adapter-modal';
 
     const optionsHtml = [
-      { name: '', label: '⚡ Otomatik (Önerilen)', tier: 'Akıllı', desc: 'Sistem sayfayı ve oynatıcı prototiplerini analiz ederek en uygun adaptörü otomatik seçer.' },
+      { name: '', label: 'Otomatik (Önerilen)', tier: 'Akıllı', desc: 'Sistem sayfayı ve oynatıcı prototiplerini analiz ederek en uygun adaptörü otomatik seçer.' },
       ...ALL_ADAPTERS.map(a => ({
         name: a.name,
         label: a.displayName || a.name,
@@ -6124,7 +6140,7 @@
       <div class="pvc-modal-card" style="max-height: 85vh; display: flex; flex-direction: column;">
         <div class="pvc-modal-header">
           <span>${uiLabel('puzzle', 'Oynatıcı Adaptörü Seçimi (Basamaklı Hat)')}</span>
-          <button id="pvc-close-adapter-btn" aria-label="Kapat">✕</button>
+          <button id="pvc-close-adapter-btn" aria-label="Kapat">${uiIcon('close')}</button>
         </div>
         <div class="pvc-modal-body" style="overflow-y: auto; flex: 1;">
           ${optionsHtml}
@@ -6177,8 +6193,8 @@
     setUiMarkup(modal, `
       <div class="pvc-modal-card">
         <div class="pvc-modal-header">
-          <span style="color: var(--pvc-warning, #fbbf24);">🛡️ DRM / EME Korumalı Akış Bilgilendirmesi</span>
-          <button id="pvc-close-drm-btn" aria-label="Kapat">✕</button>
+          <span style="color: var(--pvc-warning, #fbbf24);">${uiLabel('shield', 'DRM / EME Korumalı Akış Bilgilendirmesi')}</span>
+          <button id="pvc-close-drm-btn" aria-label="Kapat">${uiIcon('close')}</button>
         </div>
         <div class="pvc-modal-body">
           <p class="pvc-modal-desc">
@@ -6493,7 +6509,7 @@
       </div>
       <div id="pvc-tb-strip" class="pvc-tb-strip" data-pvc-strip="player"><button type="button" id="pvc-tb-playpause" class="pvc-tb-play" aria-label="Oynat / duraklat"><span id="pvc-tb-play-icon" class="pvc-tb-iconbox">${uiIcon('play')}</span><span id="pvc-tb-pause-icon" class="pvc-tb-iconbox" hidden>${uiIcon('pause')}</span></button>${uiIcon('video')}<span id="pvc-tb-playing">Çözünürlük bekleniyor</span><button type="button" id="pvc-tb-refresh" class="pvc-tb-mini">${uiIcon('refresh')}<span>Yenile</span></button><button type="button" id="pvc-tb-drm" class="pvc-tb-shield" hidden>${uiIcon('shield')}<span class="pvc-tb-shield-label">Korumalı akış</span></button></div>
       <div id="pvc-tb-sub-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="subtitles" hidden>${uiIcon('subtitles')}<span id="pvc-tb-sub-status" class="pvc-tb-strip-text" data-pvc-i18n-skip><span id="pvc-tb-sub-name" class="pvc-tb-strip-name"></span><span id="pvc-tb-sub-count" class="pvc-tb-strip-count"></span></span>
-        <span id="pvc-tb-sub-offset" class="pvc-tb-offset" hidden><span id="pvc-tb-sub-offset-val"></span><button type="button" id="pvc-tb-sub-offset-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></span></div>
+        <span id="pvc-tb-sub-offset" class="pvc-tb-offset" hidden><span id="pvc-tb-sub-offset-val"></span><button type="button" id="pvc-tb-sub-offset-reset" class="pvc-tb-mini">${uiIcon('reset')}<span>Sıfırla</span></button></span></div>
       <div id="pvc-tb-a11y-strip" class="pvc-tb-strip pvc-tb-strip-muted" data-pvc-strip="accessibility" hidden>${uiIcon('info')}<span>Bu tercihler sayfa yenilenince sıfırlanır · klavye kısayolları: soldaki tuş simgesi</span></div>
       <div id="pvc-tb-waiting-strip" class="pvc-tb-strip pvc-tb-alert pvc-tb-alert-danger" role="status" hidden>${uiIcon('warning')}<span class="pvc-tb-alert-text"><strong>Aktif Oynatıcı Bekleniyor</strong><span>Sayfadaki video henüz başlamadı veya farklı bir çerçeve içinde.</span></span>
         <button type="button" id="pvc-tb-rescan" class="pvc-tb-mini pvc-tb-mini-strong">${uiIcon('refresh')}<span>Yeniden Tara</span></button><button type="button" id="pvc-tb-waiting-report" class="pvc-tb-mini">${uiIcon('report')}<span>Teşhis Raporu</span></button></div>
@@ -6501,7 +6517,7 @@
         <button type="button" id="pvc-tb-frameloss-yes" class="pvc-tb-mini pvc-tb-mini-strong">Evet</button><button type="button" id="pvc-tb-frameloss-no" class="pvc-tb-mini">Hayır</button></div>
       <div id="pvc-tb-pop-subtiming" class="pvc-tb-popover" aria-label="Altyazı zamanlaması" hidden>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>− ve + adımı</span></div><div class="pvc-tb-opts">${opts('substep', TOOLBAR_SUBTITLE_STEPS, value => value >= 1000 ? `${value / 1000}s` : `${value}ms`)}</div></div>
-        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu anki kayma</span><button type="button" id="pvc-tb-sub-reset" class="pvc-tb-mini">${uiIcon('refresh')}<span>Sıfırla</span></button></div>
+        <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu anki kayma</span><button type="button" id="pvc-tb-sub-reset" class="pvc-tb-mini">${uiIcon('reset')}<span>Sıfırla</span></button></div>
           <span id="pvc-tb-sub-offset-big" class="pvc-tb-big" data-pvc-i18n-skip>0 ms</span>
           <span class="pvc-sub-field-row"><input type="text" id="pvc-tb-sub-offset-input" class="pvc-sub-input" placeholder="örn. -41:35 veya +2.5" aria-label="Kaymayı yaz (− erken, + geç)" autocomplete="off" spellcheck="false" /><button type="button" id="pvc-tb-sub-offset-apply" class="pvc-tb-mini">Uygula</button></span></div>
         <div class="pvc-tb-card"><div class="pvc-tb-card-head"><span>Şu an bu satır</span></div>
@@ -6522,7 +6538,7 @@
           <input type="range" id="pvc-tb-sub-bottom" class="pvc-range-slider" min="0" max="40" step="1" value="8" aria-label="Alt kenardan uzaklık" />
           <div class="pvc-tb-row"><span class="pvc-tb-muted">Arka plan opaklığı</span><span id="pvc-tb-sub-background-value" class="pvc-tb-muted" data-pvc-i18n-skip>82%</span></div>
           <input type="range" id="pvc-tb-sub-background" class="pvc-range-slider" min="0" max="100" step="1" value="82" aria-label="Arka plan opaklığı" /></div>
-        <div class="pvc-tb-card"><button type="button" id="pvc-tb-sub-look-reset" class="pvc-tb-opt">Görünümü sıfırla</button>
+        <div class="pvc-tb-card"><button type="button" id="pvc-tb-sub-look-reset" class="pvc-tb-opt">${uiLabel('reset', 'Görünümü sıfırla')}</button>
           <span class="pvc-tb-note">Yazı boyutu katmanda uygulanır; yerel tam ekran/PiP yazısını tarayıcı yönetir.</span></div>
       </div>
       <div id="pvc-tb-pop-speed" class="pvc-tb-popover" aria-label="Hız" hidden>
@@ -6974,7 +6990,7 @@
     shown('pvc-tb-sub-drift-mark-val', byId('pvc-sub-drift-mark')?.textContent.trim() || '');
     shown('pvc-tb-sub-drift-cancel-val', driftCancel?.textContent.trim() || '');
     byId('pvc-tb-sub-drift-cancel').hidden = !driftCancel || driftCancel.hidden;
-    const status = byId('pvc-sub-status-text')?.textContent.replace(/^[\p{Extended_Pictographic}️‍]+\s*/u, '').trim() || '';
+    const status = byId('pvc-sub-status-text')?.textContent.trim() || '';
     // A long file name is shortened, but the cue count stays visible; the whole line is in the tooltip.
     const statusParts = /^(.*?)\s*(\([^()]*\))$/.exec(status);
     shown('pvc-tb-sub-name', statusParts ? statusParts[1] : status); shown('pvc-tb-sub-count', statusParts ? ` ${statusParts[2]}` : '');
@@ -7288,7 +7304,7 @@
           <span id="pvc-mini-res-val" style="color: var(--pvc-accent-ink, #92bfd5);">${uiLabel('video', '---')}</span>
           <span id="pvc-mini-speed-val" style="color: var(--pvc-text, #edf2f3);">${uiLabel('speed', '1.0x')}</span>
           <span id="pvc-mini-vol-val" style="color: var(--pvc-success, #34d399);">${uiLabel('volume', '%100 (S)')}</span>
-          <span id="pvc-mini-adapter-val" style="color: var(--pvc-accent-ink, #92bfd5); font-size: 9.5px;">Generic</span>
+          <span id="pvc-mini-adapter-val" style="color: var(--pvc-accent-ink, #92bfd5); font-size: 9.5px;"><span id="pvc-mini-drm-icon" style="display:none;">${uiIcon('shield')}</span><span data-pvc-ui-label>Generic</span></span>
         </div>
         <div class="pvc-mini-quick-controls">
           <button id="pvc-mini-seek-m10" class="pvc-action-btn" title="10s Geri">${uiLabel('rewind', '-10s')}</button>
@@ -7312,7 +7328,7 @@
           <span style="font-size: 10.5px; color: var(--pvc-muted, #a2b6c0);">Adaptör:</span>
           <span id="pvc-active-adapter-badge" style="font-size: 10.5px; font-weight: 700; color: var(--pvc-accent-ink, #92bfd5); background: color-mix(in srgb, var(--pvc-accent) 12%, transparent); padding: 1px 5px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--pvc-accent) 30%, transparent);">Otomatik</span>
         </div>
-        <button id="pvc-change-adapter-btn" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--pvc-muted, #a2b6c0); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;" title="Adaptör Listesini Aç ve Değiştir">Değiştir ▾</button>
+        <button id="pvc-change-adapter-btn" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--pvc-muted, #a2b6c0); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer;" title="Adaptör Listesini Aç ve Değiştir">${uiLabel('chevron', 'Değiştir')}</button>
       </div>
 
       <label class="pvc-video-target-row"><span>Video hedefi</span><select id="pvc-video-target" aria-label="Video hedefi"><option value="auto">Otomatik seçim</option></select></label>
@@ -7345,7 +7361,7 @@
       <div class="pvc-menu-section" id="pvc-section-speed">
         <div class="pvc-section-header" data-target="pvc-content-speed">
           <div class="pvc-section-title-wrap">
-            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-section-arrow">${uiIcon('chevron')}</span>
             <span class="pvc-label">${uiLabel('speed', 'Oynatma Hızı & Sarma')}</span>
           </div>
           <span id="pvc-hdr-speed-badge" class="pvc-val-badge">1.0x</span>
@@ -7375,7 +7391,7 @@
       <div class="pvc-menu-section" id="pvc-section-audio">
         <div class="pvc-section-header" data-target="pvc-content-audio">
           <div class="pvc-section-title-wrap">
-            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-section-arrow">${uiIcon('chevron')}</span>
             <span class="pvc-label">${uiLabel('volume', 'Ses Seviyesi & Kanallar')}</span>
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
@@ -7409,7 +7425,7 @@
       <div class="pvc-menu-section pvc-section-collapsed" id="pvc-section-quality">
         <div class="pvc-section-header" data-target="pvc-content-quality">
           <div class="pvc-section-title-wrap">
-            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-section-arrow">${uiIcon('chevron')}</span>
             <span class="pvc-label">${uiLabel('video', 'Akış Paket Kaliteleri')}</span>
           </div>
           <span id="pvc-quality-count-badge" class="pvc-val-badge">Paketler...</span>
@@ -7425,7 +7441,7 @@
       <div class="pvc-menu-section pvc-section-collapsed" id="pvc-section-filters">
         <div class="pvc-section-header" data-target="pvc-content-filters">
           <div class="pvc-section-title-wrap">
-            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-section-arrow">${uiIcon('chevron')}</span>
             <span class="pvc-label">${uiLabel('sliders', 'Görüntü Filtreleri & Gece Kalkanı')}</span>
           </div>
           <span id="pvc-hdr-filter-badge" class="pvc-val-badge">Standart</span>
@@ -7458,7 +7474,7 @@
       <div class="pvc-menu-section pvc-section-collapsed" id="pvc-section-subtitles">
         <div class="pvc-section-header" data-target="pvc-content-subtitles">
           <div class="pvc-section-title-wrap">
-            <span class="pvc-section-arrow">▼</span>
+            <span class="pvc-section-arrow">${uiIcon('chevron')}</span>
             <span class="pvc-label">${uiLabel('subtitles', 'Harici Altyazı & Senkron')}</span>
           </div>
           <span id="pvc-sub-offset-badge" class="pvc-val-badge">0ms</span>
@@ -7476,7 +7492,7 @@
           <p id="pvc-sub-why" class="pvc-settings-note" hidden></p>
           <div class="pvc-btn-grid-3">
             <button id="pvc-sub-sync-m100" class="pvc-action-btn" title="Altyazıyı 100ms geri çek">${uiLabel('rewind', '-100ms')}</button>
-            <button id="pvc-sub-sync-reset" class="pvc-action-btn" title="Senkron kaymasını sıfırla">0ms Sıfırla</button>
+            <button id="pvc-sub-sync-reset" class="pvc-action-btn" title="Senkron kaymasını sıfırla">${uiLabel('reset', '0ms Sıfırla')}</button>
             <button id="pvc-sub-sync-p100" class="pvc-action-btn" title="Altyazıyı 100ms ileri al">${uiLabel('forward', '+100ms')}</button>
           </div>
           <div class="pvc-sub-drift" aria-label="Zamanla kayma düzeltmesi">
@@ -7501,7 +7517,7 @@
             <label>Alt kenardan uzaklık <output id="pvc-sub-bottom-value">8%</output><input id="pvc-sub-bottom" type="range" min="0" max="40" value="8" class="pvc-range-slider" /></label>
             <label>Arka plan opaklığı <output id="pvc-sub-background-value">82%</output><input id="pvc-sub-background" type="range" min="0" max="100" value="82" class="pvc-range-slider" /></label>
             <label>Yazı rengi <select id="pvc-sub-color"><option value="white">Beyaz</option><option value="yellow">Sarı</option></select></label>
-            <button id="pvc-sub-appearance-reset" class="pvc-action-btn">Görünümü sıfırla</button>
+            <button id="pvc-sub-appearance-reset" class="pvc-action-btn">${uiLabel('reset', 'Görünümü sıfırla')}</button>
             <p class="pvc-settings-note">Yazı boyutu katmanda uygulanır; yerel tam ekran/PiP yazısını tarayıcı yönetir.</p>
           </details>
         </div>
@@ -7638,7 +7654,7 @@
       hkBtn.setAttribute('aria-pressed', String(hotkeysEnabled));
       setUiAttribute(hkBtn, 'title', hotkeysEnabled ? 'Klavye Kısayolları Aktif (Kapatmak için tıklayın)'
         : 'Klavye Kısayolları Devre Dışı (Açmak için tıklayın)');
-      showToast(hotkeysEnabled ? '⌨️ Klavye Kısayolları Aktif' : 'Klavye Kısayolları Devre Dışı');
+      showToast(hotkeysEnabled ? 'Klavye Kısayolları Aktif' : 'Klavye Kısayolları Devre Dışı');
     };
 
     // Küçültülmüş Mini-Bar Hızlı Butonları (Madde 6)
@@ -7718,7 +7734,7 @@
         e.stopPropagation();
         videoFilterState[key] = 100;
         scheduleVideoFilterUpdate();
-        showToast('🎨 Filtre %100 değerine sıfırlandı');
+        showToast('Filtre %100 değerine sıfırlandı');
       });
     };
     bindFilterSlider('#pvc-filter-brightness', 'brightness');
@@ -7729,14 +7745,14 @@
       e.stopPropagation();
       videoFilterState.nightShield = !videoFilterState.nightShield;
       scheduleVideoFilterUpdate();
-      showToast(videoFilterState.nightShield ? '🌙 Gece Kalkanı Aktif' : '☀️ Gece Kalkanı Kapatıldı');
+      showToast(videoFilterState.nightShield ? 'Gece Kalkanı Aktif' : 'Gece Kalkanı Kapatıldı');
     };
 
     popup.querySelector('#pvc-btn-invert-color').onclick = (e) => {
       e.stopPropagation();
       videoFilterState.invert = !videoFilterState.invert;
       scheduleVideoFilterUpdate();
-      showToast(videoFilterState.invert ? '🔄 Ters Renk Modu Aktif' : '🔄 Ters Renk Kapatıldı');
+      showToast(videoFilterState.invert ? 'Ters Renk Modu Aktif' : 'Ters Renk Kapatıldı');
     };
 
     popup.querySelector('#pvc-btn-reset-filters').onclick = (e) => {
@@ -7778,7 +7794,7 @@
           // Loading a file is an explicit request to show it, even after a previous hide.
           subtitleOverlayEnabled = true;
           subToggleBtn.classList.add('pvc-active');
-          setUiText(subToggleBtn, '👁️ Altyazı: Açık');
+          setUiText(subToggleBtn, 'Altyazı: Açık', 'eye');
           subtitleLoadStatus = 'loaded';
           addDiagnosticLog('INFO', 'SUBTITLE_LOADED');
           subtitleFileName = file.name;
@@ -7786,7 +7802,7 @@
           setUiText(document.getElementById('pvc-sub-offset-badge'), '0ms');
           updateSubtitleDriftControls();
           if (subStatusText) {
-            setUiText(subStatusText, `✅ ${subtitleFileName} (${customSubtitleCues.length} satır RAM'de)`);
+            setUiText(subStatusText, `${subtitleFileName} (${customSubtitleCues.length} satır RAM'de)`);
             subStatusText.style.color = 'var(--pvc-success, #34d399)';
           }
           const { video } = findVideoAndPlayer();
@@ -7794,7 +7810,7 @@
             setUiText(subStatusText, 'Altyazı aktarılıyor...');
             remoteControl('subtitle-load', parsedCues).then(reply => {
               if (!reply.ok) showToast('Gömülü oynatıcı bu isteği uygulayamadı.');
-              else showToast(`💬 Altyazı Yüklendi: ${parsedCues.length} satır`);
+              else showToast(`Altyazı Yüklendi: ${parsedCues.length} satır`);
             });
             return;
           } else if (video) {
@@ -7802,7 +7818,7 @@
             injectNativeTextTrackCues(video);
             renderCustomSubtitleCue(video);
           }
-          showToast(`💬 Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
+          showToast(`Altyazı Yüklendi: ${customSubtitleCues.length} satır`);
         }
       };
       reader.onerror = () => {
@@ -7822,7 +7838,7 @@
       e.stopPropagation();
       subtitleOverlayEnabled = !subtitleOverlayEnabled;
       subToggleBtn.classList.toggle('pvc-active', subtitleOverlayEnabled);
-      setUiText(subToggleBtn, subtitleOverlayEnabled ? '👁️ Altyazı: Açık' : '🙈 Altyazı: Gizli');
+      setUiText(subToggleBtn, subtitleOverlayEnabled ? 'Altyazı: Açık' : 'Altyazı: Gizli', subtitleOverlayEnabled ? 'eye' : 'eyeOff');
       if (remotePresentation) { remoteControl('subtitle-visible', subtitleOverlayEnabled); return; }
       const { video } = findVideoAndPlayer();
       if (video) {
@@ -7850,7 +7866,7 @@
       if (remotePresentation) { remoteControl('subtitle-offset', 0); return; }
       resetSubtitleTiming(); applySubtitleTiming();
       addDiagnosticLog('INFO', 'SUBTITLE_OFFSET_CHANGED', { offsetMs: 0 });
-      showToast('💬 Altyazı Senkronu Sıfırlandı (0ms)');
+      showToast('Altyazı Senkronu Sıfırlandı (0ms)');
     };
     popup.querySelector('#pvc-sub-drift-mark').onclick = e => { e.stopPropagation(); markSubtitleSyncPoint(); };
     popup.querySelector('#pvc-sub-drift-cancel').onclick = e => {
@@ -7870,7 +7886,7 @@
       updateRealtimeResolutionBadge();
       renderDynamicQualityButtons();
       testCdnPing(true);
-      showToast(`🎬 Güncellendi: ${lastObservedResolution}`);
+      showToast(`Güncellendi: ${lastObservedResolution}`);
     };
 
     popup.querySelector('#pvc-change-adapter-btn').onclick = (e) => {
@@ -7891,7 +7907,7 @@
         monitorVideoResolution(video);
         updateRealtimeResolutionBadge();
         renderDynamicQualityButtons();
-        showToast('🎬 Video başarıyla yakalandı!');
+        showToast('Video başarıyla yakalandı!');
       } else {
         showToast('Video henüz bulunamadı');
       }

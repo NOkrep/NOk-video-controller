@@ -61,3 +61,23 @@ HUD dışında bulunduğundan SVG'nin varsayılan boyutu açıkça 18 px'dir; ar
 çubuğunun mevcut CSS boyutları korunur. Çalışma anında HTML ataması eklenmedi;
 mevcut güvenli `setUiMarkup` yolu kullanılır. Altyazı, dosya adı, yorum ve rapor
 içeriği değiştirilmez. Doğrulama ve açık iş sınırları ACTIVE_WORK.md kaydındadır.
+
+## I-13 kalan öneriler — 21 Kasım 2026, v0.8.3.3
+
+Kullanıcı, ilk envanterde itiraz etmediği önerilerin de onaylı olduğunu açıkladı.
+Aşağıdaki kalan öneriler v0.8.3.2 tabanına uygulandı; önceki bölümdeki toplu
+kabulün varsayılmadığı ifadesi o turun yorumudur, güncel onay durumu değildir.
+
+| Önce | Sonra | Gerekçe / kapsam |
+| --- | --- | --- |
+| Teşhis başlığında uyarı, kopyala/e-posta ve izin alt başlıklarında emoji; kapatmada metin çarpısı | Mevcut report, keyboard, globe, shield, close ve yeni copy/mail SVG'leri | Sabit 24 görünüm alanı, 1.7 çizgi, tema rengi; uyarı ile rapor işlevi ayrılır. GitHub işareti aynen korunur; MIT değil GitHub logo kurallarına tabidir. |
+| Ürün bildirimlerinde emoji ve otomatik adaptör/NOW seçeneklerinde dekoratif önek | Düz TR/EN ürün metni | Anlam metinde kalır; kullanıcı dosya adı, altyazısı, yorumu ve raporu dönüştürülmez. Eski çeviri anahtarları görünür ürün emojisi değildir. |
+| Kolay okunur düzende altyazı gizliyken açık göz | Gizliyken eyeOff, açıkken eye | Araç çubuğuyla aynı durum gösterimi; etiket ve kontrol davranışı korunur. |
+| Bölüm başlıklarında ▼ / Değiştir yanında ▾ | Mevcut chevron SVG'si | Ortak geometri; katlanma dönüşü ve tıklama alanı korunur. |
+| Altyazı kaymasında refresh, diğer görünüm sıfırlamalarında yalnız yazı | Yedi mevcut sıfırlama düğmesinde ortak 30A reset | Kullanıcının kapsam kararı: sıfırlama 30A; yeniden tarama ve kaynak yenileme 16A. Düğme adları ve işlevleri korunur. |
+
+8A yalnız metin ve 45A mevcut dalga geçici seçimleri korunur; alternatifleri
+gelecekte değerlendirilebilir. Yeni dekoratif animasyon eklenmedi. SVG durum
+değişimi yalnız gerektiğinde mevcut güvenli HTML yardımcısıyla yapılır; kullanıcı
+metni bu yoldan geçirilmez. Yerel test, gerçek site ve uzak CI ayrımı
+[ACTIVE_WORK.md](../dev/ACTIVE_WORK.md) kaydındadır.

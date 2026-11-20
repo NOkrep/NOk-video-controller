@@ -12,7 +12,7 @@ Object.defineProperty(video,'playbackRate',{configurable:true,get(){return rate.
 const lastRate=expected=>window.rates.at(-1)===expected;
 // A two-line SRT given to the classic file input, as a file picker would.
 const loadSubtitles=()=>{const input=document.getElementById('pvc-sub-file-input'),data=new DataTransfer();
-  data.items.add(new File(['1\n00:00:01,000 --> 00:00:03,000\nFirst\n\n2\n00:00:04,000 --> 00:00:06,000\nSecond\n'],'sample.srt',{type:'text/plain'}));
+  data.items.add(new File(['1\n00:00:01,000 --> 00:00:03,000\nFirst\n\n2\n00:00:04,000 --> 00:00:06,000\nSecond\n'],'🎬✅ sample.srt',{type:'text/plain'}));
   input.files=data.files;input.dispatchEvent(new Event('change',{bubbles:true}));};
 const visible=id=>{const node=document.getElementById(id);if(!node)return false;const r=node.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden';};
 const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};};
@@ -176,6 +176,8 @@ try{
   assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-load').getAttribute('data-pvc-tip')),/\.srt and \.vtt/,'file types on hover');
   await driver.evaluate(page,loadSubtitles);
   await until(driver,page,()=>/2 subtitle cues|2 satır/.test(document.getElementById('pvc-tb-sub-status').textContent),'loaded file shown in the strip');
+  assert.match(await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-status').textContent),/^🎬✅ sample\.srt/,'user filename emoji survives removal of product prefixes');
+  assert.deepEqual(await driver.evaluate(page,()=>['pvc-tb-sub-offset-reset','pvc-tb-sub-reset','pvc-tb-sub-look-reset','pvc-tb-filter-reset','pvc-sub-sync-reset','pvc-sub-appearance-reset','pvc-btn-reset-filters'].map(id=>document.querySelector('#'+id+' svg')?.getAttribute('data-pvc-icon'))),Array(7).fill('reset'),'every reset uses the common return arrow, including both layouts');
   await driver.pointerClick(page,'#pvc-tb-sub-step');
   await until(driver,page,visible,'timing popover','pvc-tb-pop-subtiming');
   await driver.pointerClick(page,'[data-pvc-substep="250"]');
@@ -267,8 +269,10 @@ try{
   await driver.pointerClick(page,'#pvc-tb-sub-toggle');
   await until(driver,page,()=>!document.getElementById('pvc-sub-toggle-btn').classList.contains('pvc-active')&&document.getElementById('pvc-tb-sub-toggle-val').textContent==='Hidden','hide reaches the shared state');
   assert.deepEqual(await driver.evaluate(page,eyes),[false,true],'crossed-out eye while hidden');
+  assert.equal(await driver.evaluate(page,()=>document.querySelector('#pvc-sub-toggle-btn svg').getAttribute('data-pvc-icon')),'eyeOff','easy-read icon also reflects the hidden state on the Trusted Types page');
   await driver.pointerClick(page,'#pvc-tb-sub-toggle');
   await until(driver,page,()=>document.getElementById('pvc-tb-sub-toggle').getAttribute('aria-pressed')==='true','shown again');
+  assert.equal(await driver.evaluate(page,()=>document.querySelector('#pvc-sub-toggle-btn svg').getAttribute('data-pvc-icon')),'eye','easy-read icon returns to the open eye');
   await driver.pointerClick(page,'#pvc-tb-sub-look');
   await until(driver,page,visible,'appearance popover','pvc-tb-pop-sublook');
   assert.ok((await driver.evaluate(page,()=>document.getElementById('pvc-tb-sub-fontSize').getBoundingClientRect().height))<=16,'appearance sliders keep the classic thin track');
