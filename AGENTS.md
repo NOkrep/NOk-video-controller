@@ -2,7 +2,7 @@
 <!-- filmdeck-agent-handoff-2026-11-04 -->
 ## FilmDeck ortak ajan devri
 
-- İlk proje bağlamı: [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md), ardından [PROJECT_MASTER_GUIDE.md](PROJECT_MASTER_GUIDE.md) ve [ACTIVE_WORK.md](ACTIVE_WORK.md) başındaki güncel kayıtlar.
+- İlk proje bağlamı: [PROJECT_HANDOFF.md](docs/dev/PROJECT_HANDOFF.md), ardından [PROJECT_MASTER_GUIDE.md](docs/dev/PROJECT_MASTER_GUIDE.md) ve [ACTIVE_WORK.md](docs/dev/ACTIVE_WORK.md) başındaki güncel kayıtlar.
 - Yerelde varsa [LOCAL_AGENT_PROCEDURE.md](LOCAL_AGENT_PROCEDURE.md) ortak NOk/Codex/Claude çalışma kararlarını oku. Git dışıdır; başka checkout'ta olmayabilir. Yokluğu, mevcut proje/ortam kurallarını veya aşağıdaki yayın merkezi yönlendirmesini kaldırmaz.
 - Handoff bir snapshot'tır; branch/HEAD/dirty kapsamını, sürümü ve ilgili kanıtı yeniden doğrula. Önerilen sonraki hedefi kullanıcı seçmeden başlatma.
 - Görev sonunda ilgili güncel devir/iş kaydını güncelle; kod/test, gerçek site, uzak CI ve yayın kabulünü ayrı bildir. Diğer ajanın okuma ve doğrulamasını varsayma. Eşzamanlı aynı dosyaya yazmadan görev/dosya sahipliğini belirle.
