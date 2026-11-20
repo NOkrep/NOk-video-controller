@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.8.3.2
+ * injected.css - FilmDeck by NOk v0.8.3.3
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -310,6 +310,19 @@
   color: var(--pvc-muted, #a2b6c0) !important;
   transition: transform 0.2s ease !important;
   display: inline-block !important;
+}
+
+#pvc-controller-popup .pvc-section-arrow .pvc-ui-icon,
+#pvc-controller-popup #pvc-change-adapter-btn .pvc-ui-icon {
+  width: 12px !important;
+  height: 12px !important;
+  flex-basis: 12px !important;
+}
+
+#pvc-controller-popup #pvc-mini-drm-icon .pvc-ui-icon {
+  width: 11px !important;
+  height: 11px !important;
+  flex-basis: 11px !important;
 }
 
 .pvc-section-collapsed .pvc-section-arrow {
@@ -776,14 +789,22 @@
 
 /* These dialogs live outside the HUD; their title icons keep the same compact alignment. */
 #pvc-permissions-modal .pvc-modal-header > span,
-#pvc-adapter-modal .pvc-modal-header > span {
+#pvc-adapter-modal .pvc-modal-header > span,
+#pvc-error-modal .pvc-modal-header > span,
+#pvc-drm-modal .pvc-modal-header > span,
+#pvc-permissions-modal .pvc-perm-title,
+#pvc-error-modal .pvc-modal-footer button,
+#pvc-error-modal .pvc-modal-footer a {
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
   min-width: 0 !important;
 }
 #pvc-permissions-modal .pvc-modal-header .pvc-ui-icon,
-#pvc-adapter-modal .pvc-modal-header .pvc-ui-icon {
+#pvc-adapter-modal .pvc-modal-header .pvc-ui-icon,
+#pvc-error-modal .pvc-ui-icon,
+#pvc-drm-modal .pvc-ui-icon,
+#pvc-permissions-modal .pvc-perm-title .pvc-ui-icon {
   flex-shrink: 0 !important;
 }
 

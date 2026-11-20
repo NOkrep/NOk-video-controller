@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3.2**, `codex/filmdeck-cassette-icon` dalında; `main` `0.8.3` (#127, `9fb37ea`). I-13 seçili simge güncellemesi Codex'te; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.3**, `codex/filmdeck-cassette-icon` dalında; `main` `0.8.3.2` (#129, `95ffcd7`). I-13 kalan onaylı simge güncellemesi Codex'te; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -18,6 +18,21 @@
 - **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
 - **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
 - **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
+
+## I-13 kalan onaylı simgeler, v0.8.3.3 — 21 Kasım 2026
+
+Kullanıcı, ilk karşılaştırmada itiraz etmediği önerileri zaten kabul ettiğini
+açıkladı. Önceki kayıtlardaki dar onay yorumu bu açıklamayla düzeltildi.
+Claude'un N-035 düzeltmeleri PR #129 ile main'e girdikten sonra Codex dalına
+merge edildi; yeni uygulama bu tabanın üstündedir. Dosya sahipliği N-036'da.
+
+- **Görünür simgeler:** teşhis başlığı, JSON kopyalama, e-posta, dört pencerenin kapatma düğmesi, izin rehberinin klavye/site erişimi alt başlıkları ve DRM başlığı ortak SVG üslubunda. Mini adaptör DRM işareti kalkan SVG'si; katlanır bölüm ve adaptör değiştirme okları mevcut chevron. Gizli altyazı için Kolay okunur düzen de `eyeOff` gösterir; aynı durum tekrar geldiğinde SVG yeniden oluşturulmaz.
+- **Metinler:** ürünün hız/ses/mono-stereo/PiP/filtre/CDN/altyazı ve kalite bildirimlerindeki emoji önekleri kaldırıldı. NOW kalite seçeneklerinin adları korundu; yalnız önekler kalktı. Eski çeviri anahtarları uyumluluk için tutulur, görünür emoji sayılmaz. Yeni düz ses son ekleri TR/EN birlikte; uzun kayma deseni genel `Kayma {0}` deseninden önce gelir.
+- **Sıfırlama kararı:** kullanıcı bütün sıfırlama düğmelerinde 30A'yı seçti. İki düzende toplam yedi mevcut filtre, altyazı kayması ve altyazı görünümü düğmesi ortak `reset` kullanır. Yeniden tarama, çözünürlük yenileme ve manuel 1080p kaynak denemesi 16A `refresh` olarak kaldı. İşlem/etiketler korunur.
+- **Kullanıcı içeriği:** ürünün durum öneki kalkınca araç çubuğunun geniş emoji temizleme adımı kaldırıldı. Dosya adı emojileri ve çeviri anahtarına benzeyen dosya adları korunur; dosya/satır sayısı deseni genel desenlerden önce eşleşir. Yorum, JSON ve altyazı satırlarına temizlik uygulanmaz. Durum simgesi değişimi mevcut `setUiMarkup` ile HTML kapsayıcıda kurulur; Trusted Types altında SVG'ye ham HTML ataması yapılmaz.
+- **Geçici tercihler:** 8A yalnız metin, 45A mevcut dalga olarak korunur. Sonradan yeniden değerlendirme tasarım notudur; bu sürümdeki onaylı uygulama kapsamını açık bırakmaz.
+- **Kanıt:** `npm run check` 312/312, sıfır fail/skip. `toolbar-browser`, `ui-smoke` geniş/dar, `dialog-keyboard-browser`, `tooltip-browser`, `media-tracks-browser` Edge ve Firefox'ta 12/12 geçti. Son iki mono/stereo çeviri anahtarı ayrıca son kaynak kontrolünde sınandı. Yeni tarayıcı assertion'ları dosya adı emojisini, gizli/açık altyazı SVG'sini ve yedi sıfırlama simgesini doğrular. Ek kurulu Edge kabulü Trusted Types zorunlu sentetik sayfada önce v0.8.3.2/EN, sonra v0.8.3.3/EN ve TR: rapor/izin/altyazı görselleri, yorumun metin olarak korunması. Günlükler `tests/artifacts/i13-v0833-*.txt`, görüntüler ve `ACCEPTANCE.json` `tests/artifacts/i13-v0833-images/` altında; Git dışı. Görsel yardımcının ikinci dosya yüklemesinde eski durumla erken ilerlemesi benzersiz dosya adı ve yükleme tamamlanma beklemesiyle düzeltildi; ürün için ek değişiklik gerekmedi.
+- **Sınır:** bu yerel/sentetik kabuldür; yeni gerçek site ve uzak CI sonucu değildir. Claude'un parça seçimi, kayma matematiği, klavye izolasyonu ve frame-protocol.js bu simge işinde değiştirilmedi. İzin, depolama, rapor şeması veya ağ isteği eklenmedi. Tag, ZIP veya release yok; PR/merge kullanıcıda. GitHub işaretinin MIT kapsamı dışında logo kullanım kurallarına tabi olduğu THIRD_PARTY_NOTICES.md içinde açıklanır.
 
 ## I-13 seçili simgeler, v0.8.3.1 — 21 Kasım 2026
 
