@@ -37,7 +37,8 @@
   const themeId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,31}$/.test(value) ? value : undefined;
   const preferences = shape({ theme: themeId, layout: choice(['classic', 'toolbar']), keepVisible: bool, textScale: choice([100, 125, 150]), highContrast: bool, reduceMotion: bool });
   // The video's own audio and subtitle tracks (D-06): a short plain-text label per track, never in a report.
-  const mediaTrackKey = value => typeof value === 'string' && /^(hls|shaka|vjs|native):[at]:(-1|\d{1,3})$/.test(value) ? value : undefined;
+  // Source, kind, index and the track's short fingerprint; "-1" (subtitles off) has none.
+  const mediaTrackKey = value => typeof value === 'string' && /^(hls|shaka|vjs|native):[at]:(?:-1|\d{1,3}:[0-9a-z]{1,7})$/.test(value) ? value : undefined;
   const mediaTrackItem = shape({ key: mediaTrackKey, label: value => typeof value === 'string' && value.length <= 90 ? value : undefined, active: bool });
   const mediaTracks = shape({ source: choice(['none', 'hls', 'shaka', 'vjs', 'native']), audio: array(mediaTrackItem, 16), text: array(mediaTrackItem, 32) });
   const stateSpec = {

@@ -82,7 +82,7 @@ try{
   assert.equal(await driver.evaluate(native,pick,['pvc-tb-subtracks-list','Türkçe']),true);
   await until(driver,native,()=>{const tracks=[...document.querySelector('video').textTracks];return tracks.find(track=>track.label==='Türkçe').mode==='showing'&&tracks.find(track=>track.label==='English').mode==='disabled';},'the chosen native track shows');
   assert.equal(await driver.evaluate(native,()=>[...document.querySelector('video').textTracks].find(track=>track.label==='NOk Harici Altyazı').mode),'hidden','FilmDeck\'s own track keeps its own mode');
-  assert.equal(await driver.evaluate(native,visible,'pvc-tb-audiotracks-card'),false,'no audio card for a single audio track');
+  assert.equal(await driver.evaluate(native,visible,'pvc-tb-audiotracks-card'),false,'no audio card for a video without audio tracks (the single-track case is in media-tracks.test.cjs)');
 
   // Video.js with VHS: its own audio and text track lists.
   const vjs=await driver.open(`http://127.0.0.1:${media.address().port}/vjs`);
