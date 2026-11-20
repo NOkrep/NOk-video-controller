@@ -37,3 +37,27 @@ Arşiv yolları:
 [SevenGrid](https://sevengrid.app/?ref=grave) sayfasının herkese açık tema bandı ve CSS renk değişkenleri tarayıcıda incelendi. **20 temanın tümü** Settings → Themes içine eklenmiştir. Sayfanın JS'i, yazıları, görselleri veya uygulama özellikleri kopyalanmadı; renk değerleri/adları HUD tokenlarına eşlendi. Açık/koyu/OLED aileleri ve değerlendirme [THEME_EVALUATION.md](THEME_EVALUATION.md) içindedir.
 
 Atlas başlangıçtır. Temalar yerel tanımlıdır ve çevrimdışı uygulanır. Seçim çerçeve belleğinde kalır; kapat/aç korur, sayfa yenileme Atlas'a döndürür. Tema kimliği ve erişilebilirlik tercihleri teşhis JSON'una eklenmez. Kullanıcının finalist beş tema seçimi henüz yapılmadı. **5 Kasım 2026 kullanıcı kararı:** finalist seçilmeyecek, 20 tema kalıyor.
+
+## I-13 seçili simgeler — 21 Kasım 2026, v0.8.3.1
+
+Kullanıcı karşılaştırmadan 4A, 6A, 10B, 16A, 17A ve 30A'yı seçti ve uygulamaya
+geçilmesini istedi. 8A ve 45A geçici tercihlerdir; daha sonra tekrar
+değerlendirilecek. Diğer envanter satırları için toplu kabul varsayılmadı.
+
+| Önce | Sonra | Gerekçe / kapsam |
+| --- | --- | --- |
+| Rapor bağlantısında ahtapot emojisi | GitHub Octicons işareti (4A) | Hedef hizmet doğrudan tanınır. SVG yolu yerel kayıt defterinde; dış istek yok. Kaynak/MIT bildirimi THIRD_PARTY_NOTICES.md içinde. |
+| İzin/kısayol rehberi başlığında kilit emojisi | Anahtar delikli kilit SVG'si (6A) | Başlık site erişimi ve kısayol rehberini birlikte kapsar; kısayollar düğmesinin klavye simgesi korunur. |
+| Adaptör başlığında yapboz emojisi | Yapboz SVG'si (10B) | Video/kalite simgesinden ayrılan uyumluluk anlamı. |
+| Yenileme simgesindeki eski ok çizimi | Dengeli iki yenileme oku (16A) | Ortak `refresh` çizimi güncellenir; yeniden tarama, çözünürlük yenileme ve 1080p kaynak denemesi aynı anlamı korur. |
+| Kolay okunur düzenin Mono düğmesinde ayar çubukları | Araç çubuğundaki `monoSource` ile aynı SVG (17A) | Düğmenin işlevi/etiketi korunur; iki düzenin ses modu gösterimi eşleşir. |
+| Filtre sıfırlamada yenileme simgesi | Ayrı, ters yönlü dönüş oku (30A) | Araç çubuğu ve Kolay okunur düzendeki filtre sıfırlaması ayrışır; mevcut Sıfırla / Tümünü sıfırla etiketleri değişmez. Yeni etiket önerisi ayrıca kabul edilmiş sayılmaz. |
+| Kısayollar kapalı bildiriminde sessiz hoparlör emojisi | Yalnız metin, TR/EN (8A, geçici) | Sesin kapandığı izlenimi azaltılır; başka simge adayı ileride değerlendirilebilir. |
+| Hareketi azalt için mevcut dalga | Mevcut dalga korunur (45A, geçici) | Kullanıcı şimdilik bu gösterimi seçti; kesin tasarım kabulü değildir. |
+
+Yeni çizimler mevcut `uiIcon` / `uiLabel`, 24'lük görünüm alanı ve 1.7 çizgi
+kalınlığını kullanır. GitHub marka işaretinin özgün dolgusu korunur. Diyaloglar
+HUD dışında bulunduğundan SVG'nin varsayılan boyutu açıkça 18 px'dir; araç
+çubuğunun mevcut CSS boyutları korunur. Çalışma anında HTML ataması eklenmedi;
+mevcut güvenli `setUiMarkup` yolu kullanılır. Altyazı, dosya adı, yorum ve rapor
+içeriği değiştirilmez. Doğrulama ve açık iş sınırları ACTIVE_WORK.md kaydındadır.
