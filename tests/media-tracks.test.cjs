@@ -29,21 +29,41 @@ test('Hls.js tracks come first, with names, languages or a numbered fallback', (
   const h = harness({ hls, vjs: { audioTracks: () => [{}, {}] } });
   const tracks = plain(h.run('readMediaTracks(video, null)', { video: { textTracks: [] } }));
   assert.equal(tracks.source, 'hls');
-  assert.deepEqual(tracks.audio, [{ key: 'hls:a:0', label: 'Türkçe', active: false }, { key: 'hls:a:1', label: 'English', active: true }, { key: 'hls:a:2', label: 'Track 3', active: false }]);
-  assert.deepEqual(tracks.text, [{ key: 'hls:t:0', label: 'English', active: false }]);
-  assert.equal(h.run('selectMediaTrack(video, null, "hls:a:2")'), true); assert.equal(hls.audioTrack, 2);
+  assert.deepEqual(tracks.audio.map(item => [item.label, item.active]), [['Türkçe', false], ['English', true], ['Track 3', false]]);
+  for (const [i, item] of tracks.audio.entries()) assert.match(item.key, new RegExp(`^hls:a:${i}:[0-9a-z]{1,7}$`), 'index plus fingerprint');
+  assert.deepEqual(tracks.text.map(item => [item.label, item.active]), [['English', false]]);
+  assert.equal(h.run('selectMediaTrack(video, null, key)', { key: tracks.audio[2].key }), true); assert.equal(hls.audioTrack, 2);
   hls.subtitleDisplay = false;
-  assert.equal(h.run('selectMediaTrack(video, null, "hls:t:0")'), true); assert.equal(hls.subtitleTrack, 0); assert.equal(hls.subtitleDisplay, true);
+  assert.equal(h.run('selectMediaTrack(video, null, key)', { key: tracks.text[0].key }), true); assert.equal(hls.subtitleTrack, 0); assert.equal(hls.subtitleDisplay, true);
   assert.equal(h.run('selectMediaTrack(video, null, "hls:t:-1")'), true); assert.equal(hls.subtitleTrack, -1);
 });
 
 test('a stale, foreign or malformed key changes nothing', () => {
   const hls = { audioTracks: [{ name: 'A' }, { name: 'B' }], audioTrack: 0, subtitleTracks: [], subtitleTrack: -1 };
   const h = harness({ hls });
-  for (const key of ['hls:a:5', 'native:a:1', 'hls:a:-1', 'hls:x:1', 'hls:a:1;alert(1)', '', null]) {
+  const real = h.run('readMediaTracks(video, null)', { video: { textTracks: [] } }).audio[1].key;
+  for (const key of ['hls:a:1', 'hls:a:5:abc', 'native' + real.slice(3), 'hls:a:-1', 'hls:x:1:abc', `${real};alert(1)`, real.replace(/:[0-9a-z]+$/, ':zzzzzzz'), '', null]) {
     assert.equal(h.run('selectMediaTrack(video, null, key)', { video: { textTracks: [] }, key }), false, String(key));
   }
   assert.equal(hls.audioTrack, 0);
+});
+
+test('a reordered or replaced list refuses an old key instead of choosing another track (N-035 F1)', () => {
+  const a = { id: 0, name: 'Track A', lang: 'en' }, b = { id: 1, name: 'Track B', lang: 'tr' };
+  const hls = { audioTracks: [a, b], audioTrack: 0, subtitleTracks: [], subtitleTrack: -1 };
+  const h = harness({ hls });
+  const keyForB = h.run('readMediaTracks(video, null)', { video: { textTracks: [] } }).audio[1].key;
+  hls.audioTracks = [b, a]; // Same length, same index 1, but it now holds A.
+  assert.equal(h.run('selectMediaTrack(video, null, key)', { key: keyForB }), false);
+  assert.equal(hls.audioTrack, 0, 'A is not chosen by B\'s old key');
+  const fresh = h.run('readMediaTracks(video, null)').audio.find(item => item.label === 'Track B').key;
+  assert.equal(h.run('selectMediaTrack(video, null, key)', { key: fresh }), true); assert.equal(hls.audioTrack, 0, 'the fresh key finds B at its new index');
+  const video = { textTracks: [{ kind: 'subtitles', label: 'One', language: 'en', mode: 'disabled' }, { kind: 'subtitles', label: 'Two', language: 'tr', mode: 'disabled' }] };
+  const native = harness();
+  const keyForTwo = native.run('readMediaTracks(video, null)', { video }).text[1].key;
+  video.textTracks.reverse();
+  assert.equal(native.run('selectMediaTrack(video, null, key)', { key: keyForTwo }), false);
+  assert.deepEqual(video.textTracks.map(track => track.mode), ['disabled', 'disabled'], 'the browser list is not touched either');
 });
 
 test('a single audio track offers no choice; the browser lists skip FilmDeck\'s own file track', () => {
@@ -54,8 +74,8 @@ test('a single audio track offers no choice; the browser lists skip FilmDeck\'s 
   const h = harness();
   const tracks = plain(h.run('readMediaTracks(video, null)', { video }));
   assert.equal(tracks.source, 'native'); assert.deepEqual(tracks.audio, []);
-  assert.deepEqual(tracks.text, [{ key: 'native:t:0', label: 'Türkçe', active: false }, { key: 'native:t:1', label: 'English', active: true }]);
-  assert.equal(h.run('selectMediaTrack(video, null, "native:t:0")'), true);
+  assert.deepEqual(tracks.text.map(item => [item.label, item.active]), [['Türkçe', false], ['English', true]]);
+  assert.equal(h.run('selectMediaTrack(video, null, key)', { key: tracks.text[0].key }), true);
   assert.deepEqual(video.textTracks.map(track => track.mode), ['showing', 'hidden', 'hidden', 'disabled'], 'metadata and the own track keep their modes');
   assert.equal(h.run('selectMediaTrack(video, null, "native:t:-1")'), true);
   assert.equal(video.textTracks[0].mode, 'disabled'); assert.equal(own.mode, 'hidden');
@@ -72,16 +92,30 @@ test('Shaka audio follows language and role; text tracks follow visibility', () 
   const tracks = plain(h.run('readMediaTracks(video, null)', { video: { textTracks: [] } }));
   assert.equal(tracks.source, 'shaka');
   assert.deepEqual(tracks.audio.map(item => [item.label, item.active]), [['Turkish (main)', true], ['English (commentary)', false]]);
-  assert.deepEqual(tracks.text, [{ key: 'shaka:t:0', label: 'English SDH', active: false }], 'a hidden text track is not shown as chosen');
-  h.run('selectMediaTrack(video, null, "shaka:a:1")'); h.run('selectMediaTrack(video, null, "shaka:t:0")'); h.run('selectMediaTrack(video, null, "shaka:t:-1")');
+  assert.deepEqual(tracks.text.map(item => [item.label, item.active]), [['English SDH', false]], 'a hidden text track is not shown as chosen');
+  h.run('selectMediaTrack(video, null, key)', { key: tracks.audio[1].key }); h.run('selectMediaTrack(video, null, key)', { key: tracks.text[0].key });
+  h.run('selectMediaTrack(video, null, "shaka:t:-1")');
   assert.deepEqual(calls, [['audio', 'en', 'commentary'], ['text', 'English SDH'], ['visible', true], ['visible', false]]);
 });
 
+test('Shaka: an empty role matches only a variant without a role, and one item at most is chosen (N-035 F4)', () => {
+  const inventory = [{ language: 'en', role: '' }, { language: 'en', role: 'commentary' }, { language: 'en', role: 'main' }];
+  const read = audioRoles => {
+    const shaka = { getVariantTracks: () => [{ active: true, language: 'en', audioRoles }], getAudioLanguagesAndRoles: () => inventory, getTextTracks: () => [] };
+    return harness({ shaka }).run('readMediaTracks(video, null)', { video: { textTracks: [] } }).audio.map(item => item.active);
+  };
+  assert.deepEqual(Array.from(read(['commentary'])), [false, true, false], 'commentary playing: only commentary');
+  assert.deepEqual(Array.from(read([])), [true, false, false], 'no role playing: only the empty-role entry');
+  assert.deepEqual(Array.from(read(['main'])), [false, false, true]);
+  assert.deepEqual(Array.from(read(['main', 'commentary'])), [false, true, false], 'never two chosen at once');
+});
+
 test('the frame bridge carries the lists and one strict command; reports never see them', () => {
-  const tracks = { source: 'hls', audio: [{ key: 'hls:a:0', label: 'Türkçe', active: true }, { key: 'hls:a:1', label: 'English', active: false }], text: [] };
+  const tracks = { source: 'hls', audio: [{ key: 'hls:a:0:1k2j3h', label: 'Türkçe', active: true }, { key: 'hls:a:1:9z8y7x', label: 'English', active: false }], text: [] };
   assert.deepEqual(protocol.cleanState(state({ mediaTracks: tracks })).mediaTracks, tracks);
-  for (const bad of [{ ...tracks, source: 'flash' }, { ...tracks, audio: [{ key: 'hls:a:0;x', label: 'x', active: true }] },
-    { ...tracks, audio: [{ key: 'hls:a:0', label: 'x'.repeat(91), active: true }] }, { ...tracks, text: [{ key: 'hls:t:0', label: 'x', active: 'yes' }] }]) {
+  for (const bad of [{ ...tracks, source: 'flash' }, { ...tracks, audio: [{ key: 'hls:a:0:1k2j3h;x', label: 'x', active: true }] },
+    { ...tracks, audio: [{ key: 'hls:a:0', label: 'x', active: true }] }, { ...tracks, audio: [{ key: 'hls:a:0:1k2j3h', label: 'x'.repeat(91), active: true }] },
+    { ...tracks, text: [{ key: 'hls:t:0:1k2j3h', label: 'x', active: 'yes' }] }]) {
     assert.equal(protocol.cleanState(state({ mediaTracks: bad })), null);
   }
   const command = value => protocol.cleanCommand({ name: 'media-track', owner: 'b'.repeat(32), revision: 1, value });

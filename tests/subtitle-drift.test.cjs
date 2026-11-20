@@ -44,6 +44,21 @@ test('the browser track gets the exact inverse of the overlay clock', () => {
   }
 });
 
+test('the inverse also holds where the offset stops at the ±6 hour limit, and across it (N-035 F3)', () => {
+  // Codex's reachable case: point 1 at 0 s with -21596000 ms, point 2 at 60 s with -21599000 ms (rate -50).
+  const low = { base: -21599000, drift: { rate: -50, anchor: 60 } };
+  assert.equal(run('subtitleOffsetAt(base, drift, 90)', low), -21600000, 'saturated at 90 s');
+  assert.equal(run('subtitleClockAt(base, drift, 90)', low), 21690);
+  assert.ok(Math.abs(run('videoTimeForSubtitle(base, drift, 21690)', low) - 90) < 1e-9, 'not 89.52 s');
+  const high = { base: 21599000, drift: { rate: 50, anchor: 60 } };
+  for (const values of [low, high]) {
+    for (let time = 0; time <= 200; time += 2.5) {
+      const clock = run(`subtitleClockAt(base, drift, ${time})`, values);
+      assert.ok(Math.abs(run(`videoTimeForSubtitle(base, drift, ${clock})`, values) - time) < 1e-6, `round trip at ${time} s, rate ${values.drift.rate}`);
+    }
+  }
+});
+
 test('points too close, without change or impossibly fast are refused with a reason', () => {
   assert.equal(run('subtitleDriftFrom({ time: 100, offset: 0 }, { time: 140, offset: 500 })').error, 'too-close');
   assert.equal(run('subtitleDriftFrom({ time: 100, offset: 400 }, { time: 900, offset: 400 })').error, 'no-change');

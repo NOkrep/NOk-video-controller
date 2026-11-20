@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3.1**, `codex/filmdeck-cassette-icon` dalında; `main` `0.8.3` (#127, `9fb37ea`). I-13 seçili simge güncellemesi Codex'te; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.2**, `codex/filmdeck-cassette-icon` dalında; `main` `0.8.3` (#127, `9fb37ea`). I-13 seçili simge güncellemesi Codex'te; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -31,6 +31,18 @@ uygulama başlamadan kaydedildi.
 - **Güvenlik ve görünüm:** yeni başlıklar mevcut `uiLabel` ve güvenli `setUiMarkup` yolunu kullanır; yeni HTML dizesi atama yöntemi, depolama, izin veya ağ isteği eklenmedi. GitHub yolu yerelde; MIT kaynak/telif bildirimi THIRD_PARTY_NOTICES.md içinde. HUD dışında da SVG boyutu 18 px; Mono/Stereo düğmelerinde çizim ve metin boşluğu uygulanır. Altyazı, dosya adı ve kullanıcı yorumuna dokunulmadı.
 - **Yerel kanıt:** `npm run check` 308/308; `toolbar-browser`, `ui-smoke` geniş/dar, `dialog-keyboard-browser`, `tooltip-browser` Edge 152.0.4191.53 ve Firefox 160.0.1 ile 10/10. Ek kurulu eklenti kontrolü: Edge'de Trusted Types zorunlu sentetik sayfada gerçek SVG geometrileri, görünür boyut, erişilebilir başlık, GitHub dolgusu ve TR/EN simgesiz bildirim; 3 kabul akışı (önce EN, sonra EN/TR). Günlükler ve önce/sonra görüntüleri Git dışı `tests/artifacts/i13-v0831-*` altında.
 - **Sınır:** yeni gerçek site kabulü veya uzak CI sonucu bu kanıta dahil değil. Parça seçimi, altyazı matematiği, klavye motoru ve frame-protocol.js değiştirilmedi; N-035'in düzeltmeleri Claude'da. Tag, ZIP veya release oluşturulmadı; PR/merge kullanıcıda.
+
+## Codex incelemesi (N-035) düzeltmeleri ve I-13 simge incelemesi, v0.8.3.2 — 21 Kasım 2026
+
+Kullanıcı Codex'ten v0.8.3'ü incelemesini istedi; Codex dört bulgu bıraktı (N-035) ve I-13'te seçilen simgeleri uyguladı (v0.8.3.1, #128). Claude bulguların dördünü de doğruladı ve düzeltti; simge değişikliğini inceledi.
+
+- **F1 (orta) — bayat parça anahtarı:** anahtar yalnız sıra numarası taşıyordu; liste aynı uzunlukta yeniden sıralanınca eski anahtar başka parçayı seçiyordu. Anahtar artık parçanın kendi kimlik alanlarından (Hls.js `id/groupId/name/lang/url`, Shaka dil/rol/etiket, tarayıcı `id/kind/label/language`) üretilen kısa bir parmak izi taşıyor (`hls:a:1:<iz>`); seçimden önce o sıradaki parçanın anahtarı birebir eşleşmezse hiçbir şey seçilmiyor. Çerçeve protokolü yeni biçimi doğruluyor. Regresyon testi: aynı uzunlukta ters sıralama, Hls.js ve tarayıcı listesi; denetim bilerek zayıflatılınca iki test düştü.
+- **F2 (orta) — `keypress` sayfaya ulaşıyordu:** panel `keydown`/`keyup`'ı durduruyordu, `keypress`'i durdurmuyordu. Panel, rapor penceresi ve PiP onay kutusunun olay yalıtımına `keypress` eklendi. `toolbar-browser` artık sayfa gövdesine üç tuş dinleyicisi koyup kayma alanına ve satır aramasına gerçek tuşlarla yazıyor ve hiçbir olayın sayfaya ulaşmadığını sınıyor; düzeltme olmadan Edge'de düştü. Sayfanın önceden kurduğu yakalama (capture) dinleyicileri bu yalıtımın kapsamında değildir.
+- **F3 (düşük) — ±6 saat sınırında ters dönüşüm:** kayma sınırda dururken tarayıcı izi için ters hesap doymayı bilmiyordu (Codex'in örneğinde 90 s yerine 89,52 s). Ters dönüşüm artık doymuş bölgede sınırı kullanıyor; saat kesin artan olduğundan çözüm tek. Test: Codex'in örneği ve her iki sınırda 0–200 s gidiş-dönüş.
+- **F4 (orta, sahte SDK) — Shaka'da boş rol:** boş rol her rolle eşleşiyordu; aynı dilde ana ve yorum parçası varken ikisi birden seçili görünüyordu. Boş rol artık yalnız rolsüz oynayan varyantla eşleşiyor ve bir listede en fazla bir öğe seçili görünüyor. Gerçek Shaka SDK'sında doğrulanmadı (yerel çalışma dosyası yok).
+- **Test notu:** `media-tracks-browser`'daki "tek ses parçası" adımı aslında sesi olmayan videoyu sınıyordu; adı düzeltildi, tek parçalı durum birim testinde. Kolay okunur seçim kutuları testte `change` olayıyla sürülüyor; gerçek fare etkileşimi değil.
+- **Kanıt:** `npm run check` 311/311 (üç yeni regresyon testi). Edge 152 ve Firefox 160.0.1'de geçti: `media-tracks`, `toolbar`, `subtitle`, `hud-state`, `report`, `dialog-keyboard`, `ui-smoke` (geniş ve dar).
+- **I-13 simge incelemesi (v0.8.3.1):** değişiklik seçilenlerle (4A, 6A, 10B, 16A, 17A, 30A, geçici 8A) sınırlı; protokol/matematik/klavyeye dokunulmamış; `main` üzerinde `npm run check` 308/308. İki not Codex'e (N-037): GitHub işareti MIT kapsamında değil, GitHub logo kurallarına tabi (bağlantı amaçlı kullanım izinli; işaret değiştirilmemeli, onay izlenimi verilmemeli) — `THIRD_PARTY_NOTICES.md`'ye bir satır gerekiyor. Altyazı kaymasının iki "Sıfırla" düğmesi hâlâ `refresh` simgesini kullanıyor; filtre sıfırlaması yeni `reset` simgesini aldı — tutarlılık kullanıcı kararı.
 
 ## Bekleyen izinler — kullanıcı dönünce (19 Kasım 2026)
 
