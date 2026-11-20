@@ -1,5 +1,5 @@
 /**
- * injected.js - FilmDeck by NOk v0.8.3.1 (Main World Engine)
+ * injected.js - FilmDeck by NOk v0.8.3.2 (Main World Engine)
  * Geliştirici: NOkrep
  * Repo: https://github.com/NOkrep/NOk-video-controller
  * 
@@ -17,7 +17,7 @@
  */
 
 (() => {
-  const EXTENSION_VERSION = '0.8.3.1';
+  const EXTENSION_VERSION = '0.8.3.2';
   const NOK_LOGO_URL = document.currentScript?.dataset?.logoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.logoUrl || '';
   const FILMDECK_LOGO_URL = document.currentScript?.dataset?.productLogoUrl || window.__NOK_VIDEO_CONTROLLER_ASSETS__?.productLogoUrl || '';
   delete window.__NOK_VIDEO_CONTROLLER_ASSETS__;
@@ -3332,9 +3332,15 @@
   };
 
   // MEDIA TRACKS (D-06): the video's own audio and subtitle tracks, from its player library or the browser.
-  // A key names the source, the kind and the index ("hls:a:1", "native:t:-1" is subtitles off); a choice is
-  // checked against the live list again before it is applied. Labels are short plain text for the panel only.
-  const MEDIA_TRACK_KEY = /^(hls|shaka|vjs|native):([at]):(-1|\d{1,3})$/;
+  // A key names the source, the kind, the index and a short fingerprint of the track ("hls:a:1:k3x9q2",
+  // "native:t:-1" is subtitles off). The fingerprint ties a key to that very track: if the player reorders or
+  // replaces its list, an old key no longer matches and nothing is chosen. Labels are plain text for the panel only.
+  const MEDIA_TRACK_KEY = /^(hls|shaka|vjs|native):([at]):(?:(-1)|(\d{1,3}):([0-9a-z]{1,7}))$/;
+  function mediaTrackFingerprint(...parts) {
+    let hash = 0x811c9dc5; // FNV-1a over the track's own identity fields; never shown, only compared.
+    for (const char of parts.map(part => String(part ?? '')).join('\u0001')) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;
+    return hash.toString(36);
+  }
   function mediaTrackLanguageName(lang) {
     if (!lang || typeof lang !== 'string') return '';
     try { return new Intl.DisplayNames([uiLanguage === 'en' ? 'en' : 'tr'], { type: 'language' }).of(lang) || lang; } catch (_) { return lang; }
@@ -3367,30 +3373,46 @@
       let audio = [], text = [];
       if (found.source === 'hls') {
         const hls = found.hls;
-        audio = (hls.audioTracks || []).map((track, i) => ({ label: mediaTrackLabel(track.name, track.lang, i), active: hls.audioTrack === i }));
-        text = (hls.subtitleTracks || []).map((track, i) => ({ label: mediaTrackLabel(track.name, track.lang, i), active: hls.subtitleTrack === i && hls.subtitleDisplay !== false }));
+        audio = (hls.audioTracks || []).map((track, i) => ({ label: mediaTrackLabel(track.name, track.lang, i), active: hls.audioTrack === i,
+          id: mediaTrackFingerprint(track.id, track.groupId, track.name, track.lang, track.url) }));
+        text = (hls.subtitleTracks || []).map((track, i) => ({ label: mediaTrackLabel(track.name, track.lang, i), active: hls.subtitleTrack === i && hls.subtitleDisplay !== false,
+          id: mediaTrackFingerprint(track.id, track.groupId, track.name, track.lang, track.url) }));
       } else if (found.source === 'shaka') {
         const shaka = found.shaka, current = (shaka.getVariantTracks?.() || []).find(track => track.active);
-        const roles = current ? [...(current.audioRoles || []), ...(current.roles || [])] : [];
+        const roles = current ? [...(current.audioRoles || []), ...(current.roles || [])].filter(Boolean) : [];
+        // A role must match the playing variant's role; an empty role matches only a variant without one.
         audio = (shaka.getAudioLanguagesAndRoles?.() || []).map((track, i) => ({
           label: mediaTrackLabel(track.label, track.language, i) + (track.role ? ` (${String(track.role).slice(0, 20)})` : ''),
-          active: !!current && current.language === track.language && (!track.role || roles.includes(track.role)) }));
+          active: !!current && current.language === track.language && (track.role ? roles.includes(track.role) : roles.length === 0),
+          id: mediaTrackFingerprint(track.language, track.role, track.label) }));
         const visible = shaka.isTextTrackVisible?.() === true;
-        text = (shaka.getTextTracks?.() || []).map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: visible && track.active === true }));
+        text = (shaka.getTextTracks?.() || []).map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: visible && track.active === true,
+          id: mediaTrackFingerprint(track.id, track.language, track.label, track.kind, (track.roles || []).join(',')) }));
       } else {
-        audio = found.audio.map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: track.enabled === true }));
-        text = found.text.map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: track.mode === 'showing' }));
+        audio = found.audio.map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: track.enabled === true,
+          id: mediaTrackFingerprint(track.id, track.kind, track.label, track.language) }));
+        text = found.text.map((track, i) => ({ label: mediaTrackLabel(track.label, track.language, i), active: track.mode === 'showing',
+          id: mediaTrackFingerprint(track.id, track.kind, track.label, track.language) }));
       }
-      const keyed = (list, kind) => list.slice(0, kind === 'a' ? 16 : 32).map((item, i) => ({ key: `${found.source}:${kind}:${i}`, ...item }));
+      // At most one chosen item per list, so the panel never shows two.
+      const keyed = (list, kind) => {
+        let chosen = false;
+        return list.slice(0, kind === 'a' ? 16 : 32).map((item, i) => {
+          const active = item.active && !chosen; chosen = chosen || active;
+          return { key: `${found.source}:${kind}:${i}:${item.id}`, label: item.label, active };
+        });
+      };
       return { source: found.source, audio: audio.length > 1 ? keyed(audio, 'a') : [], text: keyed(text, 't') };
     } catch (_) { return none; }
   }
   function selectMediaTrack(video, player, key) {
     const match = MEDIA_TRACK_KEY.exec(String(key));
     if (!video || !match) return false;
-    const [, source, kind, raw] = match, index = Number(raw);
-    const live = readMediaTracks(video, player);
-    if (live.source !== source || (kind === 'a' && !live.audio[index]) || (kind === 't' && index >= 0 && !live.text[index])) return false;
+    const [, source, kind, off] = match, index = off ? -1 : Number(match[4]);
+    if (kind === 'a' && off) return false;
+    const live = readMediaTracks(video, player), list = kind === 'a' ? live.audio : live.text;
+    // The index must still hold the same track; a reordered or replaced list refuses the old key.
+    if (live.source !== source || (index >= 0 && list[index]?.key !== key)) return false;
     try {
       const found = mediaTrackSources(video, player);
       if (source === 'hls') {
@@ -3416,8 +3438,8 @@
   function chooseMediaTrack(key) {
     const match = MEDIA_TRACK_KEY.exec(String(key));
     if (!match) return;
-    const tracks = currentMediaTracks(), kind = match[2], index = Number(match[3]);
-    const label = index < 0 ? uiText('Kapalı') : (kind === 'a' ? tracks.audio : tracks.text)[index]?.label || '';
+    const tracks = currentMediaTracks(), kind = match[2];
+    const label = match[3] ? uiText('Kapalı') : (kind === 'a' ? tracks.audio : tracks.text).find(item => item.key === key)?.label || '';
     const done = ok => {
       if (!ok) { showToast('Bu parça seçilemedi.'); return; }
       showToast(kind === 'a' ? `Ses parçası: ${label}` : `Videonun altyazısı: ${label}`);
@@ -4171,7 +4193,7 @@
       await toggleLocalPictureInPicture(false);
     };
     cancel.onclick = event => { event.stopPropagation(); clearPipActivationPrompt(); };
-    for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'keydown', 'keyup', 'wheel']) {
+    for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'keydown', 'keypress', 'keyup', 'wheel']) {
       container.addEventListener(type, event => { event.stopPropagation(); if (type === 'keydown' && event.key === 'Escape') clearPipActivationPrompt(); });
     }
     container.append(label, confirm, cancel);
@@ -4486,7 +4508,13 @@
   // The video time at which a subtitle time is shown: the inverse, for the browser's own fullscreen/PiP track.
   function videoTimeForSubtitle(base, drift, time) {
     const rate = drift ? drift.rate : 0, anchor = drift ? drift.anchor : 0;
-    return (time + (base - rate * anchor) / 1000) / (1 - rate / 1000);
+    const linear = (time + (base - rate * anchor) / 1000) / (1 - rate / 1000);
+    // Where the line passes the ±6 h limit the offset stays at the limit, so the inverse must too (N-035 F3).
+    // The clock is strictly increasing (|rate| ≤ 50 ms/s), so the saturated answer is the only one there.
+    const unclamped = base + rate * (linear - anchor);
+    if (unclamped > SUBTITLE_OFFSET_LIMIT) return time + SUBTITLE_OFFSET_LIMIT / 1000;
+    if (unclamped < -SUBTITLE_OFFSET_LIMIT) return time - SUBTITLE_OFFSET_LIMIT / 1000;
+    return linear;
   }
   function subtitleDriftFrom(first, second) {
     const gap = second.time - first.time;
@@ -5950,7 +5978,7 @@
     applyUiAccessibility(modal);
     decorateUiComponents(modal);
 
-    ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keyup'].forEach(evtType => {
+    ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keypress', 'keyup'].forEach(evtType => {
       modal.addEventListener(evtType, (e) => {
         e.stopPropagation();
         if (e.target === modal && !e.type.startsWith('key')) closeUiDialog(modal);
@@ -7541,8 +7569,9 @@
     });
     updateVideoTargetControls();
 
-    // Olay İzolasyonu (e.stopPropagation)
-    ['click', 'pointerdown', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keyup'].forEach(evtType => {
+    // Olay İzolasyonu (e.stopPropagation). keypress too: a site listening for it on the page would otherwise
+    // see what is typed into the panel's fields (N-035 F2); keydown and keyup were already kept inside.
+    ['click', 'pointerdown', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'dblclick', 'keydown', 'keypress', 'keyup'].forEach(evtType => {
       popup.addEventListener(evtType, (e) => {
         e.stopPropagation();
       }, { capture: false });

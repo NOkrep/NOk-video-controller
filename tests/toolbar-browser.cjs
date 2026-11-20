@@ -231,6 +231,8 @@ try{
   await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='0ms'&&document.getElementById('pvc-tb-sub-offset').getClientRects().length===0,'reset after the drift');
   // Large shifts: a typed value (real keys, which must not reach FilmDeck's or the site's shortcuts) and "now this line".
   const ratesBefore=await driver.evaluate(page,()=>window.rates.length);
+  // A site listening on the page in the bubble phase must not see what is typed into the panel (N-035 F2).
+  await driver.evaluate(page,()=>{window.siteKeys=[];for(const type of ['keydown','keypress','keyup'])document.body.addEventListener(type,event=>window.siteKeys.push(type+':'+event.key));});
   await driver.pointerClick(page,'#pvc-tb-sub-step');
   await until(driver,page,visible,'timing popover for a typed shift','pvc-tb-sub-offset-input');
   await driver.pointerClick(page,'#pvc-tb-sub-offset-input');
@@ -245,6 +247,7 @@ try{
   await driver.evaluate(page,()=>{window.fakeTime=100;});
   await driver.pointerClick(page,'#pvc-tb-sub-line-search');await driver.type(page,'seco');
   await until(driver,page,()=>{const lines=[...document.querySelectorAll('#pvc-tb-sub-lines [data-pvc-cue-start]')];return lines.length===1&&lines[0].textContent==='0:04Second';},'the search finds the line');
+  assert.deepEqual(await driver.evaluate(page,()=>window.siteKeys),[],'no keydown, keypress or keyup from the panel fields reaches the page');
   await driver.pointerClick(page,'#pvc-tb-sub-lines [data-pvc-cue-start]');
   await until(driver,page,()=>document.getElementById('pvc-sub-offset-badge').textContent==='+1:36.0','the chosen line starts now: 100 s - 4 s');
   await driver.evaluate(page,()=>{window.fakeTime=101;document.querySelector('video').dispatchEvent(new Event('timeupdate'));});
