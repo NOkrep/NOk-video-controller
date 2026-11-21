@@ -41,6 +41,12 @@
 - **Örnek B.** FilmDeck tek 1080 seçeneği sundu. Denenen Firefox oturumunda seçili video sahibinde bilinen yerel menü öğeleri bulunmadı. Başka içerik veya menü yapısı için sonuca varılmadı.
 - **Açık ve kanıt.** İki örnekte eksik olan doğrulanmış bir yerel kalite saptanmadı. Kullanıcıdan FilmDeck'te eksik görünen bir yerel seviye örneği istendi. `npm run check` ve `node tests/quality-mapping-browser.cjs --engine=chromium|firefox` ayrı koşularda geçti. Sürüm v0.8.3.4. Claude incelemesi bekliyor.
 
+## N-039 · 4. D-06 gerçek altyazı seçimi — 21 Kasım 2026
+
+- **Gerçek örnek A, Edge.** Oynatıcı çerçevesinde üç seçenek listelendi, bu sayıya Kapalı dahil. Araç çubuğundan hazır altyazı seçimi kaynak oynatıcının metin parçasını `showing` durumuna geçirdi. Kolay okunur düzendeki görünür seçim kutusundan Kapalı seçilince kaynak parça gösterimi durdu. Kanıt yalnız sayıları ve durumları içerir.
+- **Firefox ve açık kapsam.** Aynı sayfanın koşusunda yeterli parça listesi gelmedi. Görülen taşıyıcıların parça listesini aynı anda sunduğu veya Firefox'ta seçim sorunu olduğu doğrulanmadı. Gerçek çoklu ses seçimi ve gerçek Shaka çalışma zamanı açık. Checksum doğrulamalı Shaka indirmesi kullanıcı iznini bekliyor.
+- **Yerel kanıt.** `npm run check` ve `node tests/media-tracks-browser.cjs --engine=chromium|firefox` geçti. HLS fikstürü üzerindeki iki düzenin ses/altyazı ekran görüntüleri `tests/artifacts/n039-track-*.png`. Görüntülere gerçek oynatıcı veya içerik bilgisi alınmadı. Görsel kabul kullanıcıda. Ürün değişikliği yok. Claude incelemesi bekliyor.
+
 ## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
 
 Kullanıcı istedi ("o iki şeyi halledelim"). Mağazaya gönderilmedi (`storeStatus: not-submitted`). Notlar: [RELEASE_NOTES_v0.8.3.4.md](../history/RELEASE_NOTES_v0.8.3.4.md).
