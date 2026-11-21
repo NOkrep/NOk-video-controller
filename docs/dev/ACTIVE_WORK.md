@@ -19,6 +19,14 @@
 - **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
 - **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
 
+## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
+
+Kullanıcı istedi ("o iki şeyi halledelim"). Mağazaya gönderilmedi (`storeStatus: not-submitted`). Notlar: [RELEASE_NOTES_v0.8.3.4.md](../history/RELEASE_NOTES_v0.8.3.4.md).
+
+- **Paketler:** `NOk-Release-Core` `package filmdeck`, `claude/workTogether` temiz `47e447b` ağacından; Chrome ve Firefox ayrı ZIP, `npm run check` komut içinde geçti. Git dışı `NOk-FilmDeck-Release/artifacts/` altında (`0.8.3.4-3f8f631d97fd`, `0.8.3.4-db738b2012e3`); eski arşivlere dokunulmadı, o depoya commit atılmadı.
+- **Denetim:** 17'şer dosya; manifest dışındaki bütün ürün dosyaları kaynakla bayt bayt aynı, fazla dosya yok; Chrome `service_worker`, Firefox `scripts`, sürüm 0.8.3.4. Açılmış iki ZIP kendi tarayıcısında `ui-smoke --extension=…` ile geniş ve dar geçti (20 tema, TR/EN). Bunun için `ui-smoke`'a `--extension` seçeneği eklendi; verilmezse eski davranış.
+- **Yayın:** kullanıcıda. PR birleştikten sonra GitHub'da pre-release işaretli `v0.8.3.4-pre_release` önerilir; iki ZIP ve notlardaki SHA-256 değerleri. Notlar ve test seçeneği paketlerden sonra commit edildi; ürün dosyaları değişmedi.
+
 ## Opak araç çubuğu ve Playwright 1.65.1, v0.8.3.4 — 21 Kasım 2026
 
 - **Kullanıcı bildirimi:** yeni araç çubuğunun arkasındaki sayfa, özellikle yazı, hafifçe görünüyor ve okumayı bozuyordu.

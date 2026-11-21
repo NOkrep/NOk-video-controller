@@ -12,7 +12,9 @@ const browser = args.browser || (engine === 'firefox'
   ? 'C:/Program Files/Mozilla Firefox/firefox.exe'
   : 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe');
 const packages = args.packages || path.join(root, 'node_modules');
-const version = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'))).version;
+// --extension=<unzipped package> checks a built release package instead of the source folder.
+const extensionRoot = args.extension ? path.resolve(args.extension) : root;
+const version = JSON.parse(fs.readFileSync(path.join(extensionRoot, 'manifest.json'))).version;
 
 async function main() {
   assert.ok(fs.existsSync(browser), 'Browser missing; specify --browser=absolute/path');
@@ -29,7 +31,7 @@ async function main() {
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   let driver;
   try {
-    driver = await createDriver(engine,browser,packages,{viewport:{width:args.narrow?560:1100,height:args.narrow?760:850}});
+    driver = await createDriver(engine,browser,packages,{extensionRoot,viewport:{width:args.narrow?560:1100,height:args.narrow?760:850}});
     await driver.install();
     const page = await driver.open(`http://127.0.0.1:${server.address().port}/`);
     await until(driver,page,()=>window.__NOK_VIDEO_CONTROLLER_INJECTED__===true,'content-script injection');
