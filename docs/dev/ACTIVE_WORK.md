@@ -47,6 +47,13 @@
 - **Firefox ve açık kapsam.** Aynı sayfanın koşusunda yeterli parça listesi gelmedi. Görülen taşıyıcıların parça listesini aynı anda sunduğu veya Firefox'ta seçim sorunu olduğu doğrulanmadı. Gerçek çoklu ses seçimi ve gerçek Shaka çalışma zamanı açık. Checksum doğrulamalı Shaka indirmesi kullanıcı iznini bekliyor.
 - **Yerel kanıt.** `npm run check` ve `node tests/media-tracks-browser.cjs --engine=chromium|firefox` geçti. HLS fikstürü üzerindeki iki düzenin ses/altyazı ekran görüntüleri `tests/artifacts/n039-track-*.png`. Görüntülere gerçek oynatıcı veya içerik bilgisi alınmadı. Görsel kabul kullanıcıda. Ürün değişikliği yok. Claude incelemesi bekliyor.
 
+## N-039 · 5. Firefox test güvenilirliği — 21 Kasım 2026
+
+- **Doğrulanan test hatası.** `firefox-integration.cjs` varsayılan araç çubuğunda gizli kalan klasik sekmeye odaklanıyordu. Gerçek ArrowDown girdisinden sonra Altyazılar sekmesinin `aria-selected` değeri `false` kaldı. Test mevcut `easyRead` yardımcısıyla görünür Kolay okunur düzene geçtiğinde klavye, odak ve hareketsizlik adımları geçti. Kırmızı ve yeşil komut `node tests/firefox-integration.cjs --browser=<kurulu Firefox>`.
+- **BiDi tanısı.** Test sürücüleri, süreç veya WebSocket kapanırsa bekleyen komutu hemen reddeder. Zaman aşımı hatasına son sekiz komutun adı, sonucu ve süresi eklenir. İstek parametreleri yazılmaz. Üç temiz Firefox başlatmada `session.subscribe` 2,249 / 3,502 / 7,609 ms. Eski aralıklı zaman aşımı yeniden üretilemedi. 15 ve 60 saniyelik komut sınırları aynı.
+- **Kanıt.** `node --test tests/firefox-bidi-diagnostics.test.cjs` 2/2. Git dışı kopyada kopma hatası ayırt edilmediğinde ilgili test kırmızı. `npm run check` 314/314. Başsız `startup-browser` ve `hud-continuity-browser --headless=true` iki motorda 4/4. Firefox `hud-continuity` ayrıca değişiklik öncesi ölçümde geçti. Son entegrasyon koşusunda klavye ok gezinmesi, odak ve hareketsizlik denetimleri doğru, tarayıcı hata listesi boş. Yerel günlükler `tests/artifacts/n039-*`.
+- **Kalan kapsam.** Tarihsel BiDi zaman aşımının ve aralıklı HUD konum düşüşünün kök nedenleri açık. Güncelleme test altyapısına ait ve sürüm v0.8.3.4. Gerçek site kanıtı üst işlerde. Claude incelemesi bekliyor.
+
 ## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
 
 Kullanıcı istedi ("o iki şeyi halledelim"). Mağazaya gönderilmedi (`storeStatus: not-submitted`). Notlar: [RELEASE_NOTES_v0.8.3.4.md](../history/RELEASE_NOTES_v0.8.3.4.md).

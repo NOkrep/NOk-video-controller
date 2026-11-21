@@ -20,12 +20,17 @@ if(![1,2].includes(scale))throw new Error('Test scale must be 1 or 2.');
 if (!browserPath) throw new Error('Provide --browser=<firefox.exe>. No browser or driver is downloaded.');
 const artifactDir = path.join(__dirname, 'artifacts', scale===1?'firefox-browser':'firefox-browser-scale2');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-let processHandle, socket, profile, nextId = 0;
+const {watchFirefoxBiDi}=require('./firefox-bidi-diagnostics.cjs');
+const {easyRead}=require('./resource-driver.cjs');
+let processHandle, socket, profile, nextId = 0, diagnostics;
 const pending = new Map(), servers = [], errors = [];
 const send = (method, params = {}) => new Promise((resolve, reject) => {
+  const unavailable=diagnostics.connectionError(method);
+  if(unavailable){reject(unavailable);return;}
   const id = ++nextId;
-  const timer = setTimeout(() => {pending.delete(id);reject(new Error(`BiDi timeout: ${method}`));},15000);
-  pending.set(id,{resolve,reject,timer}); socket.send(JSON.stringify({id,method,params}));
+  const finish=diagnostics.track(method);
+  const timer = setTimeout(() => {pending.delete(id);finish('timeout');reject(diagnostics.timeout(method));},15000);
+  pending.set(id,{method,resolve,reject,timer,finish}); socket.send(JSON.stringify({id,method,params}));
 });
 async function evaluate(context, expression, userActivation = false) {
   const result = await send('script.evaluate',{target:{context},expression:`(async()=>JSON.stringify(await (${expression})))()`,awaitPromise:true,userActivation});
@@ -67,10 +72,11 @@ async function start() {
     processHandle.stdout.on('data',chunk=>{output+=chunk;});
   });
   socket=new WebSocket(endpoint);
+  diagnostics=watchFirefoxBiDi(processHandle,socket,pending);
   await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true});});
   socket.addEventListener('message',async event=>{
     const message=JSON.parse(event.data), request=pending.get(message.id);
-    if(request){clearTimeout(request.timer);pending.delete(message.id);
+    if(request){clearTimeout(request.timer);pending.delete(message.id);request.finish(message.type==='error'?'error':'ok');
       if(message.type==='error') request.reject(new Error(`${message.error}: ${message.message}`));else request.resolve(message.result);return;}
     if(message.method==='log.entryAdded' && message.params.level==='error') errors.push(message.params.text);
     if(message.method==='network.beforeRequestSent' && message.params.isBlocked){
@@ -126,6 +132,8 @@ async function start() {
     await evaluate(tab,`document.getElementById('open').click()`,true);
     await until(tab,`document.querySelector('#pvc-controller-popup')?.style.display==='block' && document.querySelector('#pvc-active-adapter-badge')?.textContent.includes('GenericAdapter')
       && document.querySelector('#pvc-no-video-alert')?.style.display==='none'`,'top presentation with a media owner');
+    // This integration exercises the classic controls and their native keyboard focus.
+    await easyRead({evaluate: (context, fn) => evaluate(context, `(${fn})()`, true)}, tab);
     assert.equal(await evaluate(leaf,`document.querySelector('#pvc-controller-popup')?.style.display==='block'`),false);
     assert.equal(await evaluate(middle,`document.querySelector('#pvc-controller-popup')?.style.display==='block'`),false);
     // Exercise the real cross-frame slider path, not only synchronous local inputs.
