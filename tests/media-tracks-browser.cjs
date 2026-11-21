@@ -2,18 +2,29 @@
 // Real Hls.js (tests/artifacts/runtime, checksum-verified by prepare-browser-fixtures.cjs) plays the committed
 // tests/fixtures/hls-tracks stream (two audio and two subtitle renditions). A plain <video> with two <track>
 // elements covers the browser's own lists, and a cross-origin frame covers the top panel driving the frame.
-// node tests/media-tracks-browser.cjs --engine=firefox|chromium
+// node tests/media-tracks-browser.cjs --engine=firefox|chromium [--shaka]
 const assert=require('node:assert/strict'),http=require('node:http'),path=require('node:path'),fs=require('node:fs');
-const {createDriver,until}=require('./resource-driver.cjs');
+const {createDriver,easyRead,until}=require('./resource-driver.cjs');
 const args=Object.fromEntries(process.argv.slice(2).map(arg=>arg.replace(/^--/,'').split(/=(.*)/s).slice(0,2)));
 const engine=args.engine||'firefox';
 const root=path.join(__dirname,'fixtures'),runtime=path.join(__dirname,'artifacts','runtime','hls.min.js'),vjsRuntime=path.join(__dirname,'artifacts','runtime','video.min.js');
+const includeShaka=process.argv.includes('--shaka');
+const shakaRuntime=path.join(__dirname,'artifacts','runtime','shaka-player.compiled.js');
+if(includeShaka&&!fs.existsSync(shakaRuntime))throw new Error('Shaka Player runtime missing: node tests/prepare-browser-fixtures.cjs --runtimes-only --download-runtimes --shaka-runtime');
 if(!fs.existsSync(runtime)||!fs.existsSync(vjsRuntime))throw new Error('Hls.js or Video.js runtime missing: node tests/prepare-browser-fixtures.cjs --runtimes-only --download-runtimes');
 const vjsPage=`<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#111}.video-js{width:640px;height:360px}</style><video id="v" class="video-js" muted autoplay playsinline></video>
 <script src="/runtime/video.min.js"></script><script>const player=videojs('v');window.player=player;player.src({src:'/fixtures/hls-tracks/master.m3u8',type:'application/x-mpegURL'});player.play()?.catch?.(()=>{});</script>`;
 const types={'.m3u8':'application/vnd.apple.mpegurl','.ts':'video/mp2t','.vtt':'text/vtt; charset=utf-8'};
 const hlsPage=`<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#111}video{width:640px;height:360px}</style><video muted autoplay playsinline></video>
 <script src="/runtime/hls.min.js"></script><script>const video=document.querySelector('video');const hls=new Hls();window.hls=hls;hls.attachMedia(video);hls.loadSource('/fixtures/hls-tracks/master.m3u8');video.play().catch(()=>{});</script>`;
+const shakaPage=`<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#111}video{width:640px;height:360px}</style><video muted autoplay playsinline></video>
+<script src="/runtime/shaka-player.compiled.js"></script><script>
+shaka.polyfill.installAll();
+const video=document.querySelector('video');
+const player=window.fixtureShaka=new shaka.Player();
+(async()=>{await player.attach(video);await player.load('/fixtures/hls-tracks/master.m3u8');await video.play();})()
+  .catch(error=>{window.fixtureShakaError=String(error.code??error.name);});
+</script>`;
 const nativePage=`<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#111}video{width:640px;height:360px}</style><video muted autoplay playsinline>
 <track kind="subtitles" srclang="tr" label="Türkçe" src="/fixtures/hls-tracks/sub-tr.vtt"><track kind="subtitles" srclang="en" label="English" src="/fixtures/hls-tracks/sub-en.vtt"></video><script>
 const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;const ctx=canvas.getContext('2d');setInterval(()=>{ctx.fillStyle='#213847';ctx.fillRect(0,0,640,360);},100);
@@ -21,6 +32,8 @@ const video=document.querySelector('video');video.srcObject=canvas.captureStream
 const serve=(req,res)=>{const url=new URL(req.url,'http://x');
   if(url.pathname==='/runtime/hls.min.js'){res.writeHead(200,{'Content-Type':'text/javascript'});res.end(fs.readFileSync(runtime));return;}
   if(url.pathname==='/runtime/video.min.js'){res.writeHead(200,{'Content-Type':'text/javascript'});res.end(fs.readFileSync(vjsRuntime));return;}
+  if(includeShaka&&url.pathname==='/runtime/shaka-player.compiled.js'){res.writeHead(200,{'Content-Type':'text/javascript'});res.end(fs.readFileSync(shakaRuntime));return;}
+  if(includeShaka&&url.pathname==='/shaka'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(shakaPage);return;}
   if(url.pathname==='/vjs'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(vjsPage);return;}
   if(url.pathname.startsWith('/fixtures/')){const file=path.join(root,path.normalize(url.pathname.slice(10)));
     if(!file.startsWith(root)||!fs.existsSync(file)){res.writeHead(404);res.end();return;}
@@ -109,6 +122,46 @@ try{
   assert.equal(await driver.evaluate(top,pick,['pvc-tb-audiotracks-list','English']),true);
   await until(driver,owner,()=>window.hls.audioTrack===1,'the frame applies the top panel\'s choice');
   await until(driver,top,()=>document.querySelector('#pvc-tb-audiotracks-list .pvc-tb-on')?.textContent==='English','the top list follows the frame');
-  console.log(JSON.stringify({engine,version:driver.version,result:'pass'}));
+
+  if(includeShaka){
+    const shaka=await driver.open(`http://127.0.0.1:${media.address().port}/shaka`);
+    await until(driver,shaka,()=>window.fixtureShakaError||(
+      window.fixtureShaka?.getAudioLanguagesAndRoles().length===2&&
+      window.fixtureShaka.getTextTracks().length===2&&document.querySelector('video').readyState>=2
+    ),'Shaka Player reports its tracks and plays');
+    assert.equal(await driver.evaluate(shaka,()=>window.fixtureShakaError??null),null,'Shaka Player loads the fixture stream');
+    await driver.toolbar(shaka);
+    await until(driver,shaka,()=>document.getElementById('pvc-controller-popup')?.style.display==='block','Shaka panel opens');
+    await driver.evaluate(shaka,()=>document.getElementById('pvc-a11y-keepVisible').click());
+    await driver.pointerClick(shaka,'#pvc-tb-volume');
+    await until(driver,shaka,visible,'Shaka audio tracks popover','pvc-tb-audiotracks-card');
+    assert.deepEqual(await driver.evaluate(shaka,options,'pvc-tb-audiotracks-list'),[{label:'Türkçe',on:true},{label:'English',on:false}]);
+    assert.equal(await driver.evaluate(shaka,pick,['pvc-tb-audiotracks-list','English']),true);
+    await until(driver,shaka,()=>window.fixtureShaka.getVariantTracks().some(track=>track.active&&track.language==='en'),'Shaka switches the playing audio to English');
+    await driver.press(shaka,'Escape');
+    await driver.evaluate(shaka,()=>document.querySelector('[data-pvc-goto="subtitles"]').click());
+    await until(driver,shaka,visible,'Shaka subtitle tracks chip','pvc-tb-sub-tracks');
+    await driver.pointerClick(shaka,'#pvc-tb-sub-tracks');
+    await until(driver,shaka,visible,'Shaka subtitle tracks popover','pvc-tb-pop-subtracks');
+    assert.equal(await driver.evaluate(shaka,pick,['pvc-tb-subtracks-list','English']),true);
+    await until(driver,shaka,()=>window.fixtureShaka.isTextTrackVisible()&&window.fixtureShaka.getTextTracks().some(track=>track.active&&track.language==='en'),'Shaka shows the selected English subtitle track');
+    await driver.press(shaka,'Escape');
+    await easyRead(driver,shaka);
+    await driver.evaluate(shaka,()=>{
+      document.getElementById('pvc-tab-subtitles').click();
+      const section=document.getElementById('pvc-section-subtitles');
+      if(section.classList.contains('pvc-section-collapsed'))section.querySelector('.pvc-section-header').click();
+    });
+    await until(driver,shaka,visible,'Easy-read Shaka subtitle select','pvc-sub-tracks-select');
+    assert.equal(await driver.evaluate(shaka,()=>{
+      const select=document.getElementById('pvc-sub-tracks-select');
+      if(select.selectedOptions[0]?.textContent!=='English')return false;
+      select.selectedIndex=0;
+      select.dispatchEvent(new Event('change',{bubbles:true}));
+      return true;
+    }),true,'Easy-read shows the selection made in the toolbar');
+    await until(driver,shaka,()=>!window.fixtureShaka.isTextTrackVisible(),'Easy-read Off hides Shaka subtitles');
+  }
+  console.log(JSON.stringify({engine,version:driver.version,...(includeShaka?{shaka:'pass'}:{}),result:'pass'}));
 }finally{await driver?.close();media.close();parent.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

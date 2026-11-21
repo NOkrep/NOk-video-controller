@@ -46,8 +46,10 @@
 ## N-039 · 4. D-06 gerçek altyazı seçimi — 21 Kasım 2026
 
 - **Gerçek örnek A, Edge.** Oynatıcı çerçevesinde üç seçenek listelendi, bu sayıya Kapalı dahil. Araç çubuğundan hazır altyazı seçimi kaynak oynatıcının metin parçasını `showing` durumuna geçirdi. Kolay okunur düzendeki görünür seçim kutusundan Kapalı seçilince kaynak parça gösterimi durdu. Kanıt yalnız sayıları ve durumları içerir.
-- **Firefox ve açık kapsam.** Aynı sayfanın koşusunda yeterli parça listesi gelmedi. Görülen taşıyıcıların parça listesini aynı anda sunduğu veya Firefox'ta seçim sorunu olduğu doğrulanmadı. Gerçek çoklu ses seçimi ve gerçek Shaka çalışma zamanı açık. Checksum doğrulamalı Shaka indirmesi kullanıcı iznini bekliyor.
+- **Firefox ve açık kapsam.** Aynı sayfanın koşusunda yeterli parça listesi gelmedi. Görülen taşıyıcıların parça listesini aynı anda sunduğu veya Firefox'ta seçim sorunu olduğu doğrulanmadı. Gerçek sitede çoklu ses seçimi ve Firefox'ta hazır altyazı kabulü açık.
 - **Yerel kanıt.** `npm run check` ve `node tests/media-tracks-browser.cjs --engine=chromium|firefox` geçti. HLS fikstürü üzerindeki iki düzenin ses/altyazı ekran görüntüleri `tests/artifacts/n039-track-*.png`. Görüntülere gerçek oynatıcı veya içerik bilgisi alınmadı. Görsel kabul kullanıcıda. Ürün değişikliği yok. Claude incelemesi bekliyor.
+- **Shaka ve yerleşim takip turu.** Kullanıcı izniyle Shaka Player 4.16.56 çalışma dosyası mevcut hazırlayıcıdan SHA-256 doğrulamasıyla alındı. `node tests/media-tracks-browser.cjs --engine=chromium|firefox --shaka` iki başsız motorda geçti. Araç çubuğu yoluyla seçilen ses ve altyazı oynatıcının gerçek API'sinde gözlendi. Kolay okunur düzende aynı altyazı seçili göründü ve Kapalı uygulandı. Farklı ses dilleri sınandı. Aynı dilde farklı roller bu çalışma zamanı koşusuna dahil değil. İki düzenin ses ve altyazı kontrolleri, komşu düğmelerle birlikte `tests/artifacts/n039-detail-*.png` görüntülerinde yer alıyor. Yerleşim kararı kullanıcıda. Ürün kodu ve sürüm aynı.
+- **Olumsuz kontrol.** Edge'de geçici test kopyası Kapalı yerine etkin altyazıyı tekrar seçtiğinde, Shaka'nın altyazıyı gizlediğini ölçen adım beklenen noktada başarısız oldu.
 
 ## N-039 · 5. Firefox test güvenilirliği — 21 Kasım 2026
 

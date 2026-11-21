@@ -67,11 +67,19 @@ node tests/toolbar-browser.cjs --engine=firefox
 node tests/toolbar-browser.cjs --engine=chromium
 ```
 
-`media-tracks-browser.cjs` (D-06) videonun kendi ses ve altyazı parçalarını sınar: depodaki `tests/fixtures/hls-tracks` akışını (480p video, TR/EN iki ses ve iki WebVTT altyazı; `prepare-browser-fixtures.cjs --committed-track-hls` üretir) gerçek Hls.js ve gerçek Video.js/VHS ile oynatır; araç çubuğundan ve Kolay okunur seçim kutularından ses/altyazı seçimini, Kapalı'yı, iki `<track>` öğeli yerel videoda tarayıcı listesini ve FilmDeck'in yüklenen dosya izinin listede olmamasını, ayrı kökenli iframe'de üst panelin seçimi çerçeveye uygulamasını sınar. Hls.js ve Video.js çalışma dosyaları `tests/artifacts/runtime` altında olmalıdır (`prepare-browser-fixtures.cjs --runtimes-only --download-runtimes`, SHA-256 denetimli). Shaka için yerel çalışma dosyası yok; Shaka yolu `media-tracks.test.cjs` içinde sahte nesnelerle sınanır. Gerçek site kabulü değildir.
+`media-tracks-browser.cjs` (D-06) videonun kendi ses ve altyazı parçalarını sınar. Depodaki `tests/fixtures/hls-tracks` akışı 480p video, iki ses dili ve iki WebVTT altyazı sunar. Test Hls.js ve Video.js/VHS ile seçimleri ve Kapalı durumunu, yerel `<track>` listesini, FilmDeck'in harici dosya izinin listeden çıkarılmasını ve ayrı kökenli iframe'e seçim iletimini doğrular. Hls.js ve Video.js test dosyalarını `prepare-browser-fixtures.cjs --runtimes-only --download-runtimes` SHA-256 denetimiyle hazırlar.
 
 ```powershell
 node tests/media-tracks-browser.cjs --engine=firefox
 node tests/media-tracks-browser.cjs --engine=chromium
+```
+
+İsteğe bağlı Shaka Player 4.16.56 testi aynı akışı kullanır. Araç çubuğunun oynayan ses ve altyazı parçasını değiştirdiğini, seçimin Kolay okunur düzende göründüğünü ve oradaki Kapalı seçeneğinin kaynak altyazıyı gizlediğini oynatıcının API'sinden denetler. Dosya Git dışı `tests/artifacts/runtime` altında SHA-256 doğrulamasıyla tutulur. Bu test yerel çalışma zamanı kanıtı sağlar. Gerçek site ve aynı dilde farklı ses rolleri bu koşunun kapsamı dışındadır.
+
+```powershell
+node tests/prepare-browser-fixtures.cjs --runtimes-only --download-runtimes --shaka-runtime
+node tests/media-tracks-browser.cjs --engine=firefox --shaka
+node tests/media-tracks-browser.cjs --engine=chromium --shaka
 ```
 
 `hud-continuity-browser.cjs` görünür pencerede çalışır; Edge orada klasik (15 px) kaydırma çubuğu gösterebilir. Boşluklar görünür sayfa kenarından ölçülür ve araç çubuğu ile açılır kutuların kaydırma çubuğunun üstüne taşmadığı da sınanır. Toplu koşularda çıktıyı dosyaya kaydedin: düşüşte test bütün ölçümleri yazdırır.
