@@ -4,10 +4,10 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `claude/workTogether` dalında; `main` `0.8.3.3` (#130, `35e28c7`). I-13 Codex'te tamamlandı; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `codex/filmdeck-cassette-icon` dalında; taban `main` #131 (`2efadc1`). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
-- **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
-- **Codex'te:** I-13.
+- **Seçildi, Codex yürütüyor (21 Kasım, N-039):** I-10 + I-09 gerçek site regresyonu, I-03 Kick (reklam görülürse I-04), I-05 kalite envanteri, D-06 gerçek parça seçimi ve Firefox test güvenilirliği. Claude incelemeyi yürütüyor. B6-C bu beş işin dışında.
+- **I-13:** tamamlandı ve Claude incelemesinden geçti.
 - **Kapandı:** D-07; finalist seçilmeyecek, 20 tema kalıyor.
 - **Karar bekliyor:** B5 kesin sürüm kuralı.
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
@@ -18,6 +18,16 @@
 - **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
 - **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
 - **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
+
+## N-039 · 1. I-10 / I-09 gerçek site regresyonu — 21 Kasım 2026
+
+- **Taban ve kapsam.** v0.8.3.4, `2efadc1`. Codex iş devri ve gerçek site deneme kaydı bu dosyada güncellendi. Kurulu Edge 152 ve Firefox 160.0.1, ayrı geçici profiller.
+- **Raporlu örnek A.** İki motorda tarayıcı eklenti eylemi varsayılan araç çubuğunu açtı. Kontrol iframe'deki hazır videoya ulaştı. 1,5× hız, %0 → %40 → %65 ses, Mono → Stereo, harici sentetik altyazı yükleme durumu ve PiP açılışı gözlendi. Arayüz iki motorda ölçülen görünür alanın içindeydi. Araç çubuğu 480/720/1080 sundu. 1080 isteğinden sonra iki motorda görüntü 720 kaldı ve seçili kalite onaylanmadı. Bu sonuç önceki örnekle uyumlu. Görüntünün değişmemesinin nedeni bu turda doğrulanmadı.
+- **Raporlu örnek B.** İki motorda temel kontroller, altyazı yükleme durumu ve PiP açıldı. Oynatma çerçevesi motora göre farklıydı. Araç çubuğunda yalnız 1080 seçeneği görüldü. Yerel menü karşılaştırması I-05 kapsamında. Ölçülen panel görünür alandaydı.
+- **Başlangıç ölçümü.** İlk yardımcı dış kapsayıcıyı ölçtüğü için görünür çubuğu kaçırabiliyordu. Ölçüm gerçek araç çubuğuna taşındı. Erken okunan Stereo durumuna da kaynak yanıtını bekleyen bir denetim eklendi. Bu değişiklikler yerel yardımcıya ait.
+- **Ek ölçüm.** Örnek A'da iki motorda araç çubuğu sürükleme sonrası ekranda kaldı. PiP kapatıldı ve yeniden açıldı.
+- **Kontroller.** `npm run check` geçti. `toolbar-browser`, `pip-browser` ve `ui-smoke` geniş/dar biçimleri başsız Edge ve Firefox'ta 8/8. Bu komutların sonuçları ayrı yerel günlüklerde.
+- **Kalan kapsam.** Kullanıcı tarafından bildirilen diğer oynatıcılar, gerçek sitedeki tam ekran geçişi ve altyazı satırının görünür çizimi açık. İki oynatıcı üzerinden genel site uyumluluğu çıkarılamaz. Anonim yerel kanıt `tests/artifacts/n039-live-*.json` altında. Kök neden atanmayan vakalarda ürün değişikliği ve sürüm artışı yok. Claude incelemesi bekliyor.
 
 ## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
 
