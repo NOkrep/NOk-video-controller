@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3.3**, `codex/filmdeck-cassette-icon` dalında; `main` `0.8.3.2` (#129, `95ffcd7`). I-13 kalan onaylı simge güncellemesi Codex'te; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `claude/workTogether` dalında; `main` `0.8.3.3` (#130, `35e28c7`). I-13 Codex'te tamamlandı; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -19,6 +19,25 @@
 - **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
 - **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
 
+## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
+
+Kullanıcı istedi ("o iki şeyi halledelim"). Mağazaya gönderilmedi (`storeStatus: not-submitted`). Notlar: [RELEASE_NOTES_v0.8.3.4.md](../history/RELEASE_NOTES_v0.8.3.4.md).
+
+- **Paketler:** `NOk-Release-Core` `package filmdeck`, `claude/workTogether` temiz `47e447b` ağacından; Chrome ve Firefox ayrı ZIP, `npm run check` komut içinde geçti. Git dışı `NOk-FilmDeck-Release/artifacts/` altında (`0.8.3.4-3f8f631d97fd`, `0.8.3.4-db738b2012e3`); eski arşivlere dokunulmadı, o depoya commit atılmadı.
+- **Denetim:** 17'şer dosya; manifest dışındaki bütün ürün dosyaları kaynakla bayt bayt aynı, fazla dosya yok; Chrome `service_worker`, Firefox `scripts`, sürüm 0.8.3.4. Açılmış iki ZIP kendi tarayıcısında `ui-smoke --extension=…` ile geniş ve dar geçti (20 tema, TR/EN). Bunun için `ui-smoke`'a `--extension` seçeneği eklendi; verilmezse eski davranış.
+- **Yayın:** kullanıcıda. PR birleştikten sonra GitHub'da pre-release işaretli `v0.8.3.4-pre_release` önerilir; iki ZIP ve notlardaki SHA-256 değerleri. Notlar ve test seçeneği paketlerden sonra commit edildi; ürün dosyaları değişmedi.
+
+## Opak araç çubuğu ve Playwright 1.65.1, v0.8.3.4 — 21 Kasım 2026
+
+- **Kullanıcı bildirimi:** yeni araç çubuğunun arkasındaki sayfa, özellikle yazı, hafifçe görünüyor ve okumayı bozuyordu.
+- **Neden:** çubuğun gövdesi `--pvc-bg` renginin %92'si, açılır kutular %94'ü ile çiziliyordu. Klasik panel ve şeritler zaten opaktı. Bütün 20 temanın `--pvc-bg` değeri opak onaltılık renk.
+- **Düzeltme:** iki arka plan doğrudan `var(--pvc-bg)` (`injected.css`). Otomatik solma (`Açık tut` kapalıyken izlerken) bilerek değiştirilmedi.
+- **Test:** `toolbar-browser` çubuğun ve açık bir kutunun hesaplanan arka planında saydamlık olmadığını doğrular. Düzeltme geri alınınca Edge'de düştü, yerine konunca geçti.
+- **Playwright 1.62.1 → 1.65.1:** Dependabot dalı eski main'den (`95ffcd7`) açıldığı için kilit dosyasında çakışma olasılığı vardı; aynı yükseltme bu dala alındı (`--ignore-scripts`, tarayıcı indirilmedi; testler kurulu Edge ve Firefox'u kullanır). Önce geçici ayrı çalışma ağacında, sonra son kaynakta sınandı.
+- **Kanıt:** `npm run check` 312/312. toolbar, media-tracks, dialog-keyboard, tooltip, hud-continuity, ui-smoke geniş/dar Edge 152.0.4191.53 ve Firefox 160.0.1'de 14/14.
+- **Firefox kararsızlığı (kod dışı):** bir süre bütün Firefox testleri `BiDi timeout: session.subscribe` ile düştü (60 s bekleme). Aynı anda değişmemiş main kodu geçti; birkaç dakika sonra değişikliklerle toolbar iki kez, ui-smoke geniş ve dar geçti. Firefox'un başsız oturumunda ara sıra yanıt vermeme olarak kayıtlı; kök neden bulunmadı.
+- **Sınır:** gerçek site ve uzak CI kabulü yok. Tag, ZIP veya release yapılmadı.
+
 ## I-13 kalan onaylı simgeler, v0.8.3.3 — 21 Kasım 2026
 
 Kullanıcı, ilk karşılaştırmada itiraz etmediği önerileri zaten kabul ettiğini
@@ -32,6 +51,7 @@ merge edildi; yeni uygulama bu tabanın üstündedir. Dosya sahipliği N-036'da.
 - **Kullanıcı içeriği:** ürünün durum öneki kalkınca araç çubuğunun geniş emoji temizleme adımı kaldırıldı. Dosya adı emojileri ve çeviri anahtarına benzeyen dosya adları korunur; dosya/satır sayısı deseni genel desenlerden önce eşleşir. Yorum, JSON ve altyazı satırlarına temizlik uygulanmaz. Durum simgesi değişimi mevcut `setUiMarkup` ile HTML kapsayıcıda kurulur; Trusted Types altında SVG'ye ham HTML ataması yapılmaz.
 - **Geçici tercihler:** 8A yalnız metin, 45A mevcut dalga olarak korunur. Sonradan yeniden değerlendirme tasarım notudur; bu sürümdeki onaylı uygulama kapsamını açık bırakmaz.
 - **Kanıt:** `npm run check` 312/312, sıfır fail/skip. `toolbar-browser`, `ui-smoke` geniş/dar, `dialog-keyboard-browser`, `tooltip-browser`, `media-tracks-browser` Edge ve Firefox'ta 12/12 geçti. Son iki mono/stereo çeviri anahtarı ayrıca son kaynak kontrolünde sınandı. Yeni tarayıcı assertion'ları dosya adı emojisini, gizli/açık altyazı SVG'sini ve yedi sıfırlama simgesini doğrular. Ek kurulu Edge kabulü Trusted Types zorunlu sentetik sayfada önce v0.8.3.2/EN, sonra v0.8.3.3/EN ve TR: rapor/izin/altyazı görselleri, yorumun metin olarak korunması. Günlükler `tests/artifacts/i13-v0833-*.txt`, görüntüler ve `ACCEPTANCE.json` `tests/artifacts/i13-v0833-images/` altında; Git dışı. Görsel yardımcının ikinci dosya yüklemesinde eski durumla erken ilerlemesi benzersiz dosya adı ve yükleme tamamlanma beklemesiyle düzeltildi; ürün için ek değişiklik gerekmedi.
+- **Claude incelemesi (21 Kasım, main `35e28c7`):** engelleyici bulgu yok. Emojisi kalkan bildirimlerin hepsi kendi İngilizce karşılığını buluyor; önce gelen genel kalıplara takılan yok. Mini DRM simgesi iki güncelleme yolunda da korunuyor. Claude'un koşusu: `npm run check` 312/312; toolbar, media-tracks, dialog-keyboard, tooltip, hud-continuity, ui-smoke geniş/dar Edge ve Firefox'ta 14/14. Ayrıntı NOk-Tools N-036.
 - **Sınır:** bu yerel/sentetik kabuldür; yeni gerçek site ve uzak CI sonucu değildir. Claude'un parça seçimi, kayma matematiği, klavye izolasyonu ve frame-protocol.js bu simge işinde değiştirilmedi. İzin, depolama, rapor şeması veya ağ isteği eklenmedi. Tag, ZIP veya release yok; PR/merge kullanıcıda. GitHub işaretinin MIT kapsamı dışında logo kullanım kurallarına tabi olduğu THIRD_PARTY_NOTICES.md içinde açıklanır.
 
 ## I-13 seçili simgeler, v0.8.3.1 — 21 Kasım 2026

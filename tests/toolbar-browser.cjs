@@ -180,6 +180,9 @@ try{
   assert.deepEqual(await driver.evaluate(page,()=>['pvc-tb-sub-offset-reset','pvc-tb-sub-reset','pvc-tb-sub-look-reset','pvc-tb-filter-reset','pvc-sub-sync-reset','pvc-sub-appearance-reset','pvc-btn-reset-filters'].map(id=>document.querySelector('#'+id+' svg')?.getAttribute('data-pvc-icon'))),Array(7).fill('reset'),'every reset uses the common return arrow, including both layouts');
   await driver.pointerClick(page,'#pvc-tb-sub-step');
   await until(driver,page,visible,'timing popover','pvc-tb-pop-subtiming');
+  // Any alpha below 1 lets page text show through, which the user found distracting.
+  assert.deepEqual(await driver.evaluate(page,()=>[document.querySelector('#pvc-toolbar .pvc-tb-bar'),document.getElementById('pvc-tb-pop-subtiming')].map(node=>{
+    const c=getComputedStyle(node).backgroundColor;return /\/\s*0?\.\d+\s*\)|rgba\([^)]*,\s*0?\.\d+\s*\)|transparent/.test(c)?c:'opaque';})),['opaque','opaque'],'the bar and its popovers hide the page behind them');
   await driver.pointerClick(page,'[data-pvc-substep="250"]');
   await until(driver,page,()=>document.getElementById('pvc-tb-sub-step-val').textContent==='250ms','step 250ms');
   await driver.press(page,'Escape');

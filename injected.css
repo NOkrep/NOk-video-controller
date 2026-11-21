@@ -1,5 +1,5 @@
 /**
- * injected.css - FilmDeck by NOk v0.8.3.3
+ * injected.css - FilmDeck by NOk v0.8.3.4
  * Gezdirilebilir (Draggable), Mıknatıslı Kenar Hizalamalı, Tam Ekran Uyumlu & 2-Kademeli Akıllı Saydam HUD
  * Geliştirici: NOkrep
  */
@@ -1492,7 +1492,8 @@
 #pvc-toolbar .pvc-tb-bar {
   position: relative !important; display: flex !important; align-items: center !important; gap: 4px !important;
   padding: 6px 6px 6px 8px !important; white-space: nowrap !important; border-radius: 24px !important;
-  background: color-mix(in srgb, var(--pvc-bg) 92%, transparent) !important;
+  /* Fully opaque: page text showing through the bar or its popovers is hard to read past. */
+  background: var(--pvc-bg) !important;
   border: 1px solid var(--pvc-border) !important; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38) !important;
 }
 #pvc-toolbar button, #pvc-toolbar .pvc-tb-brand {
@@ -1555,7 +1556,7 @@
 #pvc-toolbar .pvc-tb-mini { padding: 3px 7px !important; gap: 4px !important; border-radius: 8px !important; font-size: 10.5px !important; font-weight: 500 !important; background: color-mix(in srgb, var(--pvc-text) 8%, transparent) !important; }
 #pvc-toolbar .pvc-tb-mini .pvc-ui-icon { width: 12px !important; height: 12px !important; flex-basis: 12px !important; }
 /* B3 popover style (user choice, 15 Nov): the bar's own material, one layer, a quiet accent link to its button. */
-#pvc-toolbar .pvc-tb-popover { position: absolute !important; display: flex !important; flex-direction: column !important; gap: 10px !important; padding: 14px !important; border-radius: 18px !important; background: color-mix(in srgb, var(--pvc-bg) 94%, transparent) !important; border: 1px solid var(--pvc-border) !important; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.30) !important; white-space: normal !important; }
+#pvc-toolbar .pvc-tb-popover { position: absolute !important; display: flex !important; flex-direction: column !important; gap: 10px !important; padding: 14px !important; border-radius: 18px !important; background: var(--pvc-bg) !important; border: 1px solid var(--pvc-border) !important; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.30) !important; white-space: normal !important; }
 #pvc-toolbar #pvc-tb-pop-speed { width: 250px !important; }
 #pvc-toolbar #pvc-tb-pop-seek { width: 260px !important; }
 #pvc-toolbar #pvc-tb-pop-volume { width: 280px !important; }
