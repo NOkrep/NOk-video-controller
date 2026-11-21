@@ -25,15 +25,21 @@
 - **Raporlu örnek A.** İki motorda tarayıcı eklenti eylemi varsayılan araç çubuğunu açtı. Kontrol iframe'deki hazır videoya ulaştı. 1,5× hız, %0 → %40 → %65 ses, Mono → Stereo, harici sentetik altyazı yükleme durumu ve PiP açılışı gözlendi. Arayüz iki motorda ölçülen görünür alanın içindeydi. Araç çubuğu 480/720/1080 sundu. 1080 isteğinden sonra iki motorda görüntü 720 kaldı ve seçili kalite onaylanmadı. Bu sonuç önceki örnekle uyumlu. Görüntünün değişmemesinin nedeni bu turda doğrulanmadı.
 - **Raporlu örnek B.** İki motorda temel kontroller, altyazı yükleme durumu ve PiP açıldı. Oynatma çerçevesi motora göre farklıydı. Araç çubuğunda yalnız 1080 seçeneği görüldü. Yerel menü karşılaştırması I-05 kapsamında. Ölçülen panel görünür alandaydı.
 - **Başlangıç ölçümü.** İlk yardımcı dış kapsayıcıyı ölçtüğü için görünür çubuğu kaçırabiliyordu. Ölçüm gerçek araç çubuğuna taşındı. Erken okunan Stereo durumuna da kaynak yanıtını bekleyen bir denetim eklendi. Bu değişiklikler yerel yardımcıya ait.
-- **Ek ölçüm.** Örnek A'da iki motorda araç çubuğu sürükleme sonrası ekranda kaldı. PiP kapatıldı ve yeniden açıldı.
+- **Ek ölçüm.** Örnek A'da iki motorda araç çubuğu sürükleme sonrası ekranda kaldı. PiP kapatıldı ve yeniden açıldı. Sentetik altyazı satırının görünür çizimi de iki motorda doğrulandı. Aynı kökenli iframe'de katman üst belgede olabildiği için yalnız video çerçevesine bakan ilk yardımcı satırı kaçırmıştı.
 - **Kontroller.** `npm run check` geçti. `toolbar-browser`, `pip-browser` ve `ui-smoke` geniş/dar biçimleri başsız Edge ve Firefox'ta 8/8. Bu komutların sonuçları ayrı yerel günlüklerde.
-- **Kalan kapsam.** Kullanıcı tarafından bildirilen diğer oynatıcılar, gerçek sitedeki tam ekran geçişi ve altyazı satırının görünür çizimi açık. İki oynatıcı üzerinden genel site uyumluluğu çıkarılamaz. Anonim yerel kanıt `tests/artifacts/n039-live-*.json` altında. Kök neden atanmayan vakalarda ürün değişikliği ve sürüm artışı yok. Claude incelemesi bekliyor.
+- **Kalan kapsam.** Kullanıcı tarafından bildirilen diğer oynatıcılar ve gerçek sitedeki tam ekran geçişi açık. İki oynatıcı üzerinden genel site uyumluluğu çıkarılamaz. Anonim yerel kanıt `tests/artifacts/n039-live-*.json` altında. Kök neden atanmayan vakalarda ürün değişikliği ve sürüm artışı yok. Claude incelemesi bekliyor.
 
 ## N-039 · 2. I-03 / I-04 yayın kontrolleri — 21 Kasım 2026
 
 - Kurulu eklentiyle iki motorda ayrı test profillerinde açık yayın kartı, canlı kanal ve geçmiş yayın örnekleri denendi. Bu koşularda seçilebilir, hazır medya oluşmadı. Geçmiş yayın rotasına ulaşmak, geçmiş yayının oynadığını göstermedi. Canlı uçtaki hız davranışı, sitenin hız menüsü ve %0'dan sonraki ses değişiklikleri bu yüzden yeniden üretilemedi.
 - Kodda medya hızı ile sitenin hız menüsü ayrı yollardır. Ses tarafındaki Radix geri çağrısı DOM sahibine bağlı önbellek kullanır. Eldeki canlı gözlem, hangisinin kullanıcı örneğinde bozulduğunu belirlemiyor. Yerel `node --test tests/kick-ui.test.cjs tests/kick-quality.test.cjs` 8/8 ve `npm run check` geçti. Bu testler yerel menü algoritması ve bağlı oynatıcı davranışını sınar.
 - Açılan canlı ve geçmiş yayın örnekleri kullanıcıdan istendi. Canlı reklamın giriş/çıkışı gözlenmedi. Ürün kodu ve sürüm aynı kaldı. Claude incelemesi bekliyor.
+
+## N-039 · 3. I-05 kalite envanteri — 21 Kasım 2026
+
+- **Örnek A.** İki motorda video sahibinin kendi DOM menüsünde dört öğe ve sayısal olarak 480/720/1080 bulundu. FilmDeck'te üç sayısal seviye de vardı. Yalnız metnin kendi sayısal kısmını okuyan ikinci ölçüm, bazı örnek ölçümlerde rozet metninin sayıları gizlediğini gösterdi. Kaynağın nihai 1080 görüntü geçişi I-10 kaydındaki gibi doğrulanmadı.
+- **Örnek B.** FilmDeck tek 1080 seçeneği sundu. Denenen Firefox oturumunda seçili video sahibinde bilinen yerel menü öğeleri bulunmadı. Başka içerik veya menü yapısı için sonuca varılmadı.
+- **Açık ve kanıt.** İki örnekte eksik olan doğrulanmış bir yerel kalite saptanmadı. Kullanıcıdan FilmDeck'te eksik görünen bir yerel seviye örneği istendi. `npm run check` ve `node tests/quality-mapping-browser.cjs --engine=chromium|firefox` ayrı koşularda geçti. Sürüm v0.8.3.4. Claude incelemesi bekliyor.
 
 ## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
 
