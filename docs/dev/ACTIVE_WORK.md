@@ -34,6 +34,7 @@
 - Kurulu eklentiyle iki motorda ayrı test profillerinde açık yayın kartı, canlı kanal ve geçmiş yayın örnekleri denendi. Bu koşularda seçilebilir, hazır medya oluşmadı. Geçmiş yayın rotasına ulaşmak, geçmiş yayının oynadığını göstermedi. Canlı uçtaki hız davranışı, sitenin hız menüsü ve %0'dan sonraki ses değişiklikleri bu yüzden yeniden üretilemedi.
 - Kodda medya hızı ile sitenin hız menüsü ayrı yollardır. Ses tarafındaki Radix geri çağrısı DOM sahibine bağlı önbellek kullanır. Eldeki canlı gözlem, hangisinin kullanıcı örneğinde bozulduğunu belirlemiyor. Yerel `node --test tests/kick-ui.test.cjs tests/kick-quality.test.cjs` 8/8 ve `npm run check` geçti. Bu testler yerel menü algoritması ve bağlı oynatıcı davranışını sınar.
 - Açılan canlı ve geçmiş yayın örnekleri kullanıcıdan istendi. Canlı reklamın giriş/çıkışı gözlenmedi. Ürün kodu ve sürüm aynı kaldı. Claude incelemesi bekliyor.
+- **Kullanıcının verdiği geçmiş yayın.** Başsız Firefox'taki iki koşuda FilmDeck 1,5× hızı videoya, %0 → %40 → %65 sesi videoya ve IVS oynatıcıya uyguladı. %0 sessiz, sonraki iki adım sesliydi. Bilinen site ayar düğmesi, hız menüsü ve ses sürgüsü bu koşullarda görünmedi. Kullanıcının sitedeki arayüz eşleşmesi gözlemi bu nedenle açık. İki başsız Edge koşusunda oynatılabilir medya oluşmadı. Canlı uç ve reklam geçişi henüz sınanmadı. Yerel Kick UI/kalite testleri 8/8. Ürün kodu ve sürüm aynı.
 
 ## N-039 · 3. I-05 kalite envanteri — 21 Kasım 2026
 
