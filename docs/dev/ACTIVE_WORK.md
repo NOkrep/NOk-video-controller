@@ -29,6 +29,12 @@
 - **Kontroller.** `npm run check` geçti. `toolbar-browser`, `pip-browser` ve `ui-smoke` geniş/dar biçimleri başsız Edge ve Firefox'ta 8/8. Bu komutların sonuçları ayrı yerel günlüklerde.
 - **Kalan kapsam.** Kullanıcı tarafından bildirilen diğer oynatıcılar, gerçek sitedeki tam ekran geçişi ve altyazı satırının görünür çizimi açık. İki oynatıcı üzerinden genel site uyumluluğu çıkarılamaz. Anonim yerel kanıt `tests/artifacts/n039-live-*.json` altında. Kök neden atanmayan vakalarda ürün değişikliği ve sürüm artışı yok. Claude incelemesi bekliyor.
 
+## N-039 · 2. I-03 / I-04 yayın kontrolleri — 21 Kasım 2026
+
+- Kurulu eklentiyle iki motorda ayrı test profillerinde açık yayın kartı, canlı kanal ve geçmiş yayın örnekleri denendi. Bu koşularda seçilebilir, hazır medya oluşmadı. Geçmiş yayın rotasına ulaşmak, geçmiş yayının oynadığını göstermedi. Canlı uçtaki hız davranışı, sitenin hız menüsü ve %0'dan sonraki ses değişiklikleri bu yüzden yeniden üretilemedi.
+- Kodda medya hızı ile sitenin hız menüsü ayrı yollardır. Ses tarafındaki Radix geri çağrısı DOM sahibine bağlı önbellek kullanır. Eldeki canlı gözlem, hangisinin kullanıcı örneğinde bozulduğunu belirlemiyor. Yerel `node --test tests/kick-ui.test.cjs tests/kick-quality.test.cjs` 8/8 ve `npm run check` geçti. Bu testler yerel menü algoritması ve bağlı oynatıcı davranışını sınar.
+- Açılan canlı ve geçmiş yayın örnekleri kullanıcıdan istendi. Canlı reklamın giriş/çıkışı gözlenmedi. Ürün kodu ve sürüm aynı kaldı. Claude incelemesi bekliyor.
+
 ## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
 
 Kullanıcı istedi ("o iki şeyi halledelim"). Mağazaya gönderilmedi (`storeStatus: not-submitted`). Notlar: [RELEASE_NOTES_v0.8.3.4.md](../history/RELEASE_NOTES_v0.8.3.4.md).
