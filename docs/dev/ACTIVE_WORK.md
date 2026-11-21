@@ -40,6 +40,7 @@
 - **Örnek A.** İki motorda video sahibinin kendi DOM menüsünde dört öğe ve sayısal olarak 480/720/1080 bulundu. FilmDeck'te üç sayısal seviye de vardı. Yalnız metnin kendi sayısal kısmını okuyan ikinci ölçüm, bazı örnek ölçümlerde rozet metninin sayıları gizlediğini gösterdi. Kaynağın nihai 1080 görüntü geçişi I-10 kaydındaki gibi doğrulanmadı.
 - **Örnek B.** FilmDeck tek 1080 seçeneği sundu. Denenen Firefox oturumunda seçili video sahibinde bilinen yerel menü öğeleri bulunmadı. Başka içerik veya menü yapısı için sonuca varılmadı.
 - **Açık ve kanıt.** İki örnekte eksik olan doğrulanmış bir yerel kalite saptanmadı. Kullanıcıdan FilmDeck'te eksik görünen bir yerel seviye örneği istendi. `npm run check` ve `node tests/quality-mapping-browser.cjs --engine=chromium|firefox` ayrı koşularda geçti. Sürüm v0.8.3.4. Claude incelemesi bekliyor.
+- **GitHub geçmişi.** #88 eski Hls.js raporunda oynatıcı 1080p ve 480p de sunarken FilmDeck yalnız 720p göstermiş. #83 eski Video.js raporunda oynatıcının kalite menüsü var, FilmDeck listesi boş. İkisinde de alan adı veya tekrar adımı yok. #99, iframe içindeki GenericAdapter için benzer boş liste bildiriyor. Paylaşılan sayfa bilgisi, oynatıcıyı açan yolu belirlemeye yetmiyor. Bu kayıtlar belirtinin geçmişini gösteriyor. Güncel sürümde hangi vakaların hâlâ oluştuğu açık.
 
 ## N-039 · 4. D-06 gerçek altyazı seçimi — 21 Kasım 2026
 
