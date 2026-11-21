@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `claude/workTogether` dalında; `main` `0.8.3.3` (#130, `35e28c7`). I-13 Codex'te tamamlandı; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `main` (#131, `2efadc1`); `v0.8.3.4-pre_release` yayında. I-13 Codex'te tamamlandı; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -25,7 +25,7 @@ Kullanıcı istedi ("o iki şeyi halledelim"). Mağazaya gönderilmedi (`storeSt
 
 - **Paketler:** `NOk-Release-Core` `package filmdeck`, `claude/workTogether` temiz `47e447b` ağacından; Chrome ve Firefox ayrı ZIP, `npm run check` komut içinde geçti. Git dışı `NOk-FilmDeck-Release/artifacts/` altında (`0.8.3.4-3f8f631d97fd`, `0.8.3.4-db738b2012e3`); eski arşivlere dokunulmadı, o depoya commit atılmadı.
 - **Denetim:** 17'şer dosya; manifest dışındaki bütün ürün dosyaları kaynakla bayt bayt aynı, fazla dosya yok; Chrome `service_worker`, Firefox `scripts`, sürüm 0.8.3.4. Açılmış iki ZIP kendi tarayıcısında `ui-smoke --extension=…` ile geniş ve dar geçti (20 tema, TR/EN). Bunun için `ui-smoke`'a `--extension` seçeneği eklendi; verilmezse eski davranış.
-- **Yayın:** kullanıcıda. PR birleştikten sonra GitHub'da pre-release işaretli `v0.8.3.4-pre_release` önerilir; iki ZIP ve notlardaki SHA-256 değerleri. Notlar ve test seçeneği paketlerden sonra commit edildi; ürün dosyaları değişmedi.
+- **Yayın:** Kullanıcı PR #131'i birleştirdi ve kendi hesabıyla yayınladı (21 Kasım): `v0.8.3.4-pre_release`, pre-release işaretli, taslak değil, `2efadc1` üzerinde. GitHub API'nin bildirdiği iki ZIP'in boyutu ve SHA-256 değeri yereldeki paketlerle ve notlardakiyle aynı (dosya indirilmedi). Paketler `47e447b`'den üretildi; arada yalnız belgeler ve `ui-smoke` seçeneği değişti. Mağazaya gönderilmedi. Dependabot Playwright dalı kapandı.
 
 ## Opak araç çubuğu ve Playwright 1.65.1, v0.8.3.4 — 21 Kasım 2026
 
