@@ -4,7 +4,7 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3.3**, `codex/filmdeck-cassette-icon` dalında; `main` `0.8.3.2` (#129, `95ffcd7`). I-13 kalan onaylı simge güncellemesi Codex'te; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `claude/workTogether` dalında; `main` `0.8.3.3` (#130, `35e28c7`). I-13 Codex'te tamamlandı; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
 - **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
 - **Codex'te:** I-13.
@@ -18,6 +18,17 @@
 - **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
 - **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
 - **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
+
+## Opak araç çubuğu ve Playwright 1.65.1, v0.8.3.4 — 21 Kasım 2026
+
+- **Kullanıcı bildirimi:** yeni araç çubuğunun arkasındaki sayfa, özellikle yazı, hafifçe görünüyor ve okumayı bozuyordu.
+- **Neden:** çubuğun gövdesi `--pvc-bg` renginin %92'si, açılır kutular %94'ü ile çiziliyordu. Klasik panel ve şeritler zaten opaktı. Bütün 20 temanın `--pvc-bg` değeri opak onaltılık renk.
+- **Düzeltme:** iki arka plan doğrudan `var(--pvc-bg)` (`injected.css`). Otomatik solma (`Açık tut` kapalıyken izlerken) bilerek değiştirilmedi.
+- **Test:** `toolbar-browser` çubuğun ve açık bir kutunun hesaplanan arka planında saydamlık olmadığını doğrular. Düzeltme geri alınınca Edge'de düştü, yerine konunca geçti.
+- **Playwright 1.62.1 → 1.65.1:** Dependabot dalı eski main'den (`95ffcd7`) açıldığı için kilit dosyasında çakışma olasılığı vardı; aynı yükseltme bu dala alındı (`--ignore-scripts`, tarayıcı indirilmedi; testler kurulu Edge ve Firefox'u kullanır). Önce geçici ayrı çalışma ağacında, sonra son kaynakta sınandı.
+- **Kanıt:** `npm run check` 312/312. toolbar, media-tracks, dialog-keyboard, tooltip, hud-continuity, ui-smoke geniş/dar Edge 152.0.4191.53 ve Firefox 160.0.1'de 14/14.
+- **Firefox kararsızlığı (kod dışı):** bir süre bütün Firefox testleri `BiDi timeout: session.subscribe` ile düştü (60 s bekleme). Aynı anda değişmemiş main kodu geçti; birkaç dakika sonra değişikliklerle toolbar iki kez, ui-smoke geniş ve dar geçti. Firefox'un başsız oturumunda ara sıra yanıt vermeme olarak kayıtlı; kök neden bulunmadı.
+- **Sınır:** gerçek site ve uzak CI kabulü yok. Tag, ZIP veya release yapılmadı.
 
 ## I-13 kalan onaylı simgeler, v0.8.3.3 — 21 Kasım 2026
 
