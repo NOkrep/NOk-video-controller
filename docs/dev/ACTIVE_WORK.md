@@ -4,10 +4,10 @@
 
 5 Kasım 2026. Ayrıntılı envanter PROJECT_HANDOFF.md §6-8, aşağıdakiler en yeni kayıtlardır. Daha eski kayıtlar değişmeden [WORK_HISTORY.md](../history/WORK_HISTORY.md) içindedir.
 
-- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `claude/workTogether` dalında; `main` `0.8.3.3` (#130, `35e28c7`). I-13 Codex'te tamamlandı; PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
+- **Sürüm:** Kaynak sürümü **v0.8.3.4**, `codex/filmdeck-cassette-icon` dalında; taban `main` #131 (`2efadc1`). PR ve merge kullanıcıda. Sürüm `node scripts/set-version.cjs <sürüm>` ile değiştirilir; araç bu satırı günceller. Geçici düzen `0.milestone.düzeltme.küçük`: üçüncü bölüm sınırsız, dördüncü en fazla 9; kesin karar (B5) bekliyor.
 - **Yerel kapsamı biten:** I-08, I-12, D-01 (dar hedef), D-02, D-04, D-08 (rapor kapsamı), D-09 (tooltip), D-10, D-11, I-11.
-- **Seçildi, Claude'da (sıra):** B6-C, I-03, I-04, I-05, I-09 ve I-10, D-06.
-- **Codex'te:** I-13.
+- **Seçildi, Codex yürütüyor (21 Kasım, N-039):** I-10 + I-09 gerçek site regresyonu, I-03 Kick (reklam görülürse I-04), I-05 kalite envanteri, D-06 gerçek parça seçimi ve Firefox test güvenilirliği. Claude incelemeyi yürütüyor. B6-C bu beş işin dışında.
+- **I-13:** tamamlandı ve Claude incelemesinden geçti.
 - **Kapandı:** D-07; finalist seçilmeyecek, 20 tema kalıyor.
 - **Karar bekliyor:** B5 kesin sürüm kuralı.
 - **Seçilmedi:** I-06, D-03, D-05, D-12, D-13, D-14, kalan gerçek site kabulleri.
@@ -18,6 +18,45 @@
 - **17 Kasım — v0.8.1:** kullanıcı raporundan altyazı zamanla kayma düzeltmesi ve raporda kayma değeri (aşağıda).
 - **17 Kasım — v0.8.2:** büyük kayma için kaymayı elle yazma ve "Şu an bu satır" (aşağıda).
 - **19 Kasım — v0.8.3:** kullanıcı uzaktayken Claude'un seçtiği beş hedef (aşağıda): D-06 ses ve altyazı parçaları, araç çubuğunun kaydırma çubuğu kayması, Firefox `hud-continuity` incelemesi, beceri onayları (kullanıcı onayı bekliyor).
+
+## N-039 · 1. I-10 / I-09 gerçek site regresyonu — 21 Kasım 2026
+
+- **Taban ve kapsam.** v0.8.3.4, `2efadc1`. Codex iş devri ve gerçek site deneme kaydı bu dosyada güncellendi. Kurulu Edge 152 ve Firefox 160.0.1, ayrı geçici profiller.
+- **Raporlu örnek A.** İki motorda tarayıcı eklenti eylemi varsayılan araç çubuğunu açtı. Kontrol iframe'deki hazır videoya ulaştı. 1,5× hız, %0 → %40 → %65 ses, Mono → Stereo, harici sentetik altyazı yükleme durumu ve PiP açılışı gözlendi. Arayüz iki motorda ölçülen görünür alanın içindeydi. Araç çubuğu 480/720/1080 sundu. 1080 isteğinden sonra iki motorda görüntü 720 kaldı ve seçili kalite onaylanmadı. Bu sonuç önceki örnekle uyumlu. Görüntünün değişmemesinin nedeni bu turda doğrulanmadı.
+- **Raporlu örnek B.** İki motorda temel kontroller, altyazı yükleme durumu ve PiP açıldı. Oynatma çerçevesi motora göre farklıydı. Araç çubuğunda yalnız 1080 seçeneği görüldü. Yerel menü karşılaştırması I-05 kapsamında. Ölçülen panel görünür alandaydı.
+- **Başlangıç ölçümü.** İlk yardımcı dış kapsayıcıyı ölçtüğü için görünür çubuğu kaçırabiliyordu. Ölçüm gerçek araç çubuğuna taşındı. Erken okunan Stereo durumuna da kaynak yanıtını bekleyen bir denetim eklendi. Bu değişiklikler yerel yardımcıya ait.
+- **Ek ölçüm.** Örnek A'da iki motorda araç çubuğu sürükleme sonrası ekranda kaldı. PiP kapatıldı ve yeniden açıldı. Sentetik altyazı satırının görünür çizimi de iki motorda doğrulandı. Aynı kökenli iframe'de katman üst belgede olabildiği için yalnız video çerçevesine bakan ilk yardımcı satırı kaçırmıştı.
+- **Kontroller.** `npm run check` geçti. `toolbar-browser`, `pip-browser` ve `ui-smoke` geniş/dar biçimleri başsız Edge ve Firefox'ta 8/8. Bu komutların sonuçları ayrı yerel günlüklerde.
+- **Kalan kapsam.** Kullanıcı tarafından bildirilen diğer oynatıcılar ve gerçek sitedeki tam ekran geçişi açık. İki oynatıcı üzerinden genel site uyumluluğu çıkarılamaz. Anonim yerel kanıt `tests/artifacts/n039-live-*.json` altında. Kök neden atanmayan vakalarda ürün değişikliği ve sürüm artışı yok. Claude incelemesi bekliyor.
+
+## N-039 · 2. I-03 / I-04 yayın kontrolleri — 21 Kasım 2026
+
+- Kurulu eklentiyle iki motorda ayrı test profillerinde açık yayın kartı, canlı kanal ve geçmiş yayın örnekleri denendi. Bu koşularda seçilebilir, hazır medya oluşmadı. Geçmiş yayın rotasına ulaşmak, geçmiş yayının oynadığını göstermedi. Canlı uçtaki hız davranışı, sitenin hız menüsü ve %0'dan sonraki ses değişiklikleri bu yüzden yeniden üretilemedi.
+- Kodda medya hızı ile sitenin hız menüsü ayrı yollardır. Ses tarafındaki Radix geri çağrısı DOM sahibine bağlı önbellek kullanır. Eldeki canlı gözlem, hangisinin kullanıcı örneğinde bozulduğunu belirlemiyor. Yerel `node --test tests/kick-ui.test.cjs tests/kick-quality.test.cjs` 8/8 ve `npm run check` geçti. Bu testler yerel menü algoritması ve bağlı oynatıcı davranışını sınar.
+- Açılan canlı ve geçmiş yayın örnekleri kullanıcıdan istendi. Canlı reklamın giriş/çıkışı gözlenmedi. Ürün kodu ve sürüm aynı kaldı. Claude incelemesi bekliyor.
+- **Kullanıcının verdiği geçmiş yayın.** Başsız Firefox'taki iki koşuda FilmDeck 1,5× hızı videoya, %0 → %40 → %65 sesi videoya ve IVS oynatıcıya uyguladı. %0 sessiz, sonraki iki adım sesliydi. Bilinen site ayar düğmesi, hız menüsü ve ses sürgüsü bu koşullarda görünmedi. Kullanıcının sitedeki arayüz eşleşmesi gözlemi bu nedenle açık. İki başsız Edge koşusunda oynatılabilir medya oluşmadı. Canlı uç ve reklam geçişi henüz sınanmadı. Yerel Kick UI/kalite testleri 8/8. Ürün kodu ve sürüm aynı.
+
+## N-039 · 3. I-05 kalite envanteri — 21 Kasım 2026
+
+- **Örnek A.** İki motorda video sahibinin kendi DOM menüsünde dört öğe ve sayısal olarak 480/720/1080 bulundu. FilmDeck'te üç sayısal seviye de vardı. Yalnız metnin kendi sayısal kısmını okuyan ikinci ölçüm, bazı örnek ölçümlerde rozet metninin sayıları gizlediğini gösterdi. Kaynağın nihai 1080 görüntü geçişi I-10 kaydındaki gibi doğrulanmadı.
+- **Örnek B.** FilmDeck tek 1080 seçeneği sundu. Denenen Firefox oturumunda seçili video sahibinde bilinen yerel menü öğeleri bulunmadı. Başka içerik veya menü yapısı için sonuca varılmadı.
+- **Açık ve kanıt.** İki örnekte eksik olan doğrulanmış bir yerel kalite saptanmadı. Kullanıcıdan FilmDeck'te eksik görünen bir yerel seviye örneği istendi. `npm run check` ve `node tests/quality-mapping-browser.cjs --engine=chromium|firefox` ayrı koşularda geçti. Sürüm v0.8.3.4. Claude incelemesi bekliyor.
+- **GitHub geçmişi.** #88 eski Hls.js raporunda oynatıcı 1080p ve 480p de sunarken FilmDeck yalnız 720p göstermiş. #83 eski Video.js raporunda oynatıcının kalite menüsü var, FilmDeck listesi boş. İkisinde de alan adı veya tekrar adımı yok. #99, iframe içindeki GenericAdapter için benzer boş liste bildiriyor. Paylaşılan sayfa bilgisi, oynatıcıyı açan yolu belirlemeye yetmiyor. Bu kayıtlar belirtinin geçmişini gösteriyor. Güncel sürümde hangi vakaların hâlâ oluştuğu açık.
+
+## N-039 · 4. D-06 gerçek altyazı seçimi — 21 Kasım 2026
+
+- **Gerçek örnek A, Edge.** Oynatıcı çerçevesinde üç seçenek listelendi, bu sayıya Kapalı dahil. Araç çubuğundan hazır altyazı seçimi kaynak oynatıcının metin parçasını `showing` durumuna geçirdi. Kolay okunur düzendeki görünür seçim kutusundan Kapalı seçilince kaynak parça gösterimi durdu. Kanıt yalnız sayıları ve durumları içerir.
+- **Firefox ve açık kapsam.** Aynı sayfanın koşusunda yeterli parça listesi gelmedi. Görülen taşıyıcıların parça listesini aynı anda sunduğu veya Firefox'ta seçim sorunu olduğu doğrulanmadı. Gerçek sitede çoklu ses seçimi ve Firefox'ta hazır altyazı kabulü açık.
+- **Yerel kanıt.** `npm run check` ve `node tests/media-tracks-browser.cjs --engine=chromium|firefox` geçti. HLS fikstürü üzerindeki iki düzenin ses/altyazı ekran görüntüleri `tests/artifacts/n039-track-*.png`. Görüntülere gerçek oynatıcı veya içerik bilgisi alınmadı. Görsel kabul kullanıcıda. Ürün değişikliği yok. Claude incelemesi bekliyor.
+- **Shaka ve yerleşim takip turu.** Kullanıcı izniyle Shaka Player 4.16.56 çalışma dosyası mevcut hazırlayıcıdan SHA-256 doğrulamasıyla alındı. `node tests/media-tracks-browser.cjs --engine=chromium|firefox --shaka` iki başsız motorda geçti. Araç çubuğu yoluyla seçilen ses ve altyazı oynatıcının gerçek API'sinde gözlendi. Kolay okunur düzende aynı altyazı seçili göründü ve Kapalı uygulandı. Farklı ses dilleri sınandı. Aynı dilde farklı roller bu çalışma zamanı koşusuna dahil değil. İki düzenin ses ve altyazı kontrolleri, komşu düğmelerle birlikte `tests/artifacts/n039-detail-*.png` görüntülerinde yer alıyor. Yerleşim kararı kullanıcıda. Ürün kodu ve sürüm aynı.
+- **Olumsuz kontrol.** Edge'de geçici test kopyası Kapalı yerine etkin altyazıyı tekrar seçtiğinde, Shaka'nın altyazıyı gizlediğini ölçen adım beklenen noktada başarısız oldu.
+
+## N-039 · 5. Firefox test güvenilirliği — 21 Kasım 2026
+
+- **Doğrulanan test hatası.** `firefox-integration.cjs` varsayılan araç çubuğunda gizli kalan klasik sekmeye odaklanıyordu. Gerçek ArrowDown girdisinden sonra Altyazılar sekmesinin `aria-selected` değeri `false` kaldı. Test mevcut `easyRead` yardımcısıyla görünür Kolay okunur düzene geçtiğinde klavye, odak ve hareketsizlik adımları geçti. Kırmızı ve yeşil komut `node tests/firefox-integration.cjs --browser=<kurulu Firefox>`.
+- **BiDi tanısı.** Test sürücüleri, süreç veya WebSocket kapanırsa bekleyen komutu hemen reddeder. Zaman aşımı hatasına son sekiz komutun adı, sonucu ve süresi eklenir. İstek parametreleri yazılmaz. Üç temiz Firefox başlatmada `session.subscribe` 2,249 / 3,502 / 7,609 ms. Eski aralıklı zaman aşımı yeniden üretilemedi. 15 ve 60 saniyelik komut sınırları aynı.
+- **Kanıt.** `node --test tests/firefox-bidi-diagnostics.test.cjs` 2/2. Git dışı kopyada kopma hatası ayırt edilmediğinde ilgili test kırmızı. `npm run check` 314/314. Başsız `startup-browser` ve `hud-continuity-browser --headless=true` iki motorda 4/4. Firefox `hud-continuity` ayrıca değişiklik öncesi ölçümde geçti. Son entegrasyon koşusunda klavye ok gezinmesi, odak ve hareketsizlik denetimleri doğru, tarayıcı hata listesi boş. Yerel günlükler `tests/artifacts/n039-*`.
+- **Kalan kapsam.** Tarihsel BiDi zaman aşımının ve aralıklı HUD konum düşüşünün kök nedenleri açık. Güncelleme test altyapısına ait ve sürüm v0.8.3.4. Gerçek site kanıtı üst işlerde. Claude incelemesi bekliyor.
 
 ## v0.8.3.4 pre-release hazırlığı — 21 Kasım 2026
 

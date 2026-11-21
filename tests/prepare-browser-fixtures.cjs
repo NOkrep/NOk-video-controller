@@ -1,6 +1,7 @@
 // Generates test-owned media. Runtime downloads require the explicit --download-runtimes flag.
 // node tests/prepare-browser-fixtures.cjs [--ffmpeg=<ffmpeg>] [--download-runtimes] [--force]
-// --runtimes-only needs no encoder. --committed-hls regenerates the small HLS kept in tests/fixtures/hls.
+// --runtimes-only needs no encoder. --shaka-runtime opts in to the Shaka Player browser fixture.
+// --committed-hls regenerates the small HLS kept in tests/fixtures/hls.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawnSync}=require('node:child_process');
 const output=path.join(__dirname,'artifacts'),mediaDir=path.join(output,'media'),hlsDir=path.join(output,'hls'),runtimeDir=path.join(output,'runtime');
 const ffmpeg=process.argv.find(arg=>arg.startsWith('--ffmpeg='))?.slice(9)||'ffmpeg';
@@ -9,6 +10,13 @@ const runtimes=[
   {file:'hls.min.js',version:'Hls.js 1.6.13',url:'https://cdn.jsdelivr.net/npm/hls.js@1.6.13/dist/hls.min.js',sha256:'7c47cd97d7a6e7b98d9623dd8ed9a6d45af4be4085e0c2001cd7175c2b4cfb07'},
   {file:'video.min.js',version:'Video.js 8.23.4',url:'https://cdn.jsdelivr.net/npm/video.js@8.23.4/dist/video.min.js',sha256:'acd0a81a4cc78928f1530598762ed783ee916674bf3a0bf2a6c26a6c0b16ed4b'}
 ];
+if(process.argv.includes('--shaka-runtime'))runtimes.push({
+  file:'shaka-player.compiled.js',
+  version:'Shaka Player 4.16.56',
+  url:'https://cdn.jsdelivr.net/npm/shaka-player@4.16.56/dist/shaka-player.compiled.js',
+  // Compiled file from the npm package after verification against the registry's dist.integrity.
+  sha256:'61e5fb69716a6971992616cffbfdbc75d3afadcd881295243de7b6f12ddb0f26'
+});
 function run(args){const result=spawnSync(ffmpeg,['-hide_banner','-loglevel','error',...args],{windowsHide:true,encoding:'utf8',timeout:120000});
   if(result.error||result.status!==0)throw result.error||new Error(result.stderr||'FFmpeg failed');}
 function digest(data){return crypto.createHash('sha256').update(data).digest('hex');}

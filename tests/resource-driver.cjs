@@ -1,5 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {spawn,execFileSync,execFile}=require('node:child_process');
+const {watchFirefoxBiDi}=require('./firefox-bidi-diagnostics.cjs');
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const root=path.resolve(__dirname,'..');
 // PowerShell 7 when present, otherwise the Windows PowerShell shipped with the OS.
@@ -89,21 +90,27 @@ async function createDriver(engine,executablePath,packages,options={}){
   const size=options.viewport?['--width',String(options.viewport.width),'--height',String(options.viewport.height)]:[];
   const child=spawn(executablePath,[...(!options.visible?['--headless']:[]),'--no-remote','--new-instance','--profile',profile,'--remote-debugging-port','0',...size,'about:blank'],
     {windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,...(options.memoryControls||options.toolbarControls?{MOZ_REMOTE_ALLOW_SYSTEM_ACCESS:'1'}:{})}});
-  const requests=new Map();let socket,id=0;
+  child.stdout.resume();
+  const requests=new Map();let socket,id=0,diagnostics;
   const send=(method,params={})=>new Promise((resolve,reject)=>{
+    const unavailable=diagnostics.connectionError(method);
+    if(unavailable){reject(unavailable);return;}
     // A busy runner can take over 20 s to start Firefox and install the extension; page commands keep the short limit.
-    const request=++id,limit=['session.new','session.subscribe','network.addIntercept','webExtension.install'].includes(method)?60000:20000,timer=setTimeout(()=>{requests.delete(request);reject(Error('BiDi timeout: '+method));},limit);
-    requests.set(request,{resolve,reject,timer});socket.send(JSON.stringify({id:request,method,params}));
+    const request=++id,limit=['session.new','session.subscribe','network.addIntercept','webExtension.install'].includes(method)?60000:20000;
+    const finish=diagnostics.track(method),timer=setTimeout(()=>{requests.delete(request);finish('timeout');reject(diagnostics.timeout(method));},limit);
+    requests.set(request,{method,resolve,reject,timer,finish});socket.send(JSON.stringify({id:request,method,params}));
   });
   try{
     const endpoint=await new Promise((resolve,reject)=>{let output='';const timer=setTimeout(()=>reject(Error('Firefox startup timeout: '+output.slice(-1000))),60000);
       child.once('error',error=>{clearTimeout(timer);reject(error);});child.once('exit',code=>{clearTimeout(timer);reject(Error('Firefox startup exit: '+code));});
       child.stderr.on('data',chunk=>{output+=chunk;const match=output.match(/WebDriver BiDi listening on (ws:\/\/127\.0\.0\.1:\d+)/);if(match){clearTimeout(timer);resolve(match[1]+'/session');}});
     });
-    socket=new WebSocket(endpoint);await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true});});
+    socket=new WebSocket(endpoint);
+    diagnostics=watchFirefoxBiDi(child,socket,requests,options.bidiTiming);
+    await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true});});
     socket.addEventListener('message',async event=>{
       const message=JSON.parse(event.data),pending=requests.get(message.id);
-      if(pending){clearTimeout(pending.timer);requests.delete(message.id);message.type==='error'?pending.reject(Error(message.message)):pending.resolve(message.result);}
+      if(pending){clearTimeout(pending.timer);requests.delete(message.id);pending.finish(message.type==='error'?'error':'ok');message.type==='error'?pending.reject(Error(message.message)):pending.resolve(message.result);}
       else if(message.method==='network.beforeRequestSent'&&message.params.isBlocked){
         const request=message.params.request;
         const allowed=/^(?:about:|blob:|data:|moz-extension:|chrome:|resource:|http:\/\/127\.0\.0\.1:\d+\/)/.test(request.url)
